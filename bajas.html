@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LAAAMBAPP · Costos & Finanzas</title>
+<title>LAAAMBAPP · Bajas & Ventas</title>
 <script>(function(){var t=localStorage.getItem("laaamb-theme")||"dark";document.documentElement.setAttribute("data-theme",t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -79,7 +79,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 
 /* MAIN */
 .main{flex:1;overflow:hidden;display:flex;flex-direction:column}
-.page-head{padding:18px 28px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--bg2)}
+.page-head{padding:18px 28px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--bg2);flex-wrap:wrap}
 .ph-eyebrow{font-size:10px;font-weight:600;color:var(--teal-d);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
 .ph-title{font-family:'Sigmar',cursive;font-size:24px;color:var(--text);letter-spacing:.3px}
 .ph-sub{font-size:12px;color:var(--text3);margin-top:2px}
@@ -87,13 +87,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .tab-nav{display:flex;gap:2px;padding:0 28px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto}
 .tn{padding:10px 18px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim);white-space:nowrap}
 .tn:hover{color:var(--text)}.tn.active{color:var(--teal);border-bottom-color:var(--teal)}
-.content{flex:1;overflow-y:auto;padding:24px 28px 48px}
+.content{flex:1;overflow-y:auto;padding:20px 24px 48px}
 
-/* SHARED COMPONENTS */
+/* COMPONENTS */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:all var(--anim);white-space:nowrap}
 .btn-primary{background:var(--teal);color:#080f10}.btn-primary:hover{background:#1cc8d0;transform:translateY(-1px)}
 .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}.btn-ghost:hover{background:var(--surface);color:var(--teal);border-color:var(--border3)}
-.btn-green{background:var(--green-bg);color:var(--green);border:1px solid rgba(46,199,122,.25)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,82,82,.25)}.btn-danger:hover{background:rgba(224,82,82,.18)}
 .btn-sm{padding:6px 12px;font-size:12px}
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2)}
 .card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
@@ -110,7 +110,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .kpi.c-sky::before{background:var(--sky)}.kpi.c-orange::before{background:var(--orange)}
 .kpi.c-wine::before{background:var(--wine)}
 .kpi-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
-.kpi-val{font-size:24px;font-weight:700;color:var(--text);line-height:1;display:flex;align-items:baseline;gap:4px}
+.kpi-val{font-size:26px;font-weight:700;color:var(--text);line-height:1;display:flex;align-items:baseline;gap:4px}
 .kpi-unit{font-size:13px;color:var(--text3);font-weight:400}
 .kpi-delta{font-size:11px;margin-top:5px;font-weight:500}
 .up{color:var(--green)}.down{color:var(--red)}.neu{color:var(--text3)}.warn{color:var(--amber)}
@@ -119,7 +119,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .b-green{background:var(--green-bg);color:var(--green)}.b-amber{background:var(--amber-bg);color:var(--amber)}
 .b-red{background:var(--red-bg);color:var(--red)}.b-sky{background:var(--sky-bg);color:var(--sky)}
 .b-gray{background:var(--surface);color:var(--text3)}.b-orange{background:var(--orange-bg);color:var(--orange)}
-.b-wine{background:var(--wine-bg);color:var(--wine)}
+.b-wine{background:var(--wine-bg);color:var(--wine)}.b-coral{background:rgba(224,120,80,.12);color:#e07850}
 table{width:100%;border-collapse:collapse;font-size:13px}
 thead th{background:var(--bg3);color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:2}
 tbody tr{border-bottom:1px solid var(--border);transition:background var(--anim);cursor:pointer}
@@ -127,15 +127,13 @@ tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:var(--surface)}
 tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
 .td-mono{font-size:12px;font-weight:600;color:var(--teal)}.td-muted{color:var(--text3);font-size:12px}
-.prog-track{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-top:4px}
-.prog-fill{height:100%;border-radius:3px;transition:width .6s}
 
 /* MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;padding:20px}
 .overlay.open{opacity:1;pointer-events:all}
 .modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.6);transform:translateY(8px);transition:transform .2s}
 .overlay.open .modal{transform:translateY(0)}
-.modal-sm{max-width:520px}.modal-md{max-width:680px}
+.modal-sm{max-width:520px}.modal-md{max-width:700px}
 .modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--border)}
 .modal-title{font-family:'Sigmar',cursive;font-size:18px;color:var(--text)}
 .modal-close{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;padding:4px}.modal-close:hover{color:var(--text)}
@@ -150,34 +148,51 @@ textarea.fi{resize:vertical;min-height:68px}
 .form-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);margin:18px 0 12px;display:flex;align-items:center;gap:8px}
 .form-section::after{content:'';flex:1;height:1px;background:var(--border)}
 
-/* FINANZAS ESPECIFICOS */
-.balance-card{border-radius:var(--r2);padding:20px;text-align:center;position:relative;overflow:hidden}
-.balance-card.positivo{background:linear-gradient(135deg,rgba(46,199,122,.12),rgba(0,175,182,.08));border:1px solid rgba(46,199,122,.25)}
-.balance-card.negativo{background:var(--red-bg);border:1px solid rgba(224,82,82,.25)}
-.balance-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px}
-.balance-val{font-family:'Sigmar',cursive;font-size:32px;letter-spacing:-.5px}
-.balance-sub{font-size:12px;margin-top:6px}
-
+/* BAJAS ESPECÍFICO */
 .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px}
 .bar-lbl{font-size:12px;color:var(--text2);width:130px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .bar-track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
 .bar-fill{height:100%;border-radius:4px}
-.bar-val{font-size:12px;font-weight:600;color:var(--text3);width:64px;text-align:right;flex-shrink:0}
+.bar-val{font-size:12px;font-weight:600;color:var(--text3);width:54px;text-align:right;flex-shrink:0}
 
-.costo-tag{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:var(--r);font-size:11px;font-weight:600;cursor:pointer;transition:all var(--anim)}
-.costo-tag:hover{opacity:.8}
+.causa-chip{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text2);transition:all var(--anim);margin:3px}
+.causa-chip:hover,.causa-chip.active{background:var(--red-bg);color:var(--red);border-color:rgba(224,82,82,.3)}
 
-.periodo-btn{padding:5px 12px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text3);font-family:'Changa',sans-serif;transition:all var(--anim)}
-.periodo-btn:hover{background:var(--surface);color:var(--text)}
-.periodo-btn.active{background:var(--teal-bg);color:var(--teal);border-color:var(--border2)}
+.muerte-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:14px;transition:all var(--anim);cursor:pointer}
+.muerte-card:hover{border-color:var(--border2);background:var(--surface)}
+.muerte-ico{font-size:22px;flex-shrink:0;width:38px;text-align:center}
+.muerte-info{flex:1}
+.muerte-id{font-size:12px;font-weight:700;color:var(--teal)}
+.muerte-causa{font-size:13px;color:var(--text);font-weight:500;margin-top:1px}
+.muerte-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.muerte-right{text-align:right;flex-shrink:0}
+.muerte-edad{font-size:12px;color:var(--text2);font-weight:600}
+.muerte-peso{font-size:11px;color:var(--text3)}
+
+.venta-row{display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:8px;transition:all var(--anim)}
+.venta-row:hover{border-color:var(--border2)}
+.venta-id{font-size:12px;font-weight:700;color:var(--teal);min-width:100px}
+.venta-info{flex:1}
+.venta-desc{font-size:13px;color:var(--text);font-weight:500}
+.venta-meta{font-size:11px;color:var(--text3);margin-top:1px}
+.venta-total{font-size:18px;font-weight:700;color:var(--green);text-align:right;flex-shrink:0}
+.venta-precio{font-size:11px;color:var(--text3);text-align:right}
 
 .import-hidden{display:none}
 .toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px}
 .toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:fadeUp .2s ease;max-width:340px}
 .toast.ok{border-left:3px solid var(--teal)}.toast.err{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--amber)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* RESPONSIVE */
 @media(max-width:1100px){.g4{grid-template-columns:1fr 1fr}}
-@media(max-width:800px){.g2,.g3{grid-template-columns:1fr}}
+@media(max-width:800px){
+  .sidebar{display:none}
+  .g2,.g3{grid-template-columns:1fr}
+  .content{padding:16px 16px 48px}
+  .page-head{padding:14px 16px}
+  .tab-nav{padding:0 16px}
+}
 </style>
 </head>
 <body>
@@ -205,8 +220,8 @@ textarea.fi{resize:vertical;min-height:68px}
     <a class="nav-link" href="salud.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>Salud &amp; Tratamientos</a>
     <a class="nav-link" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos<span class="nav-badge">28</span></a>
     <div class="nav-group">Gestión</div>
-    <a class="nav-link active" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
-    <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
+    <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
+    <a class="nav-link active" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
     <div class="nav-group">Sistema</div>
     <a class="nav-link" href="ajustes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2"/></svg>Ajustes</a>
   </nav>
@@ -222,253 +237,310 @@ textarea.fi{resize:vertical;min-height:68px}
 <div class="main">
   <div class="page-head">
     <div>
-      <div class="ph-eyebrow">La Marinilla · Gestión económica</div>
-      <div class="ph-title">Costos &amp; Finanzas</div>
-      <div class="ph-sub">Balance mensual: <span id="balance-label" style="color:var(--green);font-weight:700">+$32.8M COP</span> · Margen: 68%</div>
+      <div class="ph-eyebrow">La Marinilla · Gestión</div>
+      <div class="ph-title">Bajas &amp; Ventas</div>
+      <div class="ph-sub">10 bajas este mes · $13.2M en ventas · Mortalidad 2.1%</div>
     </div>
     <div class="ph-actions">
-      <div style="display:flex;gap:6px">
-        <button class="periodo-btn active" onclick="setPeriodo(this,'mes')">Mes</button>
-        <button class="periodo-btn" onclick="setPeriodo(this,'trimestre')">Trimestre</button>
-        <button class="periodo-btn" onclick="setPeriodo(this,'año')">Año</button>
-      </div>
-      <button class="btn btn-ghost btn-sm" onclick="exportFinanzas()">↓ Excel</button>
-      <button class="btn btn-primary btn-sm" onclick="openModal('modal-gasto')">+ Registrar gasto</button>
+      <button class="btn btn-ghost btn-sm" onclick="exportBajas()">↓ Excel</button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-venta')">💰 Registrar venta</button>
+      <button class="btn btn-danger btn-sm" onclick="openModal('modal-baja')">+ Registrar baja</button>
     </div>
   </div>
 
   <div class="tab-nav">
-    <div class="tn active" onclick="switchTab(this,'t-resumen')">💰 Resumen</div>
-    <div class="tn" onclick="switchTab(this,'t-costos')">📉 Costos</div>
-    <div class="tn" onclick="switchTab(this,'t-ingresos')">📈 Ingresos</div>
-    <div class="tn" onclick="switchTab(this,'t-por-animal')">🐑 Por animal</div>
-    <div class="tn" onclick="switchTab(this,'t-proyeccion')">🔮 Proyección</div>
+    <div class="tn active" onclick="switchTab(this,'t-resumen')">📊 Resumen</div>
+    <div class="tn" onclick="switchTab(this,'t-muertes')">💀 Muertes</div>
+    <div class="tn" onclick="switchTab(this,'t-ventas')">💰 Ventas</div>
+    <div class="tn" onclick="switchTab(this,'t-analisis')">📈 Análisis causas</div>
+    <div class="tn" onclick="switchTab(this,'t-certificados')">📄 Certificados</div>
   </div>
 
   <div class="content">
 
     <!-- ══ RESUMEN ══ -->
     <div id="t-resumen" class="tab-pane">
-      <!-- Balance cards -->
-      <div class="g3" style="margin-bottom:16px">
-        <div class="balance-card positivo">
-          <div class="balance-label" style="color:var(--green)">Ingresos del mes</div>
-          <div class="balance-val" style="color:var(--green)">$48.2M</div>
-          <div class="balance-sub" style="color:var(--text3)">COP · ventas carne + pie de cría</div>
-        </div>
-        <div class="balance-card negativo" style="background:var(--red-bg);border-color:rgba(224,82,82,.25)">
-          <div class="balance-label" style="color:var(--red)">Egresos del mes</div>
-          <div class="balance-val" style="color:var(--red)">$15.4M</div>
-          <div class="balance-sub" style="color:var(--text3)">COP · todos los gastos</div>
-        </div>
-        <div class="balance-card positivo">
-          <div class="balance-label" style="color:var(--teal)">Balance neto</div>
-          <div class="balance-val" style="color:var(--teal)">+$32.8M</div>
-          <div class="balance-sub" style="color:var(--text3)">Margen: 68% · ROI: 214%</div>
-        </div>
-      </div>
-
       <div class="g4">
-        <div class="kpi c-green"><div class="kpi-label">Ingreso/animal/mes</div><div class="kpi-val">$102<span class="kpi-unit">K</span></div><div class="kpi-delta up">▲ 12% vs mes ant.</div></div>
-        <div class="kpi c-red"><div class="kpi-label">Costo/animal/mes</div><div class="kpi-val">$32<span class="kpi-unit">K</span></div><div class="kpi-delta neu">COP promedio</div></div>
-        <div class="kpi c-amber"><div class="kpi-label">Costo/kg carne prod.</div><div class="kpi-val">$8.4<span class="kpi-unit">K</span></div><div class="kpi-delta neu">vs precio venta $14.5K</div></div>
-        <div class="kpi c-teal"><div class="kpi-label">Precio venta/kg</div><div class="kpi-val">$14.5<span class="kpi-unit">K</span></div><div class="kpi-delta up">▲ $500 vs mes ant.</div></div>
-        <div class="kpi c-orange"><div class="kpi-label">Valor inventario vivo</div><div class="kpi-val">$142<span class="kpi-unit">M</span></div><div class="kpi-delta neu">470 animales</div></div>
-        <div class="kpi c-wine"><div class="kpi-label">Costo acum. sanidad</div><div class="kpi-val">$8.4<span class="kpi-unit">M</span></div><div class="kpi-delta neu">Mes actual</div></div>
-        <div class="kpi c-sky"><div class="kpi-label">Punto de equilibrio</div><div class="kpi-val">$5.1<span class="kpi-unit">K</span></div><div class="kpi-delta up">✓ Superado en $9.4K/kg</div></div>
-        <div class="kpi c-green"><div class="kpi-label">Animales en VAN+</div><div class="kpi-val">389</div><div class="kpi-delta neu">83% del hato rentable</div></div>
+        <div class="kpi c-red"><div class="kpi-label">Muertes este mes</div><div class="kpi-val">2</div><div class="kpi-delta down">Tasa 0.43%</div></div>
+        <div class="kpi c-amber"><div class="kpi-label">Muertes acum. año</div><div class="kpi-val">10</div><div class="kpi-delta down">Mortalidad 2.1%</div></div>
+        <div class="kpi c-green"><div class="kpi-label">Ventas este mes</div><div class="kpi-val">8</div><div class="kpi-delta up">▲ 3 vs mes ant.</div></div>
+        <div class="kpi c-teal"><div class="kpi-label">Ingresos ventas</div><div class="kpi-val">$13.2<span class="kpi-unit">M</span></div><div class="kpi-delta up">▲ 12% vs mes ant.</div></div>
+        <div class="kpi c-sky"><div class="kpi-label">Peso total vendido</div><div class="kpi-val">336<span class="kpi-unit">kg</span></div><div class="kpi-delta neu">8 animales promedio 42kg</div></div>
+        <div class="kpi c-orange"><div class="kpi-label">Precio prom./kg</div><div class="kpi-val">$14.2<span class="kpi-unit">K</span></div><div class="kpi-delta up">▲ $200 vs sem. ant.</div></div>
+        <div class="kpi c-wine"><div class="kpi-label">Pérdida económica muertes</div><div class="kpi-val">$820<span class="kpi-unit">K</span></div><div class="kpi-delta down">Valor estimado animales</div></div>
+        <div class="kpi c-green"><div class="kpi-label">Tasa salida mensual</div><div class="kpi-val">2.1<span class="kpi-unit">%</span></div><div class="kpi-delta neu">Normal &lt;3%</div></div>
       </div>
 
       <div class="g2">
-        <!-- Distribución costos -->
+        <!-- Últimas muertes -->
         <div class="card">
-          <div class="card-h"><div class="card-title">Distribución de costos</div><div class="card-sub">Mes actual — $15.4M total</div></div>
+          <div class="card-h">
+            <div><div class="card-title">Últimas muertes registradas</div><div class="card-sub">Mes actual</div></div>
+            <button class="btn btn-ghost btn-sm" onclick="document.querySelectorAll('.tn')[1].click()">Ver todas →</button>
+          </div>
           <div class="card-body">
-            <div class="bar-row"><div class="bar-lbl">Alimentación/pasto</div><div class="bar-track"><div class="bar-fill" style="width:42%;background:var(--teal)"></div></div><div class="bar-val">$6.5M (42%)</div></div>
-            <div class="bar-row"><div class="bar-lbl">Mano de obra</div><div class="bar-track"><div class="bar-fill" style="width:28%;background:var(--sky)"></div></div><div class="bar-val">$4.3M (28%)</div></div>
-            <div class="bar-row"><div class="bar-lbl">Sanidad/medicamentos</div><div class="bar-track"><div class="bar-fill" style="width:18%;background:var(--amber)"></div></div><div class="bar-val">$2.8M (18%)</div></div>
-            <div class="bar-row"><div class="bar-lbl">Infraestructura</div><div class="bar-track"><div class="bar-fill" style="width:7%;background:var(--orange)"></div></div><div class="bar-val">$1.1M (7%)</div></div>
-            <div class="bar-row"><div class="bar-lbl">Otros</div><div class="bar-track"><div class="bar-fill" style="width:5%;background:var(--text4)"></div></div><div class="bar-val">$0.7M (5%)</div></div>
+            <div class="muerte-card">
+              <div class="muerte-ico">💀</div>
+              <div class="muerte-info">
+                <div class="muerte-id">#OV-1892</div>
+                <div class="muerte-causa">Neumonía bacteriana</div>
+                <div class="muerte-meta">10/04/2025 · Levante · Lote D · Juan García</div>
+              </div>
+              <div class="muerte-right">
+                <div class="muerte-edad">2.4 meses</div>
+                <div class="muerte-peso">12 kg</div>
+              </div>
+            </div>
+            <div class="muerte-card">
+              <div class="muerte-ico">💀</div>
+              <div class="muerte-info">
+                <div class="muerte-id">#OV-2901</div>
+                <div class="muerte-causa">Diarrea neonatal</div>
+                <div class="muerte-meta">02/04/2025 · Neonato · Lote A · María López</div>
+              </div>
+              <div class="muerte-right">
+                <div class="muerte-edad">4 días</div>
+                <div class="muerte-peso">4 kg</div>
+              </div>
+            </div>
+            <button class="btn btn-danger btn-sm" style="width:100%;justify-content:center;margin-top:12px" onclick="openModal('modal-baja')">+ Registrar nueva baja</button>
           </div>
         </div>
 
-        <!-- Ingresos por tipo -->
+        <!-- Últimas ventas -->
         <div class="card">
-          <div class="card-h"><div class="card-title">Ingresos por canal</div><div class="card-sub">Mes actual — $48.2M total</div></div>
+          <div class="card-h">
+            <div><div class="card-title">Últimas ventas</div><div class="card-sub">Mes actual</div></div>
+            <button class="btn btn-ghost btn-sm" onclick="document.querySelectorAll('.tn')[2].click()">Ver todas →</button>
+          </div>
           <div class="card-body">
-            <div class="bar-row"><div class="bar-lbl">Venta sacrificio</div><div class="bar-track"><div class="bar-fill" style="width:72%;background:var(--green)"></div></div><div class="bar-val">$34.7M (72%)</div></div>
-            <div class="bar-row"><div class="bar-lbl">Venta pie de cría</div><div class="bar-track"><div class="bar-fill" style="width:21%;background:var(--teal)"></div></div><div class="bar-val">$10.1M (21%)</div></div>
-            <div class="bar-row"><div class="bar-lbl">Venta reproductores</div><div class="bar-track"><div class="bar-fill" style="width:7%;background:var(--sky)"></div></div><div class="bar-val">$3.4M (7%)</div></div>
-            <div style="margin-top:16px;padding:12px;background:var(--green-bg);border:1px solid rgba(46,199,122,.2);border-radius:var(--r)">
-              <div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:4px">💡 Oportunidad identificada</div>
-              <div style="font-size:12px;color:var(--text2)">Aumentar venta pie de cría. Dorper × Príncipe tiene demanda confirmada a $420K/animal. Potencial: $8.4M adicionales/mes con 20 crías más.</div>
+            <div class="venta-row">
+              <div class="venta-id">#OV-1341</div>
+              <div class="venta-info">
+                <div class="venta-desc">Sacrificio · 38 kg</div>
+                <div class="venta-meta">09/04 · Carnes El Llano · Juan García</div>
+              </div>
+              <div>
+                <div class="venta-total">$551K</div>
+                <div class="venta-precio">$14,500/kg</div>
+              </div>
             </div>
+            <div class="venta-row">
+              <div class="venta-id">#OV-0823</div>
+              <div class="venta-info">
+                <div class="venta-desc">Pie de cría · 31 kg</div>
+                <div class="venta-meta">07/04 · Finca El Porvenir · Carlos Ríos</div>
+              </div>
+              <div>
+                <div class="venta-total">$372K</div>
+                <div class="venta-precio">$12,000/kg</div>
+              </div>
+            </div>
+            <div class="venta-row">
+              <div class="venta-id">5 animales</div>
+              <div class="venta-info">
+                <div class="venta-desc">Sacrificio grupal · 210 kg</div>
+                <div class="venta-meta">02/04 · Frigorífico Antioquia · Juan García</div>
+              </div>
+              <div>
+                <div class="venta-total">$3.0M</div>
+                <div class="venta-precio">$14,500/kg</div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:12px" onclick="openModal('modal-venta')">+ Registrar nueva venta</button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- ══ COSTOS ══ -->
-    <div id="t-costos" class="tab-pane" style="display:none">
-      <div style="display:flex;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+    <!-- ══ MUERTES ══ -->
+    <div id="t-muertes" class="tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <select class="fi" style="width:160px"><option>Todas las categorías</option><option>Alimentación</option><option>Sanidad</option><option>Mano de obra</option><option>Infraestructura</option><option>Compra animales</option></select>
-          <input type="month" class="fi" style="width:150px" id="costos-mes">
+          <select class="fi" style="width:160px" onchange="filterMuertes(this.value,'causa')">
+            <option value="">Todas las causas</option>
+            <option>Neumonía</option><option>Diarrea neonatal</option>
+            <option>Predación</option><option>Parto distócico</option>
+            <option>Enterotoxemia</option><option>Traumatismo</option>
+            <option>Causa desconocida</option>
+          </select>
+          <select class="fi" style="width:140px" onchange="filterMuertes(this.value,'cat')">
+            <option value="">Todas las categorías</option>
+            <option>Neonato</option><option>Levante</option><option>Adulto</option><option>Reproductor</option>
+          </select>
+          <input type="month" class="fi" style="width:150px" id="muertes-mes">
         </div>
         <div style="display:flex;gap:8px">
           <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importData(this)"></label>
-          <button class="btn btn-ghost btn-sm" onclick="exportCostos()">↓ Excel</button>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modal-gasto')">+ Registrar gasto</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportMuertes()">↓ Excel</button>
+          <button class="btn btn-danger btn-sm" onclick="openModal('modal-baja')">+ Registrar baja</button>
         </div>
       </div>
       <div class="card">
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Animal/Lote</th><th>Valor COP</th><th>Método pago</th><th>Colaborador</th><th>Comprobante</th></tr></thead>
-            <tbody id="costos-tbody"></tbody>
+            <thead><tr><th>Fecha</th><th>Animal</th><th>Categoría</th><th>Causa</th><th>Edad</th><th>Peso est.</th><th>Lote</th><th>Pérdida econ.</th><th>Colaborador</th><th>Necropsia</th></tr></thead>
+            <tbody id="muertes-tbody"></tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- ══ INGRESOS ══ -->
-    <div id="t-ingresos" class="tab-pane" style="display:none">
-      <div style="display:flex;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
-        <div style="display:flex;gap:8px">
-          <select class="fi" style="width:160px"><option>Todos los tipos</option><option>Sacrificio</option><option>Pie de cría</option><option>Reproductor</option></select>
-          <input type="month" class="fi" style="width:150px">
-        </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-ghost btn-sm" onclick="exportIngresos()">↓ Excel</button>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modal-ingreso')">+ Registrar ingreso</button>
-        </div>
-      </div>
-      <div class="card">
-        <div style="overflow-x:auto">
-          <table>
-            <thead><tr><th>Fecha</th><th>Tipo</th><th>Animal(es)</th><th>Peso kg</th><th>Precio/kg COP</th><th>Total COP</th><th>Comprador</th><th>Canal</th><th>Colaborador</th></tr></thead>
-            <tbody id="ingresos-tbody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- ══ POR ANIMAL ══ -->
-    <div id="t-por-animal" class="tab-pane" style="display:none">
+    <!-- ══ VENTAS ══ -->
+    <div id="t-ventas" class="tab-pane" style="display:none">
       <div style="display:flex;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-        <div style="display:flex;gap:8px">
-          <input type="text" class="fi" style="width:220px" placeholder="Buscar por ID o nombre…" oninput="filterPorAnimal(this.value)">
-          <select class="fi" style="width:140px"><option>Todos los lotes</option><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select class="fi" style="width:160px" onchange="filterVentas(this.value)">
+            <option value="">Todos los tipos</option>
+            <option>Sacrificio</option><option>Pie de cría</option><option>Reproductor</option>
+          </select>
+          <input type="month" class="fi" style="width:150px" id="ventas-mes">
         </div>
         <div style="display:flex;gap:8px">
-          <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar costos<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importData(this)"></label>
-          <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('costos')">↓ Plantilla</button>
-          <button class="btn btn-ghost btn-sm" onclick="exportPorAnimal()">↓ Excel</button>
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importData(this)"></label>
+          <button class="btn btn-ghost btn-sm" onclick="exportVentas()">↓ Excel</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-venta')">+ Registrar venta</button>
         </div>
       </div>
       <div class="card">
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>ID Animal</th><th>Nombre</th><th>Lote</th><th>Compra</th><th>Alimentación</th><th>Sanidad</th><th>Otros</th><th>Total acum.</th><th>GDP</th><th>Retorno est.</th><th>Margen est.</th></tr></thead>
-            <tbody id="animal-costos-tbody"></tbody>
+            <thead><tr><th>Fecha</th><th>Animal(es)</th><th>Tipo</th><th>Peso kg</th><th>Precio/kg</th><th>Total COP</th><th>Comprador</th><th>Canal</th><th>Retiro OK</th><th>Colaborador</th></tr></thead>
+            <tbody id="ventas-tbody"></tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- ══ PROYECCIÓN ══ -->
-    <div id="t-proyeccion" class="tab-pane" style="display:none">
-      <div class="g2" style="margin-bottom:14px">
+    <!-- ══ ANÁLISIS CAUSAS ══ -->
+    <div id="t-analisis" class="tab-pane" style="display:none">
+      <div class="g2">
         <div class="card">
-          <div class="card-h"><div class="card-title">🔮 Proyección de ingresos</div><div class="card-sub">Próximos 3 meses</div></div>
+          <div class="card-h"><div class="card-title">Causas de mortalidad acumulado</div><div class="card-sub">Año en curso · 10 muertes totales</div></div>
           <div class="card-body">
-            <div style="display:flex;flex-direction:column;gap:12px">
-              <div style="background:var(--bg3);border-radius:var(--r);padding:14px">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                  <div style="font-size:13px;font-weight:600;color:var(--text)">Mayo 2025</div>
-                  <div style="font-size:18px;font-weight:700;color:var(--green)">$52.4M</div>
-                </div>
-                <div style="font-size:11px;color:var(--text3)">23 animales listos (≥48kg) · 8 partos programados · Precio est. $14.5K/kg</div>
-                <div class="prog-track" style="margin-top:6px"><div class="prog-fill" style="width:87%;background:var(--green)"></div></div>
-              </div>
-              <div style="background:var(--bg3);border-radius:var(--r);padding:14px">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                  <div style="font-size:13px;font-weight:600;color:var(--text)">Junio 2025</div>
-                  <div style="font-size:18px;font-weight:700;color:var(--teal)">$47.8M</div>
-                </div>
-                <div style="font-size:11px;color:var(--text3)">18 animales listos · 12 partos programados · Mes de menor producción</div>
-                <div class="prog-track" style="margin-top:6px"><div class="prog-fill" style="width:79%;background:var(--teal)"></div></div>
-              </div>
-              <div style="background:var(--bg3);border-radius:var(--r);padding:14px">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                  <div style="font-size:13px;font-weight:600;color:var(--text)">Julio 2025</div>
-                  <div style="font-size:18px;font-weight:700;color:var(--green)">$61.2M</div>
-                </div>
-                <div style="font-size:11px;color:var(--text3)">31 animales listos · Pico de producción trimestral</div>
-                <div class="prog-track" style="margin-top:6px"><div class="prog-fill" style="width:100%;background:var(--green)"></div></div>
-              </div>
-            </div>
-            <div style="margin-top:14px;padding:12px;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);font-size:12px;color:var(--text2)">
-              📊 <strong style="color:var(--teal)">Total proyectado Q2-Q3:</strong> $161.4M COP · Basado en GDP actual, partos programados y precio de mercado vigente.
+            <div class="bar-row"><div class="bar-lbl">Neumonía</div><div class="bar-track"><div class="bar-fill" style="width:70%;background:var(--red)"></div></div><div class="bar-val">35% (4)</div></div>
+            <div class="bar-row"><div class="bar-lbl">Diarrea neonatal</div><div class="bar-track"><div class="bar-fill" style="width:44%;background:var(--orange)"></div></div><div class="bar-val">22% (2)</div></div>
+            <div class="bar-row"><div class="bar-lbl">Predación</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:var(--amber)"></div></div><div class="bar-val">15% (2)</div></div>
+            <div class="bar-row"><div class="bar-lbl">Parto distócico</div><div class="bar-track"><div class="bar-fill" style="width:24%;background:var(--wine)"></div></div><div class="bar-val">12% (1)</div></div>
+            <div class="bar-row"><div class="bar-lbl">Enterotoxemia</div><div class="bar-track"><div class="bar-fill" style="width:16%;background:var(--sky)"></div></div><div class="bar-val">8% (1)</div></div>
+            <div class="bar-row"><div class="bar-lbl">Otras</div><div class="bar-track"><div class="bar-fill" style="width:16%;background:var(--text4)"></div></div><div class="bar-val">8% (1)</div></div>
+
+            <div style="margin-top:16px;padding:12px;background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-radius:var(--r)">
+              <div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:4px">🔴 Acción prioritaria</div>
+              <div style="font-size:12px;color:var(--text2)"><strong>Neumonía (35%)</strong> — Revisar ventilación en Lote D, reforzar vacunación clostridial y aplicar protocolo de diagnóstico temprano. Pérdida acumulada: ~$1.2M COP.</div>
             </div>
           </div>
         </div>
 
-        <!-- Simulador precio -->
         <div class="card">
-          <div class="card-h"><div class="card-title">🎚 Simulador de precio</div><div class="card-sub">¿Qué pasa si el precio cambia?</div></div>
+          <div class="card-h"><div class="card-title">Mortalidad por categoría</div><div class="card-sub">Dónde se concentran las pérdidas</div></div>
           <div class="card-body">
-            <div class="fg">
-              <label class="fl">Precio de venta (COP/kg)</label>
-              <input type="range" id="sim-precio" min="10000" max="20000" step="500" value="14500" style="width:100%;margin:8px 0" oninput="simularPrecio()">
-              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)">
-                <span>$10K</span><span id="sim-precio-val" style="color:var(--teal);font-weight:700">$14,500</span><span>$20K</span>
-              </div>
+            <div class="bar-row"><div class="bar-lbl">Neonatos (0-30d)</div><div class="bar-track"><div class="bar-fill" style="width:80%;background:var(--red)"></div></div><div class="bar-val">5.5%</div></div>
+            <div class="bar-row"><div class="bar-lbl">Levante (1-6m)</div><div class="bar-track"><div class="bar-fill" style="width:40%;background:var(--amber)"></div></div><div class="bar-val">2.3%</div></div>
+            <div class="bar-row"><div class="bar-lbl">Adultos reproductoras</div><div class="bar-track"><div class="bar-fill" style="width:14%;background:var(--teal)"></div></div><div class="bar-val">0.8%</div></div>
+            <div class="bar-row"><div class="bar-lbl">Reproductores machos</div><div class="bar-track"><div class="bar-fill" style="width:0%;background:var(--green)"></div></div><div class="bar-val">0%</div></div>
+
+            <div style="margin-top:16px">
+              <div style="font-size:11px;font-weight:700;color:var(--amber);margin-bottom:8px">Mortalidad por lote</div>
+              <div class="bar-row"><div class="bar-lbl">Lote D (sobrecarga)</div><div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--red)"></div></div><div class="bar-val">3.1%</div></div>
+              <div class="bar-row"><div class="bar-lbl">Lote B</div><div class="bar-track"><div class="bar-fill" style="width:28%;background:var(--amber)"></div></div><div class="bar-val">1.5%</div></div>
+              <div class="bar-row"><div class="bar-lbl">Lote A</div><div class="bar-track"><div class="bar-fill" style="width:20%;background:var(--teal)"></div></div><div class="bar-val">1.1%</div></div>
+              <div class="bar-row"><div class="bar-lbl">Lote C</div><div class="bar-track"><div class="bar-fill" style="width:16%;background:var(--green)"></div></div><div class="bar-val">0.8%</div></div>
             </div>
-            <div class="fg">
-              <label class="fl">Animales a vender este mes</label>
-              <input type="range" id="sim-animales" min="5" max="50" step="1" value="23" style="width:100%;margin:8px 0" oninput="simularPrecio()">
-              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)">
-                <span>5</span><span id="sim-n-val" style="color:var(--teal);font-weight:700">23 animales</span><span>50</span>
-              </div>
-            </div>
-            <div class="fg">
-              <label class="fl">Peso promedio (kg)</label>
-              <input type="range" id="sim-peso" min="30" max="60" step="1" value="42" style="width:100%;margin:8px 0" oninput="simularPrecio()">
-              <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3)">
-                <span>30kg</span><span id="sim-peso-val" style="color:var(--teal);font-weight:700">42 kg</span><span>60kg</span>
-              </div>
-            </div>
-            <div style="background:var(--teal-bg);border:1px solid var(--border2);border-radius:var(--r2);padding:16px;text-align:center;margin-top:4px">
-              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Ingreso proyectado</div>
-              <div style="font-family:'Sigmar',cursive;font-size:28px;color:var(--teal)" id="sim-resultado">$14.0M</div>
-              <div style="font-size:11px;color:var(--text3);margin-top:4px" id="sim-detalle">23 animales × 42kg × $14,500</div>
+
+            <div style="margin-top:12px;padding:12px;background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-radius:var(--r)">
+              <div style="font-size:11px;font-weight:700;color:var(--amber);margin-bottom:4px">💡 Patrón identificado</div>
+              <div style="font-size:12px;color:var(--text2)">Lote D tiene 3.1% de mortalidad vs 0.8% en Lote C — directamente correlacionado con la sobrecarga de 13.8 ov/ha. Reducir carga = reducir mortalidad.</div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Punto de equilibrio -->
+      <!-- Tendencia mensual -->
       <div class="card">
-        <div class="card-h"><div class="card-title">⚖ Análisis punto de equilibrio</div><div class="card-sub">¿Cuántos kg necesito vender para cubrir costos?</div></div>
+        <div class="card-h"><div class="card-title">Tendencia de mortalidad mensual</div><div class="card-sub">Últimos 6 meses</div></div>
         <div class="card-body">
           <div class="g3" style="margin-bottom:0">
-            <div style="text-align:center;padding:16px;background:var(--bg3);border-radius:var(--r)">
-              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Costos fijos mensuales</div>
-              <div style="font-size:22px;font-weight:700;color:var(--text)">$6.8M</div>
-              <div style="font-size:11px;color:var(--text3)">Mano de obra + infraestructura</div>
+            <div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:600">Por mes</div>
+              <div class="bar-row"><div class="bar-lbl">Nov 2024</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:var(--amber)"></div></div><div class="bar-val">1</div></div>
+              <div class="bar-row"><div class="bar-lbl">Dic 2024</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:var(--amber)"></div></div><div class="bar-val">1</div></div>
+              <div class="bar-row"><div class="bar-lbl">Ene 2025</div><div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--red)"></div></div><div class="bar-val">2</div></div>
+              <div class="bar-row"><div class="bar-lbl">Feb 2025</div><div class="bar-track"><div class="bar-fill" style="width:90%;background:var(--red)"></div></div><div class="bar-val">3</div></div>
+              <div class="bar-row"><div class="bar-lbl">Mar 2025</div><div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--amber)"></div></div><div class="bar-val">2</div></div>
+              <div class="bar-row"><div class="bar-lbl">Abr 2025</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:var(--green)"></div></div><div class="bar-val">1</div></div>
             </div>
-            <div style="text-align:center;padding:16px;background:var(--bg3);border-radius:var(--r)">
-              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">Costos variables/kg</div>
-              <div style="font-size:22px;font-weight:700;color:var(--text)">$5,100</div>
-              <div style="font-size:11px;color:var(--text3)">Alimentación + sanidad</div>
+            <div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:600">Análisis estacional</div>
+              <div style="padding:12px;background:var(--bg3);border-radius:var(--r);margin-bottom:8px">
+                <div style="font-size:12px;font-weight:600;color:var(--amber);margin-bottom:4px">📅 Temporada de lluvias (Ene-Feb)</div>
+                <div style="font-size:11px;color:var(--text2)">Pico de mortalidad coincide con temporada de lluvias. Neumonía y diarrea aumentan. Reforzar protocolo sanitario preventivo antes de octubre y febrero.</div>
+              </div>
+              <div style="padding:12px;background:var(--bg3);border-radius:var(--r)">
+                <div style="font-size:12px;font-weight:600;color:var(--green);margin-bottom:4px">✓ Tendencia positiva en abril</div>
+                <div style="font-size:11px;color:var(--text2)">Solo 1 muerte en abril — posible efecto de la desparasitación masiva de marzo y reducción parcial de carga en Lote D.</div>
+              </div>
             </div>
-            <div style="text-align:center;padding:16px;background:var(--teal-bg);border:1px solid var(--border2);border-radius:var(--r)">
-              <div style="font-size:11px;color:var(--teal);margin-bottom:4px">Punto de equilibrio</div>
-              <div style="font-size:22px;font-weight:700;color:var(--teal)">718 kg</div>
-              <div style="font-size:11px;color:var(--text3)">≈ 17 animales de 42kg</div>
+            <div>
+              <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-weight:600">Recomendaciones IA</div>
+              <div style="padding:12px;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r)">
+                <div style="font-size:11px;color:var(--text2);line-height:1.7">
+                  1. <strong style="color:var(--teal)">Urgente:</strong> Reubicar 80 animales de Lote D<br>
+                  2. <strong style="color:var(--teal)">Antes oct:</strong> Vacunación anti-neumocócica preventiva<br>
+                  3. <strong style="color:var(--teal)">Mensual:</strong> Monitorear condición corporal neonatos días 1-7<br>
+                  4. <strong style="color:var(--teal)">Instalar:</strong> Red perimetral anti-predadores en Lote C
+                </div>
+              </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CERTIFICADOS ══ -->
+    <div id="t-certificados" class="tab-pane" style="display:none">
+      <div style="background:var(--sky-bg);border:1px solid rgba(56,176,216,.2);border-left:3px solid var(--sky);border-radius:var(--r);padding:14px;margin-bottom:16px;font-size:13px;color:var(--text2)">
+        📄 <strong style="color:var(--sky)">Documentación legal:</strong> Genera automáticamente los documentos requeridos para movilización y sacrificio de animales. Verifica que el período de retiro esté cumplido antes de emitir.
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><div class="card-title">Guía de movilización</div><div class="card-sub">Para transporte de animales</div></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+            <div class="fg"><label class="fl">Animal(es) a movilizar</label><input class="fi" placeholder="OV-1341, OV-0823 o Lote A"></div>
+            <div class="fg"><label class="fl">Destino</label><input class="fi" placeholder="Frigorífico / Finca destino"></div>
+            <div class="fg"><label class="fl">Fecha movilización</label><input class="fi" type="date"></div>
+            <div style="background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-radius:var(--r);padding:10px;font-size:11px;color:var(--amber)">
+              ⚠ Verifica que ningún animal esté en período de retiro antes de generar la guía.
+            </div>
+            <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="toast('Guía de movilización generada · Descargando…','info')">📄 Generar guía de movilización</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-title">Certificado sanitario</div><div class="card-sub">Requerido para venta a frigoríficos</div></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+            <div class="fg"><label class="fl">Animal(es)</label><input class="fi" placeholder="IDs separados por coma"></div>
+            <div class="fg"><label class="fl">Veterinario responsable</label><input class="fi" placeholder="Dr. Martínez — Matrícula 12345"></div>
+            <div class="fg"><label class="fl">Fecha inspección</label><input class="fi" type="date"></div>
+            <div style="background:var(--green-bg);border:1px solid rgba(46,199,122,.2);border-radius:var(--r);padding:10px;font-size:11px;color:var(--green)">
+              ✓ Sistema verifica automáticamente períodos de retiro de todos los animales listados.
+            </div>
+            <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="toast('Certificado sanitario generado','info')">📋 Generar certificado sanitario</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Historial certificados -->
+      <div class="card">
+        <div class="card-h"><div class="card-title">Historial de documentos generados</div></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Animales</th><th>Destino</th><th>Colaborador</th><th>Estado</th></tr></thead>
+            <tbody>
+              <tr><td class="td-muted">09/04/2025</td><td><span class="badge b-teal">Guía movilización</span></td><td class="td-mono">#OV-1341, #OV-0823</td><td>Carnes El Llano — Medellín</td><td>Juan García</td><td><span class="badge b-green">✓ Emitido</span></td></tr>
+              <tr><td class="td-muted">02/04/2025</td><td><span class="badge b-sky">Cert. sanitario</span></td><td>5 animales Lote B</td><td>Frigorífico Antioquia</td><td>Dr. Martínez</td><td><span class="badge b-green">✓ Emitido</span></td></tr>
+              <tr><td class="td-muted">28/03/2025</td><td><span class="badge b-teal">Guía movilización</span></td><td class="td-mono">#RE-010</td><td>Finca La Esperanza — Rionegro</td><td>Juan García</td><td><span class="badge b-green">✓ Emitido</span></td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -477,72 +549,117 @@ textarea.fi{resize:vertical;min-height:68px}
 </div><!-- /main -->
 </div><!-- /app -->
 
-<!-- MODAL GASTO -->
-<div class="overlay" id="modal-gasto" onclick="if(event.target===this)closeModal('modal-gasto')">
+<!-- MODAL BAJA -->
+<div class="overlay" id="modal-baja" onclick="if(event.target===this)closeModal('modal-baja')">
 <div class="modal modal-md">
-  <div class="modal-head"><div class="modal-title">Registrar gasto</div><button class="modal-close" onclick="closeModal('modal-gasto')">✕</button></div>
+  <div class="modal-head"><div class="modal-title">Registrar baja de animal</div><button class="modal-close" onclick="closeModal('modal-baja')">✕</button></div>
   <div class="modal-body">
+    <div class="form-section">Identificación</div>
     <div class="form-grid">
-      <div class="fg"><label class="fl">Categoría *</label>
-        <select class="fi" id="g-cat">
-          <option>Alimentación / Pasto</option><option>Sanidad / Medicamentos</option>
-          <option>Mano de obra</option><option>Infraestructura</option>
-          <option>Compra de animales</option><option>Transporte</option>
-          <option>Servicios (agua/luz)</option><option>Otro</option>
+      <div class="fg"><label class="fl">Animal (ID) *</label><input class="fi" placeholder="OV-1892"></div>
+      <div class="fg"><label class="fl">Tipo de baja *</label>
+        <select class="fi" id="tipo-baja" onchange="toggleBajaFields()">
+          <option value="muerte">Muerte</option>
+          <option value="venta">Venta para sacrificio</option>
+          <option value="pie">Venta pie de cría</option>
+          <option value="reproductor">Venta reproductor</option>
+          <option value="robo">Robo / Extravío</option>
+          <option value="donacion">Donación</option>
         </select>
       </div>
-      <div class="fg"><label class="fl">Valor (COP) *</label><input class="fi" type="number" id="g-valor" placeholder="250000"></div>
-      <div class="fg"><label class="fl">Fecha *</label><input class="fi" type="date" id="g-fecha"></div>
-      <div class="fg"><label class="fl">Método de pago</label>
-        <select class="fi"><option>Efectivo</option><option>Transferencia</option><option>Crédito</option><option>Cheque</option></select>
+      <div class="fg"><label class="fl">Fecha *</label><input class="fi" type="date" id="baja-fecha"></div>
+      <div class="fg"><label class="fl">Peso al momento (kg)</label><input class="fi" type="number" placeholder="38"></div>
+    </div>
+
+    <!-- Campos muerte -->
+    <div id="fields-muerte">
+      <div class="form-section">Causa de muerte</div>
+      <div class="form-grid">
+        <div class="fg"><label class="fl">Causa principal *</label>
+          <select class="fi">
+            <option>Neumonía</option><option>Diarrea neonatal</option>
+            <option>Enterotoxemia</option><option>Parásitos</option>
+            <option>Predación</option><option>Parto distócico</option>
+            <option>Traumatismo</option><option>Causa desconocida</option><option>Otra</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">¿Hubo tratamiento previo?</label>
+          <select class="fi"><option>Sí, sin respuesta</option><option>No, muerte súbita</option><option>Sí, en curso</option></select>
+        </div>
       </div>
-      <div class="fg"><label class="fl">Animal / Lote (si aplica)</label>
-        <input class="fi" placeholder="OV-2341 o Lote D o General"></div>
-      <div class="fg"><label class="fl">Colaborador</label>
-        <select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select>
+      <div class="fg"><label class="fl">¿Se realizó necropsia?</label>
+        <select class="fi"><option>No</option><option>Sí — resultado en observaciones</option></select>
       </div>
     </div>
-    <div class="fg"><label class="fl">Descripción *</label><input class="fi" placeholder="Descripción del gasto…"></div>
-    <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" rows="2" placeholder="Notas adicionales, número de factura…"></textarea></div>
-    <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px;font-size:11px;color:var(--text2);margin-top:4px">
-      💡 Si asocias el gasto a un animal específico, se suma automáticamente a su costo acumulado individual.
+
+    <!-- Campos venta -->
+    <div id="fields-venta" style="display:none">
+      <div class="form-section">Datos de la venta</div>
+      <div class="form-grid">
+        <div class="fg"><label class="fl">Comprador *</label><input class="fi" placeholder="Carnes El Llano"></div>
+        <div class="fg"><label class="fl">Precio total (COP) *</label><input class="fi" type="number" placeholder="551000"></div>
+        <div class="fg"><label class="fl">Precio/kg (COP)</label><input class="fi" type="number" placeholder="14500"></div>
+        <div class="fg"><label class="fl">Canal de venta</label>
+          <select class="fi"><option>Directo frigorífico</option><option>Finca (pie)</option><option>Intermediario</option><option>Restaurante</option></select>
+        </div>
+      </div>
+      <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px;font-size:11px;color:var(--text2);margin-bottom:14px">
+        ✓ El sistema verificará automáticamente que el animal <strong>no esté en período de retiro</strong> antes de registrar la venta.
+      </div>
+    </div>
+
+    <div class="form-section">Registro</div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Colaborador *</label>
+        <select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select>
+      </div>
+      <div class="fg"><label class="fl">Hora</label><input class="fi" type="time"></div>
+    </div>
+    <div class="fg"><label class="fl">Observaciones</label>
+      <textarea class="fi" placeholder="Síntomas, contexto, hallazgos en necropsia…"></textarea>
+    </div>
+    <div style="background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-radius:var(--r);padding:10px;font-size:11px;color:var(--text2);margin-top:4px">
+      ⚠ Al registrar la baja: el animal sale del inventario activo, el total del hato se actualiza en el Dashboard y el registro queda en el historial con el colaborador responsable.
     </div>
   </div>
   <div class="modal-foot">
-    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-gasto')">Cancelar</button>
-    <button class="btn btn-primary btn-sm" onclick="saveGasto()">Guardar gasto</button>
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-baja')">Cancelar</button>
+    <button class="btn btn-danger btn-sm" onclick="saveBaja()">Registrar baja</button>
   </div>
 </div>
 </div>
 
-<!-- MODAL INGRESO -->
-<div class="overlay" id="modal-ingreso" onclick="if(event.target===this)closeModal('modal-ingreso')">
+<!-- MODAL VENTA -->
+<div class="overlay" id="modal-venta" onclick="if(event.target===this)closeModal('modal-venta')">
 <div class="modal modal-sm">
-  <div class="modal-head"><div class="modal-title">Registrar ingreso</div><button class="modal-close" onclick="closeModal('modal-ingreso')">✕</button></div>
+  <div class="modal-head"><div class="modal-title">💰 Registrar venta</div><button class="modal-close" onclick="closeModal('modal-venta')">✕</button></div>
   <div class="modal-body">
     <div class="form-grid">
+      <div class="fg"><label class="fl">Animal(es) *</label><input class="fi" placeholder="OV-1341 o 'Lote B - 5 animales'"></div>
       <div class="fg"><label class="fl">Tipo *</label>
-        <select class="fi"><option>Venta sacrificio</option><option>Venta pie de cría</option><option>Venta reproductor</option><option>Otro</option></select>
+        <select class="fi"><option>Sacrificio</option><option>Pie de cría</option><option>Reproductor</option></select>
       </div>
-      <div class="fg"><label class="fl">Fecha *</label><input class="fi" type="date" id="i-fecha"></div>
-      <div class="fg"><label class="fl">Animal(es) vendidos</label><input class="fi" placeholder="OV-1341 o 'Lote B - 5 animales'"></div>
-      <div class="fg"><label class="fl">Peso total (kg)</label><input class="fi" type="number" placeholder="42" oninput="calcIngreso()"></div>
-      <div class="fg"><label class="fl">Precio/kg (COP)</label><input class="fi" type="number" id="i-precio" placeholder="14500" oninput="calcIngreso()"></div>
-      <div class="fg"><label class="fl">Total (COP)</label><input class="fi" id="i-total" style="background:var(--bg4);color:var(--green);font-weight:700" placeholder="Auto-calculado"></div>
+      <div class="fg"><label class="fl">Fecha *</label><input class="fi" type="date" id="v-fecha"></div>
+      <div class="fg"><label class="fl">Peso total (kg) *</label><input class="fi" type="number" id="v-peso" placeholder="42" oninput="calcVenta()"></div>
+      <div class="fg"><label class="fl">Precio/kg (COP) *</label><input class="fi" type="number" id="v-precio" placeholder="14500" oninput="calcVenta()"></div>
+      <div class="fg"><label class="fl">Total COP</label><input class="fi" id="v-total" readonly style="background:var(--bg4);color:var(--green);font-weight:700" placeholder="Auto"></div>
     </div>
     <div class="form-grid">
-      <div class="fg"><label class="fl">Comprador</label><input class="fi" placeholder="Carnes El Llano"></div>
-      <div class="fg"><label class="fl">Canal de venta</label>
+      <div class="fg"><label class="fl">Comprador *</label><input class="fi" placeholder="Carnes El Llano"></div>
+      <div class="fg"><label class="fl">Canal</label>
         <select class="fi"><option>Directo frigorífico</option><option>Finca (pie)</option><option>Intermediario</option><option>Restaurante</option></select>
       </div>
     </div>
-    <div class="fg"><label class="fl">Colaborador</label>
+    <div class="fg"><label class="fl">Colaborador *</label>
       <select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select>
+    </div>
+    <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px;font-size:11px;color:var(--text2);margin-top:4px">
+      ✓ Verificación automática de período de retiro · El ingreso se suma a Finanzas · El animal sale del inventario
     </div>
   </div>
   <div class="modal-foot">
-    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-ingreso')">Cancelar</button>
-    <button class="btn btn-primary btn-sm" onclick="saveIngreso()">Guardar ingreso</button>
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-venta')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" onclick="saveVenta()">Registrar venta</button>
   </div>
 </div>
 </div>
@@ -551,33 +668,24 @@ textarea.fi{resize:vertical;min-height:68px}
 
 <script>
 // ═══ DATA ═══
-const COSTOS_DATA = [
-  {fecha:'10/04/2025',cat:'Alimentación / Pasto',desc:'Concentrado proteico Lote B',animal:'Lote B',valor:1800000,pago:'Efectivo',colab:'Juan García'},
-  {fecha:'09/04/2025',cat:'Sanidad / Medicamentos',desc:'Ivermectina 1% — desparasitación grupal',animal:'Lote D',valor:285000,pago:'Transferencia',colab:'María López'},
-  {fecha:'08/04/2025',cat:'Sanidad / Medicamentos',desc:'Oxitetraciclina — tratamiento #OV-2341',animal:'OV-2341',valor:18500,pago:'Efectivo',colab:'Juan García'},
-  {fecha:'07/04/2025',cat:'Mano de obra',desc:'Jornales semana 1 abril',animal:'General',valor:1200000,pago:'Transferencia',colab:'Juan García'},
-  {fecha:'05/04/2025',cat:'Infraestructura',desc:'Mantenimiento manga y corrales',animal:'General',valor:320000,pago:'Efectivo',colab:'Carlos Ríos'},
-  {fecha:'03/04/2025',cat:'Alimentación / Pasto',desc:'Sal mineralizada todo el hato',animal:'General',valor:480000,pago:'Efectivo',colab:'María López'},
-  {fecha:'01/04/2025',cat:'Servicios (agua/luz)',desc:'Factura servicios finca',animal:'General',valor:95000,pago:'Transferencia',colab:'Juan García'},
+const MUERTES = [
+  {fecha:'10/04/2025',id:'OV-1892',cat:'Levante',causa:'Neumonía',edad:'2.4 meses',peso:12,lote:'Lote D',perdida:380000,colab:'Juan García',necropsia:'No'},
+  {fecha:'02/04/2025',id:'OV-2901',cat:'Neonato',causa:'Diarrea neonatal',edad:'4 días',peso:4,lote:'Lote A',perdida:0,colab:'María López',necropsia:'No'},
+  {fecha:'15/03/2025',id:'OV-1203',cat:'Adulto',causa:'Parto distócico',edad:'3.2 años',peso:42,lote:'Lote C',perdida:820000,colab:'Carlos Ríos',necropsia:'Sí'},
+  {fecha:'02/02/2025',id:'OV-0714',cat:'Levante',causa:'Neumonía',edad:'1.8 meses',peso:10,lote:'Lote D',perdida:320000,colab:'Juan García',necropsia:'No'},
+  {fecha:'18/01/2025',id:'OV-3019',cat:'Neonato',causa:'Enterotoxemia',edad:'2 días',peso:3,lote:'Lote B',perdida:0,colab:'María López',necropsia:'No'},
+  {fecha:'12/01/2025',id:'OV-2104',cat:'Adulto',causa:'Predación',edad:'4.1 años',peso:48,lote:'Lote C',perdida:960000,colab:'Carlos Ríos',necropsia:'No'},
+  {fecha:'05/12/2024',id:'OV-1567',cat:'Levante',causa:'Predación',edad:'3 meses',peso:18,lote:'Lote C',perdida:420000,colab:'Juan García',necropsia:'No'},
+  {fecha:'20/11/2024',id:'OV-4012',cat:'Neonato',causa:'Diarrea neonatal',edad:'5 días',peso:3,lote:'Lote D',perdida:0,colab:'María López',necropsia:'No'},
 ];
 
-const INGRESOS_DATA = [
-  {fecha:'09/04/2025',tipo:'Venta sacrificio',animales:'OV-1341, OV-0823',peso:84,precio:14500,total:1218000,comprador:'Carnes El Llano',canal:'Directo frigorífico',colab:'Juan García'},
-  {fecha:'07/04/2025',tipo:'Venta pie de cría',animales:'OV-0823 (levante H)',peso:31,precio:12000,total:372000,comprador:'Finca El Porvenir',canal:'Finca (pie)',colab:'Carlos Ríos'},
-  {fecha:'02/04/2025',tipo:'Venta sacrificio',animales:'5 animales Lote B',peso:210,precio:14500,total:3045000,comprador:'Frigorífico Antioquia',canal:'Directo frigorífico',colab:'Juan García'},
-  {fecha:'28/03/2025',tipo:'Venta reproductor',animales:'RE-010 (Dorper joven)',peso:68,precio:18000,total:1224000,comprador:'Finca La Esperanza',canal:'Finca (pie)',colab:'Juan García'},
-  {fecha:'25/03/2025',tipo:'Venta sacrificio',animales:'3 animales Lote C',peso:126,precio:14000,total:1764000,comprador:'Carnes El Llano',canal:'Directo frigorífico',colab:'María López'},
-];
-
-const ANIMALES_COSTO = [
-  {id:'OV-0234',name:'Bella',lote:'A',compra:380000,alim:520000,san:180000,otros:160000,gdp:195,retorno:1380000},
-  {id:'OV-1102',name:'Luna',lote:'B',compra:420000,alim:580000,san:210000,otros:140000,gdp:188,retorno:1480000},
-  {id:'OV-0441',name:'—',lote:'A',compra:350000,alim:480000,san:260000,otros:150000,gdp:141,retorno:620000},
-  {id:'RE-003',name:'Príncipe',lote:'B',compra:1200000,alim:680000,san:90000,otros:80000,gdp:null,retorno:4800000},
-  {id:'OV-2341',name:'—',lote:'C',compra:360000,alim:580000,san:280000,otros:100000,gdp:175,retorno:1240000},
-  {id:'OV-0892',name:'—',lote:'C',compra:380000,alim:720000,san:240000,otros:240000,gdp:165,retorno:1380000},
-  {id:'OV-2087',name:'—',lote:'D',compra:350000,alim:860000,san:220000,otros:210000,gdp:162,retorno:980000},
-  {id:'OV-1109',name:'—',lote:'D',compra:320000,alim:440000,san:160000,otros:60000,gdp:155,retorno:720000},
+const VENTAS = [
+  {fecha:'09/04/2025',animales:'#OV-1341, #OV-0823',tipo:'Sacrificio',peso:69,precio:14500,total:1000500,comprador:'Carnes El Llano',canal:'Directo frigorífico',retiro:'✓',colab:'Juan García'},
+  {fecha:'07/04/2025',animales:'#OV-0823 (levante H)',tipo:'Pie de cría',peso:31,precio:12000,total:372000,comprador:'Finca El Porvenir',canal:'Finca (pie)',retiro:'✓',colab:'Carlos Ríos'},
+  {fecha:'02/04/2025',animales:'5 animales Lote B',tipo:'Sacrificio',peso:210,precio:14500,total:3045000,comprador:'Frigorífico Antioquia',canal:'Directo frigorífico',retiro:'✓',colab:'Juan García'},
+  {fecha:'28/03/2025',animales:'#RE-010 (Dorper joven)',tipo:'Reproductor',peso:68,precio:18000,total:1224000,comprador:'Finca La Esperanza',canal:'Finca (pie)',retiro:'✓',colab:'Juan García'},
+  {fecha:'25/03/2025',animales:'3 animales Lote C',tipo:'Sacrificio',peso:126,precio:14000,total:1764000,comprador:'Carnes El Llano',canal:'Directo frigorífico',retiro:'✓',colab:'María López'},
+  {fecha:'10/03/2025',animales:'#OV-2210, #OV-1102',tipo:'Sacrificio',peso:88,precio:13800,total:1214400,comprador:'Frigorífico Antioquia',canal:'Directo frigorífico',retiro:'✓',colab:'Carlos Ríos'},
 ];
 
 // ═══ TABS ═══
@@ -586,150 +694,114 @@ function switchTab(el,id){
   el.classList.add('active');
   document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
   document.getElementById(id).style.display='block';
-  if(id==='t-costos') renderCostos();
-  if(id==='t-ingresos') renderIngresos();
-  if(id==='t-por-animal') renderPorAnimal(ANIMALES_COSTO);
+  if(id==='t-muertes') renderMuertes(MUERTES);
+  if(id==='t-ventas') renderVentas(VENTAS);
 }
 
 // ═══ RENDER ═══
-function renderCostos(data){
-  data=data||COSTOS_DATA;
-  const CAT_COLOR={
-    'Alimentación / Pasto':'b-teal','Sanidad / Medicamentos':'b-amber',
-    'Mano de obra':'b-sky','Infraestructura':'b-orange',
-    'Servicios (agua/luz)':'b-gray','Compra de animales':'b-wine'
-  };
-  document.getElementById('costos-tbody').innerHTML=data.map(c=>`
-    <tr><td class="td-muted">${c.fecha}</td>
-    <td><span class="badge ${CAT_COLOR[c.cat]||'b-gray'}" style="font-size:10px">${c.cat}</span></td>
-    <td style="font-size:12px">${c.desc}</td>
-    <td class="td-mono" style="font-size:11px">${c.animal}</td>
-    <td style="font-weight:700;color:var(--red)">$${c.valor.toLocaleString('es-CO')}</td>
-    <td class="td-muted">${c.pago}</td>
-    <td class="td-muted">${c.colab}</td>
-    <td><span class="badge b-gray">—</span></td></tr>`).join('');
+const CAUSA_BADGE={
+  'Neumonía':'b-red','Diarrea neonatal':'b-coral','Predación':'b-amber',
+  'Parto distócico':'b-wine','Enterotoxemia':'b-sky','Traumatismo':'b-orange',
+  'Causa desconocida':'b-gray','Otra':'b-gray'
+};
+const TIPO_BADGE={'Sacrificio':'b-green','Pie de cría':'b-teal','Reproductor':'b-sky'};
+
+function renderMuertes(data){
+  document.getElementById('muertes-tbody').innerHTML=data.map(m=>`
+    <tr><td class="td-muted">${m.fecha}</td>
+    <td class="td-mono">#${m.id}</td>
+    <td><span class="badge b-gray">${m.cat}</span></td>
+    <td><span class="badge ${CAUSA_BADGE[m.causa]||'b-gray'}">${m.causa}</span></td>
+    <td class="td-muted">${m.edad}</td>
+    <td class="td-muted">${m.peso} kg</td>
+    <td class="td-muted">${m.lote}</td>
+    <td style="color:var(--red);font-weight:600">${m.perdida>0?'$'+Math.round(m.perdida/1000)+'K':'—'}</td>
+    <td class="td-muted">${m.colab}</td>
+    <td><span class="badge ${m.necropsia==='Sí'?'b-teal':'b-gray'}">${m.necropsia}</span></td>
+    </tr>`).join('');
 }
 
-function renderIngresos(data){
-  data=data||INGRESOS_DATA;
-  document.getElementById('ingresos-tbody').innerHTML=data.map(i=>`
-    <tr><td class="td-muted">${i.fecha}</td>
-    <td><span class="badge b-green" style="font-size:10px">${i.tipo}</span></td>
-    <td class="td-mono" style="font-size:11px">${i.animales}</td>
-    <td class="td-muted">${i.peso} kg</td>
-    <td class="td-muted">$${i.precio.toLocaleString('es-CO')}</td>
-    <td style="font-weight:700;color:var(--green)">$${i.total.toLocaleString('es-CO')}</td>
-    <td class="td-muted">${i.comprador}</td>
-    <td class="td-muted">${i.canal}</td>
-    <td class="td-muted">${i.colab}</td></tr>`).join('');
+function renderVentas(data){
+  document.getElementById('ventas-tbody').innerHTML=data.map(v=>`
+    <tr><td class="td-muted">${v.fecha}</td>
+    <td class="td-mono" style="font-size:11px">${v.animales}</td>
+    <td><span class="badge ${TIPO_BADGE[v.tipo]||'b-gray'}">${v.tipo}</span></td>
+    <td class="td-muted">${v.peso} kg</td>
+    <td class="td-muted">$${v.precio.toLocaleString('es-CO')}</td>
+    <td style="font-weight:700;color:var(--green)">$${v.total.toLocaleString('es-CO')}</td>
+    <td class="td-muted">${v.comprador}</td>
+    <td class="td-muted">${v.canal}</td>
+    <td><span class="badge b-green">${v.retiro}</span></td>
+    <td class="td-muted">${v.colab}</td>
+    </tr>`).join('');
 }
 
-function renderPorAnimal(data){
-  document.getElementById('animal-costos-tbody').innerHTML=data.map(a=>{
-    const total=a.compra+a.alim+a.san+a.otros;
-    const margen=Math.round(((a.retorno-total)/a.retorno)*100);
-    const mColor=margen>50?'var(--green)':margen>20?'var(--amber)':'var(--red)';
-    const mBadge=margen>50?'b-green':margen>20?'b-amber':'b-red';
-    return `<tr>
-      <td class="td-mono">#${a.id}</td>
-      <td>${a.name!=='—'?`<strong>${a.name}</strong>`:a.name}</td>
-      <td class="td-muted">${a.lote}</td>
-      <td class="td-muted">$${Math.round(a.compra/1000)}K</td>
-      <td class="td-muted">$${Math.round(a.alim/1000)}K</td>
-      <td class="td-muted">$${Math.round(a.san/1000)}K</td>
-      <td class="td-muted">$${Math.round(a.otros/1000)}K</td>
-      <td style="font-weight:700;color:var(--amber)">$${Math.round(total/1000)}K</td>
-      <td class="td-muted">${a.gdp?a.gdp+' g/d':'—'}</td>
-      <td style="color:var(--green);font-weight:600">$${Math.round(a.retorno/1000)}K</td>
-      <td><span class="badge ${mBadge}">${margen>0?'+':''}${margen}%</span></td>
-    </tr>`;}).join('');
+function filterMuertes(val, field){
+  let data=[...MUERTES];
+  if(field==='causa'&&val) data=data.filter(m=>m.causa===val);
+  if(field==='cat'&&val) data=data.filter(m=>m.cat===val);
+  renderMuertes(data);
+}
+function filterVentas(val){
+  const data=val?VENTAS.filter(v=>v.tipo===val):VENTAS;
+  renderVentas(data);
 }
 
-function filterPorAnimal(q){
-  const filtered=q?ANIMALES_COSTO.filter(a=>a.id.toLowerCase().includes(q.toLowerCase())||a.name.toLowerCase().includes(q.toLowerCase())):ANIMALES_COSTO;
-  renderPorAnimal(filtered);
+// ═══ MODAL LOGIC ═══
+function toggleBajaFields(){
+  const tipo=document.getElementById('tipo-baja').value;
+  document.getElementById('fields-muerte').style.display=tipo==='muerte'?'block':'none';
+  document.getElementById('fields-venta').style.display=tipo!=='muerte'&&tipo!=='robo'&&tipo!=='donacion'?'block':'none';
 }
 
-// ═══ SIMULADOR ═══
-function simularPrecio(){
-  const precio=parseInt(document.getElementById('sim-precio').value);
-  const n=parseInt(document.getElementById('sim-animales').value);
-  const peso=parseInt(document.getElementById('sim-peso').value);
-  document.getElementById('sim-precio-val').textContent='$'+precio.toLocaleString('es-CO');
-  document.getElementById('sim-n-val').textContent=n+' animales';
-  document.getElementById('sim-peso-val').textContent=peso+' kg';
-  const total=precio*peso*n;
-  document.getElementById('sim-resultado').textContent='$'+Math.round(total/1000000*10)/10+'M';
-  document.getElementById('sim-detalle').textContent=n+' animales × '+peso+'kg × $'+precio.toLocaleString('es-CO');
-  document.getElementById('sim-resultado').style.color=total>15000000?'var(--green)':total>8000000?'var(--teal)':'var(--amber)';
+function calcVenta(){
+  const p=parseFloat(document.getElementById('v-peso').value)||0;
+  const pr=parseFloat(document.getElementById('v-precio').value)||0;
+  if(p&&pr) document.getElementById('v-total').value='$'+Math.round(p*pr).toLocaleString('es-CO');
 }
 
-// ═══ PERIODO ═══
-function setPeriodo(el,p){
-  document.querySelectorAll('.periodo-btn').forEach(b=>b.classList.remove('active'));
-  el.classList.add('active');
-  const LABELS={mes:'Balance mensual: +$32.8M COP',trimestre:'Balance trimestral: +$94.2M COP',año:'Balance anual: +$312M COP'};
-  document.getElementById('balance-label').textContent=LABELS[p]?.split(':')[1]||'+$32.8M COP';
-  toast('Período actualizado: '+p,'info');
+function saveBaja(){
+  const tipo=document.getElementById('tipo-baja').value;
+  MUERTES.unshift({fecha:new Date().toLocaleDateString('es-CO'),id:'OV-XXXX',cat:'Adulto',causa:tipo==='muerte'?'Neumonía':'Venta',edad:'2 años',peso:38,lote:'Lote A',perdida:tipo==='muerte'?650000:0,colab:'Juan García',necropsia:'No'});
+  renderMuertes(MUERTES);
+  closeModal('modal-baja');
+  toast('Baja registrada · Animal removido del inventario activo · Dashboard actualizado');
 }
 
-// ═══ SAVES ═══
-function saveGasto(){
-  const val=document.getElementById('g-valor').value;
-  const cat=document.getElementById('g-cat').value;
-  if(!val){toast('Ingresa el valor del gasto','err');return;}
-  COSTOS_DATA.unshift({fecha:new Date().toLocaleDateString('es-CO'),cat,desc:'Gasto registrado',animal:'General',valor:parseInt(val),pago:'Efectivo',colab:'Juan García'});
-  renderCostos();
-  closeModal('modal-gasto');
-  toast('Gasto registrado · Costo acumulado del animal actualizado');
-}
-
-function saveIngreso(){
-  toast('Ingreso registrado · Balance actualizado');
-  closeModal('modal-ingreso');
-}
-
-function calcIngreso(){
-  const peso=parseFloat(document.querySelector('#modal-ingreso .fi[placeholder="42"]')?.value)||0;
-  const precio=parseFloat(document.getElementById('i-precio').value)||0;
-  if(peso&&precio) document.getElementById('i-total').value='$'+Math.round(peso*precio).toLocaleString('es-CO');
+function saveVenta(){
+  const peso=parseFloat(document.getElementById('v-peso').value)||0;
+  const precio=parseFloat(document.getElementById('v-precio').value)||0;
+  if(!peso||!precio){toast('Completa peso y precio','err');return;}
+  VENTAS.unshift({fecha:new Date().toLocaleDateString('es-CO'),animales:'Nueva venta',tipo:'Sacrificio',peso,precio,total:peso*precio,comprador:'—',canal:'—',retiro:'✓',colab:'Juan García'});
+  renderVentas(VENTAS);
+  closeModal('modal-venta');
+  toast('Venta registrada · $'+Math.round(peso*precio/1000)+'K sumados a Finanzas · Animal removido del inventario');
 }
 
 // ═══ EXPORTS ═══
-function exportFinanzas(){
+function exportBajas(){
   const wb=XLSX.utils.book_new();
-  const c=[['Fecha','Categoría','Descripción','Animal/Lote','Valor COP','Pago','Colaborador'],
-    ...COSTOS_DATA.map(c=>[c.fecha,c.cat,c.desc,c.animal,c.valor,c.pago,c.colab])];
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(c),'Costos');
-  const i=[['Fecha','Tipo','Animales','Peso kg','Precio/kg','Total COP','Comprador','Canal','Colaborador'],
-    ...INGRESOS_DATA.map(i=>[i.fecha,i.tipo,i.animales,i.peso,i.precio,i.total,i.comprador,i.canal,i.colab])];
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(i),'Ingresos');
-  const a=[['ID','Nombre','Lote','Compra','Alimentación','Sanidad','Otros','Total','GDP','Retorno est.'],
-    ...ANIMALES_COSTO.map(a=>[a.id,a.name,a.lote,a.compra,a.alim,a.san,a.otros,a.compra+a.alim+a.san+a.otros,a.gdp||'—',a.retorno])];
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),'Por animal');
-  XLSX.writeFile(wb,'laaamb-finanzas.xlsx');
-  toast('Excel finanzas completo exportado');
+  const m=[['Fecha','ID','Categoría','Causa','Edad','Peso kg','Lote','Pérdida COP','Colaborador','Necropsia'],
+    ...MUERTES.map(m=>[m.fecha,m.id,m.cat,m.causa,m.edad,m.peso,m.lote,m.perdida,m.colab,m.necropsia])];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(m),'Muertes');
+  const v=[['Fecha','Animales','Tipo','Peso kg','Precio/kg','Total COP','Comprador','Canal','Retiro OK','Colaborador'],
+    ...VENTAS.map(v=>[v.fecha,v.animales,v.tipo,v.peso,v.precio,v.total,v.comprador,v.canal,v.retiro,v.colab])];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(v),'Ventas');
+  XLSX.writeFile(wb,'laaamb-bajas-ventas.xlsx');
+  toast('Excel exportado');
 }
-function exportCostos(){exportFinanzas();}
-function exportIngresos(){exportFinanzas();}
-function exportPorAnimal(){exportFinanzas();}
+function exportMuertes(){exportBajas();}
+function exportVentas(){exportBajas();}
 
-function downloadTemplate(tipo){
-  const wb=XLSX.utils.book_new();
-  const T={costos:[['ID Animal*','Categoría*','Descripción*','Valor COP*','Fecha (YYYY-MM-DD)*','Método pago','Colaborador'],
-    ['OV-0234','Alimentación / Pasto','Concentrado proteico',250000,'2025-04-10','Efectivo','Juan García']]};
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(T[tipo]||[]),tipo);
-  XLSX.writeFile(wb,'plantilla-'+tipo+'.xlsx');
-  toast('Plantilla descargada');
-}
 function importData(input){
   const f=input.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=function(e){try{const wb=XLSX.read(e.target.result,{type:'binary'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1});const d=rows.slice(1).filter(r=>r.some(c=>c));toast('✓ '+d.length+' registros importados');input.value='';}catch(err){toast('Error leyendo archivo','err');}};
-  r.readAsBinaryString(f);
+  r.onload=function(e){
+    try{const wb=XLSX.read(e.target.result,{type:'binary'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1});const d=rows.slice(1).filter(r=>r.some(c=>c));toast('✓ '+d.length+' registros importados');input.value='';}
+    catch(err){toast('Error leyendo archivo','err');}
+  };r.readAsBinaryString(f);
 }
 
-// ═══ MODAL ═══
 function openModal(id){document.getElementById(id)?.classList.add('open')}
 function closeModal(id){document.getElementById(id)?.classList.remove('open')}
 function toast(msg,type='ok'){
@@ -738,10 +810,11 @@ function toast(msg,type='ok'){
   t.innerHTML=(ic[type]||ic.ok)+' '+msg;c.appendChild(t);setTimeout(()=>t.remove(),3500);
 }
 
-// ═══ INIT ═══
-document.getElementById('g-fecha').value=new Date().toISOString().slice(0,10);
-document.getElementById('i-fecha').value=new Date().toISOString().slice(0,10);
-document.getElementById('costos-mes').value=new Date().toISOString().slice(0,7);
+// INIT
+document.getElementById('baja-fecha').value=new Date().toISOString().slice(0,10);
+document.getElementById('v-fecha').value=new Date().toISOString().slice(0,10);
+document.getElementById('muertes-mes').value=new Date().toISOString().slice(0,7);
+document.getElementById('ventas-mes').value=new Date().toISOString().slice(0,7);
 </script>
 <script>
 function toggleSidebar(){
