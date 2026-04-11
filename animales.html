@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LAAAMBAPP · Animales</title>
+<script>(function(){var t=localStorage.getItem("laaamb-theme")||"dark";document.documentElement.setAttribute("data-theme",t);})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -220,6 +221,8 @@ textarea.fi{resize:vertical;min-height:72px}
 </head>
 <body>
 <div class="app">
+<button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menú">☰</button>
+<div class="sidebar-overlay" id="sb-overlay" onclick="toggleSidebar()"></div>
 
 <!-- ═══ SIDEBAR ═══ -->
 <aside class="sidebar">
