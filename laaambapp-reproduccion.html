@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAAAMBAPP · Reproducción</title>
+<link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,0.10);--teal-bg2:rgba(0,175,182,0.06);
+  --wine:#9C3F66;--wine-bg:rgba(156,63,102,0.12);
+  --orange:#F18F22;--orange-bg:rgba(241,143,34,0.12);
+  --bg:#080f10;--bg2:#0c1517;--bg3:#101d1f;--bg4:#152224;
+  --surface:#172628;--surface2:#1d3235;
+  --border:rgba(0,175,182,0.10);--border2:rgba(0,175,182,0.20);--border3:rgba(0,175,182,0.35);
+  --green:#2ec77a;--green-bg:rgba(46,199,122,0.10);
+  --red:#e05252;--red-bg:rgba(224,82,82,0.10);
+  --amber:#e8a030;--amber-bg:rgba(232,160,48,0.10);
+  --sky:#38b0d8;--sky-bg:rgba(56,176,216,0.10);
+  --text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;
+  --r:8px;--r2:14px;--sidebar:236px;--anim:0.16s cubic-bezier(.4,0,.2,1);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+.app{display:flex;height:100vh;width:100vw}
+
+/* ── SIDEBAR (idéntico en todas las páginas) ── */
+.sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0}
+.sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:.5}
+.sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
+.sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.farm-pill{margin-top:12px;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;display:flex;align-items:center;gap:8px}
+.farm-name{font-size:12px;font-weight:600;color:var(--text)}
+.farm-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
+.nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}
+.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;text-decoration:none;transition:all var(--anim);position:relative}
+.nav-link:hover{background:var(--surface);color:var(--text)}
+.nav-link.active{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
+.nav-link.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--teal);border-radius:2px}
+.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}
+.nav-link.active .nav-ico,.nav-link:hover .nav-ico{opacity:1}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:600;background:var(--surface2);color:var(--teal);padding:1px 7px;border-radius:10px;border:1px solid var(--border2)}
+.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border)}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
+.user-name{font-size:12px;font-weight:600;color:var(--text)}
+.user-role{font-size:10px;color:var(--text3)}
+
+/* ── MAIN ── */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.page-head{padding:18px 28px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--bg2)}
+.ph-eyebrow{font-size:10px;font-weight:600;color:var(--teal-d);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.ph-title{font-family:'Sigmar',cursive;font-size:24px;color:var(--text);letter-spacing:.3px}
+.ph-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.ph-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.tab-nav{display:flex;gap:2px;padding:0 28px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto}
+.tn{padding:10px 18px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim);white-space:nowrap}
+.tn:hover{color:var(--text)}.tn.active{color:var(--teal);border-bottom-color:var(--teal)}
+.content{flex:1;overflow-y:auto;padding:24px 28px 48px}
+
+/* ── UI COMPONENTS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:all var(--anim);white-space:nowrap}
+.btn-primary{background:var(--teal);color:#080f10}.btn-primary:hover{background:#1cc8d0;transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}.btn-ghost:hover{background:var(--surface);color:var(--teal);border-color:var(--border3)}
+.btn-wine{background:var(--wine-bg);color:var(--wine);border:1px solid rgba(156,63,102,.25)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2)}
+.card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.card-title{font-size:13px;font-weight:600;color:var(--text)}
+.card-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.card-body{padding:18px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:15px;position:relative;overflow:hidden;transition:border-color var(--anim)}
+.kpi:hover{border-color:var(--border2)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2.5px}
+.kpi.c-teal::before{background:var(--teal)}.kpi.c-green::before{background:var(--green)}
+.kpi.c-sky::before{background:var(--sky)}.kpi.c-amber::before{background:var(--amber)}
+.kpi.c-red::before{background:var(--red)}.kpi.c-wine::before{background:var(--wine)}
+.kpi.c-orange::before{background:var(--orange)}
+.kpi-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.kpi-val{font-size:26px;font-weight:700;color:var(--text);line-height:1;display:flex;align-items:baseline;gap:4px}
+.kpi-unit{font-size:13px;color:var(--text3);font-weight:400}
+.kpi-delta{font-size:11px;margin-top:5px;font-weight:500}
+.up{color:var(--green)}.down{color:var(--red)}.neu{color:var(--text3)}.warn{color:var(--amber)}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
+.b-green{background:var(--green-bg);color:var(--green)}.b-amber{background:var(--amber-bg);color:var(--amber)}
+.b-red{background:var(--red-bg);color:var(--red)}.b-sky{background:var(--sky-bg);color:var(--sky)}
+.b-wine{background:var(--wine-bg);color:var(--wine)}.b-gray{background:var(--surface);color:var(--text3)}
+.b-orange{background:var(--orange-bg);color:var(--orange)}
+
+/* ── TABLE ── */
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--bg3);color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:2}
+tbody tr{border-bottom:1px solid var(--border);transition:background var(--anim);cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface)}
+tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
+.td-mono{font-size:12px;font-weight:600;color:var(--teal)}
+.td-muted{color:var(--text3);font-size:12px}
+
+/* ── MODAL ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;padding:20px}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.6);transform:translateY(8px);transition:transform .2s}
+.overlay.open .modal{transform:translateY(0)}
+.modal-sm{max-width:520px}.modal-md{max-width:680px}.modal-lg{max-width:900px}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--border)}
+.modal-title{font-family:'Sigmar',cursive;font-size:18px;color:var(--text)}
+.modal-close{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;padding:4px;transition:color var(--anim)}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:20px 22px}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+/* ── FORM ── */
+.fg{margin-bottom:14px}
+.fl{display:block;font-size:11px;font-weight:600;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.fi{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:8px 11px;color:var(--text);font-size:13px;font-family:'Changa',sans-serif;outline:none;transition:border-color var(--anim)}
+.fi:focus{border-color:var(--teal)}.fi::placeholder{color:var(--text3)}
+select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%233d6e74' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
+textarea.fi{resize:vertical;min-height:68px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.form-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);margin:18px 0 12px;display:flex;align-items:center;gap:8px}
+.form-section::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── TIMELINE ── */
+.tl{padding-left:20px;position:relative}
+.tl::before{content:'';position:absolute;left:5px;top:3px;bottom:0;width:1px;background:var(--border)}
+.tl-item{position:relative;margin-bottom:14px}
+.tl-item:last-child{margin-bottom:0}
+.tl-dot{position:absolute;left:-17px;top:4px;width:8px;height:8px;border-radius:50%;border:2px solid var(--bg2)}
+.tl-date{font-size:10px;color:var(--text3);font-weight:500}
+.tl-user{font-size:10px;color:var(--teal);margin-left:5px;font-weight:600}
+.tl-text{font-size:13px;color:var(--text);margin-top:2px}
+.tl-meta{font-size:11px;color:var(--text3);margin-top:1px}
+
+/* ── GESTACIÓN CARD ── */
+.gest-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:14px;margin-bottom:8px;display:flex;align-items:center;gap:14px;transition:all var(--anim);cursor:pointer}
+.gest-card:hover{border-color:var(--border2);background:var(--surface)}
+.gest-avatar{width:38px;height:38px;border-radius:50%;background:var(--teal-bg);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.gest-info{flex:1}
+.gest-id{font-size:12px;font-weight:700;color:var(--teal)}
+.gest-name{font-size:13px;color:var(--text);font-weight:500}
+.gest-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.gest-progress{margin-top:6px}
+.gest-bar-track{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.gest-bar-fill{height:100%;border-radius:3px;transition:width .6s}
+.gest-days{font-size:10px;color:var(--text3);margin-top:3px;display:flex;justify-content:space-between}
+.gest-right{text-align:right;flex-shrink:0}
+.gest-countdown{font-size:20px;font-weight:700;color:var(--text)}
+.gest-countdown-label{font-size:10px;color:var(--text3)}
+
+/* ── ALERT BOX ── */
+.alert-box{border-radius:var(--r);padding:12px 16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px}
+.alert-box.red{background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-left:3px solid var(--red)}
+.alert-box.amber{background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-left:3px solid var(--amber)}
+.alert-box.sky{background:var(--sky-bg);border:1px solid rgba(56,176,216,.2);border-left:3px solid var(--sky)}
+.alert-box.green{background:var(--green-bg);border:1px solid rgba(46,199,122,.2);border-left:3px solid var(--green)}
+.alert-ico{font-size:16px;flex-shrink:0;margin-top:1px}
+.alert-title{font-size:12px;font-weight:700;margin-bottom:2px}
+.alert-text{font-size:12px;color:var(--text2)}
+
+/* ── IMPORT HIDDEN ── */
+.import-hidden{display:none}
+
+/* ── TOAST ── */
+.toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:fadeUp .2s ease;max-width:320px}
+.toast.ok{border-left:3px solid var(--teal)}.toast.err{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--amber)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:1100px){.g4{grid-template-columns:1fr 1fr}}
+@media(max-width:800px){.g2,.g3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-head">
+    <div class="sb-logo-text">LAAAMB</div>
+    <div class="sb-logo-sub">Corderos · App</div>
+    <div class="farm-pill">
+      <span style="font-size:18px">🏔️</span>
+      <div><div class="farm-name">La Marinilla</div><div class="farm-sub">76.2 ha · 470 animales</div></div>
+    </div>
+  </div>
+  <nav class="nav-scroll">
+    <div class="nav-group">Principal</div>
+    <a class="nav-link" href="index.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a class="nav-link" href="okr.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>OKRs &amp; Análisis</a>
+    <div class="nav-group">Ganadería</div>
+    <a class="nav-link" href="animales.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Animales<span class="nav-badge">470</span></a>
+    <a class="nav-link active" href="reproduccion.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 3"/></svg>Reproducción</a>
+    <a class="nav-link" href="lotes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>Lotes &amp; Potreros</a>
+    <div class="nav-group">Salud</div>
+    <a class="nav-link" href="salud.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>Salud &amp; Tratamientos</a>
+    <a class="nav-link" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos<span class="nav-badge">28</span></a>
+    <div class="nav-group">Gestión</div>
+    <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
+    <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
+  </nav>
+  <div class="sb-foot">
+    <div class="user-row">
+      <div class="avatar">JG</div>
+      <div><div class="user-name">Juan García</div><div class="user-role">Administrador</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="page-head">
+    <div>
+      <div class="ph-eyebrow">La Marinilla · Ganadería</div>
+      <div class="ph-title">Reproducción</div>
+      <div class="ph-sub">43 gestantes activas · 18 partos este mes · Próximo parto: mañana</div>
+    </div>
+    <div class="ph-actions">
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar masivo<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importRepro(this)"></label>
+      <button class="btn btn-ghost btn-sm" onclick="exportRepro()">↓ Exportar Excel</button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-monta')">❤️ Registrar monta</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('modal-parto')">🐣 Registrar parto</button>
+    </div>
+  </div>
+
+  <div class="tab-nav">
+    <div class="tn active" onclick="switchTab(this,'t-resumen')">📊 Resumen</div>
+    <div class="tn" onclick="switchTab(this,'t-gestaciones')">🤰 Gestaciones</div>
+    <div class="tn" onclick="switchTab(this,'t-montas')">❤️ Montas</div>
+    <div class="tn" onclick="switchTab(this,'t-partos')">🐣 Partos</div>
+    <div class="tn" onclick="switchTab(this,'t-ecografia')">🔬 Ecografías</div>
+    <div class="tn" onclick="switchTab(this,'t-vacias')">⚠️ Vacías</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ RESUMEN ══ -->
+    <div id="t-resumen" class="tab-pane">
+      <div class="g4">
+        <div class="kpi c-sky"><div class="kpi-label">Gestantes activas</div><div class="kpi-val">43</div><div class="kpi-delta up">▲ 8 vs mes anterior</div></div>
+        <div class="kpi c-green"><div class="kpi-label">Partos este mes</div><div class="kpi-val">18</div><div class="kpi-delta up">Natalidad 94%</div></div>
+        <div class="kpi c-teal"><div class="kpi-label">Crías / parto</div><div class="kpi-val">1.72</div><div class="kpi-delta up">▲ 0.08 vs año ant.</div></div>
+        <div class="kpi c-amber"><div class="kpi-label">Fertilidad</div><div class="kpi-val">87<span class="kpi-unit">%</span></div><div class="kpi-delta warn">Meta: 90%</div></div>
+        <div class="kpi c-orange"><div class="kpi-label">Intervalo partos</div><div class="kpi-val">7.4<span class="kpi-unit">m</span></div><div class="kpi-delta neu">Meta: &lt;7m</div></div>
+        <div class="kpi c-wine"><div class="kpi-label">Vacías 2+ ciclos</div><div class="kpi-val">19</div><div class="kpi-delta down">▼ Requieren atención</div></div>
+        <div class="kpi c-green"><div class="kpi-label">Partos próx. 7 días</div><div class="kpi-val">3</div><div class="kpi-delta neu">Preparar asistencia</div></div>
+        <div class="kpi c-teal"><div class="kpi-label">Montas este mes</div><div class="kpi-val">24</div><div class="kpi-delta neu">Ciclo 1: 18 · Ciclo 2: 6</div></div>
+      </div>
+
+      <!-- Alertas reproductivas -->
+      <div class="g2">
+        <div>
+          <div class="alert-box red"><div class="alert-ico">🔴</div><div><div class="alert-title" style="color:var(--red)">Parto inminente — hoy o mañana</div><div class="alert-text">#OV-1234 · Lote B · 3er parto · Fecha estimada: 11/04/2025</div></div></div>
+          <div class="alert-box amber"><div class="alert-ico">🟡</div><div><div class="alert-title" style="color:var(--amber)">Partos próximos 7 días</div><div class="alert-text">#OV-2210 (6 días) · #OV-0788 (7 días) · Preparar manga y asistencia</div></div></div>
+          <div class="alert-box sky"><div class="alert-ico">🔬</div><div><div class="alert-title" style="color:var(--sky)">Ecografía pendiente — 28 días post-monta</div><div class="alert-text">12 ovejas montadas hace 25-32 días sin resultado de ecografía</div></div></div>
+          <div class="alert-box green"><div class="alert-ico">✅</div><div><div class="alert-title" style="color:var(--green)">Montas programadas esta semana</div><div class="alert-text">8 hembras en celo estimado · Reproductor recomendado: #RE-003 Príncipe</div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-title">Acciones rápidas</div></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-primary" onclick="openModal('modal-parto')" style="width:100%;justify-content:center">🐣 Registrar parto</button>
+            <button class="btn btn-ghost" onclick="openModal('modal-monta')" style="width:100%;justify-content:center">❤️ Registrar monta</button>
+            <button class="btn btn-ghost" onclick="openModal('modal-ecografia')" style="width:100%;justify-content:center">🔬 Registrar ecografía</button>
+            <button class="btn btn-ghost" onclick="openModal('modal-ecografia-masiva')" style="width:100%;justify-content:center">📋 Ecografía masiva (varios animales)</button>
+            <button class="btn btn-ghost" onclick="downloadTemplate('montas')" style="width:100%;justify-content:center">↓ Plantilla montas Excel</button>
+            <button class="btn btn-ghost" onclick="downloadTemplate('ecografias')" style="width:100%;justify-content:center">↓ Plantilla ecografías Excel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ GESTACIONES ══ -->
+    <div id="t-gestaciones" class="tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <div style="font-size:13px;color:var(--text3)">43 hembras en gestación · Duración estándar: 147 días</div>
+        <button class="btn btn-ghost btn-sm" onclick="exportGestaciones()">↓ Excel gestaciones</button>
+      </div>
+      <div id="gest-list"></div>
+    </div>
+
+    <!-- ══ MONTAS ══ -->
+    <div id="t-montas" class="tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;gap:8px">
+          <select class="fi" style="width:150px" onchange="filterMontas(this.value,'reproductor')"><option value="">Todos los machos</option><option value="RE-003">RE-003 Príncipe</option><option value="RE-007">RE-007 Zeus</option><option value="RE-001">RE-001 Titan</option></select>
+          <select class="fi" style="width:130px" onchange="filterMontas(this.value,'ciclo')"><option value="">Todos los ciclos</option><option value="1">Ciclo 1</option><option value="2">Ciclo 2</option><option value="3">Ciclo 3</option></select>
+          <select class="fi" style="width:140px" onchange="filterMontas(this.value,'resultado')"><option value="">Todos los resultados</option><option value="Gestante">Gestante</option><option value="Vacía">Vacía</option><option value="Pendiente">Pendiente</option></select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar montas<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importRepro(this)"></label>
+          <button class="btn btn-ghost btn-sm" onclick="exportMontas()">↓ Excel</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-monta')">+ Registrar monta</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Fecha</th><th>Oveja</th><th>Raza</th><th>Reproductor</th><th>Lote</th><th>Ciclo</th><th>Tipo</th><th>Resultado</th><th>Ecografía</th><th>Colaborador</th></tr></thead>
+            <tbody id="montas-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PARTOS ══ -->
+    <div id="t-partos" class="tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;gap:8px">
+          <input type="month" class="fi" style="width:150px" id="partos-mes" onchange="filterPartos()">
+          <select class="fi" style="width:150px" onchange="filterPartos()"><option>Todos los tipos</option><option>Normal</option><option>Asistido</option><option>Distócico</option><option>Cesárea</option></select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar partos<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importRepro(this)"></label>
+          <button class="btn btn-ghost btn-sm" onclick="exportPartos()">↓ Excel</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-parto')">🐣 Registrar parto</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Fecha</th><th>Madre</th><th>N° parto</th><th>Padre</th><th>Crías vivas</th><th>Crías muertas</th><th>Pesos (kg)</th><th>Tipo parto</th><th>IDs crías</th><th>Colaborador</th></tr></thead>
+            <tbody id="partos-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ECOGRAFÍAS ══ -->
+    <div id="t-ecografia" class="tab-pane" style="display:none">
+      <div style="background:var(--sky-bg);border:1px solid rgba(56,176,216,.2);border-left:3px solid var(--sky);border-radius:var(--r);padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--text2)">
+        🔬 <strong style="color:var(--sky)">Ecografía masiva:</strong> Descarga la plantilla, llena el resultado para cada animal y sube el archivo. Actualiza el estado de todas las ovejas en un solo paso — ideal después de un ciclo de ecografías al hato completo.
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="openModal('modal-ecografia-masiva')">📋 Ecografía masiva</button>
+        <button class="btn btn-ghost btn-sm" onclick="openModal('modal-ecografia')">+ Individual</button>
+        <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('ecografias')">↓ Plantilla ecografías</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportEcografias()">↓ Excel ecografías</button>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-title">Registro de ecografías</div><div class="card-sub">Última actualización: 10/04/2025</div></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Fecha</th><th>Animal</th><th>Días post-monta</th><th>Resultado</th><th>Días gestación</th><th>Parto estimado</th><th>Veterinario</th><th>Obs.</th></tr></thead>
+            <tbody>
+              <tr><td>08/04/2025</td><td class="td-mono">#OV-1234</td><td>45</td><td><span class="badge b-sky">Gestante</span></td><td>45</td><td>11/05/2025</td><td>Dr. Martínez</td><td>2 fetos visibles</td></tr>
+              <tr><td>08/04/2025</td><td class="td-mono">#OV-0892</td><td>42</td><td><span class="badge b-sky">Gestante</span></td><td>42</td><td>14/05/2025</td><td>Dr. Martínez</td><td>1 feto</td></tr>
+              <tr><td>08/04/2025</td><td class="td-mono">#OV-2210</td><td>38</td><td><span class="badge b-sky">Gestante</span></td><td>38</td><td>18/05/2025</td><td>Dr. Martínez</td><td>Posible mellizos</td></tr>
+              <tr><td>08/04/2025</td><td class="td-mono">#OV-0441</td><td>35</td><td><span class="badge b-red">Vacía</span></td><td>—</td><td>—</td><td>Dr. Martínez</td><td>3er ciclo vacía — evaluar</td></tr>
+              <tr><td>08/04/2025</td><td class="td-mono">#OV-1109</td><td>32</td><td><span class="badge b-red">Vacía</span></td><td>—</td><td>—</td><td>Dr. Martínez</td><td>2do ciclo vacía</td></tr>
+              <tr><td>08/04/2025</td><td class="td-mono">#OV-0788</td><td>30</td><td><span class="badge b-sky">Gestante</span></td><td>30</td><td>26/05/2025</td><td>Dr. Martínez</td><td>2 fetos</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ VACÍAS ══ -->
+    <div id="t-vacias" class="tab-pane" style="display:none">
+      <div class="alert-box red" style="margin-bottom:16px"><div class="alert-ico">⚠️</div><div><div class="alert-title" style="color:var(--red)">19 hembras con 2+ ciclos sin preñez</div><div class="alert-text">Revisar estado sanitario, condición corporal y manejo nutricional. Las de 3+ ciclos son candidatas a culling.</div></div></div>
+      <div class="card">
+        <div class="card-h"><div class="card-title">Ovejas vacías — detalle</div><button class="btn btn-ghost btn-sm" onclick="exportVacias()">↓ Excel vacías</button></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>ID Animal</th><th>Raza</th><th>Edad</th><th>Ciclos vacía</th><th>Última monta</th><th>Reproductor</th><th>Condición corporal</th><th>Acción recomendada</th></tr></thead>
+            <tbody>
+              <tr><td class="td-mono">#OV-0441</td><td>Katahdin</td><td>5.3a</td><td><span class="badge b-red">3 ciclos</span></td><td>01/04/2025</td><td>#RE-001</td><td>2.5/5</td><td><span class="badge b-red">CULLING</span></td></tr>
+              <tr><td class="td-mono">#OV-1109</td><td>Pelibuey</td><td>4.8a</td><td><span class="badge b-amber">2 ciclos</span></td><td>05/04/2025</td><td>#RE-007</td><td>3/5</td><td><span class="badge b-amber">EVALUAR</span></td></tr>
+              <tr><td class="td-mono">#OV-2087</td><td>Dorper</td><td>5.4a</td><td><span class="badge b-amber">2 ciclos</span></td><td>01/04/2025</td><td>#RE-001</td><td>3.5/5</td><td><span class="badge b-amber">EVALUAR</span></td></tr>
+              <tr><td class="td-mono">#OV-0823</td><td>Katahdin</td><td>3.2a</td><td><span class="badge b-red">3 ciclos</span></td><td>28/03/2025</td><td>#RE-003</td><td>2/5</td><td><span class="badge b-red">CULLING</span></td></tr>
+              <tr><td class="td-mono">#OV-1441</td><td>Dorper</td><td>2.8a</td><td><span class="badge b-gray">1 ciclo</span></td><td>07/04/2025</td><td>#RE-003</td><td>3.5/5</td><td><span class="badge b-gray">MONITOREAR</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══ MODAL PARTO ══ -->
+<div class="overlay" id="modal-parto" onclick="if(event.target===this)closeModal('modal-parto')">
+<div class="modal modal-md">
+  <div class="modal-head"><div class="modal-title">🐣 Registrar parto</div><button class="modal-close" onclick="closeModal('modal-parto')">✕</button></div>
+  <div class="modal-body">
+    <div class="form-section">Datos del parto</div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Madre (ID) *</label><input class="fi" placeholder="OV-2341" id="p-madre" oninput="autoFillMadre(this.value)"/></div>
+      <div class="fg"><label class="fl">Fecha parto *</label><input class="fi" type="date" id="p-fecha"/></div>
+      <div class="fg"><label class="fl">N° de parto de esta oveja</label><input class="fi" type="number" id="p-nro" placeholder="3" min="1"/></div>
+      <div class="fg"><label class="fl">Padre (reproductor)</label><select class="fi" id="p-padre"><option value="RE-003">RE-003 — Príncipe (Dorper)</option><option value="RE-007">RE-007 — Zeus (Dorper)</option><option value="RE-001">RE-001 — Titan (Dorper)</option><option value="desconocido">Desconocido</option></select></div>
+      <div class="fg"><label class="fl">Tipo de parto *</label><select class="fi" id="p-tipo"><option>Normal</option><option>Asistido</option><option>Distócico</option><option>Cesárea</option></select></div>
+      <div class="fg"><label class="fl">Lote</label><select class="fi"><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select></div>
+    </div>
+    <div class="form-section">Crías</div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">N° crías vivas *</label><input class="fi" type="number" id="p-vivas" placeholder="2" min="0" oninput="generarCrias()"/></div>
+      <div class="fg"><label class="fl">N° crías muertas</label><input class="fi" type="number" id="p-muertas" placeholder="0" min="0"/></div>
+    </div>
+    <div id="crias-form"></div>
+    <div class="form-section">Registro</div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Colaborador *</label><select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select></div>
+      <div class="fg"><label class="fl">Hora</label><input class="fi" type="time" id="p-hora"/></div>
+    </div>
+    <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" placeholder="Complicaciones, notas veterinarias…"></textarea></div>
+    <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2);margin-top:8px">
+      💡 Al guardar, las crías se registran automáticamente como nuevos animales con sus IDs generados, y el estado de la madre cambia a "Activa".
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-parto')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" onclick="saveParto()">Guardar parto</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL MONTA ══ -->
+<div class="overlay" id="modal-monta" onclick="if(event.target===this)closeModal('modal-monta')">
+<div class="modal modal-md">
+  <div class="modal-head"><div class="modal-title">❤️ Registrar monta</div><button class="modal-close" onclick="closeModal('modal-monta')">✕</button></div>
+  <div class="modal-body">
+    <div class="form-section">Datos de la monta</div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Hembra (ID) *</label><input class="fi" placeholder="OV-0445"/></div>
+      <div class="fg"><label class="fl">Reproductor *</label><select class="fi"><option>RE-003 — Príncipe (Dorper)</option><option>RE-007 — Zeus (Dorper)</option><option>RE-001 — Titan (Dorper)</option></select></div>
+      <div class="fg"><label class="fl">Fecha monta *</label><input class="fi" type="date" id="m-fecha"/></div>
+      <div class="fg"><label class="fl">Ciclo N° *</label><select class="fi"><option>1</option><option>2</option><option>3</option></select></div>
+      <div class="fg"><label class="fl">Tipo</label><select class="fi"><option>Natural</option><option>Inseminación artificial</option></select></div>
+      <div class="fg"><label class="fl">Lote</label><select class="fi"><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select></div>
+    </div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Condición corporal (1-5)</label><input class="fi" type="number" min="1" max="5" step="0.5" placeholder="3.5"/></div>
+      <div class="fg"><label class="fl">Colaborador *</label><select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Fecha ecografía programada</label><input class="fi" type="date" id="m-eco" title="30 días después de la monta"/></div>
+    <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" placeholder="Notas…"></textarea></div>
+    <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2);margin-top:8px">
+      💡 La ecografía de confirmación se programa automáticamente para 28-30 días después. El estado de la oveja cambia a "Monta en proceso".
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-monta')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" onclick="saveMonta()">Guardar monta</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL ECOGRAFÍA INDIVIDUAL ══ -->
+<div class="overlay" id="modal-ecografia" onclick="if(event.target===this)closeModal('modal-ecografia')">
+<div class="modal modal-sm">
+  <div class="modal-head"><div class="modal-title">🔬 Registrar ecografía</div><button class="modal-close" onclick="closeModal('modal-ecografia')">✕</button></div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Animal (ID) *</label><input class="fi" placeholder="OV-1234"/></div>
+      <div class="fg"><label class="fl">Fecha *</label><input class="fi" type="date"/></div>
+      <div class="fg"><label class="fl">Resultado *</label><select class="fi"><option>Gestante</option><option>Vacía</option><option>No apta</option></select></div>
+      <div class="fg"><label class="fl">Días de gestación</label><input class="fi" type="number" placeholder="45" min="0"/></div>
+      <div class="fg"><label class="fl">N° fetos</label><input class="fi" type="number" placeholder="1" min="0"/></div>
+      <div class="fg"><label class="fl">Veterinario</label><input class="fi" placeholder="Dr. Martínez"/></div>
+    </div>
+    <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" rows="2" placeholder="Notas del procedimiento…"></textarea></div>
+    <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px;font-size:11px;color:var(--text2);margin-top:8px">
+      💡 Si resultado = Vacía, el estado de la oveja se actualiza automáticamente y suma al contador de ciclos vacíos.
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-ecografia')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" onclick="saveEco();closeModal('modal-ecografia')">Guardar</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL ECOGRAFÍA MASIVA ══ -->
+<div class="overlay" id="modal-ecografia-masiva" onclick="if(event.target===this)closeModal('modal-ecografia-masiva')">
+<div class="modal modal-md">
+  <div class="modal-head"><div class="modal-title">📋 Ecografía masiva — hato completo</div><button class="modal-close" onclick="closeModal('modal-ecografia-masiva')">✕</button></div>
+  <div class="modal-body">
+    <div class="alert-box sky" style="margin-bottom:16px">
+      <div class="alert-ico">🔬</div>
+      <div>
+        <div class="alert-title" style="color:var(--sky)">Flujo de trabajo ecografía masiva</div>
+        <div class="alert-text">1. Descarga la plantilla · 2. Llena resultados para cada animal · 3. Sube el archivo · 4. Revisa y confirma</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:20px">
+      <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('ecografias')">↓ Descargar plantilla Excel</button>
+      <span style="font-size:12px;color:var(--text3);align-self:center">Llena y luego sube el archivo aquí:</span>
+    </div>
+    <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed var(--border2);border-radius:var(--r2);padding:32px;cursor:pointer;gap:8px;transition:border-color var(--anim)" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--border2)'">
+      <span style="font-size:32px">📂</span>
+      <span style="font-size:14px;color:var(--text2);font-weight:600">Arrastra o haz clic para subir</span>
+      <span style="font-size:12px;color:var(--text3)">.xlsx · .xls · .csv</span>
+      <input type="file" class="import-hidden" accept=".xlsx,.xls,.csv" onchange="previewEcoMasiva(this)">
+    </label>
+    <div id="eco-preview" style="margin-top:16px;display:none">
+      <div style="font-size:12px;font-weight:600;color:var(--teal);margin-bottom:8px" id="eco-preview-title"></div>
+      <div style="max-height:200px;overflow-y:auto" id="eco-preview-table"></div>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-ecografia-masiva')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" id="btn-confirm-eco" style="display:none" onclick="confirmEcoMasiva()">✓ Confirmar e importar</button>
+  </div>
+</div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ═══ DATA ═══
+const MONTAS = [
+  {fecha:'10/04/2025',oveja:'OV-0445',raza:'Dorper',reproductor:'RE-003 Príncipe',lote:'Lote A',ciclo:1,tipo:'Natural',resultado:'Pendiente',eco:'10/05/2025',colaborador:'Carlos Ríos'},
+  {fecha:'08/04/2025',oveja:'OV-1234',raza:'Hampshire',reproductor:'RE-003 Príncipe',lote:'Lote B',ciclo:1,tipo:'Natural',resultado:'Gestante',eco:'08/04/2025',colaborador:'Juan García'},
+  {fecha:'05/04/2025',oveja:'OV-0892',raza:'Dorper',reproductor:'RE-007 Zeus',lote:'Lote C',ciclo:2,tipo:'Natural',resultado:'Gestante',eco:'05/04/2025',colaborador:'María López'},
+  {fecha:'01/04/2025',oveja:'OV-0441',raza:'Katahdin',reproductor:'RE-001 Titan',lote:'Lote A',ciclo:3,tipo:'Natural',resultado:'Vacía',eco:'01/04/2025',colaborador:'Juan García'},
+  {fecha:'28/03/2025',oveja:'OV-2210',raza:'Katahdin',reproductor:'RE-007 Zeus',lote:'Lote D',ciclo:1,tipo:'Natural',resultado:'Gestante',eco:'28/03/2025',colaborador:'Carlos Ríos'},
+  {fecha:'25/03/2025',oveja:'OV-0788',raza:'Katahdin',reproductor:'RE-003 Príncipe',lote:'Lote A',ciclo:1,tipo:'Natural',resultado:'Gestante',eco:'25/03/2025',colaborador:'Juan García'},
+  {fecha:'20/03/2025',oveja:'OV-1109',raza:'Pelibuey',reproductor:'RE-007 Zeus',lote:'Lote D',ciclo:2,tipo:'Natural',resultado:'Vacía',eco:'20/03/2025',colaborador:'María López'},
+  {fecha:'15/03/2025',oveja:'OV-2087',raza:'Dorper',reproductor:'RE-001 Titan',lote:'Lote D',ciclo:2,tipo:'Natural',resultado:'Vacía',eco:'15/03/2025',colaborador:'Carlos Ríos'},
+];
+
+const PARTOS = [
+  {fecha:'10/04/2025',madre:'OV-2341',nro:3,padre:'RE-003',vivas:2,muertas:0,pesos:'6.2 / 5.8',tipo:'Normal',ids:'OV-0471, OV-0472',colaborador:'Juan García'},
+  {fecha:'08/04/2025',madre:'OV-1567',nro:2,padre:'RE-007',vivas:1,muertas:0,pesos:'7.1',tipo:'Normal',ids:'OV-0473',colaborador:'María López'},
+  {fecha:'05/04/2025',madre:'OV-0892',nro:4,padre:'RE-007',vivas:2,muertas:0,pesos:'5.9 / 6.1',tipo:'Asistido',ids:'OV-0474, OV-0475',colaborador:'Carlos Ríos'},
+  {fecha:'02/04/2025',madre:'OV-3102',nro:1,padre:'RE-003',vivas:1,muertas:0,pesos:'5.2',tipo:'Distócico',ids:'OV-0476',colaborador:'Juan García'},
+  {fecha:'28/03/2025',madre:'OV-0234',nro:4,padre:'RE-003',vivas:2,muertas:0,pesos:'6.4 / 6.0',tipo:'Normal',ids:'OV-0477, OV-0478',colaborador:'María López'},
+];
+
+// Estado compartido
+const GESTACIONES = [
+  {id:'OV-1234',name:'',raza:'Hampshire',lote:'Lote B',padre:'RE-003',fechaMonta:'2025-02-12',diasGest:57,totalDias:147,partosN:3},
+  {id:'OV-0892',name:'',raza:'Dorper',lote:'Lote C',padre:'RE-007',fechaMonta:'2025-02-15',diasGest:54,totalDias:147,partosN:4},
+  {id:'OV-2210',name:'',raza:'Katahdin',lote:'Lote D',padre:'RE-007',fechaMonta:'2025-02-20',diasGest:49,totalDias:147,partosN:1},
+  {id:'OV-0788',name:'Rosa',raza:'Katahdin',lote:'Lote A',padre:'RE-003',fechaMonta:'2025-02-25',diasGest:44,totalDias:147,partosN:3},
+  {id:'OV-0234',name:'Bella',raza:'Dorper',lote:'Lote A',padre:'RE-003',fechaMonta:'2025-03-01',diasGest:40,totalDias:147,partosN:4},
+];
+
+// ═══ TABS ═══
+function switchTab(el,id){
+  document.querySelectorAll('.tn').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
+  document.getElementById(id).style.display='block';
+}
+
+// ═══ RENDER ═══
+function renderAll(){
+  renderGestaciones();
+  renderMontas(MONTAS);
+  renderPartos(PARTOS);
+}
+
+function renderGestaciones(){
+  const c = document.getElementById('gest-list');
+  if(!c) return;
+  const sorted = [...GESTACIONES].sort((a,b)=>a.diasGest-b.diasGest);
+  c.innerHTML = sorted.map(g=>{
+    const diasRestantes = g.totalDias - g.diasGest;
+    const pct = Math.round((g.diasGest/g.totalDias)*100);
+    const urgente = diasRestantes <= 7;
+    const color = urgente ? 'var(--red)' : diasRestantes<=20 ? 'var(--amber)' : 'var(--teal)';
+    return `
+    <div class="gest-card" onclick="toast('Abriendo perfil ${g.id}…','info')">
+      <div class="gest-avatar">🐑</div>
+      <div class="gest-info">
+        <div class="gest-id">#${g.id}${g.name?' — '+g.name:''}</div>
+        <div class="gest-name">${g.raza} · ${g.lote} · Parto N°${g.partosN} · Padre: #${g.padre}</div>
+        <div class="gest-meta">Monta: ${g.fechaMonta} · ${g.diasGest} días de gestación</div>
+        <div class="gest-progress">
+          <div class="gest-bar-track"><div class="gest-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+          <div class="gest-days"><span>${g.diasGest}d / ${g.totalDias}d (${pct}%)</span><span style="color:${color};font-weight:600">${diasRestantes} días para el parto</span></div>
+        </div>
+      </div>
+      <div class="gest-right">
+        <div class="gest-countdown" style="color:${color}">${diasRestantes}</div>
+        <div class="gest-countdown-label">días</div>
+        ${urgente?'<div style="margin-top:4px"><span class="badge b-red">⚠ PRÓXIMO</span></div>':''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderMontas(data){
+  const tb = document.getElementById('montas-tbody');
+  if(!tb) return;
+  const BADGE = {Gestante:'b-sky',Vacía:'b-red',Pendiente:'b-gray'};
+  const CBadge = {1:'b-green',2:'b-amber',3:'b-red'};
+  tb.innerHTML = data.map(m=>`
+    <tr>
+      <td class="td-muted">${m.fecha}</td>
+      <td class="td-mono">#${m.oveja}</td>
+      <td class="td-muted">${m.raza}</td>
+      <td>${m.reproductor}</td>
+      <td class="td-muted">${m.lote}</td>
+      <td><span class="badge ${CBadge[m.ciclo]||'b-gray'}">Ciclo ${m.ciclo}</span></td>
+      <td class="td-muted">${m.tipo}</td>
+      <td><span class="badge ${BADGE[m.resultado]||'b-gray'}">${m.resultado}</span></td>
+      <td class="td-muted">${m.eco}</td>
+      <td class="td-muted">${m.colaborador}</td>
+    </tr>`).join('');
+}
+
+function renderPartos(data){
+  const tb = document.getElementById('partos-tbody');
+  if(!tb) return;
+  const BTIPO = {Normal:'b-green',Asistido:'b-amber',Distócico:'b-red',Cesárea:'b-wine'};
+  tb.innerHTML = data.map(p=>`
+    <tr>
+      <td class="td-muted">${p.fecha}</td>
+      <td class="td-mono">#${p.madre}</td>
+      <td style="text-align:center">${p.nro}</td>
+      <td class="td-mono">#${p.padre}</td>
+      <td><span class="badge b-green">${p.vivas}</span></td>
+      <td>${p.muertas>0?`<span class="badge b-red">${p.muertas}</span>`:'—'}</td>
+      <td class="td-muted">${p.pesos} kg</td>
+      <td><span class="badge ${BTIPO[p.tipo]||'b-gray'}">${p.tipo}</span></td>
+      <td class="td-mono" style="font-size:11px">${p.ids}</td>
+      <td class="td-muted">${p.colaborador}</td>
+    </tr>`).join('');
+}
+
+// ═══ FILTROS ═══
+function filterMontas(val, field){
+  let data = [...MONTAS];
+  const repro = document.querySelector('select[onchange*="reproductor"]')?.value||'';
+  const ciclo = document.querySelector('select[onchange*="ciclo"]')?.value||'';
+  const result = document.querySelector('select[onchange*="resultado"]')?.value||'';
+  if(repro) data = data.filter(m=>m.reproductor.includes(repro));
+  if(ciclo) data = data.filter(m=>m.ciclo==ciclo);
+  if(result) data = data.filter(m=>m.resultado===result);
+  renderMontas(data);
+}
+function filterPartos(){ renderPartos(PARTOS); }
+
+// ═══ PARTO ═══
+function generarCrias(){
+  const n = parseInt(document.getElementById('p-vivas').value)||0;
+  const container = document.getElementById('crias-form');
+  if(n<=0||n>6){container.innerHTML='';return;}
+  const sexos = ['Macho','Hembra'];
+  container.innerHTML = '<div class="form-section">Datos de cada cría</div>';
+  for(let i=1;i<=n;i++){
+    const div = document.createElement('div');
+    div.className = 'form-grid';
+    div.style.marginBottom = '8px';
+    div.innerHTML = `
+      <div class="fg" style="margin:0"><label class="fl">Cría ${i} — Sexo</label><select class="fi"><option>Hembra</option><option>Macho</option></select></div>
+      <div class="fg" style="margin:0"><label class="fl">Cría ${i} — Peso nac. (kg)</label><input class="fi" type="number" step="0.1" placeholder="${(5.5+Math.random()).toFixed(1)}"/></div>`;
+    container.appendChild(div);
+  }
+}
+function autoFillMadre(val){
+  const nroInput = document.getElementById('p-nro');
+  // In production: lookup animal data and auto-fill N° parto
+}
+function saveParto(){
+  const madre = document.getElementById('p-madre').value;
+  const fecha = document.getElementById('p-fecha').value;
+  const vivas = document.getElementById('p-vivas').value;
+  if(!madre||!fecha){toast('Completa los campos requeridos','err');return;}
+  // Simulate: create cría records, update madre status
+  PARTOS.unshift({fecha:fecha.split('-').reverse().join('/'),madre,nro:parseInt(document.getElementById('p-nro').value)||1,padre:document.getElementById('p-padre').value,vivas:parseInt(vivas)||0,muertas:parseInt(document.getElementById('p-muertas').value)||0,pesos:'—',tipo:document.getElementById('p-tipo').value,ids:'Auto-generado',colaborador:'Juan García'});
+  renderPartos(PARTOS);
+  closeModal('modal-parto');
+  toast('Parto registrado · '+vivas+' crías creadas automáticamente');
+}
+function saveMonta(){
+  const fecha = document.getElementById('m-fecha').value;
+  if(!fecha){toast('Selecciona la fecha de monta','err');return;}
+  // Auto-set ecografía 30 días después
+  const ecoDate = new Date(fecha);
+  ecoDate.setDate(ecoDate.getDate()+30);
+  document.getElementById('m-eco').value = ecoDate.toISOString().slice(0,10);
+  MONTAS.unshift({fecha:fecha.split('-').reverse().join('/'),oveja:'Nueva',raza:'Dorper',reproductor:'RE-003 Príncipe',lote:'Lote A',ciclo:1,tipo:'Natural',resultado:'Pendiente',eco:ecoDate.toLocaleDateString('es-CO'),colaborador:'Juan García'});
+  renderMontas(MONTAS);
+  closeModal('modal-monta');
+  toast('Monta registrada · Ecografía programada para '+ecoDate.toLocaleDateString('es-CO'));
+}
+function saveEco(){toast('Ecografía registrada · Estado de la oveja actualizado');}
+
+// ═══ ECO MASIVA ═══
+function previewEcoMasiva(input){
+  const file = input.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const wb = XLSX.read(e.target.result,{type:'binary'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws,{header:1});
+      const dataRows = rows.slice(1).filter(r=>r.some(c=>c));
+      document.getElementById('eco-preview-title').textContent = '✓ '+dataRows.length+' animales encontrados — revisa antes de confirmar:';
+      const tbl = '<div style="overflow-x:auto"><table><thead><tr>'+rows[0].map(h=>`<th style="background:var(--bg3);padding:6px 10px;font-size:10px;color:var(--text3)">${h}</th>`).join('')+'</tr></thead><tbody>'
+        +dataRows.slice(0,10).map(r=>'<tr>'+r.map(c=>`<td style="padding:6px 10px;font-size:12px;border-bottom:1px solid var(--border)">${c||'—'}</td>`).join('')+'</tr>').join('')
+        +(dataRows.length>10?'<tr><td colspan="'+rows[0].length+'" style="text-align:center;color:var(--text3);font-size:11px;padding:8px">...y '+(dataRows.length-10)+' más</td></tr>':'')
+        +'</tbody></table></div>';
+      document.getElementById('eco-preview-table').innerHTML = tbl;
+      document.getElementById('eco-preview').style.display = 'block';
+      document.getElementById('btn-confirm-eco').style.display = 'inline-flex';
+    }catch(err){toast('Error leyendo el archivo','err');}
+  };
+  reader.readAsBinaryString(file);
+}
+function confirmEcoMasiva(){
+  closeModal('modal-ecografia-masiva');
+  toast('Ecografías masivas importadas · Estados actualizados');
+}
+
+// ═══ EXPORTS ═══
+function exportRepro(){
+  const wb = XLSX.utils.book_new();
+  const m = [['Fecha','Oveja','Raza','Reproductor','Lote','Ciclo','Tipo','Resultado','Eco fecha','Colaborador'],
+    ...MONTAS.map(m=>[m.fecha,m.oveja,m.raza,m.reproductor,m.lote,m.ciclo,m.tipo,m.resultado,m.eco,m.colaborador])];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(m),'Montas');
+  const p = [['Fecha','Madre','N° parto','Padre','Crías vivas','Crías muertas','Pesos kg','Tipo','IDs crías','Colaborador'],
+    ...PARTOS.map(p=>[p.fecha,p.madre,p.nro,p.padre,p.vivas,p.muertas,p.pesos,p.tipo,p.ids,p.colaborador])];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(p),'Partos');
+  XLSX.writeFile(wb,'laaamb-reproduccion.xlsx');
+  toast('Excel reproducción exportado');
+}
+function exportGestaciones(){
+  const wb = XLSX.utils.book_new();
+  const data = [['ID','Raza','Lote','Padre','Fecha monta','Días gestación','Días restantes','Parto estimado'],
+    ...GESTACIONES.map(g=>[g.id,g.raza,g.lote,g.padre,g.fechaMonta,g.diasGest,g.totalDias-g.diasGest,'Calcular'])];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'Gestaciones');
+  XLSX.writeFile(wb,'laaamb-gestaciones.xlsx');toast('Excel gestaciones exportado');
+}
+function exportMontas(){
+  exportRepro(); }
+function exportPartos(){
+  const wb=XLSX.utils.book_new();
+  const data=[['Fecha','Madre','N° parto','Padre','Crías vivas','Crías muertas','Pesos kg','Tipo','IDs crías','Colaborador'],
+    ...PARTOS.map(p=>[p.fecha,p.madre,p.nro,p.padre,p.vivas,p.muertas,p.pesos,p.tipo,p.ids,p.colaborador])];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'Partos');
+  XLSX.writeFile(wb,'laaamb-partos.xlsx');toast('Excel partos exportado');
+}
+function exportEcografias(){toast('Exportando ecografías…');setTimeout(()=>toast('Excel ecografías exportado'),500);}
+function exportVacias(){toast('Exportando vacías…');setTimeout(()=>toast('Excel vacías exportado'),500);}
+
+// ═══ TEMPLATES ═══
+function downloadTemplate(tipo){
+  const wb=XLSX.utils.book_new();
+  const T={
+    montas:[['ID Hembra*','ID Macho*','Fecha monta (YYYY-MM-DD)*','Ciclo N°','Tipo (Natural/IA)','Lote','Condición corporal 1-5','Colaborador','Observaciones'],
+            ['OV-0234','RE-003','2025-04-15',1,'Natural','Lote A',3.5,'Juan García','']],
+    ecografias:[['ID Animal*','Fecha eco (YYYY-MM-DD)*','Resultado (Gestante/Vacía/No apta)*','Días gestación','N° fetos','Veterinario','Observaciones'],
+                ['OV-1102','2025-04-10','Gestante',45,2,'Dr. Martínez','Mellizos confirmados'],
+                ['OV-0441','2025-04-10','Vacía',0,0,'Dr. Martínez','3er ciclo vacía']],
+  };
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(T[tipo]||[['Sin plantilla']]),tipo);
+  XLSX.writeFile(wb,'plantilla-'+tipo+'.xlsx');
+  toast('Plantilla '+tipo+' descargada');
+}
+function importRepro(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+      const dataRows=rows.slice(1).filter(r=>r.some(c=>c));
+      const errors=dataRows.filter(r=>!r[0]).length;
+      if(errors>0){toast(errors+' filas sin ID — corrige el archivo','err');return;}
+      toast('✓ '+dataRows.length+' registros importados correctamente');
+      input.value='';
+    }catch(err){toast('Error leyendo el archivo','err');}
+  };
+  reader.readAsBinaryString(file);
+}
+
+// ═══ MODAL ═══
+function openModal(id){document.getElementById(id)?.classList.add('open')}
+function closeModal(id){document.getElementById(id)?.classList.remove('open')}
+function toast(msg,type='ok'){
+  const c=document.getElementById('toasts');
+  const t=document.createElement('div');t.className='toast '+type;
+  const ic={ok:'<span style="color:var(--teal)">✓</span>',err:'<span style="color:var(--red)">✕</span>',info:'<span style="color:var(--amber)">ℹ</span>'};
+  t.innerHTML=(ic[type]||ic.ok)+' '+msg;c.appendChild(t);setTimeout(()=>t.remove(),3500);
+}
+
+// ═══ INIT ═══
+const today=new Date().toISOString().slice(0,10);
+const pm=document.getElementById('partos-mes');if(pm)pm.value=today.slice(0,7);
+const mf=document.getElementById('m-fecha');if(mf)mf.value=today;
+const pf=document.getElementById('p-fecha');if(pf)pf.value=today;
+const ph=document.getElementById('p-hora');if(ph)ph.value=new Date().toTimeString().slice(0,5);
+renderAll();
+</script>
+</body>
+</html>
