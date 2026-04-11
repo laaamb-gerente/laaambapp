@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LAAAMBAPP · Salud & Tratamientos</title>
+<script>(function(){var t=localStorage.getItem("laaamb-theme")||"dark";document.documentElement.setAttribute("data-theme",t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -195,6 +196,8 @@ textarea.fi{resize:vertical;min-height:68px}
 </head>
 <body>
 <div class="app">
+<button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menú">☰</button>
+<div class="sidebar-overlay" id="sb-overlay" onclick="toggleSidebar()"></div>
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
@@ -220,6 +223,8 @@ textarea.fi{resize:vertical;min-height:68px}
     <div class="nav-group">Gestión</div>
     <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
     <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
+    <div class="nav-group">Sistema</div>
+    <a class="nav-link" href="ajustes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2"/></svg>Ajustes</a>
   </nav>
   <div class="sb-foot">
     <div class="user-row">
