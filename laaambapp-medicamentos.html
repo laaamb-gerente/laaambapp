@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAAAMBAPP · Medicamentos</title>
+<link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>(function(){const t=localStorage.getItem('laaamb-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);--wine:#9C3F66;--wine-bg:rgba(156,63,102,.12);--orange:#F18F22;--orange-bg:rgba(241,143,34,.12);--bg:#080f10;--bg2:#0c1517;--bg3:#101d1f;--bg4:#152224;--surface:#172628;--surface2:#1d3235;--border:rgba(0,175,182,.10);--border2:rgba(0,175,182,.20);--border3:rgba(0,175,182,.35);--green:#2ec77a;--green-bg:rgba(46,199,122,.10);--red:#e05252;--red-bg:rgba(224,82,82,.10);--amber:#e8a030;--amber-bg:rgba(232,160,48,.10);--sky:#38b0d8;--sky-bg:rgba(56,176,216,.10);--text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;--r:8px;--r2:14px;--sidebar:236px;--anim:.16s cubic-bezier(.4,0,.2,1)}
+html[data-theme="light"]{--teal:#007a80;--teal-d:#005f64;--teal-bg:rgba(0,122,128,.10);--teal-bg2:rgba(0,122,128,.05);--bg:#f0f4f5;--bg2:#ffffff;--bg3:#f7fafa;--bg4:#e8f0f1;--surface:#e8f0f1;--surface2:#d4e4e6;--border:rgba(0,100,110,.12);--border2:rgba(0,100,110,.22);--border3:rgba(0,100,110,.40);--green:#1a9455;--green-bg:rgba(26,148,85,.10);--red:#c0392b;--red-bg:rgba(192,57,43,.09);--amber:#b87400;--amber-bg:rgba(184,116,0,.10);--sky:#1a7fa0;--sky-bg:rgba(26,127,160,.10);--text:#0d2b2e;--text2:#2d5a60;--text3:#5a8a90;--text4:#a0c4c8;}
+html[data-theme="sepia"]{--teal:#5a7a3a;--teal-d:#3d5a28;--teal-bg:rgba(90,122,58,.12);--teal-bg2:rgba(90,122,58,.06);--bg:#1c1608;--bg2:#231c0a;--bg3:#2a220c;--bg4:#332a10;--surface:#2e2510;--surface2:#3d3218;--border:rgba(180,140,60,.12);--border2:rgba(180,140,60,.22);--border3:rgba(180,140,60,.38);--green:#6a9a3a;--green-bg:rgba(106,154,58,.12);--red:#c04a2a;--red-bg:rgba(192,74,42,.10);--amber:#c8900a;--amber-bg:rgba(200,144,10,.12);--sky:#4a7a6a;--sky-bg:rgba(74,122,106,.12);--text:#e8d8a0;--text2:#b8a060;--text3:#7a6830;--text4:#4a4018;}
+html[data-theme="contrast"]{--teal:#00ffff;--teal-d:#00cccc;--teal-bg:rgba(0,255,255,.15);--teal-bg2:rgba(0,255,255,.08);--bg:#000;--bg2:#0a0a0a;--bg3:#111;--bg4:#1a1a1a;--surface:#1a1a1a;--surface2:#222;--border:rgba(0,255,255,.20);--border2:rgba(0,255,255,.40);--border3:rgba(0,255,255,.60);--green:#00ff7f;--green-bg:rgba(0,255,127,.15);--red:#ff4444;--red-bg:rgba(255,68,68,.15);--amber:#ffdd00;--amber-bg:rgba(255,221,0,.15);--sky:#00bfff;--sky-bg:rgba(0,191,255,.15);--text:#fff;--text2:#e0e0e0;--text3:#aaa;--text4:#555;}
+*,*::before,*::after{transition:background-color .25s,border-color .25s,color .15s}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+.app{display:flex;height:100vh;width:100vw}
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0;transition:transform .3s ease}
+.sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:.5}
+.sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
+.sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.farm-pill{margin-top:12px;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;display:flex;align-items:center;gap:8px}
+.farm-name{font-size:12px;font-weight:600;color:var(--text)}.farm-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
+.nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}
+.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;text-decoration:none;transition:all var(--anim);position:relative}
+.nav-link:hover{background:var(--surface);color:var(--text)}
+.nav-link.active{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
+.nav-link.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--teal);border-radius:2px}
+.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}
+.nav-link.active .nav-ico,.nav-link:hover .nav-ico{opacity:1}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:600;background:var(--surface2);color:var(--teal);padding:1px 7px;border-radius:10px;border:1px solid var(--border2)}
+.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border)}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
+.user-name{font-size:12px;font-weight:600;color:var(--text)}.user-role{font-size:10px;color:var(--text3)}
+/* MOBILE */
+.hamburger{display:none;position:fixed;top:14px;left:14px;z-index:200;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);width:40px;height:40px;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--text)}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9}
+/* MAIN */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.page-head{padding:18px 28px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--bg2);flex-wrap:wrap}
+.ph-eyebrow{font-size:10px;font-weight:600;color:var(--teal-d);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.ph-title{font-family:'Sigmar',cursive;font-size:24px;color:var(--text)}
+.ph-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.ph-actions{display:flex;gap:8px;flex-wrap:wrap}
+.filters-bar{padding:12px 28px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.content{flex:1;overflow-y:auto;padding:20px 24px 48px}
+/* COMPONENTS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:all var(--anim);white-space:nowrap}
+.btn-primary{background:var(--teal);color:#080f10}.btn-primary:hover{background:#1cc8d0;transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}.btn-ghost:hover{background:var(--surface);color:var(--teal);border-color:var(--border3)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:10px}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}.b-green{background:var(--green-bg);color:var(--green)}.b-amber{background:var(--amber-bg);color:var(--amber)}.b-red{background:var(--red-bg);color:var(--red)}.b-gray{background:var(--surface);color:var(--text3)}
+.fi{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:8px 11px;color:var(--text);font-size:13px;font-family:'Changa',sans-serif;outline:none;transition:border-color var(--anim)}
+.fi:focus{border-color:var(--teal)}.fi::placeholder{color:var(--text3)}
+select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%233d6e74' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
+/* MED CARD */
+.med-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
+.med-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:16px;display:flex;align-items:flex-start;gap:14px;transition:all var(--anim);cursor:pointer;position:relative}
+.med-card:hover{border-color:var(--border2);background:var(--surface);transform:translateY(-1px)}
+.med-card.venc-urgente{border-left:3px solid var(--red)}
+.med-card.venc-pronto{border-left:3px solid var(--amber)}
+.med-card.venc-ok{border-left:3px solid var(--teal)}
+.med-ico{width:42px;height:42px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:1px solid var(--border2)}
+.med-ico.inyectable{background:var(--teal-bg)}
+.med-ico.oral{background:var(--amber-bg)}
+.med-ico.vacuna{background:var(--sky-bg)}
+.med-ico.topico{background:var(--wine-bg)}
+.med-info{flex:1;min-width:0}
+.med-nombre{font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px}
+.med-principio{font-size:11px;color:var(--teal);font-weight:600}
+.med-cat{font-size:10px;color:var(--text3);margin-top:1px}
+.med-detalles{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
+.med-det{font-size:11px;color:var(--text3)}
+.med-det strong{color:var(--text2)}
+.med-stock-row{display:flex;align-items:center;gap:8px;margin-top:8px}
+.stock-num{font-size:18px;font-weight:700;color:var(--text);line-height:1}
+.stock-label{font-size:10px;color:var(--text3)}
+.stock-track{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
+.stock-fill{height:100%;border-radius:2px}
+.venc-badge{position:absolute;top:12px;right:12px}
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;padding:20px}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);width:100%;max-width:680px;max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.6);transform:translateY(8px);transition:transform .2s}
+.overlay.open .modal{transform:translateY(0)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--border)}
+.modal-title{font-family:'Sigmar',cursive;font-size:18px;color:var(--text)}
+.modal-close{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;padding:4px}.modal-close:hover{color:var(--text)}
+.modal-body{padding:20px 22px}.modal-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.fg{margin-bottom:14px}
+.fl{display:block;font-size:11px;font-weight:600;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.fi-full{width:100%}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.import-hidden{display:none}
+.toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:fadeUp .2s ease;max-width:340px}
+.toast.ok{border-left:3px solid var(--teal)}.toast.err{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--amber)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:768px){
+  .sidebar{position:fixed;left:0;top:0;height:100%;transform:translateX(-100%);z-index:100}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay.open{display:block}
+  .hamburger{display:flex}
+  .page-head{padding:14px 16px 12px;padding-left:60px}
+  .filters-bar{padding:10px 16px}
+  .content{padding:16px 16px 48px}
+  .med-grid{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<button class="hamburger" id="hamburger" onclick="toggleSidebar()">☰</button>
+<div class="sidebar-overlay" id="sb-overlay" onclick="toggleSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sb-head">
+    <div class="sb-logo-text">LAAAMB</div>
+    <div class="sb-logo-sub">Corderos · App</div>
+    <div class="farm-pill"><span style="font-size:18px">🏔️</span><div><div class="farm-name">La Marinilla</div><div class="farm-sub">76.2 ha · 470 animales</div></div></div>
+  </div>
+  <nav class="nav-scroll">
+    <div class="nav-group">Principal</div>
+    <a class="nav-link" href="index.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a class="nav-link" href="okr.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>OKRs &amp; Análisis</a>
+    <div class="nav-group">Ganadería</div>
+    <a class="nav-link" href="animales.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Animales<span class="nav-badge">470</span></a>
+    <a class="nav-link" href="reproduccion.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 3"/></svg>Reproducción</a>
+    <a class="nav-link" href="lotes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>Lotes &amp; Potreros</a>
+    <div class="nav-group">Salud</div>
+    <a class="nav-link" href="salud.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>Salud &amp; Tratamientos</a>
+    <a class="nav-link active" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos<span class="nav-badge" id="sb-count">28</span></a>
+    <div class="nav-group">Gestión</div>
+    <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
+    <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
+    <div class="nav-group">Sistema</div>
+    <a class="nav-link" href="ajustes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2"/></svg>Ajustes</a>
+  </nav>
+  <div class="sb-foot">
+    <div class="user-row"><div class="avatar">JG</div><div><div class="user-name">Juan García</div><div class="user-role">Administrador</div></div></div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="page-head">
+    <div>
+      <div class="ph-eyebrow">La Marinilla · Salud</div>
+      <div class="ph-title">Medicamentos</div>
+      <div class="ph-sub" id="ph-sub">28 productos · 3 por vencer · 2 con stock bajo</div>
+    </div>
+    <div class="ph-actions">
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar inventario<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importMeds(this)"></label>
+      <button class="btn btn-ghost btn-sm" onclick="exportMeds()">↓ Excel inventario</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('modal-add')">+ Agregar medicamento</button>
+    </div>
+  </div>
+
+  <div class="filters-bar">
+    <input type="text" class="fi" style="width:220px" placeholder="Buscar por nombre o principio…" oninput="filterMeds(this.value,'q')">
+    <select class="fi" style="width:170px" onchange="filterMeds(this.value,'cat')">
+      <option value="">Todas las categorías</option>
+      <option>Antiparasitario</option><option>Antibiótico</option>
+      <option>Vitamina</option><option>Antiinflamatorio</option>
+      <option>Vacuna</option><option>Hormonal</option>
+    </select>
+    <select class="fi" style="width:160px" onchange="filterMeds(this.value,'venc')">
+      <option value="">Todos los vencimientos</option>
+      <option value="urgente">⚠ Vence en 7 días</option>
+      <option value="pronto">⏰ Vence en 30 días</option>
+      <option value="ok">✓ Sin alerta</option>
+    </select>
+    <select class="fi" style="width:150px" onchange="filterMeds(this.value,'pres')">
+      <option value="">Todas las presentaciones</option>
+      <option>Inyectable</option><option>Oral (líquido)</option>
+      <option>Oral (sólido)</option><option>Vacuna</option>
+    </select>
+    <span style="font-size:12px;color:var(--text3);margin-left:auto" id="filter-count">28 productos</span>
+  </div>
+
+  <div class="content">
+    <!-- Alertas vencimiento -->
+    <div id="alertas-venc" style="margin-bottom:14px"></div>
+    <!-- Grid medicamentos -->
+    <div class="med-grid" id="meds-grid"></div>
+  </div>
+</div>
+</div>
+
+<!-- MODAL AGREGAR -->
+<div class="overlay" id="modal-add" onclick="if(event.target===this)closeModal('modal-add')">
+<div class="modal">
+  <div class="modal-head"><div class="modal-title">💊 Agregar medicamento</div><button class="modal-close" onclick="closeModal('modal-add')">✕</button></div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Nombre comercial *</label><input class="fi fi-full" id="m-nombre" placeholder="Ivermectina 1%"></div>
+      <div class="fg"><label class="fl">Principio activo *</label><input class="fi fi-full" id="m-principio" placeholder="Ivermectina"></div>
+      <div class="fg"><label class="fl">Categoría</label><select class="fi fi-full" id="m-cat"><option>Antiparasitario</option><option>Antibiótico</option><option>Vitamina</option><option>Antiinflamatorio</option><option>Vacuna</option><option>Hormonal</option><option>Otro</option></select></div>
+      <div class="fg"><label class="fl">Presentación</label><select class="fi fi-full" id="m-pres"><option>Inyectable</option><option>Oral (líquido)</option><option>Oral (sólido)</option><option>Vacuna</option><option>Tópico</option></select></div>
+      <div class="fg"><label class="fl">N° de lote</label><input class="fi fi-full" id="m-lote" placeholder="IV-2025-001"></div>
+      <div class="fg"><label class="fl">Cantidad actual (mL/g/tab)</label><input class="fi fi-full" type="number" id="m-stock" placeholder="500"></div>
+      <div class="fg"><label class="fl">Stock máximo</label><input class="fi fi-full" type="number" id="m-max" placeholder="1000"></div>
+      <div class="fg"><label class="fl">Fecha vencimiento *</label><input class="fi fi-full" type="date" id="m-venc"></div>
+      <div class="fg"><label class="fl">Tiempo retiro (días) *</label><input class="fi fi-full" type="number" id="m-retiro" placeholder="14"></div>
+      <div class="fg"><label class="fl">Costo unitario (COP/mL)</label><input class="fi fi-full" type="number" id="m-costo" placeholder="85000"></div>
+      <div class="fg"><label class="fl">Dosis estándar</label><input class="fi fi-full" placeholder="0.2 mL/10kg SC"></div>
+      <div class="fg"><label class="fl">Temperatura almacenamiento</label><select class="fi fi-full"><option>Temperatura ambiente</option><option>Refrigeración 2-8°C</option><option>Congelación</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Observaciones / Advertencias</label><textarea class="fi fi-full" placeholder="Contraindicaciones, precauciones…" rows="2" style="resize:vertical"></textarea></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-add')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" onclick="saveMed()">Guardar medicamento</button>
+  </div>
+</div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+let MEDS = [
+  {nombre:'Ivermectina 1%',principio:'Ivermectina',cat:'Antiparasitario',pres:'Inyectable',lote:'IV-2024-341',stock:340,max:500,dosis:'0.2 mL/10kg SC',retiro:14,venc:'2026-08-12',costo:85000},
+  {nombre:'Oxitetraciclina 20%',principio:'Oxitetraciclina',cat:'Antibiótico',pres:'Inyectable',lote:'OX-A2341',stock:180,max:250,dosis:'5 mL/10kg IM',retiro:28,venc:'2025-04-18',costo:42000},
+  {nombre:'Closantel 10%',principio:'Closantel',cat:'Antiparasitario',pres:'Oral (líquido)',lote:'CL-1102',stock:62,max:100,dosis:'5 mg/kg VO',retiro:42,venc:'2025-04-13',costo:28000},
+  {nombre:'Florfenicol 30%',principio:'Florfenicol',cat:'Antibiótico',pres:'Inyectable',lote:'FL-0887',stock:420,max:500,dosis:'0.67 mL/10kg SC',retiro:0,venc:'2027-01-20',costo:65000},
+  {nombre:'Vitamina ADE',principio:'Vit. A+D+E',cat:'Vitamina',pres:'Inyectable',lote:'VIT-B0921',stock:195,max:250,dosis:'0.05 mL/kg IM',retiro:0,venc:'2025-04-24',costo:18000},
+  {nombre:'Oxfendazol 10%',principio:'Oxfendazol',cat:'Antiparasitario',pres:'Oral (líquido)',lote:'OXF-4421',stock:850,max:1000,dosis:'5 mg/kg VO',retiro:7,venc:'2026-11-30',costo:32000},
+  {nombre:'Meloxicam 5%',principio:'Meloxicam',cat:'Antiinflamatorio',pres:'Inyectable',lote:'MEL-2201',stock:280,max:500,dosis:'0.5 mg/kg SC',retiro:0,venc:'2026-06-15',costo:55000},
+  {nombre:'Vitamina B12',principio:'Cianocobalamina',cat:'Vitamina',pres:'Inyectable',lote:'B12-0341',stock:340,max:500,dosis:'0.2 mL/10kg IM',retiro:0,venc:'2027-03-10',costo:12000},
+  {nombre:'Vacuna Clostridial',principio:'Multi-bacterinas',cat:'Vacuna',pres:'Vacuna',lote:'VAC-CL-2401',stock:120,max:200,dosis:'2 mL SC',retiro:0,venc:'2025-09-15',costo:8500},
+  {nombre:'Penicilina G',principio:'Bencilpenicilina',cat:'Antibiótico',pres:'Inyectable',lote:'PEN-0921',stock:480,max:500,dosis:'22,000 UI/kg IM',retiro:14,venc:'2026-03-20',costo:15000},
+];
+
+let filteredMeds = [...MEDS];
+let activeFilters = {q:'',cat:'',venc:'',pres:''};
+
+function vencStatus(vencStr){
+  const dias = Math.round((new Date(vencStr) - new Date()) / 86400000);
+  if(dias <= 7) return 'urgente';
+  if(dias <= 30) return 'pronto';
+  return 'ok';
+}
+function diasVenc(vencStr){
+  return Math.round((new Date(vencStr) - new Date()) / 86400000);
+}
+
+function renderMeds(){
+  const grid = document.getElementById('meds-grid');
+  const ICO = {Inyectable:'💉',Oral:'💊','Oral (líquido)':'💊','Oral (sólido)':'💊',Vacuna:'🩺',Tópico:'🧴'};
+  const PRES_CLASS = {Inyectable:'inyectable',Oral:'oral','Oral (líquido)':'oral','Oral (sólido)':'oral',Vacuna:'vacuna',Tópico:'topico'};
+  const today = new Date();
+
+  grid.innerHTML = filteredMeds.map((m,i) => {
+    const dias = diasVenc(m.venc);
+    const vs = vencStatus(m.venc);
+    const stockPct = Math.round((m.stock/m.max)*100);
+    const stockColor = stockPct < 20 ? 'var(--red)' : stockPct < 40 ? 'var(--amber)' : 'var(--teal)';
+    const vencColor = vs==='urgente' ? 'var(--red)' : vs==='pronto' ? 'var(--amber)' : 'var(--green)';
+    const vencText = vs==='urgente' ? `⚠ Vence en ${dias}d` : vs==='pronto' ? `⏰ Vence en ${dias}d` : `✓ OK (${dias}d)`;
+    const vencBadge = vs==='urgente' ? 'b-red' : vs==='pronto' ? 'b-amber' : 'b-green';
+    return `
+    <div class="med-card venc-${vs}" onclick="toast('${m.nombre} · Lote ${m.lote}','info')">
+      <div class="med-ico ${PRES_CLASS[m.pres]||'inyectable'}">${ICO[m.pres]||'💊'}</div>
+      <div class="med-info">
+        <div class="med-nombre">${m.nombre}</div>
+        <div class="med-principio">${m.principio}</div>
+        <div class="med-cat">${m.cat} · ${m.pres} · Lote ${m.lote}</div>
+        <div class="med-detalles">
+          <div class="med-det">Dosis: <strong>${m.dosis}</strong></div>
+          <div class="med-det">Retiro: <strong>${m.retiro} días</strong></div>
+          <div class="med-det">Costo: <strong>$${m.costo.toLocaleString('es-CO')}</strong></div>
+        </div>
+        <div class="med-stock-row">
+          <div>
+            <div class="stock-num">${m.stock}<span style="font-size:11px;color:var(--text3);margin-left:2px">mL</span></div>
+            <div class="stock-label">de ${m.max} mL stock</div>
+          </div>
+          <div class="stock-track"><div class="stock-fill" style="width:${stockPct}%;background:${stockColor}"></div></div>
+          <div style="font-size:11px;font-weight:600;color:${stockColor}">${stockPct}%</div>
+        </div>
+      </div>
+      <div class="venc-badge"><span class="badge ${vencBadge}" style="font-size:10px">${vencText}</span></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('filter-count').textContent = filteredMeds.length + ' de ' + MEDS.length + ' productos';
+  document.getElementById('sb-count').textContent = MEDS.length;
+  renderAlertas();
+}
+
+function renderAlertas(){
+  const urgentes = MEDS.filter(m => vencStatus(m.venc) === 'urgente');
+  const prontos = MEDS.filter(m => vencStatus(m.venc) === 'pronto');
+  let html = '';
+  if(urgentes.length){
+    html += `<div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-left:3px solid var(--red);border-radius:var(--r);padding:12px 16px;margin-bottom:8px;font-size:12px;color:var(--text2)">
+      🔴 <strong style="color:var(--red)">${urgentes.length} medicamento(s) vence(n) en ≤7 días:</strong> ${urgentes.map(m=>m.nombre+' ('+diasVenc(m.venc)+'d)').join(' · ')}
+    </div>`;
+  }
+  if(prontos.length){
+    html += `<div style="background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-left:3px solid var(--amber);border-radius:var(--r);padding:12px 16px;margin-bottom:8px;font-size:12px;color:var(--text2)">
+      ⚠ <strong style="color:var(--amber)">${prontos.length} medicamento(s) vence(n) en ≤30 días:</strong> ${prontos.map(m=>m.nombre).join(' · ')}
+    </div>`;
+  }
+  document.getElementById('alertas-venc').innerHTML = html;
+}
+
+function filterMeds(val, field){
+  activeFilters[field] = val;
+  filteredMeds = MEDS.filter(m => {
+    const q = activeFilters.q.toLowerCase();
+    if(q && !m.nombre.toLowerCase().includes(q) && !m.principio.toLowerCase().includes(q)) return false;
+    if(activeFilters.cat && m.cat !== activeFilters.cat) return false;
+    if(activeFilters.venc && vencStatus(m.venc) !== activeFilters.venc) return false;
+    if(activeFilters.pres && m.pres !== activeFilters.pres) return false;
+    return true;
+  });
+  renderMeds();
+}
+
+function saveMed(){
+  const nombre = document.getElementById('m-nombre').value.trim();
+  if(!nombre){toast('El nombre es requerido','err');return;}
+  MEDS.unshift({
+    nombre, principio:document.getElementById('m-principio').value,
+    cat:document.getElementById('m-cat').value, pres:document.getElementById('m-pres').value,
+    lote:document.getElementById('m-lote').value||'—',
+    stock:parseInt(document.getElementById('m-stock').value)||0,
+    max:parseInt(document.getElementById('m-max').value)||100,
+    dosis:'—', retiro:parseInt(document.getElementById('m-retiro').value)||0,
+    venc:document.getElementById('m-venc').value||'2026-12-31',
+    costo:parseInt(document.getElementById('m-costo').value)||0
+  });
+  filteredMeds=[...MEDS];
+  renderMeds();
+  closeModal('modal-add');
+  toast(nombre+' agregado al inventario');
+}
+
+function exportMeds(){
+  const wb = XLSX.utils.book_new();
+  const data = [['Nombre','Principio activo','Categoría','Presentación','Lote','Stock mL','Stock máx','Dosis','Retiro días','Vencimiento','Costo COP/mL'],
+    ...MEDS.map(m=>[m.nombre,m.principio,m.cat,m.pres,m.lote,m.stock,m.max,m.dosis,m.retiro,m.venc,m.costo])];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'Medicamentos');
+  XLSX.writeFile(wb, 'laaamb-medicamentos.xlsx');
+  toast('Excel exportado');
+}
+
+function importMeds(input){
+  const f = input.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = function(e){
+    try{
+      const wb = XLSX.read(e.target.result,{type:'binary'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws,{header:1});
+      const d = rows.slice(1).filter(r=>r.some(c=>c));
+      toast('✓ '+d.length+' medicamentos importados');
+      input.value='';
+    }catch(err){toast('Error leyendo archivo','err');}
+  };
+  r.readAsBinaryString(f);
+}
+
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sb-overlay').classList.toggle('open');
+}
+
+function openModal(id){document.getElementById(id)?.classList.add('open')}
+function closeModal(id){document.getElementById(id)?.classList.remove('open')}
+function toast(msg,type='ok'){
+  const c=document.getElementById('toasts');const t=document.createElement('div');t.className='toast '+type;
+  const ic={ok:'<span style="color:var(--teal)">✓</span>',err:'<span style="color:var(--red)">✕</span>',info:'<span style="color:var(--amber)">ℹ</span>'};
+  t.innerHTML=(ic[type]||ic.ok)+' '+msg;c.appendChild(t);setTimeout(()=>t.remove(),3500);
+}
+
+// INIT
+document.getElementById('m-venc').value = new Date(Date.now()+365*86400000).toISOString().slice(0,10);
+filteredMeds = [...MEDS];
+renderMeds();
+</script>
+</body>
+</html>
