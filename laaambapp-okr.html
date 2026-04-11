@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAAAMBAPP · OKRs & Análisis</title>
+<link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,0.10);--teal-bg2:rgba(0,175,182,0.06);
+  --wine:#9C3F66;--wine-bg:rgba(156,63,102,0.12);
+  --orange:#F18F22;--orange-bg:rgba(241,143,34,0.12);
+  --bg:#080f10;--bg2:#0c1517;--bg3:#101d1f;--bg4:#152224;
+  --surface:#172628;--surface2:#1d3235;
+  --border:rgba(0,175,182,0.10);--border2:rgba(0,175,182,0.20);--border3:rgba(0,175,182,0.35);
+  --green:#2ec77a;--green-bg:rgba(46,199,122,0.10);
+  --red:#e05252;--red-bg:rgba(224,82,82,0.10);
+  --amber:#e8a030;--amber-bg:rgba(232,160,48,0.10);
+  --sky:#38b0d8;--sky-bg:rgba(56,176,216,0.10);
+  --text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;
+  --r:8px;--r2:14px;--sidebar:236px;--anim:0.16s cubic-bezier(.4,0,.2,1);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+.app{display:flex;height:100vh;width:100vw}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0}
+.sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:.5}
+.sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
+.sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.farm-pill{margin-top:12px;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;display:flex;align-items:center;gap:8px}
+.farm-name{font-size:12px;font-weight:600;color:var(--text)}
+.farm-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
+.nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}
+.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;text-decoration:none;transition:all var(--anim);position:relative}
+.nav-link:hover{background:var(--surface);color:var(--text)}
+.nav-link.active{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
+.nav-link.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--teal);border-radius:2px}
+.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}
+.nav-link.active .nav-ico,.nav-link:hover .nav-ico{opacity:1}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:600;background:var(--surface2);color:var(--teal);padding:1px 7px;border-radius:10px;border:1px solid var(--border2)}
+.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border)}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
+.user-name{font-size:12px;font-weight:600;color:var(--text)}
+.user-role{font-size:10px;color:var(--text3)}
+
+/* MAIN */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+
+/* PAGE HEADER */
+.page-head{padding:18px 28px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--bg2)}
+.ph-eyebrow{font-size:10px;font-weight:600;color:var(--teal-d);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.ph-title{font-family:'Sigmar',cursive;font-size:24px;color:var(--text);letter-spacing:.3px}
+.ph-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.ph-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+
+/* TAB BAR */
+.tab-nav{display:flex;gap:2px;padding:0 28px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto}
+.tn{padding:10px 18px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim);white-space:nowrap}
+.tn:hover{color:var(--text)}
+.tn.active{color:var(--teal);border-bottom-color:var(--teal)}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:24px 28px 48px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:all var(--anim);white-space:nowrap}
+.btn-primary{background:var(--teal);color:#080f10}
+.btn-primary:hover{background:#1cc8d0}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.btn-ghost:hover{background:var(--surface);color:var(--teal);border-color:var(--border3)}
+.btn-amber{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(232,160,48,.25)}
+.btn-sm{padding:6px 12px;font-size:12px}
+
+/* CARDS & GRIDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2)}
+.card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.card-title{font-size:13px;font-weight:600;color:var(--text)}
+.card-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.card-body{padding:18px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+
+/* KPI CARDS */
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;position:relative;overflow:hidden;transition:all var(--anim)}
+.kpi:hover{border-color:var(--border2)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2.5px}
+.kpi.c-teal::before{background:var(--teal)}.kpi.c-green::before{background:var(--green)}
+.kpi.c-amber::before{background:var(--amber)}.kpi.c-red::before{background:var(--red)}
+.kpi.c-wine::before{background:var(--wine)}.kpi.c-sky::before{background:var(--sky)}
+.kpi.c-orange::before{background:var(--orange)}
+.kpi-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.kpi-val{font-size:28px;font-weight:700;color:var(--text);line-height:1;display:flex;align-items:baseline;gap:4px}
+.kpi-unit{font-size:14px;color:var(--text3);font-weight:400}
+.kpi-delta{font-size:11px;margin-top:6px;font-weight:500}
+.kpi-target{font-size:10px;color:var(--text3);margin-top:3px}
+.up{color:var(--green)}.down{color:var(--red)}.neu{color:var(--text3)}.warn{color:var(--amber)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
+.b-green{background:var(--green-bg);color:var(--green)}
+.b-amber{background:var(--amber-bg);color:var(--amber)}
+.b-red{background:var(--red-bg);color:var(--red)}
+.b-sky{background:var(--sky-bg);color:var(--sky)}
+.b-wine{background:var(--wine-bg);color:var(--wine)}
+.b-gray{background:var(--surface);color:var(--text3)}
+
+/* BAR CHART */
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-lbl{font-size:12px;color:var(--text2);width:130px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar-track{flex:1;height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.bar-fill{height:100%;border-radius:4px;transition:width .6s ease}
+.bar-val{font-size:12px;font-weight:600;color:var(--text3);width:44px;text-align:right;flex-shrink:0}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--bg3);color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background var(--anim)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface)}
+tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
+.td-mono{font-size:12px;font-weight:600;color:var(--teal)}
+
+/* PROGRESS */
+.prog-wrap{margin-bottom:14px}
+.prog-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.prog-label{font-size:12px;color:var(--text2);font-weight:500}
+.prog-val{font-size:12px;font-weight:700;color:var(--text)}
+.prog-track{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.prog-fill{height:100%;border-radius:4px;transition:width .8s ease}
+.prog-meta{font-size:10px;color:var(--text3);margin-top:3px}
+
+/* SECTION LABEL */
+.slabel{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.slabel::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* PERIOD SELECTOR */
+.period-bar{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;align-items:center}
+.period-btn{padding:5px 12px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text3);font-family:'Changa',sans-serif;transition:all var(--anim)}
+.period-btn:hover{background:var(--surface);color:var(--text)}
+.period-btn.active{background:var(--teal-bg);color:var(--teal);border-color:var(--border2)}
+.period-custom{display:flex;align-items:center;gap:6px;margin-left:auto}
+.period-custom input{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:5px 10px;color:var(--text2);font-size:12px;font-family:'Changa',sans-serif;outline:none;width:130px}
+.period-custom input:focus{border-color:var(--teal)}
+
+/* AI BOX */
+.ai-box{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:18px;margin-top:14px}
+.ai-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ai-icon{width:32px;height:32px;background:var(--teal-bg);border:1px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.ai-title{font-size:13px;font-weight:700;color:var(--teal)}
+.ai-sub{font-size:11px;color:var(--text3)}
+.ai-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.ai-chip{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;background:var(--surface);border:1px solid var(--border2);color:var(--text2);font-family:'Changa',sans-serif;transition:all var(--anim)}
+.ai-chip:hover{background:var(--teal-bg);color:var(--teal);border-color:var(--border2)}
+.ai-input-row{display:flex;gap:8px}
+.ai-input{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:9px 13px;color:var(--text);font-size:13px;font-family:'Changa',sans-serif;outline:none;transition:border-color var(--anim)}
+.ai-input:focus{border-color:var(--teal)}
+.ai-input::placeholder{color:var(--text3)}
+.ai-response{margin-top:14px;font-size:13px;line-height:1.7;color:var(--text2);border-top:1px solid var(--border);padding-top:14px;display:none}
+.ai-response.visible{display:block}
+.ai-response p{margin-bottom:8px}
+.ai-response p:last-child{margin-bottom:0}
+.ai-thinking{color:var(--text3);font-style:italic}
+
+/* CULLING TABLE */
+.culling-score{display:inline-flex;align-items:center;justify-content:center;width:42px;height:22px;border-radius:4px;font-size:11px;font-weight:700}
+.score-red{background:var(--red-bg);color:var(--red)}
+.score-amber{background:var(--amber-bg);color:var(--amber)}
+.score-green{background:var(--green-bg);color:var(--green)}
+
+/* MINI CHART BARS (monthly) */
+.mini-bars{display:flex;align-items:flex-end;gap:3px;height:60px;margin-top:8px}
+.mini-bar{flex:1;border-radius:2px 2px 0 0;transition:height .4s ease;min-height:2px;position:relative;cursor:pointer}
+.mini-bar:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);background:var(--bg);border:1px solid var(--border2);border-radius:4px;padding:3px 7px;font-size:10px;color:var(--text);white-space:nowrap;z-index:10}
+.mini-months{display:flex;gap:3px;margin-top:4px}
+.mini-month{flex:1;text-align:center;font-size:9px;color:var(--text4)}
+
+/* RANKING */
+.rank-item{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.rank-item:last-child{border-bottom:none}
+.rank-pos{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.rank-pos.gold{background:rgba(212,175,55,.15);color:#d4af37}
+.rank-pos.silver{background:rgba(192,192,192,.15);color:#c0c0c0}
+.rank-pos.bronze{background:rgba(205,127,50,.15);color:#cd7f32}
+.rank-pos.normal{background:var(--surface);color:var(--text3)}
+.rank-id{font-size:12px;font-weight:700;color:var(--teal)}
+.rank-name{font-size:11px;color:var(--text3);margin-top:1px}
+.rank-stats{margin-left:auto;text-align:right}
+.rank-score{font-size:16px;font-weight:700;color:var(--text)}
+.rank-detail{font-size:10px;color:var(--text3);margin-top:1px}
+
+/* EXPORT/IMPORT */
+.data-actions{display:flex;gap:8px;flex-wrap:wrap;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);margin-bottom:16px;align-items:center}
+.data-actions-label{font-size:11px;color:var(--text3);font-weight:600;margin-right:4px}
+.import-hidden{display:none}
+
+/* TOAST */
+.toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:fadeUp .2s ease;max-width:320px}
+.toast.ok{border-left:3px solid var(--teal)}.toast.err{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--amber)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:1100px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}}
+@media(max-width:800px){.g2,.g3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-head">
+    <div class="sb-logo-text">LAAAMB</div>
+    <div class="sb-logo-sub">Corderos · App</div>
+    <div class="farm-pill">
+      <span style="font-size:18px">🏔️</span>
+      <div><div class="farm-name">La Marinilla</div><div class="farm-sub">76.2 ha · <span id="sb-total">470</span> animales</div></div>
+    </div>
+  </div>
+  <nav class="nav-scroll">
+    <div class="nav-group">Principal</div>
+    <a class="nav-link" href="index.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a class="nav-link active" href="okr.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>OKRs &amp; Análisis</a>
+    <div class="nav-group">Ganadería</div>
+    <a class="nav-link" href="animales.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Animales<span class="nav-badge" id="sb-count">470</span></a>
+    <a class="nav-link" href="reproduccion.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 3"/></svg>Reproducción</a>
+    <a class="nav-link" href="lotes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>Lotes &amp; Potreros</a>
+    <div class="nav-group">Salud</div>
+    <a class="nav-link" href="salud.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>Salud &amp; Tratamientos</a>
+    <a class="nav-link" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos<span class="nav-badge">28</span></a>
+    <div class="nav-group">Gestión</div>
+    <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
+    <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
+  </nav>
+  <div class="sb-foot">
+    <div class="user-row">
+      <div class="avatar">JG</div>
+      <div><div class="user-name">Juan García</div><div class="user-role">Administrador</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="page-head">
+    <div>
+      <div class="ph-eyebrow">La Marinilla · Inteligencia</div>
+      <div class="ph-title">OKRs &amp; Análisis</div>
+      <div class="ph-sub" id="period-label">Período: Últimos 6 meses</div>
+    </div>
+    <div class="ph-actions">
+      <button class="btn btn-ghost btn-sm" onclick="exportExcel()">↓ Excel completo</button>
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar datos<input type="file" class="import-hidden" accept=".xlsx,.xls,.csv" onchange="importData(this)"></label>
+      <button class="btn btn-primary btn-sm" onclick="exportInforme()">📄 Generar informe</button>
+    </div>
+  </div>
+
+  <!-- TAB NAV -->
+  <div class="tab-nav">
+    <div class="tn active" onclick="switchTab(this,'t-produccion')">📈 Producción</div>
+    <div class="tn" onclick="switchTab(this,'t-reproduccion')">🐑 Reproducción</div>
+    <div class="tn" onclick="switchTab(this,'t-mortalidad')">💀 Mortalidad</div>
+    <div class="tn" onclick="switchTab(this,'t-ranking')">🏆 Rankings</div>
+    <div class="tn" onclick="switchTab(this,'t-culling')">⚠️ Culling</div>
+    <div class="tn" onclick="switchTab(this,'t-ia')">🤖 Análisis IA</div>
+  </div>
+
+  <div class="content" id="main-content">
+
+    <!-- PERIOD SELECTOR -->
+    <div class="period-bar">
+      <button class="period-btn" onclick="setPeriod(this,'1m')">1 mes</button>
+      <button class="period-btn" onclick="setPeriod(this,'3m')">3 meses</button>
+      <button class="period-btn active" onclick="setPeriod(this,'6m')">6 meses</button>
+      <button class="period-btn" onclick="setPeriod(this,'1a')">1 año</button>
+      <button class="period-btn" onclick="setPeriod(this,'todo')">Todo</button>
+      <div class="period-custom">
+        <input type="date" id="d-from" title="Desde">
+        <span style="font-size:12px;color:var(--text3)">→</span>
+        <input type="date" id="d-to" title="Hasta">
+        <button class="btn btn-ghost btn-sm" onclick="setPeriodCustom()">Aplicar</button>
+      </div>
+    </div>
+
+    <!-- ══ TAB: PRODUCCIÓN ══ -->
+    <div id="t-produccion" class="tab-pane active">
+      <div class="g4">
+        <div class="kpi c-orange"><div class="kpi-label">GDP media diaria</div><div class="kpi-val">182<span class="kpi-unit">g/d</span></div><div class="kpi-delta up">▲ 12g vs período ant.</div><div class="kpi-target">Meta: 200 g/d</div></div>
+        <div class="kpi c-teal"><div class="kpi-label">Peso promedio hato</div><div class="kpi-val">44<span class="kpi-unit">kg</span></div><div class="kpi-delta up">▲ 2.1kg vs período ant.</div><div class="kpi-target">Meta sacrificio: 50kg</div></div>
+        <div class="kpi c-green"><div class="kpi-label">Crías en levante</div><div class="kpi-val">87</div><div class="kpi-delta neu">0 – 6 meses</div><div class="kpi-target">Proyección: 94 en 30d</div></div>
+        <div class="kpi c-amber"><div class="kpi-label">Animales listos sacrificio</div><div class="kpi-val">23</div><div class="kpi-delta up">≥ 48kg · Listo</div><div class="kpi-target">Ingresos est.: $31.9M</div></div>
+      </div>
+
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><div><div class="card-title">GDP por lote</div><div class="card-sub">Ganancia diaria de peso promedio</div></div></div>
+          <div class="card-body">
+            <div class="bar-row"><div class="bar-lbl">Lote A (47 ovejas)</div><div class="bar-track"><div class="bar-fill" style="width:88%;background:var(--teal)"></div></div><div class="bar-val">195g</div></div>
+            <div class="bar-row"><div class="bar-lbl">Lote B (132 ovejas)</div><div class="bar-track"><div class="bar-fill" style="width:82%;background:var(--teal)"></div></div><div class="bar-val">182g</div></div>
+            <div class="bar-row"><div class="bar-lbl">Lote C (98 ovejas)</div><div class="bar-track"><div class="bar-fill" style="width:75%;background:var(--amber)"></div></div><div class="bar-val">168g</div></div>
+            <div class="bar-row"><div class="bar-lbl">Lote D (193 ovejas)</div><div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--red)"></div></div><div class="bar-val">134g</div></div>
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)">⚠ Lote D tiene GDP crítico — sobrecarga de 13.8 ov/ha afecta directamente la ganancia de peso</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div><div class="card-title">GDP mensual — evolución</div><div class="card-sub">Últimos 6 meses · Todo el hato</div></div></div>
+          <div class="card-body">
+            <div class="mini-bars" id="gdp-bars"></div>
+            <div class="mini-months" id="gdp-months"></div>
+            <div style="margin-top:16px">
+              <div class="bar-row"><div class="bar-lbl">Dorper</div><div class="bar-track"><div class="bar-fill" style="width:90%;background:var(--teal)"></div></div><div class="bar-val">198g</div></div>
+              <div class="bar-row"><div class="bar-lbl">Katahdin</div><div class="bar-track"><div class="bar-fill" style="width:78%;background:var(--sky)"></div></div><div class="bar-val">175g</div></div>
+              <div class="bar-row"><div class="bar-lbl">Hampshire</div><div class="bar-track"><div class="bar-fill" style="width:72%;background:var(--amber)"></div></div><div class="bar-val">162g</div></div>
+              <div class="bar-row"><div class="bar-lbl">Pelibuey</div><div class="bar-track"><div class="bar-fill" style="width:65%;background:var(--wine)"></div></div><div class="bar-val">148g</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OKR Progress -->
+      <div class="card">
+        <div class="card-h"><div class="card-title">OKRs de producción — avance</div><button class="btn btn-ghost btn-sm" onclick="toast('Editando metas…','info')">Editar metas</button></div>
+        <div class="card-body">
+          <div class="g2" style="margin-bottom:0">
+            <div>
+              <div class="prog-wrap"><div class="prog-header"><span class="prog-label">GDP meta anual 200g/d</span><span class="prog-val">182g</span></div><div class="prog-track"><div class="prog-fill" style="width:91%;background:var(--teal)"></div></div><div class="prog-meta">91% cumplido · Faltan 18g/d</div></div>
+              <div class="prog-wrap"><div class="prog-header"><span class="prog-label">Fertilidad meta 90%</span><span class="prog-val">87%</span></div><div class="prog-track"><div class="prog-fill" style="width:87%;background:var(--sky)"></div></div><div class="prog-meta">97% cumplido · Faltan 3pp</div></div>
+              <div class="prog-wrap"><div class="prog-header"><span class="prog-label">Natalidad meta 95%</span><span class="prog-val">94%</span></div><div class="prog-track"><div class="prog-fill" style="width:94%;background:var(--green)"></div></div><div class="prog-meta">99% cumplido · Casi en meta</div></div>
+            </div>
+            <div>
+              <div class="prog-wrap"><div class="prog-header"><span class="prog-label">Mortalidad meta &lt;2%</span><span class="prog-val">2.1%</span></div><div class="prog-track"><div class="prog-fill" style="width:95%;background:var(--amber)"></div></div><div class="prog-meta">⚠ Ligeramente sobre meta</div></div>
+              <div class="prog-wrap"><div class="prog-header"><span class="prog-label">Crías/parto meta 1.8</span><span class="prog-val">1.72</span></div><div class="prog-track"><div class="prog-fill" style="width:76%;background:var(--orange)"></div></div><div class="prog-meta">96% cumplido · Mejorar genética</div></div>
+              <div class="prog-wrap"><div class="prog-header"><span class="prog-label">Carga Lote D meta &lt;8</span><span class="prog-val">13.8</span></div><div class="prog-track"><div class="prog-fill" style="width:100%;background:var(--red)"></div></div><div class="prog-meta">🔴 Crítico — redistribuir urgente</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: REPRODUCCIÓN ══ -->
+    <div id="t-reproduccion" class="tab-pane" style="display:none">
+      <div class="g4">
+        <div class="kpi c-sky"><div class="kpi-label">Fertilidad</div><div class="kpi-val">87<span class="kpi-unit">%</span></div><div class="kpi-delta warn">⚑ Meta: 90%</div></div>
+        <div class="kpi c-green"><div class="kpi-label">Natalidad</div><div class="kpi-val">94<span class="kpi-unit">%</span></div><div class="kpi-delta up">▲ 2pp vs período ant.</div></div>
+        <div class="kpi c-teal"><div class="kpi-label">Crías / parto</div><div class="kpi-val">1.72</div><div class="kpi-delta up">▲ 0.08 vs año ant.</div></div>
+        <div class="kpi c-orange"><div class="kpi-label">Intervalo entre partos</div><div class="kpi-val">7.4<span class="kpi-unit">m</span></div><div class="kpi-delta neu">Meta: &lt;7 meses</div></div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><div class="card-title">Crías por mes</div><div class="card-sub">Últimos 6 meses</div></div>
+          <div class="card-body">
+            <div class="mini-bars" id="crias-bars"></div>
+            <div class="mini-months" id="crias-months"></div>
+            <div style="margin-top:16px">
+              <div class="bar-row"><div class="bar-lbl">Nov 2024</div><div class="bar-track"><div class="bar-fill" style="width:72%;background:var(--teal)"></div></div><div class="bar-val">32</div></div>
+              <div class="bar-row"><div class="bar-lbl">Dic 2024</div><div class="bar-track"><div class="bar-fill" style="width:58%;background:var(--teal)"></div></div><div class="bar-val">26</div></div>
+              <div class="bar-row"><div class="bar-lbl">Ene 2025</div><div class="bar-track"><div class="bar-fill" style="width:65%;background:var(--teal)"></div></div><div class="bar-val">29</div></div>
+              <div class="bar-row"><div class="bar-lbl">Feb 2025</div><div class="bar-track"><div class="bar-fill" style="width:80%;background:var(--green)"></div></div><div class="bar-val">36</div></div>
+              <div class="bar-row"><div class="bar-lbl">Mar 2025</div><div class="bar-track"><div class="bar-fill" style="width:88%;background:var(--green)"></div></div><div class="bar-val">39</div></div>
+              <div class="bar-row"><div class="bar-lbl">Abr 2025</div><div class="bar-track"><div class="bar-fill" style="width:40%;background:var(--amber)"></div></div><div class="bar-val">18</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-title">Ovejas vacías por ciclos</div><div class="card-sub">Requieren atención</div></div>
+          <div class="card-body">
+            <div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-radius:var(--r);padding:14px;margin-bottom:10px">
+              <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px">🔴 3+ ciclos — Culling inmediato</div>
+              <div style="font-size:24px;font-weight:700;color:var(--text)">7 <span style="font-size:14px;color:var(--text3);font-weight:400">animales</span></div>
+              <div style="font-size:11px;color:var(--text3);margin-top:4px">#OV-0441 · #OV-1109 · #OV-0823 · y 4 más</div>
+            </div>
+            <div style="background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-radius:var(--r);padding:14px;margin-bottom:10px">
+              <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:8px">🟡 2 ciclos — Evaluar</div>
+              <div style="font-size:24px;font-weight:700;color:var(--text)">12 <span style="font-size:14px;color:var(--text3);font-weight:400">animales</span></div>
+            </div>
+            <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px">
+              <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">⚪ 1 ciclo — Monitorear</div>
+              <div style="font-size:24px;font-weight:700;color:var(--text)">18 <span style="font-size:14px;color:var(--text3);font-weight:400">animales</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Natalidad por período seleccionable -->
+      <div class="card">
+        <div class="card-h"><div class="card-title">Natalidad por período personalizado</div><div class="card-sub">Selecciona un rango de fechas arriba</div></div>
+        <div class="card-body">
+          <div class="g4" style="margin-bottom:0">
+            <div class="kpi c-green" style="padding:12px"><div class="kpi-label">Partos totales</div><div class="kpi-val" style="font-size:22px">180</div></div>
+            <div class="kpi c-teal" style="padding:12px"><div class="kpi-label">Crías vivas</div><div class="kpi-val" style="font-size:22px">310</div></div>
+            <div class="kpi c-amber" style="padding:12px"><div class="kpi-label">Crías muertas</div><div class="kpi-val" style="font-size:22px">18</div></div>
+            <div class="kpi c-sky" style="padding:12px"><div class="kpi-label">Tasa natalidad</div><div class="kpi-val" style="font-size:22px">94<span class="kpi-unit">%</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: MORTALIDAD ══ -->
+    <div id="t-mortalidad" class="tab-pane" style="display:none">
+      <div class="g4">
+        <div class="kpi c-red"><div class="kpi-label">Mortalidad total</div><div class="kpi-val">2.1<span class="kpi-unit">%</span></div><div class="kpi-delta down">Meta: &lt;2%</div></div>
+        <div class="kpi c-amber"><div class="kpi-label">Muertes en período</div><div class="kpi-val">10</div><div class="kpi-delta neu">últimos 6 meses</div></div>
+        <div class="kpi c-red"><div class="kpi-label">Mortalidad neonatal</div><div class="kpi-val">5.5<span class="kpi-unit">%</span></div><div class="kpi-delta down">Alto — revisar manejo</div></div>
+        <div class="kpi c-sky"><div class="kpi-label">Mortalidad adultos</div><div class="kpi-val">0.8<span class="kpi-unit">%</span></div><div class="kpi-delta up">✓ Dentro de meta</div></div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><div class="card-title">Causas de mortalidad</div><div class="card-sub">Período seleccionado</div></div>
+          <div class="card-body">
+            <div class="bar-row"><div class="bar-lbl">Neumonía</div><div class="bar-track"><div class="bar-fill" style="width:70%;background:var(--red)"></div></div><div class="bar-val">35%</div></div>
+            <div class="bar-row"><div class="bar-lbl">Diarrea neonatal</div><div class="bar-track"><div class="bar-fill" style="width:44%;background:var(--orange)"></div></div><div class="bar-val">22%</div></div>
+            <div class="bar-row"><div class="bar-lbl">Predación</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:var(--amber)"></div></div><div class="bar-val">15%</div></div>
+            <div class="bar-row"><div class="bar-lbl">Parto distócico</div><div class="bar-track"><div class="bar-fill" style="width:24%;background:var(--wine)"></div></div><div class="bar-val">12%</div></div>
+            <div class="bar-row"><div class="bar-lbl">Enterotoxemia</div><div class="bar-track"><div class="bar-fill" style="width:16%;background:var(--sky)"></div></div><div class="bar-val">8%</div></div>
+            <div class="bar-row"><div class="bar-lbl">Otras</div><div class="bar-track"><div class="bar-fill" style="width:16%;background:var(--text4)"></div></div><div class="bar-val">8%</div></div>
+            <div style="margin-top:14px;padding:10px;background:var(--red-bg);border-radius:var(--r);font-size:12px;color:var(--red)">
+              🔴 <strong>Neumonía</strong> es la causa #1. Revisar ventilación en Lote D y protocolo de vacunación.
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-title">Mortalidad mensual</div><div class="card-sub">Selecciona período personalizado arriba</div></div>
+          <div class="card-body">
+            <div class="bar-row"><div class="bar-lbl">Nov 2024</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:var(--amber)"></div></div><div class="bar-val">1</div></div>
+            <div class="bar-row"><div class="bar-lbl">Dic 2024</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:var(--amber)"></div></div><div class="bar-val">1</div></div>
+            <div class="bar-row"><div class="bar-lbl">Ene 2025</div><div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--red)"></div></div><div class="bar-val">2</div></div>
+            <div class="bar-row"><div class="bar-lbl">Feb 2025</div><div class="bar-track"><div class="bar-fill" style="width:90%;background:var(--red)"></div></div><div class="bar-val">3</div></div>
+            <div class="bar-row"><div class="bar-lbl">Mar 2025</div><div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--amber)"></div></div><div class="bar-val">2</div></div>
+            <div class="bar-row"><div class="bar-lbl">Abr 2025</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:var(--green)"></div></div><div class="bar-val">1</div></div>
+            <div style="margin-top:14px;padding:10px;background:var(--amber-bg);border-radius:var(--r);font-size:12px;color:var(--amber)">
+              ⚠ Pico en Feb 2025 coincide con temporada de lluvias — reforzar manejo sanitario preventivo.
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Tabla de muertes -->
+      <div class="card">
+        <div class="card-h"><div class="card-title">Registro de muertes — período</div><button class="btn btn-ghost btn-sm" onclick="exportMuertes()">↓ Excel</button></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Fecha</th><th>Animal</th><th>Categoría</th><th>Causa</th><th>Edad</th><th>Peso est.</th><th>Lote</th><th>Colaborador</th></tr></thead>
+            <tbody>
+              <tr><td>10/04/2025</td><td class="td-mono">#OV-1892</td><td>Levante</td><td><span class="badge b-red">Neumonía</span></td><td>2.4m</td><td>12kg</td><td>Lote D</td><td>Juan García</td></tr>
+              <tr><td>02/04/2025</td><td class="td-mono">#OV-2901</td><td>Neonato</td><td><span class="badge b-amber">Diarrea</span></td><td>4 días</td><td>4kg</td><td>Lote A</td><td>María López</td></tr>
+              <tr><td>15/03/2025</td><td class="td-mono">#OV-1203</td><td>Adulto</td><td><span class="badge b-wine">Distócico</span></td><td>3.2a</td><td>42kg</td><td>Lote C</td><td>Carlos Ríos</td></tr>
+              <tr><td>02/02/2025</td><td class="td-mono">#OV-0714</td><td>Levante</td><td><span class="badge b-red">Neumonía</span></td><td>1.8m</td><td>10kg</td><td>Lote D</td><td>Juan García</td></tr>
+              <tr><td>18/01/2025</td><td class="td-mono">#OV-3019</td><td>Neonato</td><td><span class="badge b-sky">Enterotox.</span></td><td>2 días</td><td>3kg</td><td>Lote B</td><td>María López</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: RANKINGS ══ -->
+    <div id="t-ranking" class="tab-pane" style="display:none">
+      <div class="g3">
+        <!-- Mejores madres -->
+        <div class="card">
+          <div class="card-h"><div><div class="card-title">🥇 Mejores madres</div><div class="card-sub">Índice: partos + crías + GDP prole</div></div></div>
+          <div class="card-body">
+            <div class="rank-item"><div class="rank-pos gold">1</div><div><div class="rank-id">#OV-0234 — Bella</div><div class="rank-name">Dorper · Lote A · 4 partos</div></div><div class="rank-stats"><div class="rank-score">94</div><div class="rank-detail">1.85 crías · GDP 195g</div></div></div>
+            <div class="rank-item"><div class="rank-pos silver">2</div><div><div class="rank-id">#OV-1102 — Luna</div><div class="rank-name">Dorper · Lote B · 5 partos</div></div><div class="rank-stats"><div class="rank-score">91</div><div class="rank-detail">1.80 crías · GDP 188g</div></div></div>
+            <div class="rank-item"><div class="rank-pos bronze">3</div><div><div class="rank-id">#OV-0788 — Rosa</div><div class="rank-name">Katahdin · Lote A · 3 partos</div></div><div class="rank-stats"><div class="rank-score">89</div><div class="rank-detail">2.0 crías · GDP 182g</div></div></div>
+            <div class="rank-item"><div class="rank-pos normal">4</div><div><div class="rank-id">#OV-0892</div><div class="rank-name">Dorper · Lote C · 4 partos</div></div><div class="rank-stats"><div class="rank-score">85</div><div class="rank-detail">1.75 crías · GDP 178g</div></div></div>
+            <div class="rank-item"><div class="rank-pos normal">5</div><div><div class="rank-id">#OV-1234</div><div class="rank-name">Hampshire · Lote B · 2 partos</div></div><div class="rank-stats"><div class="rank-score">81</div><div class="rank-detail">1.5 crías · GDP 175g</div></div></div>
+          </div>
+        </div>
+
+        <!-- Mejores reproductores -->
+        <div class="card">
+          <div class="card-h"><div><div class="card-title">🐏 Mejores reproductores</div><div class="card-sub">Fertilidad · crías · GDP prole</div></div></div>
+          <div class="card-body">
+            <div class="rank-item"><div class="rank-pos gold">1</div><div><div class="rank-id">#RE-003 — Príncipe</div><div class="rank-name">Dorper · 87 crías registradas</div></div><div class="rank-stats"><div class="rank-score">96<span style="font-size:11px;color:var(--text3)">%</span></div><div class="rank-detail">GDP prole 191g</div></div></div>
+            <div class="rank-item"><div class="rank-pos silver">2</div><div><div class="rank-id">#RE-007 — Zeus</div><div class="rank-name">Dorper · 64 crías registradas</div></div><div class="rank-stats"><div class="rank-score">92<span style="font-size:11px;color:var(--text3)">%</span></div><div class="rank-detail">GDP prole 187g</div></div></div>
+            <div class="rank-item"><div class="rank-pos bronze">3</div><div><div class="rank-id">#RE-001 — Titan</div><div class="rank-name">Dorper · 112 crías registradas</div></div><div class="rank-stats"><div class="rank-score">89<span style="font-size:11px;color:var(--text3)">%</span></div><div class="rank-detail">GDP prole 183g</div></div></div>
+          </div>
+        </div>
+
+        <!-- Mejores crías -->
+        <div class="card">
+          <div class="card-h"><div><div class="card-title">⭐ Mejores crías levante</div><div class="card-sub">Mayor GDP en etapa de levante</div></div></div>
+          <div class="card-body">
+            <div class="rank-item"><div class="rank-pos gold">1</div><div><div class="rank-id">#OV-3301 — Nube</div><div class="rank-name">Dorper · Hija de Bella · 6m</div></div><div class="rank-stats"><div class="rank-score">210</div><div class="rank-detail">g/d · 18kg actual</div></div></div>
+            <div class="rank-item"><div class="rank-pos silver">2</div><div><div class="rank-id">#OV-3302</div><div class="rank-name">Dorper · Hija de Bella · 6m</div></div><div class="rank-stats"><div class="rank-score">198</div><div class="rank-detail">g/d · 17kg actual</div></div></div>
+            <div class="rank-item"><div class="rank-pos bronze">3</div><div><div class="rank-id">#OV-3401</div><div class="rank-name">Katahdin · Hija de Luna · 5m</div></div><div class="rank-stats"><div class="rank-score">185</div><div class="rank-detail">g/d · 14kg actual</div></div></div>
+            <div style="margin-top:14px;padding:10px;background:var(--teal-bg2);border-radius:var(--r);font-size:11px;color:var(--text2)">
+              💡 Las 3 mejores crías son hijas de <strong style="color:var(--teal)">Bella × Príncipe</strong> — cruce con mejor índice genético del hato.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Análisis de grupo seleccionado -->
+      <div class="card">
+        <div class="card-h">
+          <div><div class="card-title">Análisis de grupo personalizado</div><div class="card-sub">Selecciona animales para ver su dashboard exclusivo</div></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="toast('Función disponible en próxima versión — selección múltiple desde Animales','info')">Seleccionar animales</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportGrupo()">↓ Informe grupo</button>
+          </div>
+        </div>
+        <div class="card-body" style="text-align:center;padding:32px;color:var(--text3)">
+          <div style="font-size:28px;margin-bottom:8px">👥</div>
+          <div style="font-size:14px;color:var(--text2);margin-bottom:4px">Selecciona un grupo desde la página de Animales</div>
+          <div style="font-size:12px">Usa los filtros de Animales, selecciona las ovejas que quieras analizar y haz clic en "Analizar grupo"</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: CULLING ══ -->
+    <div id="t-culling" class="tab-pane" style="display:none">
+      <div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-left:3px solid var(--red);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--text2)">
+        <strong style="color:var(--red)">Análisis de culling</strong> — Las hembras listadas tienen bajo desempeño reproductivo y/o productivo. Se calcula con: ciclos vacíos, GDP crías, N° partos, GDP propia, costo acumulado vs retorno estimado.
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-title">Candidatas a culling</div><button class="btn btn-ghost btn-sm" onclick="exportCulling()">↓ Excel culling</button></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>ID Animal</th><th>Edad</th><th>Partos</th><th>Crías/parto</th><th>GDP crías</th><th>Ciclos vacía</th><th>Costo acum.</th><th>Retorno est.</th><th>Puntuación</th><th>Recomendación</th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="td-mono">#OV-0441</td><td>5.3a</td><td>2</td><td>1.0</td>
+                <td><span class="badge b-red">141 g/d</span></td>
+                <td><span class="badge b-red">3 ciclos</span></td>
+                <td>$1,240K</td><td>$480K</td>
+                <td><div class="culling-score score-red">21</div></td>
+                <td><span class="badge b-red">CULLING YA</span></td>
+              </tr>
+              <tr>
+                <td class="td-mono">#OV-1109</td><td>4.8a</td><td>1</td><td>1.0</td>
+                <td><span class="badge b-amber">155 g/d</span></td>
+                <td><span class="badge b-amber">2 ciclos</span></td>
+                <td>$980K</td><td>$360K</td>
+                <td><div class="culling-score score-amber">34</div></td>
+                <td><span class="badge b-amber">EVALUAR</span></td>
+              </tr>
+              <tr>
+                <td class="td-mono">#OV-2087</td><td>5.4a</td><td>3</td><td>1.33</td>
+                <td><span class="badge b-amber">162 g/d</span></td>
+                <td><span class="badge b-amber">2 ciclos</span></td>
+                <td>$1,640K</td><td>$620K</td>
+                <td><div class="culling-score score-amber">38</div></td>
+                <td><span class="badge b-amber">EVALUAR</span></td>
+              </tr>
+              <tr>
+                <td class="td-mono">#OV-0892</td><td>6.8a</td><td>4</td><td>1.75</td>
+                <td><span class="badge b-green">168 g/d</span></td>
+                <td><span class="badge b-gray">0 ciclos</span></td>
+                <td>$1,580K</td><td>$840K</td>
+                <td><div class="culling-score score-amber">52</div></td>
+                <td><span class="badge b-gray">MONITOREAR</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-body" style="padding-top:12px;border-top:1px solid var(--border)">
+          <div style="font-size:12px;color:var(--text3)">
+            <strong style="color:var(--text2)">Metodología:</strong> Puntuación 0-100 donde 0 = culling urgente. Factores: ciclos vacíos (40%), GDP crías (25%), crías/parto (20%), costo/retorno (15%).
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ TAB: IA ══ -->
+    <div id="t-ia" class="tab-pane" style="display:none">
+      <div class="ai-box">
+        <div class="ai-header">
+          <div class="ai-icon">🤖</div>
+          <div><div class="ai-title">Análisis IA — La Marinilla</div><div class="ai-sub">Consulta inteligente sobre tu rebaño · Powered by Claude</div></div>
+        </div>
+        <div class="ai-chips">
+          <div class="ai-chip" onclick="askAI('¿Qué ovejas debo cullear basado en los datos actuales?')">Análisis culling</div>
+          <div class="ai-chip" onclick="askAI('¿Cómo mejorar la fertilidad del hato de La Marinilla al 90%?')">Mejorar fertilidad</div>
+          <div class="ai-chip" onclick="askAI('Dame un plan de acción para reducir la mortalidad por neumonía')">Plan mortalidad</div>
+          <div class="ai-chip" onclick="askAI('¿Cuál es la proyección de ingresos por carne en los próximos 3 meses?')">Proyección ingresos</div>
+          <div class="ai-chip" onclick="askAI('¿Cuál es el mejor cruce genético para mejorar GDP en mi hato Dorper × Katahdin?')">Mejora genética</div>
+          <div class="ai-chip" onclick="askAI('Analiza el Lote D — sobrecarga de 13.8 ov/ha, ¿qué hago?')">Problema Lote D</div>
+          <div class="ai-chip" onclick="askAI('¿Cuándo debo hacer la próxima desparasitación y con qué producto?')">Plan sanitario</div>
+          <div class="ai-chip" onclick="askAI('¿Cuáles son las mejores hembras para retener como pie de cría?')">Selección pie de cría</div>
+        </div>
+        <div class="ai-input-row">
+          <input class="ai-input" id="ai-q" placeholder="Haz cualquier pregunta sobre tu rebaño…" onkeydown="if(event.key==='Enter')askAI()"/>
+          <button class="btn btn-primary" onclick="askAI()">Analizar →</button>
+        </div>
+        <div class="ai-response" id="ai-response"></div>
+      </div>
+
+      <!-- Importar/Exportar masivo -->
+      <div class="card" style="margin-top:14px">
+        <div class="card-h"><div><div class="card-title">📊 Importación y exportación masiva</div><div class="card-sub">Sube o descarga toda tu base de datos</div></div></div>
+        <div class="card-body">
+          <div class="data-actions">
+            <span class="data-actions-label">Exportar:</span>
+            <button class="btn btn-ghost btn-sm" onclick="exportExcel()">↓ Todos los animales (.xlsx)</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportMuertes()">↓ Mortalidad (.xlsx)</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportCulling()">↓ Análisis culling (.xlsx)</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportInforme()">↓ Informe completo (.xlsx)</button>
+          </div>
+          <div class="data-actions">
+            <span class="data-actions-label">Importar:</span>
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Animales masivo<input type="file" class="import-hidden" accept=".xlsx,.xls,.csv" onchange="importData(this,'animales')"></label>
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Pesajes masivo<input type="file" class="import-hidden" accept=".xlsx,.xls,.csv" onchange="importData(this,'pesajes')"></label>
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Ecografías masivo<input type="file" class="import-hidden" accept=".xlsx,.xls,.csv" onchange="importData(this,'ecografias')"></label>
+            <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Montas masivo<input type="file" class="import-hidden" accept=".xlsx,.xls,.csv" onchange="importData(this,'montas')"></label>
+          </div>
+          <div style="font-size:12px;color:var(--text3);margin-top:8px">
+            💡 Descarga primero la plantilla del tipo de importación, llena los datos y vuelve a subir. El sistema valida cada fila antes de guardar.
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('animales')">📋 Plantilla animales</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('pesajes')">📋 Plantilla pesajes</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('ecografias')">📋 Plantilla ecografías</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('montas')">📋 Plantilla montas</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ═══ DATA (shared state - in production this comes from localStorage/API) ═══
+const DATA = {
+  animales: JSON.parse(localStorage.getItem('laaamb_animales') || '[]'),
+  total: 470, hembras: 420, machos: 8, levante: 87, gestantes: 43,
+  gdp: 182, fertilidad: 87, natalidad: 94, mortalidad: 2.1,
+  crias_parto: 1.72
+};
+
+// ═══ TABS ═══
+function switchTab(el, id){
+  document.querySelectorAll('.tn').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
+  document.getElementById(id).style.display='block';
+}
+
+// ═══ PERIOD ═══
+function setPeriod(el, p){
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  const labels={
+    '1m':'Período: Último mes','3m':'Período: Últimos 3 meses',
+    '6m':'Período: Últimos 6 meses','1a':'Período: Último año','todo':'Período: Todo el histórico'
+  };
+  document.getElementById('period-label').textContent = labels[p]||'Período seleccionado';
+  toast('Datos actualizados para: '+labels[p],'info');
+}
+function setPeriodCustom(){
+  const f=document.getElementById('d-from').value;
+  const t=document.getElementById('d-to').value;
+  if(!f||!t){toast('Selecciona fecha inicio y fin','err');return;}
+  document.querySelectorAll('.period-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('period-label').textContent = 'Período: '+f+' → '+t;
+  toast('Datos filtrados: '+f+' al '+t,'info');
+}
+
+// ═══ MINI BAR CHARTS ═══
+function renderMiniChart(containerId, monthsId, data, color){
+  const c = document.getElementById(containerId);
+  const m = document.getElementById(monthsId);
+  if(!c||!m) return;
+  const max = Math.max(...data.map(d=>d.v));
+  c.innerHTML = data.map(d=>`<div class="mini-bar" style="height:${Math.round((d.v/max)*56)+4}px;background:${color};opacity:${0.5+0.5*(d.v/max)}" data-tip="${d.l}: ${d.v}"></div>`).join('');
+  m.innerHTML = data.map(d=>`<div class="mini-month">${d.l.substring(0,3)}</div>`).join('');
+}
+renderMiniChart('gdp-bars','gdp-months',[
+  {l:'Nov',v:168},{l:'Dic',v:172},{l:'Ene',v:175},{l:'Feb',v:179},{l:'Mar',v:182},{l:'Abr',v:185}
+],'#00AFB6');
+renderMiniChart('crias-bars','crias-months',[
+  {l:'Nov',v:32},{l:'Dic',v:26},{l:'Ene',v:29},{l:'Feb',v:36},{l:'Mar',v:39},{l:'Abr',v:18}
+],'#2ec77a');
+
+// ═══ AI ═══
+const AI_CONTEXT = `Eres un zootecnista experto en producción ovina de carne en Colombia.
+La finca "La Marinilla" (Antioquia) tiene:
+- 470 ovejas: 420 hembras, 8 machos reproductores, 87 en levante, 43 gestantes
+- Razas: Dorper principalmente, Katahdin, Hampshire, Pelibuey
+- GDP promedio: 182 g/día (meta 200). Fertilidad: 87% (meta 90%). Natalidad: 94%. Mortalidad: 2.1%
+- Crías/parto: 1.72. Intervalo entre partos: 7.4 meses
+- Lotes: A(18.4ha/47), B(24.1ha/132), C(19.7ha/98), D(14ha/193-SOBRECARGA CRÍTICA 13.8ov/ha)
+- Reproductores top: RE-003 Príncipe (96% fertilidad), RE-007 Zeus (92%), RE-001 Titan (89%)
+- 7 ovejas con 3+ ciclos vacíos, 12 con 2 ciclos. Causa #1 mortalidad: Neumonía (35%)
+Responde en español. Sé directo, práctico y da recomendaciones específicas con números.`;
+
+async function askAI(q){
+  const input = document.getElementById('ai-q');
+  const question = q || input.value.trim();
+  if(!question){toast('Escribe una pregunta primero','err');return;}
+  if(!q) input.value = question;
+  const resp = document.getElementById('ai-response');
+  resp.className = 'ai-response visible';
+  resp.innerHTML = '<p class="ai-thinking">🤖 Analizando datos de La Marinilla…</p>';
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:AI_CONTEXT,
+        messages:[{role:'user',content:question}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(b=>b.text||'').join('')||'Sin respuesta';
+    resp.innerHTML = '<div style="font-size:10px;color:var(--teal);margin-bottom:8px;font-weight:600">🤖 ANÁLISIS IA · LA MARINILLA</div>'
+      + text.split('\n').filter(l=>l.trim()).map(l=>`<p>${l}</p>`).join('');
+  } catch(e){
+    resp.innerHTML = '<p style="color:var(--red)">Error de conexión. Verifica tu internet.</p>';
+  }
+}
+
+// ═══ EXPORT EXCEL ═══
+function exportExcel(){
+  const wb = XLSX.utils.book_new();
+  // KPIs sheet
+  const kpis = [
+    ['Indicador','Valor','Meta','Estado'],
+    ['GDP promedio (g/d)',182,200,'⚠ Bajo meta'],
+    ['Fertilidad (%)',87,90,'⚠ Bajo meta'],
+    ['Natalidad (%)',94,95,'✓ Casi en meta'],
+    ['Mortalidad (%)',2.1,2,'⚠ Sobre meta'],
+    ['Crías/parto',1.72,1.8,'⚠ Bajo meta'],
+    ['Total animales',470,'—','OK'],
+    ['En levante',87,'—','OK'],
+    ['Gestantes',43,'—','OK'],
+  ];
+  const ws1 = XLSX.utils.aoa_to_sheet(kpis);
+  XLSX.utils.book_append_sheet(wb, ws1, 'KPIs');
+  // Mortalidad sheet
+  const mort = [
+    ['Causa','Porcentaje','N° muertes'],
+    ['Neumonía','35%',4],['Diarrea neonatal','22%',2],
+    ['Predación','15%',2],['Parto distócico','12%',1],['Otras','16%',1]
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(mort), 'Mortalidad');
+  // Culling sheet
+  const culling = [
+    ['ID','Ciclos vacía','GDP crías','Partos','Costo','Puntuación','Recomendación'],
+    ['#OV-0441',3,141,2,1240000,21,'CULLING YA'],
+    ['#OV-1109',2,155,1,980000,34,'EVALUAR'],
+    ['#OV-2087',2,162,3,1640000,38,'EVALUAR'],
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(culling), 'Culling');
+  XLSX.writeFile(wb, 'laaamb-okr-analisis.xlsx');
+  toast('Excel exportado');
+}
+
+function exportMuertes(){
+  const wb = XLSX.utils.book_new();
+  const data = [
+    ['Fecha','ID Animal','Categoría','Causa','Edad','Peso kg','Lote','Colaborador'],
+    ['10/04/2025','#OV-1892','Levante','Neumonía',72,12,'Lote D','Juan García'],
+    ['02/04/2025','#OV-2901','Neonato','Diarrea neonatal',4,4,'Lote A','María López'],
+    ['15/03/2025','#OV-1203','Adulto','Parto distócico',38.4,42,'Lote C','Carlos Ríos'],
+    ['02/02/2025','#OV-0714','Levante','Neumonía',54,10,'Lote D','Juan García'],
+    ['18/01/2025','#OV-3019','Neonato','Enterotoxemia',2,3,'Lote B','María López'],
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'Mortalidad');
+  XLSX.writeFile(wb, 'laaamb-mortalidad.xlsx');
+  toast('Excel mortalidad exportado');
+}
+
+function exportCulling(){
+  const wb = XLSX.utils.book_new();
+  const data = [
+    ['ID','Edad años','Partos','Crías/parto','GDP crías g/d','Ciclos vacía','Costo COP','Retorno est. COP','Puntuación 0-100','Recomendación'],
+    ['#OV-0441',5.3,2,1.0,141,3,1240000,480000,21,'CULLING YA'],
+    ['#OV-1109',4.8,1,1.0,155,2,980000,360000,34,'EVALUAR'],
+    ['#OV-2087',5.4,3,1.33,162,2,1640000,620000,38,'EVALUAR'],
+    ['#OV-0892',6.8,4,1.75,168,0,1580000,840000,52,'MONITOREAR'],
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'Culling');
+  XLSX.writeFile(wb, 'laaamb-culling.xlsx');
+  toast('Excel culling exportado');
+}
+
+function exportGrupo(){
+  toast('Selecciona primero un grupo desde Animales','info');
+}
+
+function exportInforme(){
+  const wb = XLSX.utils.book_new();
+  const resumen = [
+    ['INFORME LAAAMBAPP — LA MARINILLA',''],
+    ['Generado',new Date().toLocaleDateString('es-CO')],['',''],
+    ['INDICADORES PRINCIPALES',''],
+    ['Total animales',470],['GDP promedio',182],['Fertilidad',87+'%'],
+    ['Natalidad',94+'%'],['Mortalidad',2.1+'%'],['Crías/parto',1.72],
+    ['',''],['ALERTAS',''],
+    ['Ovejas vacías 3+ ciclos',7],['Ovejas vacías 2 ciclos',12],
+    ['Lote D sobrecarga','13.8 ov/ha — CRÍTICO'],
+    ['Causa mortalidad #1','Neumonía (35%)'],
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumen), 'Resumen');
+  XLSX.writeFile(wb, 'laaamb-informe-'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast('Informe completo exportado');
+}
+
+// ═══ TEMPLATES ═══
+function downloadTemplate(tipo){
+  const wb = XLSX.utils.book_new();
+  const templates = {
+    animales:[['ID/Arete*','Nombre','Sexo (H/M)*','Categoría*','Raza*','Fecha nac. (YYYY-MM-DD)*','Peso inicial kg','Lote*','Costo adquisición COP','Madre ID','Padre ID','Observaciones'],
+              ['OV-0471','','H','Reproductora','Dorper','2022-01-15',35,'Lote A',350000,'OV-1234','RE-003','']],
+    pesajes:[['ID Animal*','Fecha pesaje*','Peso kg*','Colaborador','Observaciones'],
+             ['OV-0234','2025-04-10',48,'Juan García','']],
+    ecografias:[['ID Animal*','Fecha ecografía*','Resultado (Gestante/Vacía/No apta)*','Días gestación','Colaborador','Observaciones'],
+                ['OV-1102','2025-04-10','Gestante',45,'María López','']],
+    montas:[['ID Hembra*','ID Macho*','Fecha monta*','Ciclo N°','Tipo (Natural/IA)','Lote','Colaborador'],
+            ['OV-0234','RE-003','2025-04-10',1,'Natural','Lote A','Juan García']],
+  };
+  const ws = XLSX.utils.aoa_to_sheet(templates[tipo]||[['Sin plantilla']]);
+  XLSX.utils.book_append_sheet(wb, ws, tipo);
+  XLSX.writeFile(wb, 'plantilla-'+tipo+'.xlsx');
+  toast('Plantilla '+tipo+' descargada');
+}
+
+// ═══ IMPORT ═══
+function importData(input, tipo){
+  const file = input.files[0];
+  if(!file){return;}
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const wb = XLSX.read(e.target.result, {type:'binary'});
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1});
+      const headers = rows[0];
+      const dataRows = rows.slice(1).filter(r=>r.some(c=>c));
+      // Validate
+      const errors = [];
+      dataRows.forEach((row,i)=>{
+        if(!row[0]) errors.push('Fila '+(i+2)+': ID requerido');
+      });
+      if(errors.length){
+        toast('⚠ '+errors.length+' errores encontrados. Revisa el archivo.','err');
+        console.log('Errores importación:',errors);
+        return;
+      }
+      // In production: save to localStorage/API
+      toast('✓ '+dataRows.length+' registros importados correctamente ('+(tipo||'datos')+')');
+      input.value='';
+    }catch(err){
+      toast('Error leyendo el archivo. Usa formato .xlsx','err');
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+// ═══ TOAST ═══
+function toast(msg, type='ok'){
+  const c=document.getElementById('toasts');
+  const t=document.createElement('div');
+  t.className='toast '+type;
+  const ic={ok:'<span style="color:var(--teal)">✓</span>',err:'<span style="color:var(--red)">✕</span>',info:'<span style="color:var(--amber)">ℹ</span>'};
+  t.innerHTML=(ic[type]||ic.ok)+' '+msg;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(),3500);
+}
+
+// Set today's dates as defaults
+const today = new Date().toISOString().slice(0,10);
+const sixMonthsAgo = new Date(Date.now()-180*86400000).toISOString().slice(0,10);
+document.getElementById('d-from').value = sixMonthsAgo;
+document.getElementById('d-to').value = today;
+</script>
+</body>
+</html>
