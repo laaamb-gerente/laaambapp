@@ -828,9 +828,20 @@ const ph=document.getElementById('p-hora');if(ph)ph.value=new Date().toTimeStrin
 renderAll();
 </script>
 <script>
+
+</script>
+<script>
 function toggleSidebar(){
-  document.getElementById("sidebar").classList.toggle("open");
-  document.getElementById("sb-overlay").classList.toggle("open");
+  var sb=document.getElementById("sidebar");
+  var ov=document.getElementById("sb-overlay");
+  var ic=document.getElementById("ham-icon");
+  var open=sb.classList.toggle("open");
+  ov.classList.toggle("open",open);
+  if(ic){
+    ic.innerHTML=open
+      ?'<line x1="4" y1="4" x2="16" y2="16"/><line x1="16" y1="4" x2="4" y2="16"/>'
+      :'<line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>';
+  }
 }
 </script>
 </body>
