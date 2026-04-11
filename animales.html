@@ -26,6 +26,9 @@
   --text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;
   --r:8px;--r2:14px;--sidebar:236px;--anim:0.16s cubic-bezier(.4,0,.2,1);
 }
+html[data-theme="light"]{--teal:#007a80;--teal-d:#005f64;--teal-bg:rgba(0,122,128,.10);--teal-bg2:rgba(0,122,128,.05);--bg:#f0f4f5;--bg2:#ffffff;--bg3:#f7fafa;--bg4:#e8f0f1;--surface:#e8f0f1;--surface2:#d4e4e6;--border:rgba(0,100,110,.12);--border2:rgba(0,100,110,.22);--border3:rgba(0,100,110,.40);--green:#1a9455;--green-bg:rgba(26,148,85,.10);--red:#c0392b;--red-bg:rgba(192,57,43,.09);--amber:#b87400;--amber-bg:rgba(184,116,0,.10);--sky:#1a7fa0;--sky-bg:rgba(26,127,160,.10);--text:#0d2b2e;--text2:#2d5a60;--text3:#5a8a90;--text4:#a0c4c8;}
+html[data-theme="sepia"]{--teal:#5a7a3a;--teal-d:#3d5a28;--teal-bg:rgba(90,122,58,.12);--teal-bg2:rgba(90,122,58,.06);--bg:#1c1608;--bg2:#231c0a;--bg3:#2a220c;--bg4:#332a10;--surface:#2e2510;--surface2:#3d3218;--border:rgba(180,140,60,.12);--border2:rgba(180,140,60,.22);--border3:rgba(180,140,60,.38);--green:#6a9a3a;--green-bg:rgba(106,154,58,.12);--red:#c04a2a;--red-bg:rgba(192,74,42,.10);--amber:#c8900a;--amber-bg:rgba(200,144,10,.12);--sky:#4a7a6a;--sky-bg:rgba(74,122,106,.12);--text:#e8d8a0;--text2:#b8a060;--text3:#7a6830;--text4:#4a4018;}
+html[data-theme="contrast"]{--teal:#00ffff;--teal-d:#00cccc;--teal-bg:rgba(0,255,255,.15);--teal-bg2:rgba(0,255,255,.08);--bg:#000;--bg2:#0a0a0a;--bg3:#111;--bg4:#1a1a1a;--surface:#1a1a1a;--surface2:#222;--border:rgba(0,255,255,.20);--border2:rgba(0,255,255,.40);--border3:rgba(0,255,255,.60);--green:#00ff7f;--green-bg:rgba(0,255,127,.15);--red:#ff4444;--red-bg:rgba(255,68,68,.15);--amber:#ffdd00;--amber-bg:rgba(255,221,0,.15);--sky:#00bfff;--sky-bg:rgba(0,191,255,.15);--text:#fff;--text2:#e0e0e0;--text3:#aaa;--text4:#555;}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
 ::-webkit-scrollbar{width:3px;height:3px}
 ::-webkit-scrollbar-track{background:transparent}
@@ -217,11 +220,48 @@ textarea.fi{resize:vertical;min-height:72px}
 .prog-fill{height:100%;border-radius:3px}
 
 @media(max-width:900px){.form-grid,.form-grid-3{grid-template-columns:1fr}.info-grid{grid-template-columns:1fr 1fr}}
+
+/* ── HAMBURGER & RESPONSIVE ─────────────────────────────── */
+.hamburger{display:none;position:fixed;top:12px;left:12px;z-index:300;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.4);transition:all var(--anim)}
+.hamburger:hover{border-color:var(--teal);background:var(--surface)}
+.hamburger svg{width:20px;height:20px;flex-shrink:0}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:99;backdrop-filter:blur(3px)}
+.sidebar{transition:transform .28s cubic-bezier(.4,0,.2,1) !important}
+@media(max-width:900px){.g4{grid-template-columns:1fr 1fr !important}}
+@media(max-width:768px){
+  .sidebar{position:fixed !important;left:0;top:0;height:100% !important;transform:translateX(-100%) !important;z-index:200;box-shadow:6px 0 32px rgba(0,0,0,.5)}
+  .sidebar.open{transform:translateX(0) !important}
+  .sidebar-overlay.open{display:block !important}
+  .hamburger{display:flex !important}
+  .main{width:100vw !important}
+  .page-head{padding:12px 14px 10px !important;padding-left:64px !important;flex-wrap:wrap;gap:8px}
+  .ph-title{font-size:20px !important}
+  .ph-actions{flex-wrap:wrap;gap:6px}
+  .ph-actions .btn{font-size:11px !important;padding:5px 10px !important}
+  .tab-nav{padding:0 12px !important}
+  .tn{padding:8px 12px !important;font-size:12px !important}
+  .content{padding:12px 12px 60px !important}
+  .g2,.g3{grid-template-columns:1fr !important}
+  .g4{grid-template-columns:1fr !important}
+  .kpi{padding:12px !important}
+  .kpi-val{font-size:22px !important}
+  .card-body{padding:12px !important}
+  .card-h{padding:12px 14px !important}
+  .form-grid,.form-grid-3{grid-template-columns:1fr !important}
+  table{font-size:12px}
+  thead th{padding:8px 10px !important}
+  tbody td{padding:9px 10px !important}
+  div[style*="overflow-x:auto"],div[style*="overflow-x: auto"]{overflow-x:auto;-webkit-overflow-scrolling:touch}
+}
 </style>
 </head>
 <body>
 <div class="app">
-<button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menú">☰</button>
+<button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Abrir menú">
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" id="ham-icon">
+    <line x1="3" y1="5" x2="17" y2="5"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="15" x2="17" y2="15"/>
+  </svg>
+</button>
 <div class="sidebar-overlay" id="sb-overlay" onclick="toggleSidebar()"></div>
 
 <!-- ═══ SIDEBAR ═══ -->
