@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAAAMBAPP · Salud & Tratamientos</title>
+<link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,0.10);--teal-bg2:rgba(0,175,182,0.06);
+  --wine:#9C3F66;--wine-bg:rgba(156,63,102,0.12);
+  --orange:#F18F22;--orange-bg:rgba(241,143,34,0.12);
+  --bg:#080f10;--bg2:#0c1517;--bg3:#101d1f;--bg4:#152224;
+  --surface:#172628;--surface2:#1d3235;
+  --border:rgba(0,175,182,0.10);--border2:rgba(0,175,182,0.20);--border3:rgba(0,175,182,0.35);
+  --green:#2ec77a;--green-bg:rgba(46,199,122,0.10);
+  --red:#e05252;--red-bg:rgba(224,82,82,0.10);
+  --amber:#e8a030;--amber-bg:rgba(232,160,48,0.10);
+  --sky:#38b0d8;--sky-bg:rgba(56,176,216,0.10);
+  --text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;
+  --r:8px;--r2:14px;--sidebar:236px;--anim:0.16s cubic-bezier(.4,0,.2,1);
+}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+.app{display:flex;height:100vh;width:100vw}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0}
+.sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:.5}
+.sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
+.sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.farm-pill{margin-top:12px;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;display:flex;align-items:center;gap:8px}
+.farm-name{font-size:12px;font-weight:600;color:var(--text)}
+.farm-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
+.nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}
+.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;text-decoration:none;transition:all var(--anim);position:relative}
+.nav-link:hover{background:var(--surface);color:var(--text)}
+.nav-link.active{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
+.nav-link.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--teal);border-radius:2px}
+.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}
+.nav-link.active .nav-ico,.nav-link:hover .nav-ico{opacity:1}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:600;background:var(--surface2);color:var(--teal);padding:1px 7px;border-radius:10px;border:1px solid var(--border2)}
+.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border)}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
+.user-name{font-size:12px;font-weight:600;color:var(--text)}
+.user-role{font-size:10px;color:var(--text3)}
+
+/* MAIN */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.page-head{padding:18px 28px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--bg2)}
+.ph-eyebrow{font-size:10px;font-weight:600;color:var(--teal-d);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.ph-title{font-family:'Sigmar',cursive;font-size:24px;color:var(--text);letter-spacing:.3px}
+.ph-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.ph-actions{display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+.tab-nav{display:flex;gap:2px;padding:0 28px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto}
+.tn{padding:10px 18px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim);white-space:nowrap}
+.tn:hover{color:var(--text)}.tn.active{color:var(--teal);border-bottom-color:var(--teal)}
+.content{flex:1;overflow-y:auto;padding:24px 28px 48px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:all var(--anim);white-space:nowrap}
+.btn-primary{background:var(--teal);color:#080f10}.btn-primary:hover{background:#1cc8d0;transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}.btn-ghost:hover{background:var(--surface);color:var(--teal);border-color:var(--border3)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,82,82,.25)}.btn-danger:hover{background:rgba(224,82,82,.2)}
+.btn-amber{background:var(--amber-bg);color:var(--amber);border:1px solid rgba(232,160,48,.25)}
+.btn-sm{padding:6px 12px;font-size:12px}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2)}
+.card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.card-title{font-size:13px;font-weight:600;color:var(--text)}
+.card-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.card-body{padding:18px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+
+/* KPI */
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:15px;position:relative;overflow:hidden;transition:border-color var(--anim)}
+.kpi:hover{border-color:var(--border2)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2.5px}
+.kpi.c-teal::before{background:var(--teal)}.kpi.c-green::before{background:var(--green)}
+.kpi.c-amber::before{background:var(--amber)}.kpi.c-red::before{background:var(--red)}
+.kpi.c-sky::before{background:var(--sky)}.kpi.c-wine::before{background:var(--wine)}
+.kpi.c-orange::before{background:var(--orange)}
+.kpi-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+.kpi-val{font-size:26px;font-weight:700;color:var(--text);line-height:1;display:flex;align-items:baseline;gap:4px}
+.kpi-unit{font-size:13px;color:var(--text3);font-weight:400}
+.kpi-delta{font-size:11px;margin-top:5px;font-weight:500}
+.up{color:var(--green)}.down{color:var(--red)}.neu{color:var(--text3)}.warn{color:var(--amber)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.b-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
+.b-green{background:var(--green-bg);color:var(--green)}.b-amber{background:var(--amber-bg);color:var(--amber)}
+.b-red{background:var(--red-bg);color:var(--red)}.b-sky{background:var(--sky-bg);color:var(--sky)}
+.b-wine{background:var(--wine-bg);color:var(--wine)}.b-gray{background:var(--surface);color:var(--text3)}
+.b-orange{background:var(--orange-bg);color:var(--orange)}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--bg3);color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:2}
+tbody tr{border-bottom:1px solid var(--border);transition:background var(--anim);cursor:pointer}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--surface)}
+tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
+.td-mono{font-size:12px;font-weight:600;color:var(--teal)}
+.td-muted{color:var(--text3);font-size:12px}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;padding:20px}
+.overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);width:100%;max-height:88vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.6);transform:translateY(8px);transition:transform .2s}
+.overlay.open .modal{transform:translateY(0)}
+.modal-sm{max-width:500px}.modal-md{max-width:680px}.modal-lg{max-width:900px}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--border)}
+.modal-title{font-family:'Sigmar',cursive;font-size:18px;color:var(--text)}
+.modal-close{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;padding:4px}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:20px 22px}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+
+/* FORM */
+.fg{margin-bottom:14px}
+.fl{display:block;font-size:11px;font-weight:600;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.fi{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:8px 11px;color:var(--text);font-size:13px;font-family:'Changa',sans-serif;outline:none;transition:border-color var(--anim)}
+.fi:focus{border-color:var(--teal)}.fi::placeholder{color:var(--text3)}
+select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%233d6e74' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
+textarea.fi{resize:vertical;min-height:68px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.form-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);margin:18px 0 12px;display:flex;align-items:center;gap:8px}
+.form-section::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* DOSIS CALCULATOR */
+.dosis-box{background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:16px;margin-top:12px}
+.dosis-title{font-size:11px;font-weight:700;color:var(--teal);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px}
+.dosis-result{font-size:32px;font-weight:700;color:var(--teal);line-height:1}
+.dosis-unit{font-size:16px;color:var(--text2);font-weight:400;margin-left:4px}
+.dosis-detail{font-size:12px;color:var(--text3);margin-top:4px}
+
+/* RETIRO CARD */
+.retiro-card{background:var(--amber-bg);border:1px solid rgba(232,160,48,.25);border-left:3px solid var(--amber);border-radius:var(--r2);padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
+.retiro-card.critico{background:var(--red-bg);border-color:rgba(224,82,82,.25);border-left-color:var(--red)}
+.retiro-info{flex:1}
+.retiro-animal{font-size:13px;font-weight:700;color:var(--text)}
+.retiro-med{font-size:12px;color:var(--text2);margin-top:2px}
+.retiro-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.retiro-days{text-align:right;flex-shrink:0}
+.retiro-num{font-size:24px;font-weight:700}
+.retiro-label{font-size:10px;color:var(--text3)}
+
+/* MED CARD */
+.med-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:14px;margin-bottom:8px;display:flex;align-items:flex-start;gap:14px;transition:all var(--anim);cursor:pointer}
+.med-card:hover{border-color:var(--border2);background:var(--surface)}
+.med-ico{width:40px;height:40px;border-radius:var(--r);background:var(--teal-bg);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.med-info{flex:1}
+.med-name{font-size:14px;font-weight:700;color:var(--text)}
+.med-principio{font-size:11px;color:var(--teal);margin-top:1px}
+.med-details{display:flex;gap:16px;margin-top:6px;flex-wrap:wrap}
+.med-detail{font-size:11px;color:var(--text3)}
+.med-detail strong{color:var(--text2)}
+.med-right{text-align:right;flex-shrink:0}
+.med-stock{font-size:18px;font-weight:700;color:var(--text)}
+.med-stock-label{font-size:10px;color:var(--text3)}
+.stock-bar{height:4px;background:var(--surface2);border-radius:2px;overflow:hidden;margin-top:6px;width:80px}
+.stock-fill{height:100%;border-radius:2px}
+
+/* PROG */
+.prog-track{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-top:4px}
+.prog-fill{height:100%;border-radius:3px}
+
+/* ALERT */
+.alert-box{border-radius:var(--r);padding:12px 16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:10px}
+.alert-box.red{background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-left:3px solid var(--red)}
+.alert-box.amber{background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-left:3px solid var(--amber)}
+.alert-box.sky{background:var(--sky-bg);border:1px solid rgba(56,176,216,.2);border-left:3px solid var(--sky)}
+.alert-ico{font-size:16px;flex-shrink:0}
+.alert-title{font-size:12px;font-weight:700;margin-bottom:2px}
+.alert-text{font-size:12px;color:var(--text2)}
+
+.import-hidden{display:none}
+.toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:fadeUp .2s ease;max-width:340px}
+.toast.ok{border-left:3px solid var(--teal)}.toast.err{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--amber)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:1100px){.g4{grid-template-columns:1fr 1fr}}
+@media(max-width:800px){.g2,.g3{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-head">
+    <div class="sb-logo-text">LAAAMB</div>
+    <div class="sb-logo-sub">Corderos · App</div>
+    <div class="farm-pill">
+      <span style="font-size:18px">🏔️</span>
+      <div><div class="farm-name">La Marinilla</div><div class="farm-sub">76.2 ha · 470 animales</div></div>
+    </div>
+  </div>
+  <nav class="nav-scroll">
+    <div class="nav-group">Principal</div>
+    <a class="nav-link" href="index.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a class="nav-link" href="okr.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>OKRs &amp; Análisis</a>
+    <div class="nav-group">Ganadería</div>
+    <a class="nav-link" href="animales.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Animales<span class="nav-badge">470</span></a>
+    <a class="nav-link" href="reproduccion.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 3"/></svg>Reproducción</a>
+    <a class="nav-link" href="lotes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>Lotes &amp; Potreros</a>
+    <div class="nav-group">Salud</div>
+    <a class="nav-link active" href="salud.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>Salud &amp; Tratamientos</a>
+    <a class="nav-link" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos<span class="nav-badge" id="sb-meds">28</span></a>
+    <div class="nav-group">Gestión</div>
+    <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
+    <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
+  </nav>
+  <div class="sb-foot">
+    <div class="user-row">
+      <div class="avatar">JG</div>
+      <div><div class="user-name">Juan García</div><div class="user-role">Administrador</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="page-head">
+    <div>
+      <div class="ph-eyebrow">La Marinilla · Salud</div>
+      <div class="ph-title">Salud &amp; Tratamientos</div>
+      <div class="ph-sub">5 tratamientos activos · 3 medicamentos por vencer · 2 lotes en retiro</div>
+    </div>
+    <div class="ph-actions">
+      <button class="btn btn-ghost btn-sm" onclick="exportSalud()">↓ Excel</button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-trat-grupal')">👥 Tratamiento grupal</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('modal-trat-individual')">+ Tratamiento individual</button>
+    </div>
+  </div>
+
+  <div class="tab-nav">
+    <div class="tn active" onclick="switchTab(this,'t-resumen')">📊 Resumen</div>
+    <div class="tn" onclick="switchTab(this,'t-activos')">💉 Activos</div>
+    <div class="tn" onclick="switchTab(this,'t-historial')">📋 Historial</div>
+    <div class="tn" onclick="switchTab(this,'t-retiro')">⏱ Retiro</div>
+    <div class="tn" onclick="switchTab(this,'t-medicamentos')">💊 Medicamentos</div>
+    <div class="tn" onclick="switchTab(this,'t-calculadora')">🧮 Calculadora</div>
+    <div class="tn" onclick="switchTab(this,'t-calendario')">📅 Calendario</div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══ RESUMEN ══ -->
+    <div id="t-resumen" class="tab-pane">
+      <div class="g4">
+        <div class="kpi c-wine"><div class="kpi-label">Tratamientos activos</div><div class="kpi-val">5</div><div class="kpi-delta neu">3 indiv. · 2 grupales</div></div>
+        <div class="kpi c-amber"><div class="kpi-label">En retiro sanitario</div><div class="kpi-val">196</div><div class="kpi-delta warn">No aptos sacrificio</div></div>
+        <div class="kpi c-red"><div class="kpi-label">Meds. por vencer</div><div class="kpi-val">3</div><div class="kpi-delta down">En los próximos 14d</div></div>
+        <div class="kpi c-teal"><div class="kpi-label">Medicamentos stock</div><div class="kpi-val">28</div><div class="kpi-delta up">Inventario activo</div></div>
+        <div class="kpi c-green"><div class="kpi-label">Tratamientos mes</div><div class="kpi-val">12</div><div class="kpi-delta neu">4 indiv. · 8 grupales</div></div>
+        <div class="kpi c-sky"><div class="kpi-label">Gasto sanidad MTD</div><div class="kpi-val">$1.2<span class="kpi-unit">M</span></div><div class="kpi-delta neu">COP este mes</div></div>
+        <div class="kpi c-orange"><div class="kpi-label">Próx. desparasitación</div><div class="kpi-val">12<span class="kpi-unit">d</span></div><div class="kpi-delta warn">Lote B — programar</div></div>
+        <div class="kpi c-green"><div class="kpi-label">Vacunaciones al día</div><div class="kpi-val">94<span class="kpi-unit">%</span></div><div class="kpi-delta up">▲ 3% vs mes ant.</div></div>
+      </div>
+
+      <div class="g2">
+        <!-- Alertas sanitarias -->
+        <div>
+          <div class="alert-box red"><div class="alert-ico">🔴</div><div><div class="alert-title" style="color:var(--red)">Closantel Lote #CL-1102 — vence en 3 días</div><div class="alert-text">Usar o desechar. 62 mL restantes · Contactar proveedor para reposición.</div></div></div>
+          <div class="alert-box amber"><div class="alert-ico">⚠️</div><div><div class="alert-title" style="color:var(--amber)">Oxitetraciclina — 8 días para vencer</div><div class="alert-text">Lote #OX-A2341 · 180 mL restantes · Revisar si hay tratamientos pendientes.</div></div></div>
+          <div class="alert-box amber"><div class="alert-ico">⏱</div><div><div class="alert-title" style="color:var(--amber)">Lote D en período de retiro — 11 días</div><div class="alert-text">193 animales no aptos para sacrificio. Post-Ivermectina grupal.</div></div></div>
+          <div class="alert-box sky"><div class="alert-ico">📅</div><div><div class="alert-title" style="color:var(--sky)">Desparasitación Lote B programada en 12 días</div><div class="alert-text">132 animales · Oxfendazol 10% · Confirmar stock disponible.</div></div></div>
+        </div>
+        <!-- Acciones rápidas -->
+        <div class="card">
+          <div class="card-h"><div class="card-title">Acciones rápidas</div></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
+            <button class="btn btn-primary" onclick="openModal('modal-trat-individual')" style="width:100%;justify-content:center">💉 Nuevo tratamiento individual</button>
+            <button class="btn btn-ghost" onclick="openModal('modal-trat-grupal')" style="width:100%;justify-content:center">👥 Nuevo tratamiento grupal</button>
+            <button class="btn btn-ghost" onclick="openModal('modal-add-med')" style="width:100%;justify-content:center">💊 Agregar medicamento</button>
+            <button class="btn btn-ghost" onclick="switchTabByName('t-calculadora')" style="width:100%;justify-content:center">🧮 Calculadora de dosis</button>
+            <button class="btn btn-ghost" onclick="switchTabByName('t-calendario')" style="width:100%;justify-content:center">📅 Ver calendario sanitario</button>
+            <button class="btn btn-ghost" onclick="downloadTemplate('tratamientos')" style="width:100%;justify-content:center">↓ Plantilla tratamientos</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ACTIVOS ══ -->
+    <div id="t-activos" class="tab-pane" style="display:none">
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px">
+        <button class="btn btn-ghost btn-sm" onclick="exportActivos()">↓ Excel activos</button>
+        <button class="btn btn-ghost btn-sm" onclick="openModal('modal-trat-grupal')">👥 Grupal</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modal-trat-individual')">+ Individual</button>
+      </div>
+      <div class="card">
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Inicio</th><th>Tipo</th><th>Animal(es)</th><th>Medicamento</th><th>Dosis</th><th>Vía</th><th>Duración</th><th>Progreso</th><th>Retiro</th><th>Colaborador</th><th>Estado</th></tr></thead>
+            <tbody id="activos-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ HISTORIAL ══ -->
+    <div id="t-historial" class="tab-pane" style="display:none">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;justify-content:space-between">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" class="fi" style="width:220px" placeholder="Buscar por animal o medicamento…" oninput="filterHistorial(this.value)">
+          <select class="fi" style="width:150px" onchange="filterHistorial('',this.value)"><option value="">Todos los tipos</option><option>Individual</option><option>Grupal</option></select>
+          <input type="month" class="fi" style="width:150px">
+        </div>
+        <div style="display:flex;gap:8px">
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importTrats(this)"></label>
+          <button class="btn btn-ghost btn-sm" onclick="exportHistorial()">↓ Excel historial</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Fecha</th><th>Tipo</th><th>Animal(es)</th><th>Diagnóstico</th><th>Medicamento</th><th>Dosis aplicada</th><th>Vía</th><th>Duración</th><th>Costo COP</th><th>Colaborador</th></tr></thead>
+            <tbody id="historial-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ RETIRO ══ -->
+    <div id="t-retiro" class="tab-pane" style="display:none">
+      <div class="alert-box red" style="margin-bottom:16px">
+        <div class="alert-ico">🚫</div>
+        <div><div class="alert-title" style="color:var(--red)">196 animales NO APTOS para sacrificio</div>
+        <div class="alert-text">Estos animales tienen residuos de medicamentos en tejidos. Respetar el período de retiro es obligatorio por ley y protege al consumidor final.</div></div>
+      </div>
+      <div id="retiro-list"></div>
+    </div>
+
+    <!-- ══ MEDICAMENTOS ══ -->
+    <div id="t-medicamentos" class="tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;gap:8px">
+          <input type="text" class="fi" style="width:220px" placeholder="Buscar medicamento…" oninput="filterMeds(this.value)">
+          <select class="fi" style="width:150px" onchange="filterMeds('',this.value)"><option value="">Todas las categorías</option><option>Antiparasitario</option><option>Antibiótico</option><option>Vitamina</option><option>Antiinflamatorio</option><option>Vacuna</option></select>
+        </div>
+        <div style="display:flex;gap:8px">
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar inventario<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importMeds(this)"></label>
+          <button class="btn btn-ghost btn-sm" onclick="exportMeds()">↓ Excel inventario</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-med')">+ Agregar medicamento</button>
+        </div>
+      </div>
+      <div id="meds-list"></div>
+    </div>
+
+    <!-- ══ CALCULADORA ══ -->
+    <div id="t-calculadora" class="tab-pane" style="display:none">
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><div class="card-title">🧮 Calculadora de dosis</div><div class="card-sub">Por peso del animal</div></div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="fg">
+                <label class="fl">Medicamento *</label>
+                <select class="fi" id="calc-med" onchange="calcDosis()">
+                  <option value="">Seleccionar…</option>
+                  <option value="ivermectina|0.2|mL/10kg|SC">Ivermectina 1% (0.2 mL/10kg SC)</option>
+                  <option value="oxitetra|5|mL/10kg|IM">Oxitetraciclina 20% (5 mL/10kg IM)</option>
+                  <option value="florfe|0.67|mL/10kg|SC">Florfenicol 30% (0.67 mL/10kg SC)</option>
+                  <option value="oxfen|5|mg/kg|VO">Oxfendazol 10% (5 mg/kg VO)</option>
+                  <option value="closantel|5|mg/kg|VO">Closantel 10% (5 mg/kg VO)</option>
+                  <option value="vitade|0.05|mL/kg|IM">Vitamina ADE (0.05 mL/kg IM)</option>
+                  <option value="melox|0.5|mg/kg|SC">Meloxicam (0.5 mg/kg SC)</option>
+                  <option value="custom|0|mL/10kg|IM">Personalizado…</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label class="fl">Peso del animal (kg) *</label>
+                <input type="number" class="fi" id="calc-peso" placeholder="38" step="0.5" oninput="calcDosis()">
+              </div>
+              <div class="fg" id="custom-dosis-wrap" style="display:none">
+                <label class="fl">Dosis personalizada (mL o mg/kg)</label>
+                <input type="number" class="fi" id="custom-dosis-val" step="0.01" placeholder="0.2" oninput="calcDosis()">
+              </div>
+              <div class="fg">
+                <label class="fl">N° animales (para grupal)</label>
+                <input type="number" class="fi" id="calc-n" placeholder="1" min="1" value="1" oninput="calcDosis()">
+              </div>
+            </div>
+            <div class="dosis-box" id="dosis-result-box">
+              <div class="dosis-title">Dosis recomendada</div>
+              <div style="display:flex;align-items:baseline;gap:8px">
+                <div class="dosis-result" id="dosis-val">—</div>
+                <div class="dosis-unit" id="dosis-unit"></div>
+              </div>
+              <div class="dosis-detail" id="dosis-detail"></div>
+              <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border2)" id="dosis-grupal" style="display:none">
+                <div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:4px">Para <span id="dosis-n-label">1</span> animales:</div>
+                <div style="font-size:22px;font-weight:700;color:var(--orange)" id="dosis-total">—</div>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" style="margin-top:12px;width:100%;justify-content:center" onclick="usarDosisTratamiento()">Usar esta dosis en nuevo tratamiento →</button>
+          </div>
+        </div>
+
+        <!-- Calculadora inversa y por peso estimado -->
+        <div class="card">
+          <div class="card-h"><div class="card-title">📊 Dosis por rango de peso</div><div class="card-sub">Tabla para tratamiento grupal</div></div>
+          <div class="card-body">
+            <div class="form-grid" style="margin-bottom:14px">
+              <div class="fg"><label class="fl">Medicamento</label>
+                <select class="fi" id="tabla-med" onchange="generarTabla()">
+                  <option value="0.2|mL/10kg">Ivermectina 1% (0.2 mL/10kg)</option>
+                  <option value="5|mL/10kg">Oxitetraciclina 20% (5 mL/10kg)</option>
+                  <option value="0.67|mL/10kg">Florfenicol 30% (0.67 mL/10kg)</option>
+                  <option value="5|mg/kg">Oxfendazol (5 mg/kg)</option>
+                </select>
+              </div>
+              <div class="fg"><label class="fl">Rango (kg mín - máx)</label>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <input type="number" class="fi" id="tabla-min" value="20" style="width:70px" oninput="generarTabla()">
+                  <span style="color:var(--text3)">–</span>
+                  <input type="number" class="fi" id="tabla-max" value="60" style="width:70px" oninput="generarTabla()">
+                </div>
+              </div>
+            </div>
+            <div style="overflow-x:auto" id="tabla-dosis">
+              <!-- Se genera dinámicamente -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ CALENDARIO ══ -->
+    <div id="t-calendario" class="tab-pane" style="display:none">
+      <div class="g2" style="margin-bottom:14px">
+        <div class="card">
+          <div class="card-h"><div class="card-title">Próximos eventos sanitarios</div></div>
+          <div class="card-body">
+            <div id="cal-events"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="card-title">Programar evento</div></div>
+          <div class="card-body">
+            <div class="fg"><label class="fl">Tipo de evento</label>
+              <select class="fi"><option>Desparasitación</option><option>Vacunación</option><option>Vitaminas</option><option>Pesaje</option><option>Revisión veterinaria</option></select>
+            </div>
+            <div class="fg"><label class="fl">Animales / Lote</label>
+              <select class="fi"><option>Lote A (47)</option><option>Lote B (132)</option><option>Lote C (98)</option><option>Lote D (193)</option><option>Todo el hato</option></select>
+            </div>
+            <div class="form-grid">
+              <div class="fg"><label class="fl">Fecha programada</label><input class="fi" type="date"></div>
+              <div class="fg"><label class="fl">Responsable</label><select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option><option>Dr. Veterinario</option></select></div>
+            </div>
+            <div class="fg"><label class="fl">Medicamento / Protocolo</label><input class="fi" placeholder="Ivermectina 1% — desparasitación rutinaria"></div>
+            <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:4px" onclick="saveEvento()">Guardar evento</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══ MODAL TRATAMIENTO INDIVIDUAL ══ -->
+<div class="overlay" id="modal-trat-individual" onclick="if(event.target===this)closeModal('modal-trat-individual')">
+<div class="modal modal-md">
+  <div class="modal-head"><div class="modal-title">💉 Tratamiento individual</div><button class="modal-close" onclick="closeModal('modal-trat-individual')">✕</button></div>
+  <div class="modal-body">
+    <div class="form-section">Animal</div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Animal (ID) *</label><input class="fi" id="ti-animal" placeholder="OV-2341" oninput="autoFillAnimal(this.value)"></div>
+      <div class="fg"><label class="fl">Peso actual (kg) *</label><input class="fi" type="number" id="ti-peso" placeholder="42" step="0.5" oninput="calcDosisTrat()"></div>
+      <div class="fg"><label class="fl">Diagnóstico / Motivo *</label><input class="fi" id="ti-dx" placeholder="Neumonía bacteriana"></div>
+      <div class="fg"><label class="fl">Lote</label><select class="fi"><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select></div>
+    </div>
+    <div class="form-section">Medicamento</div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Medicamento *</label>
+        <select class="fi" id="ti-med" onchange="calcDosisTrat()">
+          <option value="5|mL/10kg|28|IM">Oxitetraciclina 20% (5mL/10kg — ret. 28d)</option>
+          <option value="0.67|mL/10kg|0|SC">Florfenicol 30% (0.67mL/10kg — ret. 0d)</option>
+          <option value="0.2|mL/10kg|14|SC">Ivermectina 1% (0.2mL/10kg — ret. 14d)</option>
+          <option value="0.5|mg/kg|0|SC">Meloxicam (0.5mg/kg — ret. 0d)</option>
+          <option value="5|mg/kg|7|VO">Oxfendazol (5mg/kg — ret. 7d)</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Dosis sugerida</label>
+        <input class="fi" id="ti-dosis-sug" readonly style="background:var(--bg4);color:var(--teal);font-weight:700" placeholder="Ingresa peso primero">
+      </div>
+      <div class="fg"><label class="fl">Dosis aplicada (confirmar) *</label><input class="fi" id="ti-dosis" placeholder="21 mL"></div>
+      <div class="fg"><label class="fl">Vía administración</label><select class="fi"><option>IM</option><option>SC</option><option>IV</option><option>VO</option></select></div>
+      <div class="fg"><label class="fl">Duración tratamiento *</label><input class="fi" id="ti-dur" placeholder="5 días"></div>
+      <div class="fg"><label class="fl">Período retiro (días)</label><input class="fi" id="ti-retiro" readonly style="background:var(--bg4);color:var(--amber)" placeholder="Auto"></div>
+    </div>
+    <div class="form-section">Registro</div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Fecha inicio *</label><input class="fi" type="date" id="ti-fecha"></div>
+      <div class="fg"><label class="fl">Colaborador *</label><select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" placeholder="Notas del tratamiento, evolución…"></textarea></div>
+    <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2);margin-top:8px">
+      💡 Al guardar: el estado del animal cambia a "En tratamiento", se registra en su historial médico y se activa el contador de retiro sanitario automáticamente.
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-trat-individual')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" onclick="saveTratamiento('individual')">Guardar tratamiento</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL TRATAMIENTO GRUPAL ══ -->
+<div class="overlay" id="modal-trat-grupal" onclick="if(event.target===this)closeModal('modal-trat-grupal')">
+<div class="modal modal-md">
+  <div class="modal-head"><div class="modal-title">👥 Tratamiento grupal</div><button class="modal-close" onclick="closeModal('modal-trat-grupal')">✕</button></div>
+  <div class="modal-body">
+    <div class="form-section">Grupo</div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Lote / Grupo *</label>
+        <select class="fi" id="tg-lote" onchange="updateGrupoInfo()">
+          <option value="A|47">Lote A — 47 animales</option>
+          <option value="B|132">Lote B — 132 animales</option>
+          <option value="C|98">Lote C — 98 animales</option>
+          <option value="D|193">Lote D — 193 animales</option>
+          <option value="hato|470">Todo el hato — 470 animales</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Motivo / Diagnóstico</label><input class="fi" placeholder="Desparasitación preventiva"></div>
+      <div class="fg"><label class="fl">Peso promedio grupo (kg)</label><input class="fi" type="number" id="tg-peso" placeholder="38" oninput="calcDosisTratGrupal()"></div>
+      <div class="fg"><label class="fl">N° animales (confirmado)</label><input class="fi" type="number" id="tg-n" placeholder="47" oninput="calcDosisTratGrupal()"></div>
+    </div>
+    <div class="form-section">Medicamento</div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Medicamento *</label>
+        <select class="fi" id="tg-med" onchange="calcDosisTratGrupal()">
+          <option value="0.2|mL/10kg|14">Ivermectina 1% (ret. 14d)</option>
+          <option value="5|mg/kg|7">Oxfendazol 10% (ret. 7d)</option>
+          <option value="5|mg/kg|42">Closantel 10% (ret. 42d)</option>
+          <option value="0.05|mL/kg|0">Vitamina ADE (ret. 0d)</option>
+          <option value="0.2|mL/10kg|0">Vitamina B12 (ret. 0d)</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl">Dosis por animal</label>
+        <input class="fi" id="tg-dosis-animal" readonly style="background:var(--bg4);color:var(--teal);font-weight:700" placeholder="Ingresa peso">
+      </div>
+      <div class="fg"><label class="fl">Total medicamento necesario</label>
+        <input class="fi" id="tg-dosis-total" readonly style="background:var(--bg4);color:var(--orange);font-weight:700" placeholder="—">
+      </div>
+      <div class="fg"><label class="fl">Período retiro (días)</label>
+        <input class="fi" id="tg-retiro" readonly style="background:var(--bg4);color:var(--amber);" placeholder="Auto">
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Fecha aplicación *</label><input class="fi" type="date" id="tg-fecha"></div>
+      <div class="fg"><label class="fl">Colaborador *</label><select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" placeholder="Protocolo seguido, condiciones del día…"></textarea></div>
+    <div style="background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2);margin-top:8px">
+      ⚠ Al guardar: todos los animales del grupo quedan en retiro sanitario por <strong id="tg-retiro-label" style="color:var(--amber)">—</strong> días. El stock del medicamento se descuenta del inventario automáticamente.
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-trat-grupal')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" onclick="saveTratamiento('grupal')">Guardar tratamiento grupal</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL AGREGAR MEDICAMENTO ══ -->
+<div class="overlay" id="modal-add-med" onclick="if(event.target===this)closeModal('modal-add-med')">
+<div class="modal modal-md">
+  <div class="modal-head"><div class="modal-title">💊 Agregar medicamento</div><button class="modal-close" onclick="closeModal('modal-add-med')">✕</button></div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Nombre comercial *</label><input class="fi" placeholder="Ivermectina 1%"></div>
+      <div class="fg"><label class="fl">Principio activo *</label><input class="fi" placeholder="Ivermectina"></div>
+      <div class="fg"><label class="fl">Categoría</label><select class="fi"><option>Antiparasitario</option><option>Antibiótico</option><option>Vitamina</option><option>Antiinflamatorio</option><option>Vacuna</option><option>Hormonal</option><option>Otro</option></select></div>
+      <div class="fg"><label class="fl">N° de lote *</label><input class="fi" placeholder="IV-2025-001"></div>
+      <div class="fg"><label class="fl">Presentación</label><select class="fi"><option>Inyectable</option><option>Oral (líquido)</option><option>Oral (sólido)</option><option>Tópico</option><option>Premezcla</option></select></div>
+      <div class="fg"><label class="fl">Cantidad (mL / g / tab)</label><input class="fi" type="number" placeholder="500"></div>
+      <div class="fg"><label class="fl">Fecha vencimiento *</label><input class="fi" type="date" id="med-venc"></div>
+      <div class="fg"><label class="fl">Tiempo retiro (días) *</label><input class="fi" type="number" placeholder="14"></div>
+      <div class="fg"><label class="fl">Dosis (ej: 0.2 mL/10kg SC)</label><input class="fi" placeholder="0.2 mL/10kg SC"></div>
+      <div class="fg"><label class="fl">Costo unitario (COP)</label><input class="fi" type="number" placeholder="85000"></div>
+      <div class="fg"><label class="fl">Proveedor</label><input class="fi" placeholder="Agroveterinaria Ltda."></div>
+      <div class="fg"><label class="fl">Temperatura almacenamiento</label><select class="fi"><option>Temperatura ambiente</option><option>Refrigeración 2-8°C</option><option>Congelación</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Observaciones / Advertencias</label><textarea class="fi" placeholder="Contraindicaciones, precauciones…" rows="2"></textarea></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-add-med')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" onclick="saveMed()">Guardar medicamento</button>
+  </div>
+</div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ═══════ DATA ═══════
+const TRATAMIENTOS = [
+  {id:'T001',fecha:'08/04/2025',tipo:'Individual',animales:'#OV-2341',dx:'Neumonía bacteriana',med:'Oxitetraciclina 20%',dosis:'21 mL IM',via:'IM',dur:'5 días',dia:3,totalDias:5,retiro:28,costo:18500,colaborador:'Juan García',estado:'En curso'},
+  {id:'T002',fecha:'10/04/2025',tipo:'Grupal',animales:'Lote D (193)',dx:'Desparasitación preventiva',med:'Ivermectina 1%',dosis:'0.2 mL/10kg SC',via:'SC',dur:'1 dosis',dia:1,totalDias:1,retiro:14,costo:285000,colaborador:'María López',estado:'Completado'},
+  {id:'T003',fecha:'07/04/2025',tipo:'Individual',animales:'#OV-1892',dx:'Enteritis',med:'Florfenicol 30%',dosis:'8.4 mL SC',via:'SC',dur:'3 días',dia:3,totalDias:3,retiro:0,costo:12400,colaborador:'Carlos Ríos',estado:'Completado'},
+  {id:'T004',fecha:'09/04/2025',tipo:'Individual',animales:'#OV-0788',dx:'Dolor postparto',med:'Meloxicam',dosis:'19 mL SC',via:'SC',dur:'2 días',dia:2,totalDias:2,retiro:0,costo:9800,colaborador:'Juan García',estado:'Completado'},
+  {id:'T005',fecha:'05/04/2025',tipo:'Grupal',animales:'Lote B (132)',dx:'Desparasitación',med:'Oxfendazol 10%',dosis:'5 mg/kg VO',via:'VO',dur:'1 dosis',dia:1,totalDias:1,retiro:7,costo:195000,colaborador:'Carlos Ríos',estado:'En retiro'},
+];
+
+const MEDICAMENTOS = [
+  {nombre:'Ivermectina 1%',principio:'Ivermectina',cat:'Antiparasitario',lote:'IV-2024-341',pres:'Inyectable',stock:340,stockMax:500,dosis:'0.2 mL/10kg SC',retiro:14,venc:'2026-08-12',costo:85000,ico:'💉'},
+  {nombre:'Oxitetraciclina 20%',principio:'Oxitetraciclina',cat:'Antibiótico',lote:'OX-A2341',pres:'Inyectable',stock:180,stockMax:250,dosis:'5 mL/10kg IM',retiro:28,venc:'2025-04-18',costo:42000,ico:'💉'},
+  {nombre:'Closantel 10%',principio:'Closantel',cat:'Antiparasitario',lote:'CL-1102',pres:'Oral',stock:62,stockMax:100,dosis:'5 mg/kg VO',retiro:42,venc:'2025-04-13',costo:28000,ico:'💊'},
+  {nombre:'Florfenicol 30%',principio:'Florfenicol',cat:'Antibiótico',lote:'FL-0887',pres:'Inyectable',stock:420,stockMax:500,dosis:'0.67 mL/10kg SC',retiro:0,venc:'2027-01-20',costo:65000,ico:'💉'},
+  {nombre:'Vitamina ADE',principio:'Vit. A/D/E',cat:'Vitamina',lote:'VIT-B0921',pres:'Inyectable',stock:195,stockMax:250,dosis:'0.05 mL/kg IM',retiro:0,venc:'2025-04-24',costo:18000,ico:'💊'},
+  {nombre:'Oxfendazol 10%',principio:'Oxfendazol',cat:'Antiparasitario',lote:'OXF-4421',pres:'Oral',stock:850,stockMax:1000,dosis:'5 mg/kg VO',retiro:7,venc:'2026-11-30',costo:32000,ico:'💊'},
+  {nombre:'Meloxicam 5%',principio:'Meloxicam',cat:'Antiinflamatorio',lote:'MEL-2201',pres:'Inyectable',stock:280,stockMax:500,dosis:'0.5 mg/kg SC',retiro:0,venc:'2026-06-15',costo:55000,ico:'💉'},
+  {nombre:'Vitamina B12',principio:'Cianocobalamina',cat:'Vitamina',lote:'B12-0341',pres:'Inyectable',stock:340,stockMax:500,dosis:'0.2 mL/10kg IM',retiro:0,venc:'2027-03-10',costo:12000,ico:'💊'},
+];
+
+const RETIRO_ACTIVOS = [
+  {animal:'Lote D (193 animales)',med:'Ivermectina 1%',fechaFin:new Date(Date.now()+11*86400000),diasRestantes:11,critico:false,colaborador:'María López'},
+  {animal:'#OV-2341',med:'Oxitetraciclina 20%',fechaFin:new Date(Date.now()+25*86400000),diasRestantes:25,critico:false,colaborador:'Juan García'},
+  {animal:'Lote B (132 animales)',med:'Oxfendazol 10%',fechaFin:new Date(Date.now()+2*86400000),diasRestantes:2,critico:true,colaborador:'Carlos Ríos'},
+];
+
+const CAL_EVENTOS = [
+  {fecha:'2025-04-23',tipo:'Desparasitación',animales:'Lote B (132)',med:'Ivermectina',responsable:'Carlos Ríos',urgencia:'pronto'},
+  {fecha:'2025-04-28',tipo:'Vacunación',animales:'Todo el hato',med:'Clostridial',responsable:'Dr. Martínez',urgencia:'normal'},
+  {fecha:'2025-05-05',tipo:'Vitaminas',animales:'Crías 0-3m',med:'Vitamina ADE',responsable:'María López',urgencia:'normal'},
+  {fecha:'2025-05-12',tipo:'Pesaje grupal',animales:'Lote A',med:'—',responsable:'Juan García',urgencia:'normal'},
+  {fecha:'2025-05-20',tipo:'Revisión veterinaria',animales:'Todo el hato',med:'—',responsable:'Dr. Martínez',urgencia:'normal'},
+];
+
+// ═══════ TABS ═══════
+function switchTab(el,id){
+  document.querySelectorAll('.tn').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
+  document.getElementById(id).style.display='block';
+  if(id==='t-calculadora') generarTabla();
+  if(id==='t-medicamentos') renderMeds(MEDICAMENTOS);
+  if(id==='t-calendario') renderCalendario();
+}
+function switchTabByName(id){
+  const tabs = {'t-calculadora':5,'t-calendario':6,'t-medicamentos':4};
+  const idx = tabs[id]||0;
+  const tns = document.querySelectorAll('.tn');
+  if(tns[idx]) switchTab(tns[idx],id);
+}
+
+// ═══════ RENDER TABLES ═══════
+function renderActivos(){
+  const tb=document.getElementById('activos-tbody');if(!tb)return;
+  const EST={  'En curso':'b-sky','Completado':'b-green','En retiro':'b-amber'};
+  const TIPO={'Individual':'b-teal','Grupal':'b-wine'};
+  tb.innerHTML=TRATAMIENTOS.map(t=>{
+    const pct=Math.round((t.dia/t.totalDias)*100);
+    return `<tr onclick="toast('Tratamiento ${t.id}','info')">
+      <td class="td-muted">${t.fecha}</td>
+      <td><span class="badge ${TIPO[t.tipo]||'b-gray'}">${t.tipo}</span></td>
+      <td class="td-mono" style="font-size:11px">${t.animales}</td>
+      <td style="font-size:12px">${t.med}</td>
+      <td class="td-muted">${t.dosis}</td>
+      <td class="td-muted">${t.via}</td>
+      <td class="td-muted">${t.dur}</td>
+      <td style="min-width:90px">
+        <div style="font-size:10px;color:var(--text3);margin-bottom:3px">Día ${t.dia}/${t.totalDias}</div>
+        <div class="prog-track"><div class="prog-fill" style="width:${pct}%;background:${pct>=100?'var(--green)':'var(--teal)'}"></div></div>
+      </td>
+      <td>${t.retiro>0?`<span class="badge b-amber">${t.retiro}d</span>`:'<span class="badge b-green">Libre</span>'}</td>
+      <td class="td-muted">${t.colaborador}</td>
+      <td><span class="badge ${EST[t.estado]||'b-gray'}">${t.estado}</span></td>
+    </tr>`;}).join('');
+}
+
+function renderHistorial(){
+  const tb=document.getElementById('historial-tbody');if(!tb)return;
+  const TIPO={'Individual':'b-teal','Grupal':'b-wine'};
+  tb.innerHTML=TRATAMIENTOS.map(t=>`
+    <tr><td class="td-muted">${t.fecha}</td>
+    <td><span class="badge ${TIPO[t.tipo]||'b-gray'}">${t.tipo}</span></td>
+    <td class="td-mono" style="font-size:11px">${t.animales}</td>
+    <td style="font-size:12px;color:var(--text2)">${t.dx}</td>
+    <td style="font-size:12px">${t.med}</td>
+    <td class="td-muted">${t.dosis}</td>
+    <td class="td-muted">${t.via}</td>
+    <td class="td-muted">${t.dur}</td>
+    <td class="td-muted">$${t.costo.toLocaleString('es-CO')}</td>
+    <td class="td-muted">${t.colaborador}</td></tr>`).join('');
+}
+
+function filterHistorial(q,tipo){
+  let data=[...TRATAMIENTOS];
+  if(q) data=data.filter(t=>t.animales.toLowerCase().includes(q.toLowerCase())||t.med.toLowerCase().includes(q.toLowerCase()));
+  if(tipo) data=data.filter(t=>t.tipo===tipo);
+  const tb=document.getElementById('historial-tbody');if(!tb)return;
+  const TIPO={'Individual':'b-teal','Grupal':'b-wine'};
+  tb.innerHTML=data.map(t=>`<tr><td class="td-muted">${t.fecha}</td><td><span class="badge ${TIPO[t.tipo]||'b-gray'}">${t.tipo}</span></td><td class="td-mono">${t.animales}</td><td>${t.dx}</td><td>${t.med}</td><td class="td-muted">${t.dosis}</td><td class="td-muted">${t.via}</td><td class="td-muted">${t.dur}</td><td class="td-muted">$${t.costo.toLocaleString('es-CO')}</td><td class="td-muted">${t.colaborador}</td></tr>`).join('');
+}
+
+function renderRetiro(){
+  const c=document.getElementById('retiro-list');if(!c)return;
+  const sorted=[...RETIRO_ACTIVOS].sort((a,b)=>a.diasRestantes-b.diasRestantes);
+  c.innerHTML=sorted.map(r=>`
+    <div class="retiro-card ${r.critico?'critico':''}">
+      <div style="font-size:28px">🐑</div>
+      <div class="retiro-info">
+        <div class="retiro-animal">${r.animal}</div>
+        <div class="retiro-med">Medicamento: <strong>${r.med}</strong></div>
+        <div class="retiro-meta">Responsable: ${r.colaborador} · Fin retiro: ${r.fechaFin.toLocaleDateString('es-CO')}</div>
+        <div style="margin-top:6px">
+          <div class="prog-track"><div class="prog-fill" style="width:${Math.min(100,Math.round((1-r.diasRestantes/30)*100))}%;background:${r.critico?'var(--red)':'var(--amber)'}"></div></div>
+        </div>
+      </div>
+      <div class="retiro-days">
+        <div class="retiro-num" style="color:${r.critico?'var(--red)':'var(--amber)'}">${r.diasRestantes}</div>
+        <div class="retiro-label">días restantes</div>
+        ${r.critico?'<div style="margin-top:4px"><span class="badge b-red">⚠ URGENTE</span></div>':''}
+      </div>
+    </div>`).join('');
+}
+
+function renderMeds(data){
+  const c=document.getElementById('meds-list');if(!c)return;
+  const today=new Date();
+  c.innerHTML=data.map(m=>{
+    const venc=new Date(m.venc);
+    const diasVenc=Math.round((venc-today)/86400000);
+    const estadoColor=diasVenc<=3?'b-red':diasVenc<=14?'b-amber':'b-green';
+    const estadoText=diasVenc<=3?'Vence en '+diasVenc+'d':diasVenc<=14?'Vence en '+diasVenc+'d':'OK hasta '+venc.toLocaleDateString('es-CO');
+    const stockPct=Math.round((m.stock/m.stockMax)*100);
+    const stockColor=stockPct<20?'var(--red)':stockPct<50?'var(--amber)':'var(--teal)';
+    return `<div class="med-card" onclick="toast('${m.nombre} — ${m.principio}','info')">
+      <div class="med-ico">${m.ico}</div>
+      <div class="med-info">
+        <div class="med-name">${m.nombre}</div>
+        <div class="med-principio">${m.principio} · ${m.cat}</div>
+        <div class="med-details">
+          <div class="med-detail">Lote: <strong>${m.lote}</strong></div>
+          <div class="med-detail">Dosis: <strong>${m.dosis}</strong></div>
+          <div class="med-detail">Retiro: <strong>${m.retiro} días</strong></div>
+          <div class="med-detail">Costo: <strong>$${m.costo.toLocaleString('es-CO')}</strong></div>
+        </div>
+      </div>
+      <div class="med-right">
+        <div class="med-stock">${m.stock}<span style="font-size:12px;color:var(--text3);margin-left:2px">mL</span></div>
+        <div class="med-stock-label">stock disponible</div>
+        <div class="stock-bar"><div class="stock-fill" style="width:${stockPct}%;background:${stockColor}"></div></div>
+        <div style="margin-top:8px"><span class="badge ${estadoColor}">${estadoText}</span></div>
+      </div>
+    </div>`;}).join('');
+}
+function filterMeds(q,cat){
+  let data=[...MEDICAMENTOS];
+  if(q) data=data.filter(m=>m.nombre.toLowerCase().includes(q.toLowerCase())||m.principio.toLowerCase().includes(q.toLowerCase()));
+  if(cat) data=data.filter(m=>m.cat===cat);
+  renderMeds(data);
+}
+
+function renderCalendario(){
+  const c=document.getElementById('cal-events');if(!c)return;
+  const hoy=new Date();
+  const TIPO_COLOR={'Desparasitación':'b-green','Vacunación':'b-sky','Vitaminas':'b-teal','Pesaje grupal':'b-gray','Revisión veterinaria':'b-amber'};
+  c.innerHTML=CAL_EVENTOS.map(ev=>{
+    const d=new Date(ev.fecha);
+    const dias=Math.round((d-hoy)/86400000);
+    const urgColor=dias<=3?'var(--red)':dias<=7?'var(--amber)':'var(--text2)';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="text-align:center;min-width:44px">
+        <div style="font-size:18px;font-weight:700;color:${urgColor}">${d.getDate()}</div>
+        <div style="font-size:9px;color:var(--text3)">${['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'][d.getMonth()]}</div>
+      </div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600;color:var(--text)">${ev.tipo}</div>
+        <div style="font-size:11px;color:var(--text3)">${ev.animales} · ${ev.med!=='—'?ev.med+' · ':''} ${ev.responsable}</div>
+      </div>
+      <div style="text-align:right">
+        <span class="badge ${TIPO_COLOR[ev.tipo]||'b-gray'}">${dias===0?'Hoy':dias===1?'Mañana':dias+' días'}</span>
+      </div>
+    </div>`;}).join('');
+}
+
+// ═══════ CALCULADORA DOSIS ═══════
+function calcDosis(){
+  const medRaw=document.getElementById('calc-med').value;
+  const peso=parseFloat(document.getElementById('calc-peso').value)||0;
+  const n=parseInt(document.getElementById('calc-n').value)||1;
+  const customWrap=document.getElementById('custom-dosis-wrap');
+  if(!medRaw){document.getElementById('dosis-val').textContent='—';return;}
+  if(medRaw==='custom|0|mL/10kg|IM'){customWrap.style.display='block';}
+  else{customWrap.style.display='none';}
+  if(!peso){document.getElementById('dosis-val').textContent='—';return;}
+  const parts=medRaw.split('|');
+  const factor=parseFloat(parts[1])||parseFloat(document.getElementById('custom-dosis-val')?.value)||0;
+  const unidad=parts[2]||'mL/10kg';
+  const via=parts[3]||'IM';
+  let dosis=0;
+  if(unidad.includes('/10kg')) dosis=factor*peso/10;
+  else if(unidad.includes('/kg')) dosis=factor*peso;
+  document.getElementById('dosis-val').textContent=dosis.toFixed(1);
+  document.getElementById('dosis-unit').textContent='mL vía '+via;
+  document.getElementById('dosis-detail').textContent=`Para ${peso}kg · ${factor}${unidad} · ${via}`;
+  document.getElementById('dosis-n-label').textContent=n;
+  document.getElementById('dosis-total').textContent=(dosis*n).toFixed(1)+' mL total';
+  document.getElementById('dosis-grupal').style.display=n>1?'block':'none';
+}
+
+function usarDosisTratamiento(){
+  closeModal('modal-trat-individual');
+  const d=document.getElementById('dosis-val').textContent;
+  if(d!=='—'){
+    document.getElementById('ti-dosis').value=d+' mL';
+    document.getElementById('ti-dosis-sug').value=d+' mL';
+  }
+  openModal('modal-trat-individual');
+  toast('Dosis cargada en el formulario de tratamiento','info');
+}
+
+function calcDosisTrat(){
+  const medRaw=document.getElementById('ti-med')?.value;
+  const peso=parseFloat(document.getElementById('ti-peso')?.value)||0;
+  if(!medRaw||!peso)return;
+  const parts=medRaw.split('|');
+  const factor=parseFloat(parts[0]);
+  const unidad=parts[1];
+  const retiro=parts[2];
+  let dosis=unidad.includes('/10kg')?factor*peso/10:factor*peso;
+  const sug=document.getElementById('ti-dosis-sug');
+  const ret=document.getElementById('ti-retiro');
+  if(sug) sug.value=dosis.toFixed(1)+' mL vía '+parts[3];
+  if(ret) ret.value=retiro+' días';
+}
+
+function calcDosisTratGrupal(){
+  const medRaw=document.getElementById('tg-med')?.value;
+  const peso=parseFloat(document.getElementById('tg-peso')?.value)||0;
+  const n=parseInt(document.getElementById('tg-n')?.value)||0;
+  if(!medRaw||!peso)return;
+  const parts=medRaw.split('|');
+  const factor=parseFloat(parts[0]);
+  const unidad=parts[1];
+  const retiro=parts[2];
+  let dosisPorAnimal=unidad.includes('/10kg')?factor*peso/10:factor*peso;
+  const da=document.getElementById('tg-dosis-animal');
+  const dt=document.getElementById('tg-dosis-total');
+  const rt=document.getElementById('tg-retiro');
+  const rl=document.getElementById('tg-retiro-label');
+  if(da) da.value=dosisPorAnimal.toFixed(1)+' mL/animal';
+  if(dt&&n) dt.value=(dosisPorAnimal*n).toFixed(0)+' mL total';
+  if(rt) rt.value=retiro+' días';
+  if(rl) rl.textContent=retiro+' días';
+}
+
+function updateGrupoInfo(){
+  const parts=document.getElementById('tg-lote')?.value.split('|');
+  if(parts&&document.getElementById('tg-n')) document.getElementById('tg-n').value=parts[1];
+}
+
+function generarTabla(){
+  const medRaw=document.getElementById('tabla-med')?.value;
+  const min=parseInt(document.getElementById('tabla-min')?.value)||20;
+  const max=parseInt(document.getElementById('tabla-max')?.value)||60;
+  const parts=(medRaw||'0.2|mL/10kg').split('|');
+  const factor=parseFloat(parts[0]);
+  const unidad=parts[1];
+  const container=document.getElementById('tabla-dosis');if(!container)return;
+  const pesos=[];
+  for(let p=min;p<=max;p+=5) pesos.push(p);
+  let html='<table><thead><tr><th>Peso (kg)</th><th>Dosis</th><th>Para 10 animales</th><th>Para 50 animales</th></tr></thead><tbody>';
+  pesos.forEach(p=>{
+    const d=unidad.includes('/10kg')?factor*p/10:factor*p;
+    html+=`<tr><td>${p} kg</td><td style="color:var(--teal);font-weight:600">${d.toFixed(1)} mL</td><td class="td-muted">${(d*10).toFixed(0)} mL</td><td class="td-muted">${(d*50).toFixed(0)} mL</td></tr>`;
+  });
+  container.innerHTML=html+'</tbody></table>';
+}
+
+// ═══════ SAVES ═══════
+function saveTratamiento(tipo){
+  if(tipo==='individual'){
+    const animal=document.getElementById('ti-animal')?.value;
+    const dx=document.getElementById('ti-dx')?.value;
+    if(!animal||!dx){toast('Completa los campos requeridos','err');return;}
+    TRATAMIENTOS.unshift({id:'T00'+(TRATAMIENTOS.length+1),fecha:new Date().toLocaleDateString('es-CO'),tipo:'Individual',animales:'#'+animal,dx,med:'Oxitetraciclina 20%',dosis:document.getElementById('ti-dosis')?.value||'—',via:'IM',dur:document.getElementById('ti-dur')?.value||'—',dia:1,totalDias:5,retiro:28,costo:18500,colaborador:'Juan García',estado:'En curso'});
+    closeModal('modal-trat-individual');
+    renderActivos();renderHistorial();
+    toast('Tratamiento registrado · Estado de #'+animal+' actualizado a "En tratamiento"');
+  } else {
+    const lote=document.getElementById('tg-lote')?.value.split('|')[0];
+    TRATAMIENTOS.unshift({id:'T00'+(TRATAMIENTOS.length+1),fecha:new Date().toLocaleDateString('es-CO'),tipo:'Grupal',animales:'Lote '+lote,dx:'Tratamiento grupal',med:'Ivermectina',dosis:'0.2mL/10kg',via:'SC',dur:'1 dosis',dia:1,totalDias:1,retiro:14,costo:285000,colaborador:'Juan García',estado:'En retiro'});
+    closeModal('modal-trat-grupal');
+    renderActivos();renderHistorial();
+    toast('Tratamiento grupal registrado · Stock descontado del inventario · Retiro activo 14 días');
+  }
+}
+
+function saveMed(){
+  toast('Medicamento agregado al inventario');
+  closeModal('modal-add-med');
+  document.getElementById('sb-meds').textContent=MEDICAMENTOS.length+1;
+}
+function saveEvento(){toast('Evento sanitario programado · Se mostrará en alertas del dashboard');}
+
+// ═══════ EXPORT ═══════
+function exportSalud(){
+  const wb=XLSX.utils.book_new();
+  const data=[['ID','Fecha','Tipo','Animales','Diagnóstico','Medicamento','Dosis','Vía','Duración','Retiro días','Costo COP','Colaborador','Estado'],
+    ...TRATAMIENTOS.map(t=>[t.id,t.fecha,t.tipo,t.animales,t.dx,t.med,t.dosis,t.via,t.dur,t.retiro,t.costo,t.colaborador,t.estado])];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'Tratamientos');
+  const meds=[['Nombre','Principio activo','Categoría','Lote','Stock mL','Dosis','Retiro días','Vencimiento','Costo COP'],
+    ...MEDICAMENTOS.map(m=>[m.nombre,m.principio,m.cat,m.lote,m.stock,m.dosis,m.retiro,m.venc,m.costo])];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(meds),'Medicamentos');
+  XLSX.writeFile(wb,'laaamb-salud.xlsx');toast('Excel salud exportado');
+}
+function exportActivos(){toast('Exportando tratamientos activos…');setTimeout(()=>exportSalud(),300);}
+function exportHistorial(){toast('Exportando historial…');setTimeout(()=>exportSalud(),300);}
+function exportMeds(){
+  const wb=XLSX.utils.book_new();
+  const data=[['Nombre','Principio activo','Categoría','Lote','Presentación','Stock mL','Stock máx','Dosis','Retiro días','Vencimiento','Costo COP'],
+    ...MEDICAMENTOS.map(m=>[m.nombre,m.principio,m.cat,m.lote,m.pres,m.stock,m.stockMax,m.dosis,m.retiro,m.venc,m.costo])];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'Medicamentos');
+  XLSX.writeFile(wb,'laaamb-medicamentos.xlsx');toast('Excel medicamentos exportado');
+}
+
+function downloadTemplate(tipo){
+  const wb=XLSX.utils.book_new();
+  const T={tratamientos:[['Animal ID*','Diagnóstico*','Medicamento*','Dosis aplicada','Vía (IM/SC/IV/VO)','Duración','Fecha inicio (YYYY-MM-DD)*','Colaborador','Observaciones'],['OV-2341','Neumonía bacteriana','Oxitetraciclina 20%','21 mL','IM','5 días','2025-04-08','Juan García','']]};
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(T[tipo]||[['Sin plantilla']]),tipo);
+  XLSX.writeFile(wb,'plantilla-'+tipo+'.xlsx');toast('Plantilla descargada');
+}
+function importTrats(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{const wb=XLSX.read(e.target.result,{type:'binary'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1});const data=rows.slice(1).filter(r=>r.some(c=>c));toast('✓ '+data.length+' tratamientos importados');input.value='';}catch(err){toast('Error leyendo archivo','err');}
+  };reader.readAsBinaryString(file);
+}
+function importMeds(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{const wb=XLSX.read(e.target.result,{type:'binary'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1});const data=rows.slice(1).filter(r=>r.some(c=>c));toast('✓ '+data.length+' medicamentos importados al inventario');input.value='';}catch(err){toast('Error leyendo archivo','err');}
+  };reader.readAsBinaryString(file);
+}
+
+// ═══════ MODAL ═══════
+function openModal(id){document.getElementById(id)?.classList.add('open')}
+function closeModal(id){document.getElementById(id)?.classList.remove('open')}
+function toast(msg,type='ok'){
+  const c=document.getElementById('toasts');const t=document.createElement('div');t.className='toast '+type;
+  const ic={ok:'<span style="color:var(--teal)">✓</span>',err:'<span style="color:var(--red)">✕</span>',info:'<span style="color:var(--amber)">ℹ</span>'};
+  t.innerHTML=(ic[type]||ic.ok)+' '+msg;c.appendChild(t);setTimeout(()=>t.remove(),3500);
+}
+
+// ═══════ INIT ═══════
+document.getElementById('ti-fecha').value=new Date().toISOString().slice(0,10);
+document.getElementById('tg-fecha').value=new Date().toISOString().slice(0,10);
+renderActivos();renderHistorial();renderRetiro();
+</script>
+</body>
+</html>
