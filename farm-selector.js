@@ -71,6 +71,15 @@ const FarmSelector = (function(){
     dropdown.innerHTML = html;
   }
 
+  // Contar animales por finca específica
+  function getAnimalesFinca(fincaId, animales){
+    if(!animales) return 0;
+    if(fincaId === 'default'){
+      return animales.filter(function(a){ return a.activo && (!a.finca_id || a.finca_id === 'default'); }).length;
+    }
+    return animales.filter(function(a){ return a.activo && a.finca_id === fincaId; }).length;
+  }
+
   // Actualizar el botón del sidebar con la finca activa
   function updateBtn(){
     const fincas = getFincas();
@@ -79,16 +88,20 @@ const FarmSelector = (function(){
     const subEl = document.getElementById('sb-farm-sub');
     if(!nameEl) return;
     const d = typeof AppData !== 'undefined' ? AppData.get() : {};
-    const totalAnimales = d.animales ? d.animales.filter(function(a){ return a.activo; }).length : 0;
+    const animales = d.animales || [];
+    const totalAnimales = animales.filter(function(a){ return a.activo; }).length;
 
     if(active === 'all' && fincas.length > 1){
       nameEl.textContent = 'Todas las fincas';
       if(subEl) subEl.textContent = fincas.length + ' fincas · ' + totalAnimales + ' animales';
     } else {
-      // Buscar la finca activa en la lista (incluye 'default' → d.finca)
       const finca = fincas.find(function(f){ return f.id === active; }) || fincas[0] || {};
+      const animalesFinca = getAnimalesFinca(finca.id || active, animales);
       nameEl.textContent = finca.nombre || 'La Marinilla';
-      if(subEl) subEl.textContent = (finca.area_ha ? finca.area_ha + ' ha · ' : '') + totalAnimales + ' animales';
+      if(subEl){
+        const ha = finca.area_ha ? finca.area_ha + ' ha' : '';
+        subEl.textContent = [ha, animalesFinca + ' animales'].filter(Boolean).join(' · ');
+      }
     }
   }
 
