@@ -457,5 +457,37 @@ if(savedColabs) COLABS = JSON.parse(savedColabs);
 initTheme();
 renderColabs();
 </script>
+<script>
+// ── Badges dinámicos sidebar ──────────────────────────────────────────────────
+(function updateSidebarBadges(){
+  if(typeof AppData==='undefined') return;
+  try{
+    const s=AppData.stats();
+    const d=AppData.get();
+    document.querySelectorAll('.nav-badge').forEach(function(b){
+      const link=b.closest('a');
+      if(link&&link.href&&link.href.includes('animales')) b.textContent=s.total;
+      if(link&&link.href&&link.href.includes('medicamentos')) b.textContent=d.medicamentos.filter(function(m){return m.activo!==false;}).length;
+    });
+    const farmSub=document.querySelector('.farm-sub');
+    const finca=d.finca||{};
+    if(farmSub) farmSub.textContent=(finca.area_ha||76.2)+' ha · '+s.total+' animales';
+  }catch(e){}
+})();
+</script>
+<script>
+function exportarTodo(){
+  if(typeof AppData==='undefined'){alert('AppData no disponible');return;}
+  try{
+    const allData=AppData.exportAll();
+    const wb=XLSX.utils.book_new();
+    Object.entries(allData).forEach(([col,rows])=>{
+      if(rows&&rows.length>1) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),col.slice(0,31));
+    });
+    XLSX.writeFile(wb,'laaamb-backup-'+new Date().toISOString().slice(0,10)+'.xlsx');
+    const t=document.getElementById('toasts');const el=document.createElement('div');el.className='toast ok';el.innerHTML='<span style="color:var(--teal)">✓</span> Backup completo exportado';t.appendChild(el);setTimeout(()=>el.remove(),3500);
+  }catch(e){alert('Error exportando: '+e.message);}
+}
+</script>
 </body>
 </html>
