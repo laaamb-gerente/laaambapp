@@ -6,6 +6,7 @@
 <title>LAAAMBAPP · Reproducción</title>
 <script>(function(){var t=localStorage.getItem("laaamb-theme")||"dark";document.documentElement.setAttribute("data-theme",t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="AppData.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -271,7 +272,7 @@ textarea.fi{resize:vertical;min-height:68px}
     <div class="sb-logo-text">LAAAMB</div>
     <div class="sb-logo-sub">Corderos · App</div>
     <div class="farm-pill">
-      <span style="font-size:18px">🏔️</span>
+      <span style="color:var(--teal);line-height:1"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg></span>
       <div><div class="farm-name">La Marinilla</div><div class="farm-sub">76.2 ha · 470 animales</div></div>
     </div>
   </div>
@@ -311,18 +312,18 @@ textarea.fi{resize:vertical;min-height:68px}
     <div class="ph-actions">
       <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar masivo<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importRepro(this)"></label>
       <button class="btn btn-ghost btn-sm" onclick="exportRepro()">↓ Exportar Excel</button>
-      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-monta')">❤️ Registrar monta</button>
-      <button class="btn btn-primary btn-sm" onclick="openModal('modal-parto')">🐣 Registrar parto</button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-monta')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg> Registrar monta</button>
+      <button class="btn btn-primary btn-sm" onclick="openModal('modal-parto')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><ellipse cx="10" cy="12" rx="4" ry="3"/><circle cx="13" cy="9.5" r="1.5"/><path d="M10 7v-2"/></svg> Registrar parto</button>
     </div>
   </div>
 
   <div class="tab-nav">
-    <div class="tn active" onclick="switchTab(this,'t-resumen')">📊 Resumen</div>
-    <div class="tn" onclick="switchTab(this,'t-gestaciones')">🤰 Gestaciones</div>
-    <div class="tn" onclick="switchTab(this,'t-montas')">❤️ Montas</div>
-    <div class="tn" onclick="switchTab(this,'t-partos')">🐣 Partos</div>
-    <div class="tn" onclick="switchTab(this,'t-ecografia')">🔬 Ecografías</div>
-    <div class="tn" onclick="switchTab(this,'t-vacias')">⚠️ Vacías</div>
+    <div class="tn active" onclick="switchTab(this,'t-resumen')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="3" y="11" width="3" height="6"/><rect x="8" y="7" width="3" height="10"/><rect x="13" y="3" width="3" height="14"/></svg>Resumen</div>
+    <div class="tn" onclick="switchTab(this,'t-gestaciones')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><circle cx="10" cy="8" r="4"/><path d="M7 12c0 3 6 3 6 0"/></svg>Gestaciones</div>
+    <div class="tn" onclick="switchTab(this,'t-montas')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg>Montas</div>
+    <div class="tn" onclick="switchTab(this,'t-partos')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><ellipse cx="10" cy="12" rx="4" ry="3"/><circle cx="13" cy="9.5" r="1.5"/><path d="M10 7v-2"/></svg>Partos</div>
+    <div class="tn" onclick="switchTab(this,'t-ecografia')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 10h2l1.5-3 2 6 1.5-3H16"/></svg>Ecografías</div>
+    <div class="tn" onclick="switchTab(this,'t-vacias')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg>Vacías</div>
   </div>
 
   <div class="content">
@@ -343,18 +344,18 @@ textarea.fi{resize:vertical;min-height:68px}
       <!-- Alertas reproductivas -->
       <div class="g2">
         <div>
-          <div class="alert-box red"><div class="alert-ico">🔴</div><div><div class="alert-title" style="color:var(--red)">Parto inminente — hoy o mañana</div><div class="alert-text">#OV-1234 · Lote B · 3er parto · Fecha estimada: 11/04/2025</div></div></div>
-          <div class="alert-box amber"><div class="alert-ico">🟡</div><div><div class="alert-title" style="color:var(--amber)">Partos próximos 7 días</div><div class="alert-text">#OV-2210 (6 días) · #OV-0788 (7 días) · Preparar manga y asistencia</div></div></div>
-          <div class="alert-box sky"><div class="alert-ico">🔬</div><div><div class="alert-title" style="color:var(--sky)">Ecografía pendiente — 28 días post-monta</div><div class="alert-text">12 ovejas montadas hace 25-32 días sin resultado de ecografía</div></div></div>
-          <div class="alert-box green"><div class="alert-ico">✅</div><div><div class="alert-title" style="color:var(--green)">Montas programadas esta semana</div><div class="alert-text">8 hembras en celo estimado · Reproductor recomendado: #RE-003 Príncipe</div></div></div>
+          <div class="alert-box red"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="10" cy="10" r="7"/><path d="M10 6v5M10 14h.01"/></svg></div><div><div class="alert-title" style="color:var(--red)">Parto inminente — hoy o mañana</div><div class="alert-text">#OV-1234 · Lote B · 3er parto · Fecha estimada: 11/04/2025</div></div></div>
+          <div class="alert-box amber"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg></div><div><div class="alert-title" style="color:var(--amber)">Partos próximos 7 días</div><div class="alert-text">#OV-2210 (6 días) · #OV-0788 (7 días) · Preparar manga y asistencia</div></div></div>
+          <div class="alert-box sky"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 10h2l1.5-3 2 6 1.5-3H16"/></svg></div><div><div class="alert-title" style="color:var(--sky)">Ecografía pendiente — 28 días post-monta</div><div class="alert-text">12 ovejas montadas hace 25-32 días sin resultado de ecografía</div></div></div>
+          <div class="alert-box green"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="10" cy="10" r="7"/><path d="M7 10l2 2 4-4"/></svg></div><div><div class="alert-title" style="color:var(--green)">Montas programadas esta semana</div><div class="alert-text">8 hembras en celo estimado · Reproductor recomendado: #RE-003 Príncipe</div></div></div>
         </div>
         <div class="card">
           <div class="card-h"><div class="card-title">Acciones rápidas</div></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
-            <button class="btn btn-primary" onclick="openModal('modal-parto')" style="width:100%;justify-content:center">🐣 Registrar parto</button>
-            <button class="btn btn-ghost" onclick="openModal('modal-monta')" style="width:100%;justify-content:center">❤️ Registrar monta</button>
-            <button class="btn btn-ghost" onclick="openModal('modal-ecografia')" style="width:100%;justify-content:center">🔬 Registrar ecografía</button>
-            <button class="btn btn-ghost" onclick="openModal('modal-ecografia-masiva')" style="width:100%;justify-content:center">📋 Ecografía masiva (varios animales)</button>
+            <button class="btn btn-primary" onclick="openModal('modal-parto')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><ellipse cx="10" cy="12" rx="4" ry="3"/><circle cx="13" cy="9.5" r="1.5"/><path d="M10 7v-2"/></svg> Registrar parto</button>
+            <button class="btn btn-ghost" onclick="openModal('modal-monta')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg> Registrar monta</button>
+            <button class="btn btn-ghost" onclick="openModal('modal-ecografia')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="vertical-align:middle;margin-right:4px"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 10h2l1.5-3 2 6 1.5-3H16"/></svg>Registrar ecografía</button>
+            <button class="btn btn-ghost" onclick="openModal('modal-ecografia-masiva')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 8h6M7 11h4M7 14h2"/></svg> Ecografía masiva (varios animales)</button>
             <button class="btn btn-ghost" onclick="downloadTemplate('montas')" style="width:100%;justify-content:center">↓ Plantilla montas Excel</button>
             <button class="btn btn-ghost" onclick="downloadTemplate('ecografias')" style="width:100%;justify-content:center">↓ Plantilla ecografías Excel</button>
           </div>
@@ -405,7 +406,7 @@ textarea.fi{resize:vertical;min-height:68px}
         <div style="display:flex;gap:8px">
           <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar partos<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importRepro(this)"></label>
           <button class="btn btn-ghost btn-sm" onclick="exportPartos()">↓ Excel</button>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modal-parto')">🐣 Registrar parto</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-parto')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><ellipse cx="10" cy="12" rx="4" ry="3"/><circle cx="13" cy="9.5" r="1.5"/><path d="M10 7v-2"/></svg> Registrar parto</button>
         </div>
       </div>
       <div class="card">
@@ -421,10 +422,10 @@ textarea.fi{resize:vertical;min-height:68px}
     <!-- ══ ECOGRAFÍAS ══ -->
     <div id="t-ecografia" class="tab-pane" style="display:none">
       <div style="background:var(--sky-bg);border:1px solid rgba(56,176,216,.2);border-left:3px solid var(--sky);border-radius:var(--r);padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--text2)">
-        🔬 <strong style="color:var(--sky)">Ecografía masiva:</strong> Descarga la plantilla, llena el resultado para cada animal y sube el archivo. Actualiza el estado de todas las ovejas en un solo paso — ideal después de un ciclo de ecografías al hato completo.
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:3px"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 10h2l1.5-3 2 6 1.5-3H16"/></svg> <strong style="color:var(--sky)">Ecografía masiva:</strong> Descarga la plantilla, llena el resultado para cada animal y sube el archivo. Actualiza el estado de todas las ovejas en un solo paso — ideal después de un ciclo de ecografías al hato completo.
       </div>
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-        <button class="btn btn-primary btn-sm" onclick="openModal('modal-ecografia-masiva')">📋 Ecografía masiva</button>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modal-ecografia-masiva')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 8h6M7 11h4M7 14h2"/></svg> Ecografía masiva</button>
         <button class="btn btn-ghost btn-sm" onclick="openModal('modal-ecografia')">+ Individual</button>
         <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('ecografias')">↓ Plantilla ecografías</button>
         <button class="btn btn-ghost btn-sm" onclick="exportEcografias()">↓ Excel ecografías</button>
@@ -474,7 +475,7 @@ textarea.fi{resize:vertical;min-height:68px}
 <!-- ══ MODAL PARTO ══ -->
 <div class="overlay" id="modal-parto" onclick="if(event.target===this)closeModal('modal-parto')">
 <div class="modal modal-md">
-  <div class="modal-head"><div class="modal-title">🐣 Registrar parto</div><button class="modal-close" onclick="closeModal('modal-parto')">✕</button></div>
+  <div class="modal-head"><div class="modal-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><ellipse cx="10" cy="12" rx="4" ry="3"/><circle cx="13" cy="9.5" r="1.5"/><path d="M10 7v-2"/></svg> Registrar parto</div><button class="modal-close" onclick="closeModal('modal-parto')">✕</button></div>
   <div class="modal-body">
     <div class="form-section">Datos del parto</div>
     <div class="form-grid">
@@ -498,7 +499,7 @@ textarea.fi{resize:vertical;min-height:68px}
     </div>
     <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" placeholder="Complicaciones, notas veterinarias…"></textarea></div>
     <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2);margin-top:8px">
-      💡 Al guardar, las crías se registran automáticamente como nuevos animales con sus IDs generados, y el estado de la madre cambia a "Activa".
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:3px"><path d="M10 2a6 6 0 00-3 11.2V15h6v-1.8A6 6 0 0010 2z"/><path d="M8 15h4M9 18h2"/></svg> Al guardar, las crías se registran automáticamente como nuevos animales con sus IDs generados, y el estado de la madre cambia a "Activa".
     </div>
   </div>
   <div class="modal-foot">
@@ -511,7 +512,7 @@ textarea.fi{resize:vertical;min-height:68px}
 <!-- ══ MODAL MONTA ══ -->
 <div class="overlay" id="modal-monta" onclick="if(event.target===this)closeModal('modal-monta')">
 <div class="modal modal-md">
-  <div class="modal-head"><div class="modal-title">❤️ Registrar monta</div><button class="modal-close" onclick="closeModal('modal-monta')">✕</button></div>
+  <div class="modal-head"><div class="modal-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg> Registrar monta</div><button class="modal-close" onclick="closeModal('modal-monta')">✕</button></div>
   <div class="modal-body">
     <div class="form-section">Datos de la monta</div>
     <div class="form-grid">
@@ -529,7 +530,7 @@ textarea.fi{resize:vertical;min-height:68px}
     <div class="fg"><label class="fl">Fecha ecografía programada</label><input class="fi" type="date" id="m-eco" title="30 días después de la monta"/></div>
     <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" placeholder="Notas…"></textarea></div>
     <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2);margin-top:8px">
-      💡 La ecografía de confirmación se programa automáticamente para 28-30 días después. El estado de la oveja cambia a "Monta en proceso".
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:3px"><path d="M10 2a6 6 0 00-3 11.2V15h6v-1.8A6 6 0 0010 2z"/><path d="M8 15h4M9 18h2"/></svg> La ecografía de confirmación se programa automáticamente para 28-30 días después. El estado de la oveja cambia a "Monta en proceso".
     </div>
   </div>
   <div class="modal-foot">
@@ -542,7 +543,7 @@ textarea.fi{resize:vertical;min-height:68px}
 <!-- ══ MODAL ECOGRAFÍA INDIVIDUAL ══ -->
 <div class="overlay" id="modal-ecografia" onclick="if(event.target===this)closeModal('modal-ecografia')">
 <div class="modal modal-sm">
-  <div class="modal-head"><div class="modal-title">🔬 Registrar ecografía</div><button class="modal-close" onclick="closeModal('modal-ecografia')">✕</button></div>
+  <div class="modal-head"><div class="modal-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="vertical-align:middle;margin-right:4px"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 10h2l1.5-3 2 6 1.5-3H16"/></svg>Registrar ecografía</div><button class="modal-close" onclick="closeModal('modal-ecografia')">✕</button></div>
   <div class="modal-body">
     <div class="form-grid">
       <div class="fg"><label class="fl">Animal (ID) *</label><input class="fi" placeholder="OV-1234"/></div>
@@ -554,7 +555,7 @@ textarea.fi{resize:vertical;min-height:68px}
     </div>
     <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" rows="2" placeholder="Notas del procedimiento…"></textarea></div>
     <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px;font-size:11px;color:var(--text2);margin-top:8px">
-      💡 Si resultado = Vacía, el estado de la oveja se actualiza automáticamente y suma al contador de ciclos vacíos.
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:3px"><path d="M10 2a6 6 0 00-3 11.2V15h6v-1.8A6 6 0 0010 2z"/><path d="M8 15h4M9 18h2"/></svg> Si resultado = Vacía, el estado de la oveja se actualiza automáticamente y suma al contador de ciclos vacíos.
     </div>
   </div>
   <div class="modal-foot">
@@ -567,10 +568,10 @@ textarea.fi{resize:vertical;min-height:68px}
 <!-- ══ MODAL ECOGRAFÍA MASIVA ══ -->
 <div class="overlay" id="modal-ecografia-masiva" onclick="if(event.target===this)closeModal('modal-ecografia-masiva')">
 <div class="modal modal-md">
-  <div class="modal-head"><div class="modal-title">📋 Ecografía masiva — hato completo</div><button class="modal-close" onclick="closeModal('modal-ecografia-masiva')">✕</button></div>
+  <div class="modal-head"><div class="modal-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="vertical-align:middle;margin-right:4px"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 8h6M7 11h4M7 14h2"/></svg>Ecografía masiva — hato completo</div><button class="modal-close" onclick="closeModal('modal-ecografia-masiva')">✕</button></div>
   <div class="modal-body">
     <div class="alert-box sky" style="margin-bottom:16px">
-      <div class="alert-ico">🔬</div>
+      <div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 10h2l1.5-3 2 6 1.5-3H16"/></svg></div>
       <div>
         <div class="alert-title" style="color:var(--sky)">Flujo de trabajo ecografía masiva</div>
         <div class="alert-text">1. Descarga la plantilla · 2. Llena resultados para cada animal · 3. Sube el archivo · 4. Revisa y confirma</div>
@@ -581,7 +582,7 @@ textarea.fi{resize:vertical;min-height:68px}
       <span style="font-size:12px;color:var(--text3);align-self:center">Llena y luego sube el archivo aquí:</span>
     </div>
     <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px dashed var(--border2);border-radius:var(--r2);padding:32px;cursor:pointer;gap:8px;transition:border-color var(--anim)" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--border2)'">
-      <span style="font-size:32px">📂</span>
+      <span style="font-size:32px"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="28" height="28"><path d="M3 7h5l2-2h7v11H3V7z"/><path d="M3 9h14"/></svg></span>
       <span style="font-size:14px;color:var(--text2);font-weight:600">Arrastra o haz clic para subir</span>
       <span style="font-size:12px;color:var(--text3)">.xlsx · .xls · .csv</span>
       <input type="file" class="import-hidden" accept=".xlsx,.xls,.csv" onchange="previewEcoMasiva(this)">
@@ -656,7 +657,7 @@ function renderGestaciones(){
     const color = urgente ? 'var(--red)' : diasRestantes<=20 ? 'var(--amber)' : 'var(--teal)';
     return `
     <div class="gest-card" onclick="toast('Abriendo perfil ${g.id}…','info')">
-      <div class="gest-avatar">🐑</div>
+      <div class="gest-avatar"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/><path d="M7 15l-1 2M10 15v2M13 15l1 2"/></svg></div>
       <div class="gest-info">
         <div class="gest-id">#${g.id}${g.name?' — '+g.name:''}</div>
         <div class="gest-name">${g.raza} · ${g.lote} · Parto N°${g.partosN} · Padre: #${g.padre}</div>
@@ -669,7 +670,7 @@ function renderGestaciones(){
       <div class="gest-right">
         <div class="gest-countdown" style="color:${color}">${diasRestantes}</div>
         <div class="gest-countdown-label">días</div>
-        ${urgente?'<div style="margin-top:4px"><span class="badge b-red">⚠ PRÓXIMO</span></div>':''}
+        ${urgente?'<div style="margin-top:4px"><span class="badge b-red"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> PRÓXIMO</span></div>':''}
       </div>
     </div>`;
   }).join('');
