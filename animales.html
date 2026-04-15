@@ -23,8 +23,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
 .sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
 .sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
-.farm-pill{margin-top:12px;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;display:flex;align-items:center;gap:8px}
-.farm-name{font-size:12px;font-weight:600;color:var(--text)}.farm-sub{font-size:10px;color:var(--text3);margin-top:1px}
 .nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
 .nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}
 .nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;text-decoration:none;transition:all var(--anim);position:relative}
@@ -112,18 +110,30 @@ textarea.fi{resize:vertical;min-height:60px}
 .ic-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px}
 .ic-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
 .ic-val{font-size:14px;font-weight:700;color:var(--text)}
-#lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);width:46px;height:46px;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 16px rgba(0,0,0,.45)}
+
+/* ── HAMBURGER v8 ─────────────────────────────────────── */
+#lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;
+  background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);
+  width:46px;height:46px;align-items:center;justify-content:center;
+  cursor:pointer;box-shadow:0 2px 16px rgba(0,0,0,.45)}
 #lham svg{width:22px;height:22px;stroke:var(--text);stroke-width:2;fill:none;stroke-linecap:round}
 #lov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990}
+#lov.on{display:block}
+
 .toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px;pointer-events:none}
 .toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:fadeUp .2s ease;max-width:320px;pointer-events:all}
 .toast.ok{border-left:3px solid var(--teal)}.toast.err{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--amber)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
 @media(max-width:768px){
   #lham{display:flex}
   #lov.on{display:block}
-  #sidebar{position:fixed!important;top:0!important;left:0!important;height:100vh!important;transform:translateX(-100%)!important;z-index:9995!important;transition:transform .28s ease!important;display:flex!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch}
+  #sidebar{position:fixed!important;top:0!important;left:0!important;height:100vh!important;
+    transform:translateX(-100%)!important;z-index:9995!important;
+    transition:transform .28s ease!important;display:flex!important;
+    overflow-y:auto!important;-webkit-overflow-scrolling:touch}
   #sidebar.on{transform:translateX(0)!important}
+  .sb-foot{position:sticky;bottom:0;background:var(--bg2)}
   .main{width:100vw!important}
   .page-head{padding:10px 12px!important;padding-left:64px!important;flex-wrap:wrap;gap:6px}
   .ph-title{font-size:19px!important}
@@ -133,17 +143,15 @@ textarea.fi{resize:vertical;min-height:60px}
   table{min-width:680px}
 }
 
-/* ── Validación de formularios ──────────────────────────────── */
+/* Validación */
 .fi.field-error{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(224,82,82,0.15)!important}
 .fi.field-ok{border-color:var(--teal)!important}
 .fi:invalid{border-color:var(--amber)}
 .field-hint{font-size:10px;color:var(--red);margin-top:3px;display:none}
 .field-hint.visible{display:block}
-/* Campos requeridos marcados */
-label.fl[for] + .fi:required,
-label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
+label.fl[for] + .fi:required,label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 
-/* ── FARM SELECTOR ──────────────────────────────────────── */
+/* ── FARM SELECTOR ─────────────────────────────────────── */
 .farm-selector{margin-top:12px;position:relative}
 .farm-btn{width:100%;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:border-color var(--anim),background var(--anim);text-align:left}
 .farm-btn:hover{border-color:var(--border3);background:var(--teal-bg)}
@@ -169,39 +177,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 .farm-opt-name{font-weight:600;font-size:12px}
 .farm-opt-sub{font-size:10px;color:var(--text3);margin-top:1px}
 
-
-/* ── SPECIES FILTER ──────────────────────────────────────── */
-.species-filter-wrap{margin-top:6px;position:relative}
-.species-pill{
-  width:100%;background:var(--surface);border:1px solid var(--border2);
-  border-radius:var(--r);padding:7px 12px;
-  display:flex;align-items:center;gap:8px;
-  cursor:pointer;font-size:11px;color:var(--text2);
-  font-family:'Changa',sans-serif;font-weight:500;
-  transition:border-color var(--anim),color var(--anim),background var(--anim);
-  text-align:left;
-}
-.species-pill:hover{background:var(--surface2);color:var(--text);border-color:var(--border3)}
-.species-dropdown{
-  display:none;position:absolute;top:100%;left:0;right:0;
-  background:var(--bg2);border:1px solid var(--border2);border-top:none;
-  border-bottom-left-radius:var(--r);border-bottom-right-radius:var(--r);
-  z-index:499;box-shadow:0 6px 20px rgba(0,0,0,.35);overflow:hidden;
-}
-.species-dropdown.open{display:block}
-.species-option{
-  display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;
-  font-size:12px;font-family:'Changa',sans-serif;color:var(--text2);
-  border-bottom:1px solid var(--border);
-  transition:background var(--anim),color var(--anim);
-}
-.species-option:last-child{border-bottom:none}
-.species-option:hover{background:var(--surface);color:var(--text)}
-.species-option.active{color:var(--teal);font-weight:600}
-.species-check{color:var(--teal);flex-shrink:0;width:14px}
-
-
-/* ── Species tabs en page-header ──────────────────── */
+/* ── Species tabs ──────────────────────────────────────── */
 .species-tabs{display:flex;gap:4px;align-items:center;margin-top:10px;flex-wrap:wrap}
 .sp-tab{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;
   font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);
@@ -210,29 +186,35 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 .sp-tab:hover{border-color:var(--border3);color:var(--text)}
 .sp-tab.active{background:var(--teal);border-color:var(--teal);color:#080f10}
 .sp-tab.active-bo{background:var(--amber);border-color:var(--amber);color:#080f10}
-
 </style>
 </head>
 <body>
 <div class="app">
+
 <button id="lham" aria-label="Menú"><svg id="lico" viewBox="0 0 22 22"><line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/></svg></button>
 <div id="lov"></div>
 
+<!-- ═══ SIDEBAR ═══════════════════════════════════════════ -->
 <aside class="sidebar" id="sidebar">
+
+  <!-- CABECERA: logo + farm selector SOLAMENTE -->
   <div class="sb-head">
     <div class="sb-logo-text">LAAAMB</div>
     <div class="sb-logo-sub">Corderos · App</div>
-        <div class="farm-selector" id="farm-selector">
+    <div class="farm-selector" id="farm-selector">
       <button class="farm-btn" id="farm-btn" onclick="FarmSelector.toggle()" aria-haspopup="true">
         <span class="farm-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg></span>
         <div style="flex:1;min-width:0">
           <div class="farm-name" id="sb-farm-name">La Marinilla</div>
-          <div class="farm-sub" id="sb-farm-sub">76.2 ha · cargando…</div>
+          <div class="farm-sub" id="sb-farm-sub">50 ha · cargando…</div>
         </div>
         <span class="farm-chevron"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M5 8l5 5 5-5"/></svg></span>
       </button>
       <div class="farm-dropdown" id="farm-dropdown"></div>
-  </div>
+    </div>
+  </div><!-- ← cierra sb-head AQUÍ, antes del nav -->
+
+  <!-- NAVEGACIÓN: hijo directo de aside, no de sb-head -->
   <nav class="nav-scroll">
     <div class="nav-group">Principal</div>
     <a class="nav-link" href="index.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
@@ -250,41 +232,39 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div class="nav-group">Sistema</div>
     <a class="nav-link" href="ajustes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.9 4.9l1.4 1.4M13.7 13.7l1.4 1.4M4.9 15.1l1.4-1.4M13.7 6.3l1.4-1.4"/></svg>Ajustes</a>
   </nav>
+
+  <!-- PIE: hijo directo de aside, no de sb-head -->
   <div class="sb-foot">
-    <div class="user-row"><div class="avatar">JG</div>
+    <div class="user-row">
+      <div class="avatar">JG</div>
       <div><div class="user-name">Juan García</div><div class="user-role">Administrador</div></div>
     </div>
   </div>
+
 </aside>
 
+<!-- ═══ MAIN ═══════════════════════════════════════════════ -->
 <div class="main">
   <div class="page-head">
     <div>
       <div class="ph-eyebrow">La Marinilla · Ganadería</div>
       <div class="ph-title">Inventario Animal</div>
       <div class="ph-sub" id="ph-sub">Cargando…</div>
-    </div>
-    <div class="ph-actions">
-      <button class="btn btn-ghost" onclick="openImport()">↑ Importar CSV/Excel</button>
-      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-pesaje')">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M10 7v6M7 10h6"/></svg>
-        Pesaje
-      </button>
-      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-pesaje-grupal')">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><circle cx="7" cy="7" r="3"/><path d="M1 17c0-2.8 2.2-5 5-5"/><circle cx="14" cy="7" r="3"/><path d="M10 17c0-2.8 2.2-5 5-5"/></svg>
-        Pesaje grupal
-      </button>
-      <button class="btn btn-ghost" onclick="exportarTodo()">↓ Excel completo</button>
-      <button class="btn btn-ghost" onclick="exportarCSV()">↓ CSV</button>
-      <button class="btn btn-primary" onclick="abrirNuevo()">+ Registrar animal</button>
-    </div>
-  
       <div class="species-tabs" id="species-tabs">
         <button class="sp-tab" id="sp-todas" onclick="setEspecie('todas')">Todas</button>
         <button class="sp-tab" id="sp-ovino" onclick="setEspecie('ovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/></svg> Ovinos</button>
         <button class="sp-tab" id="sp-bovino" onclick="setEspecie('bovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="12" rx="6" ry="4"/><circle cx="14" cy="8" r="2.5"/></svg> Bovinos</button>
       </div>
     </div>
+    <div class="ph-actions">
+      <button class="btn btn-ghost" onclick="openImport()">↑ Importar CSV/Excel</button>
+      <button class="btn btn-ghost btn-xs" onclick="openModal('modal-pesaje')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M10 7v6M7 10h6"/></svg> Pesaje</button>
+      <button class="btn btn-ghost btn-xs" onclick="openModal('modal-pesaje-grupal')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><circle cx="7" cy="7" r="3"/><path d="M1 17c0-2.8 2.2-5 5-5"/><circle cx="14" cy="7" r="3"/><path d="M10 17c0-2.8 2.2-5 5-5"/></svg> Pesaje grupal</button>
+      <button class="btn btn-ghost" onclick="exportarTodo()">↓ Excel completo</button>
+      <button class="btn btn-ghost" onclick="exportarCSV()">↓ CSV</button>
+      <button class="btn btn-primary" onclick="abrirNuevo()">+ Registrar animal</button>
+    </div>
+  </div>
 
   <div class="filters-bar">
     <div class="search-box">
@@ -322,14 +302,6 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
         <div style="font-size:12px">Importa tu base de datos o registra el primer animal</div>
         <div style="display:flex;gap:8px;justify-content:center;margin-top:14px">
           <button class="btn btn-ghost" onclick="openImport()">↑ Importar CSV/Excel</button>
-      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-pesaje')">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M10 7v6M7 10h6"/></svg>
-        Pesaje
-      </button>
-      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-pesaje-grupal')">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><circle cx="7" cy="7" r="3"/><path d="M1 17c0-2.8 2.2-5 5-5"/><circle cx="14" cy="7" r="3"/><path d="M10 17c0-2.8 2.2-5 5-5"/></svg>
-        Pesaje grupal
-      </button>
           <button class="btn btn-primary" onclick="abrirNuevo()">+ Registrar animal</button>
         </div>
       </div>
@@ -338,7 +310,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 </div>
 </div>
 
-<!-- MODAL NUEVO / EDITAR -->
+<!-- ═══ MODAL NUEVO / EDITAR ═══════════════════════════════ -->
 <div class="overlay" id="m-nuevo" onclick="if(event.target===this)closeModal('m-nuevo')">
 <div class="modal">
   <div class="modal-head"><div class="modal-title" id="m-nuevo-title">Registrar animal</div><button class="modal-close" onclick="closeModal('m-nuevo')">✕</button></div>
@@ -347,15 +319,8 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div class="fgrid">
       <div class="fg"><label class="fl">ID / Arete *</label><input class="fi" id="n-id" placeholder="OV-0471"></div>
       <div class="fg"><label class="fl">Nombre</label><input class="fi" id="n-nombre" placeholder="Opcional"></div>
-      <div class="fg"><div class="fg">
-            <label class="fl">Especie *</label>
-            <select class="fi" id="n-especie" onchange="updateCategoriaModal()">
-              <option value="ovino">Ovino</option>
-              <option value="bovino">Bovino</option>
-            </select>
-          </div>
-          <div class="fg">
-            <label class="fl">Sexo *</label><select class="fi" id="n-sexo"><option value="H">Hembra</option><option value="M">Macho</option></select></div>
+      <div class="fg"><label class="fl">Especie *</label><select class="fi" id="n-especie"><option value="ovino">Ovino</option><option value="bovino">Bovino</option></select></div>
+      <div class="fg"><label class="fl">Sexo *</label><select class="fi" id="n-sexo"><option value="H">Hembra</option><option value="M">Macho</option></select></div>
       <div class="fg"><label class="fl">Categoría *</label><select class="fi" id="n-cat"><option>Cría</option><option>Levante</option><option>Reproductora</option><option>Reproductor</option><option>Engorde</option></select></div>
       <div class="fg"><label class="fl">Raza *</label><select class="fi" id="n-raza"><option>Dorper</option><option>Katahdin</option><option>Hampshire</option><option>Pelibuey</option><option>Cruce</option><option>Otra</option></select></div>
       <div class="fg"><label class="fl">Origen</label><select class="fi" id="n-origen"><option>Nacido en finca</option><option>Comprado</option></select></div>
@@ -378,7 +343,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 </div>
 </div>
 
-<!-- MODAL IMPORTAR -->
+<!-- ═══ MODAL IMPORTAR ══════════════════════════════════════ -->
 <div class="overlay" id="m-import" onclick="if(event.target===this){closeModal('m-import');resetImport()}">
 <div class="modal modal-lg">
   <div class="modal-head"><div class="modal-title">↑ Importar animales</div><button class="modal-close" onclick="closeModal('m-import');resetImport()">✕</button></div>
@@ -388,7 +353,6 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <div class="step" id="step2"><div class="step-dot">2</div><div class="step-label">Revisar datos</div></div>
       <div class="step" id="step3"><div class="step-dot">3</div><div class="step-label">Listo</div></div>
     </div>
-
     <div id="import-s1">
       <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
         <button class="btn btn-ghost" onclick="descargarPlantilla()">↓ Plantilla Excel</button>
@@ -404,7 +368,6 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
         <strong style="color:var(--text2)">Columnas reconocidas:</strong> ID/Arete · Nombre · Sexo (H/M) · Categoría · Raza · Fecha nacimiento · Peso kg · Lote · Costo COP · Madre ID · Padre ID · Estado · Observaciones
       </div>
     </div>
-
     <div id="import-s2" style="display:none">
       <div id="import-summary"></div>
       <div id="import-errors"></div>
@@ -415,7 +378,6 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
         </label>
       </div>
     </div>
-
     <div id="import-s3" style="display:none;text-align:center;padding:32px">
       <div style="font-size:48px;margin-bottom:12px">✅</div>
       <div style="font-size:18px;font-weight:700;color:var(--green)" id="import-done"></div>
@@ -429,7 +391,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 </div>
 </div>
 
-<!-- MODAL PERFIL -->
+<!-- ═══ MODAL PERFIL ════════════════════════════════════════ -->
 <div class="overlay" id="m-perfil" onclick="if(event.target===this)closeModal('m-perfil')">
 <div class="modal modal-lg">
   <div class="modal-head"><div class="modal-title" id="perfil-title">Perfil</div><button class="modal-close" onclick="closeModal('m-perfil')">✕</button></div>
@@ -442,34 +404,127 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 </div>
 </div>
 
+<!-- ═══ MODAL PESAJE ════════════════════════════════════════ -->
+<div class="overlay" id="modal-pesaje" onclick="if(event.target===this)closeModal('modal-pesaje')">
+<div class="modal">
+  <div class="modal-head">
+    <div class="modal-title">Registrar pesaje</div>
+    <button class="modal-close" onclick="closeModal('modal-pesaje')">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="fgrid">
+      <div class="fg"><label class="fl">ID / Arete *</label><input class="fi" id="w-animal" placeholder="OV-0234" oninput="autoFillPesaje(this.value)"></div>
+      <div class="fg"><label class="fl">Peso actual (kg) *</label><input class="fi" type="number" id="w-peso" step="0.1" placeholder="48.5" oninput="calcGDP()"></div>
+      <div class="fg"><label class="fl">Fecha pesaje *</label><input class="fi" type="date" id="w-fecha"></div>
+      <div class="fg"><label class="fl">Colaborador</label><select class="fi" id="w-colab"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select></div>
+    </div>
+    <div class="fgrid" id="w-gdp-row" style="display:none">
+      <div class="fg"><label class="fl">Peso anterior</label><input class="fi" id="w-peso-ant" readonly style="background:var(--bg3);color:var(--text3)"></div>
+      <div class="fg"><label class="fl">GDP calculado</label><input class="fi" id="w-gdp" readonly style="background:var(--bg3);color:var(--teal);font-weight:700" placeholder="g/día"></div>
+    </div>
+    <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" id="w-obs" rows="2" placeholder="Condición corporal, notas…"></textarea></div>
+    <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2);margin-top:4px">
+      El GDP se calcula automáticamente con el pesaje anterior del mismo animal.
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('modal-pesaje')">Cancelar</button>
+    <button class="btn btn-primary" onclick="savePesaje()">Guardar pesaje</button>
+  </div>
+</div>
+</div>
+
+<!-- ═══ MODAL PESAJE GRUPAL ══════════════════════════════════ -->
+<div class="overlay" id="modal-pesaje-grupal" onclick="if(event.target===this)closeModal('modal-pesaje-grupal')">
+<div class="modal">
+  <div class="modal-head">
+    <div class="modal-title">Pesaje grupal</div>
+    <button class="modal-close" onclick="closeModal('modal-pesaje-grupal')">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="fgrid">
+      <div class="fg"><label class="fl">Lote *</label><select class="fi" id="wg-lote" onchange="updatePesajeLote()"></select></div>
+      <div class="fg"><label class="fl">Fecha *</label><input class="fi" type="date" id="wg-fecha"></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin:10px 0;font-size:12px">
+      <div id="wg-info" style="color:var(--text3)">Selecciona un lote para ver los animales</div>
+    </div>
+    <div id="wg-tabla" style="max-height:240px;overflow-y:auto;display:none">
+      <table><thead><tr><th>ID</th><th>Nombre</th><th>Último peso kg</th><th>Nuevo peso kg</th></tr></thead>
+      <tbody id="wg-tbody"></tbody></table>
+    </div>
+    <div class="fg" style="margin-top:12px"><label class="fl">Colaborador</label>
+      <select class="fi" id="wg-colab"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('modal-pesaje-grupal')">Cancelar</button>
+    <button class="btn btn-primary" onclick="savePesajeGrupal()">Guardar pesajes</button>
+  </div>
+</div>
+</div>
+
 <div class="toasts" id="toasts"></div>
 
 <script>
-var allAnimales=[], filtered=[], sortField='id', sortAsc=true, importRows=[], importHeaders=[], editingId=null;
+// ── Utilidades ───────────────────────────────────────────────────────────────
+function setEl(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+function setElHTML(id,v){var e=document.getElementById(id);if(e)e.innerHTML=v;}
+function openModal(id){var el=document.getElementById(id);if(el)el.classList.add('open');}
+function closeModal(id){var el=document.getElementById(id);if(el)el.classList.remove('open');}
+function toast(msg,type){
+  type=type||'ok';
+  var c=document.getElementById('toasts');
+  var t=document.createElement('div');t.className='toast '+type;
+  var ic={ok:'<span style="color:var(--teal)">✓</span>',err:'<span style="color:var(--red)">✕</span>',info:'<span style="color:var(--amber)">ℹ</span>'};
+  t.innerHTML=(ic[type]||ic.ok)+' '+msg;
+  c.appendChild(t);setTimeout(function(){t.remove();},3500);
+}
+
+// ── Estado ───────────────────────────────────────────────────────────────────
+var allAnimales=[], filtered=[], sortField='id', sortAsc=true;
+var importRows=[], importHeaders=[], editingId=null;
+var activeEspecie = localStorage.getItem('laaamb-active-especie') || 'todas';
 const STATUS_BADGE={'Activa':'b-green','Gestante':'b-sky','Vacía':'b-amber','En tratamiento':'b-wine','Reproductor':'b-teal','Levante':'b-orange','Cría':'b-gray','Muerto':'b-red','Vendido':'b-red'};
 
-document.addEventListener('DOMContentLoaded',function(){
-  initSidebar(); cargarDatos(); initDrop();
-  document.getElementById('n-fecha').value=new Date().toISOString().slice(0,10);
+document.addEventListener('DOMContentLoaded', function(){
+  initHamburger();
+  cargarDatos();
+  initDrop();
+  initEspecieTabs();
+  document.getElementById('n-fecha').value = new Date().toISOString().slice(0,10);
+  // Pesaje grupal: llenar lotes
+  initPesajeLotes();
+  document.getElementById('wg-fecha').value = new Date().toISOString().slice(0,10);
 });
 
+// ── Hamburger ────────────────────────────────────────────────────────────────
+function initHamburger(){
+  var open=false;
+  var BARS='<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
+  var CROSS='<line x1="4" y1="4" x2="18" y2="18"/><line x1="18" y1="4" x2="4" y2="18"/>';
+  function show(){open=true;document.getElementById('sidebar').classList.add('on');document.getElementById('lov').classList.add('on');document.body.style.overflow='hidden';document.getElementById('lico').innerHTML=CROSS;}
+  function hide(){open=false;document.getElementById('sidebar').classList.remove('on');document.getElementById('lov').classList.remove('on');document.body.style.overflow='';document.getElementById('lico').innerHTML=BARS;}
+  document.getElementById('lham').onclick=function(){open?hide():show();};
+  document.getElementById('lov').onclick=hide;
+  document.querySelectorAll('#sidebar a.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<=768)hide();});});
+}
 
-// ─ Helper: setEl — asigna textContent solo si el elemento existe
-
+// ── Cargar datos ──────────────────────────────────────────────────────────────
 function cargarDatos(){
   var d=AppData.get();
   var finca=d.finca||{};
-  var _sf=document.getElementById('sb-finca');if(_sf)_sf.textContent=finca.nombre;
   allAnimales=d.animales||[];
   var activos=allAnimales.filter(function(a){return a.activo!==false;});
-  var _esbcount=document.getElementById('sb-count');if(_esbcount)_esbcount.textContent=activos.length;
-  var _esbstats=document.getElementById('sb-stats');if(_esbstats)_esbstats.textContent=activos.length+' animales activos';
+  setEl('sb-count', activos.length);
+  // Actualizar farm pill con datos reales
+  if(typeof FarmSelector !== 'undefined') FarmSelector.updateBtn();
   applyFilters();
 }
 
+// ── Filtros ───────────────────────────────────────────────────────────────────
 function applyFilters(){
   var q=(document.getElementById('q').value||'').toLowerCase();
-  var especie=document.getElementById('f-especie')?document.getElementById('f-especie').value:'';
   var sexo=document.getElementById('f-sexo').value;
   var estado=document.getElementById('f-estado').value;
   var lote=document.getElementById('f-lote').value;
@@ -478,7 +533,7 @@ function applyFilters(){
   filtered=allAnimales.filter(function(a){
     if(soloActivos&&a.activo===false) return false;
     if(q&&!String(a.id||'').toLowerCase().includes(q)&&!String(a.nombre||'').toLowerCase().includes(q)&&!String(a.raza||'').toLowerCase().includes(q)) return false;
-      if(especie&&(a.especie||'ovino')!==especie) return false;
+    if(activeEspecie&&activeEspecie!=='todas'&&(a.especie||'ovino')!==activeEspecie) return false;
     if(sexo&&a.sexo!==sexo) return false;
     if(estado&&a.estado!==estado) return false;
     if(lote&&a.lote!==lote) return false;
@@ -495,10 +550,8 @@ function limpiarFiltros(){
   applyFilters();
 }
 
-function sortBy(f){
-  if(sortField===f) sortAsc=!sortAsc; else{sortField=f;sortAsc=true;}
-  sortAndRender();
-}
+// ── Ordenar y renderizar ──────────────────────────────────────────────────────
+function sortBy(f){if(sortField===f)sortAsc=!sortAsc;else{sortField=f;sortAsc=true;}sortAndRender();}
 
 function sortAndRender(){
   filtered.sort(function(a,b){
@@ -519,14 +572,14 @@ function calcEdad(f){
   if(m<24) return m+'m';
   return (m/12).toFixed(1)+'a';
 }
-function fmtCOP(v){if(!v) return '—';return '$'+Math.round(v/1000)+'K';}
+function fmtCOP(v){if(!v)return '—';return '$'+Math.round(v/1000)+'K';}
 
 function renderTabla(){
   var tbody=document.getElementById('tbody');
   var empty=document.getElementById('empty');
   var total=allAnimales.filter(function(a){return a.activo!==false;}).length;
-  var _ephsub=document.getElementById('ph-sub');if(_ephsub)_ephsub.textContent=filtered.length+' animales mostrados · '+total+' activos en total';
-  document.getElementById('filter-count').textContent=filtered.length+' resultados';
+  setEl('ph-sub', filtered.length+' animales mostrados · '+total+' activos en total');
+  setEl('filter-count', filtered.length+' resultados');
   if(!filtered.length){tbody.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
   tbody.innerHTML=filtered.map(function(a){
@@ -535,7 +588,7 @@ function renderTabla(){
     var op=a.activo===false?'opacity:.4;':'';
     return '<tr onclick="verPerfil(\''+a.id+'\')" style="'+op+'">'
       +'<td class="td-id">#'+a.id+'</td>'
-      +'<td style="font-size:11px;color:var(--text3)">'+(a.especie==='bovino'?'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><ellipse cx="10" cy="12" rx="6" ry="4"/><circle cx="14" cy="8" r="2.5"/></svg> Bovino':'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/></svg> Ovino')+'</td>'
+      +'<td style="font-size:11px;color:var(--text3)">'+(a.especie==='bovino'?'🐄 Bovino':'🐑 Ovino')+'</td>'
       +'<td><div class="td-animal"><div class="a-ico '+(a.sexo||'H')+'">'+(a.sexo==='H'?'🐑':'🐏')+'</div>'
       +'<div><div style="font-weight:600">'+(a.nombre||'—')+'</div><div class="td-m">'+(a.categoria||'')+'</div></div></div></td>'
       +'<td class="td-m">'+(a.raza||'—')+'</td>'
@@ -551,16 +604,18 @@ function renderTabla(){
   }).join('');
 }
 
+// ── Perfil animal ─────────────────────────────────────────────────────────────
 function verPerfil(id){
   var a=allAnimales.find(function(x){return x.id===id;});
   if(!a) return;
-  document.getElementById('perfil-title').textContent='#'+a.id+(a.nombre?' — '+a.nombre:'');
+  setEl('perfil-title', '#'+a.id+(a.nombre?' — '+a.nombre:''));
   var peso=AppData.pesoActual(id);
   var costo=AppData.costoAnimal(id);
   var d=AppData.get();
   var pesajes=(d.pesajes||[]).filter(function(p){return p.animal_id===id;}).slice(0,5);
   var trts=(d.tratamientos||[]).filter(function(t){return String(t.animales_ids||'').includes(id);}).slice(0,5);
-  document.getElementById('perfil-body').innerHTML='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">'
+  setElHTML('perfil-body',
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">'
     +'<div style="width:54px;height:54px;border-radius:50%;background:var(--teal-bg);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">'+(a.sexo==='H'?'🐑':'🐏')+'</div>'
     +'<div style="flex:1"><div style="font-family:Sigmar,cursive;font-size:18px;color:var(--text)">'+(a.nombre||'Sin nombre')+'</div>'
     +'<div style="font-size:11px;color:var(--teal);font-weight:600;margin-top:2px">#'+a.id+' · '+(a.raza||'')+'</div>'
@@ -586,22 +641,23 @@ function verPerfil(id){
     +(trts.length?'<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text4);margin-bottom:6px">Historial médico</div>'
       +'<div style="background:var(--bg3);border-radius:var(--r);overflow:hidden"><table><thead><tr><th>Fecha</th><th>Medicamento</th><th>Dx</th><th>Estado</th></tr></thead><tbody>'
       +trts.map(function(t){return '<tr><td class="td-m">'+(t.fecha_inicio||'—')+'</td><td>'+(t.medicamento_nombre||'—')+'</td><td class="td-m">'+(t.diagnostico||'—')+'</td><td><span class="badge '+(t.estado==='En curso'?'b-sky':'b-green')+'">'+(t.estado||'—')+'</span></td></tr>';}).join('')
-      +'</tbody></table></div>':'');
-
+      +'</tbody></table></div>':'')
+  );
   document.getElementById('btn-edit').onclick=function(){closeModal('m-perfil');abrirEditar(id);};
   document.getElementById('btn-baja').onclick=function(){
     if(confirm('¿Confirmar baja de #'+id+'? El animal saldrá del inventario activo.')){
       AppData.registrarBaja({animal_id:id,tipo_baja:'muerte',fecha:new Date().toISOString().slice(0,10),colaborador:'Juan García'});
-      cargarDatos(); closeModal('m-perfil'); toast('Baja de #'+id+' registrada');
+      cargarDatos();closeModal('m-perfil');toast('Baja de #'+id+' registrada');
     }
   };
   openModal('m-perfil');
 }
 function ic(l,v){return '<div class="ic-card"><div class="ic-label">'+l+'</div><div class="ic-val">'+v+'</div></div>';}
 
+// ── Registrar / Editar ────────────────────────────────────────────────────────
 function abrirNuevo(){
   editingId=null;
-  document.getElementById('m-nuevo-title').textContent='Registrar animal';
+  setEl('m-nuevo-title','Registrar animal');
   document.getElementById('n-id').disabled=false;
   ['n-id','n-nombre','n-obs','n-padre'].forEach(function(i){document.getElementById(i).value='';});
   document.getElementById('n-peso').value='';
@@ -614,9 +670,10 @@ function abrirEditar(id){
   var a=allAnimales.find(function(x){return x.id===id;});
   if(!a) return;
   editingId=id;
-  document.getElementById('m-nuevo-title').textContent='Editar #'+id;
-  document.getElementById('n-id').value=a.id; document.getElementById('n-id').disabled=true;
+  setEl('m-nuevo-title','Editar #'+id);
+  document.getElementById('n-id').value=a.id;document.getElementById('n-id').disabled=true;
   document.getElementById('n-nombre').value=a.nombre||'';
+  document.getElementById('n-especie').value=a.especie||'ovino';
   document.getElementById('n-sexo').value=a.sexo||'H';
   document.getElementById('n-cat').value=a.categoria||'Reproductora';
   document.getElementById('n-raza').value=a.raza||'Dorper';
@@ -634,7 +691,23 @@ function abrirEditar(id){
 function guardarAnimal(){
   var id=document.getElementById('n-id').value.trim().toUpperCase();
   if(!id){toast('El ID es requerido','err');return;}
-  var record={id:id,nombre:document.getElementById('n-nombre').value.trim(),sexo:document.getElementById('n-sexo').value,categoria:document.getElementById('n-cat').value,raza:document.getElementById('n-raza').value,origen:document.getElementById('n-origen').value,fecha_nacimiento:document.getElementById('n-fecha').value,peso_inicial:parseFloat(document.getElementById('n-peso').value)||0,lote:document.getElementById('n-lote').value,estado:document.getElementById('n-estado').value,costo_adquisicion:parseInt(document.getElementById('n-costo').value)||0,padre_id:document.getElementById('n-padre').value.trim(),observaciones:document.getElementById('n-obs').value.trim(),activo:true};
+  var record={
+    id:id,
+    nombre:document.getElementById('n-nombre').value.trim(),
+    especie:document.getElementById('n-especie').value||'ovino',
+    sexo:document.getElementById('n-sexo').value,
+    categoria:document.getElementById('n-cat').value,
+    raza:document.getElementById('n-raza').value,
+    origen:document.getElementById('n-origen').value,
+    fecha_nacimiento:document.getElementById('n-fecha').value,
+    peso_inicial:parseFloat(document.getElementById('n-peso').value)||0,
+    lote:document.getElementById('n-lote').value,
+    estado:document.getElementById('n-estado').value,
+    costo_adquisicion:parseInt(document.getElementById('n-costo').value)||0,
+    padre_id:document.getElementById('n-padre').value.trim(),
+    observaciones:document.getElementById('n-obs').value.trim(),
+    activo:true
+  };
   if(editingId){
     AppData.update('animales',editingId,record);
     toast('Animal #'+id+' actualizado');
@@ -644,10 +717,10 @@ function guardarAnimal(){
     toast('Animal #'+id+' registrado');
   }
   document.getElementById('n-id').disabled=false;
-  closeModal('m-nuevo'); cargarDatos();
+  closeModal('m-nuevo');cargarDatos();
 }
 
-// IMPORTAR
+// ── Importar ──────────────────────────────────────────────────────────────────
 function openImport(){resetImport();openModal('m-import');}
 function resetImport(){
   importRows=[];importHeaders=[];
@@ -664,24 +737,22 @@ function initDrop(){
   var dz=document.getElementById('drop-zone');
   dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('drag-over');});
   dz.addEventListener('dragleave',function(){dz.classList.remove('drag-over');});
-  dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drag-over');if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);});
+  dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drag-over');if(e.dataTransfer.files[0])handleFile(e.dataTransfer.files[0]);});
   dz.addEventListener('click',function(){document.getElementById('file-input').click();});
 }
 
 function handleFile(file){
-  if(!file) return;
+  if(!file)return;
   if(file.size>10*1024*1024){toast('Archivo demasiado grande (max 10MB)','err');return;}
   var reader=new FileReader();
   reader.onload=function(e){
     try{
       var rows;
       if(file.name.toLowerCase().endsWith('.csv')){
-        var text=e.target.result;
-        rows=text.split('\n').filter(function(l){return l.trim();}).map(function(l){return l.split(',').map(function(v){return v.trim().replace(/^"|"$/g,'');});});
+        rows=e.target.result.split('\n').filter(function(l){return l.trim();}).map(function(l){return l.split(',').map(function(v){return v.trim().replace(/^"|"$/g,'');});});
       } else {
         var wb=XLSX.read(e.target.result,{type:'binary'});
-        var ws=wb.Sheets[wb.SheetNames[0]];
-        rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
       }
       if(!rows||rows.length<2){toast('El archivo está vacío o no tiene datos','err');return;}
       importHeaders=rows[0].map(function(h){return String(h||'').trim();});
@@ -691,7 +762,7 @@ function handleFile(file){
       showPreview(result.valid,result.errors);
     }catch(err){toast('Error leyendo el archivo: '+err.message,'err');}
   };
-  if(file.name.toLowerCase().endsWith('.csv')) reader.readAsText(file,'UTF-8');
+  if(file.name.toLowerCase().endsWith('.csv'))reader.readAsText(file,'UTF-8');
   else reader.readAsBinaryString(file);
 }
 
@@ -700,28 +771,28 @@ function showPreview(valid,errors){
   document.getElementById('import-s2').style.display='block';
   document.getElementById('step1').className='step done';
   document.getElementById('step2').className='step active';
-
-  document.getElementById('import-summary').innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">'
+  setElHTML('import-summary',
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">'
     +'<div style="background:var(--green-bg);border:1px solid rgba(46,199,122,.2);border-radius:var(--r);padding:10px 16px;text-align:center"><div style="font-size:22px;font-weight:700;color:var(--green)">'+valid.length+'</div><div style="font-size:11px;color:var(--text3)">filas válidas</div></div>'
-    +(errors.length?'<div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-radius:var(--r);padding:10px 16px;text-align:center"><div style="font-size:22px;font-weight:700;color:var(--red)">'+errors.length+'</div><div style="font-size:11px;color:var(--text3)">con error (no se importarán)</div></div>':'')
-    +'</div>';
-
+    +(errors.length?'<div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-radius:var(--r);padding:10px 16px;text-align:center"><div style="font-size:22px;font-weight:700;color:var(--red)">'+errors.length+'</div><div style="font-size:11px;color:var(--text3)">con error</div></div>':'')
+    +'</div>'
+  );
   if(errors.length){
-    document.getElementById('import-errors').innerHTML='<div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.15);border-radius:var(--r);padding:10px;max-height:80px;overflow-y:auto;margin-bottom:8px">'
+    setElHTML('import-errors',
+      '<div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.15);border-radius:var(--r);padding:10px;max-height:80px;overflow-y:auto;margin-bottom:8px">'
       +errors.slice(0,8).map(function(e){return '<div style="font-size:11px;color:var(--red)">Fila '+e.fila+': '+e.errores.join(' · ')+'</div>';}).join('')
       +(errors.length>8?'<div style="font-size:11px;color:var(--text3)">...y '+(errors.length-8)+' más</div>':'')
-      +'</div>';
-  } else {
-    document.getElementById('import-errors').innerHTML='';
-  }
-
+      +'</div>'
+    );
+  } else {setElHTML('import-errors','');}
   var fields=['id','nombre','sexo','categoria','raza','lote','estado','fecha_nacimiento'];
-  document.getElementById('preview-table').innerHTML='<thead><tr>'+fields.map(function(f){return '<th>'+f+'</th>';}).join('')+'</tr></thead>'
+  setElHTML('preview-table',
+    '<thead><tr>'+fields.map(function(f){return '<th>'+f+'</th>';}).join('')+'</tr></thead>'
     +'<tbody>'+valid.slice(0,15).map(function(r){return '<tr>'+fields.map(function(f){return '<td>'+(r[f]||'—')+'</td>';}).join('')+'</tr>';}).join('')
     +(valid.length>15?'<tr><td colspan="'+fields.length+'" style="text-align:center;color:var(--text3);font-size:11px">...y '+(valid.length-15)+' más</td></tr>':'')
-    +'</tbody>';
-
-  if(valid.length>0) document.getElementById('btn-confirm').style.display='inline-flex';
+    +'</tbody>'
+  );
+  if(valid.length>0)document.getElementById('btn-confirm').style.display='inline-flex';
 }
 
 function confirmarImport(){
@@ -731,23 +802,18 @@ function confirmarImport(){
   document.getElementById('import-s3').style.display='block';
   document.getElementById('step2').className='step done';
   document.getElementById('step3').className='step done';
-  document.getElementById('import-done').textContent=n+' animales importados correctamente';
-  document.getElementById('import-foot').innerHTML='<button class="btn btn-primary" onclick="closeModal(\'m-import\');resetImport();cargarDatos()">Ver inventario →</button>';
+  setEl('import-done', n+' animales importados correctamente');
+  setElHTML('import-foot','<button class="btn btn-primary" onclick="closeModal(\'m-import\');resetImport();cargarDatos()">Ver inventario →</button>');
   toast(n+' animales importados');
 }
 
-// EXPORTAR
+// ── Exportar ──────────────────────────────────────────────────────────────────
 function exportarTodo(){
-  var datos=AppData.exportAll();
-  var wb=XLSX.utils.book_new();
-  Object.entries(datos).forEach(function(e){
-    var ws=XLSX.utils.aoa_to_sheet(e[1]);
-    XLSX.utils.book_append_sheet(wb,ws,e[0].slice(0,31));
-  });
+  var datos=AppData.exportAll();var wb=XLSX.utils.book_new();
+  Object.entries(datos).forEach(function(e){XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(e[1]),e[0].slice(0,31));});
   XLSX.writeFile(wb,'laaamb-base-completa-'+new Date().toISOString().slice(0,10)+'.xlsx');
   toast('Base completa exportada en Excel');
 }
-
 function exportarCSV(){
   var filas=AppData.exportCollection('animales');
   if(filas.length<=1){toast('No hay animales para exportar','info');return;}
@@ -756,323 +822,107 @@ function exportarCSV(){
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');a.href=url;a.download='laaamb-animales-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
   URL.revokeObjectURL(url);
-  toast('CSV exportado ('+(filas.length-1)+' animales · todos los campos)');
+  toast('CSV exportado ('+(filas.length-1)+' animales)');
 }
-
 function descargarPlantilla(){
-  var filas=AppData.getTemplate('animales');
-  var wb=XLSX.utils.book_new();
-  var ws=XLSX.utils.aoa_to_sheet(filas);
-  ws['!cols']=filas[0].map(function(){return {wch:18};});
+  var filas=AppData.getTemplate('animales');var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.aoa_to_sheet(filas);ws['!cols']=filas[0].map(function(){return {wch:18};});
   XLSX.utils.book_append_sheet(wb,ws,'Animales');
   XLSX.writeFile(wb,'plantilla-animales-laaamb.xlsx');
-  toast('Plantilla descargada — llena y sube con el botón Importar');
+  toast('Plantilla descargada');
 }
 
-function openModal(id){var el=document.getElementById(id);if(el) el.classList.add('open');}
-function closeModal(id){var el=document.getElementById(id);if(el) el.classList.remove('open');}
-
-function initSidebar(){
-  var open=false;
-  var BARS='<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
-  var CROSS='<line x1="4" y1="4" x2="18" y2="18"/><line x1="18" y1="4" x2="4" y2="18"/>';
-  function show(){open=true;document.getElementById('sidebar').classList.add('on');document.getElementById('lov').classList.add('on');document.body.style.overflow='hidden';document.getElementById('lico').innerHTML=CROSS;}
-  function hide(){open=false;document.getElementById('sidebar').classList.remove('on');document.getElementById('lov').classList.remove('on');document.body.style.overflow='';document.getElementById('lico').innerHTML=BARS;}
-  document.getElementById('lham').onclick=function(){open?hide():show();};
-  document.getElementById('lov').onclick=hide;
-  document.querySelectorAll('#sidebar a.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<=768) hide();});});
-}
-
-function toast(msg,type){
-  type=type||'ok';
-  var c=document.getElementById('toasts');
-  var t=document.createElement('div');t.className='toast '+type;
-  var ic={ok:'<span style="color:var(--teal)">✓</span>',err:'<span style="color:var(--red)">✕</span>',info:'<span style="color:var(--amber)">ℹ</span>'};
-  t.innerHTML=(ic[type]||ic.ok)+' '+msg;
-  c.appendChild(t);setTimeout(function(){t.remove();},3500);
-}
-</script>
-
-<!-- ══ MODAL PESAJE ══ -->
-<div class="overlay" id="modal-pesaje" onclick="if(event.target===this)closeModal('modal-pesaje')">
-<div class="modal modal-md">
-  <div class="modal-head">
-    <div class="modal-title">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="vertical-align:middle;margin-right:4px"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M10 7v6M7 10h6"/></svg>
-      Registrar pesaje
-    </div>
-    <button class="modal-close" onclick="closeModal('modal-pesaje')">✕</button>
-  </div>
-  <div class="modal-body">
-    <div class="form-section">Animal</div>
-    <div class="form-grid">
-      <div class="fg">
-        <label class="fl">ID / Arete *</label>
-        <input class="fi" id="w-animal" placeholder="OV-0234" oninput="autoFillPesaje(this.value)">
-      </div>
-      <div class="fg">
-        <label class="fl">Peso actual (kg) *</label>
-        <input class="fi" type="number" id="w-peso" step="0.1" placeholder="48.5" oninput="calcGDP()">
-      </div>
-      <div class="fg">
-        <label class="fl">Fecha pesaje *</label>
-        <input class="fi" type="date" id="w-fecha">
-      </div>
-      <div class="fg">
-        <label class="fl">Colaborador</label>
-        <select class="fi" id="w-colab">
-          <option>Juan García</option>
-          <option>Carlos Ríos</option>
-          <option>María López</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-grid" id="w-gdp-row" style="display:none">
-      <div class="fg">
-        <label class="fl">Peso anterior</label>
-        <input class="fi" id="w-peso-ant" readonly style="background:var(--bg4);color:var(--text3)">
-      </div>
-      <div class="fg">
-        <label class="fl">GDP calculado</label>
-        <input class="fi" id="w-gdp" readonly style="background:var(--bg4);color:var(--teal);font-weight:700" placeholder="g/día">
-      </div>
-    </div>
-    <div class="fg"><label class="fl">Observaciones</label>
-      <textarea class="fi" id="w-obs" rows="2" placeholder="Condición corporal, notas…"></textarea>
-    </div>
-    <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2)">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M10 2a6 6 0 00-3 11.2V15h6v-1.8A6 6 0 0010 2z"/><path d="M8 15h4M9 18h2"/></svg>
-      El GDP se calcula automáticamente con el pesaje anterior del mismo animal.
-    </div>
-  </div>
-  <div class="modal-foot">
-    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-pesaje')">Cancelar</button>
-    <button class="btn btn-primary btn-sm" onclick="savePesaje()">Guardar pesaje</button>
-  </div>
-</div>
-</div>
-
-<!-- ══ MODAL PESAJE GRUPAL ══ -->
-<div class="overlay" id="modal-pesaje-grupal" onclick="if(event.target===this)closeModal('modal-pesaje-grupal')">
-<div class="modal modal-md">
-  <div class="modal-head">
-    <div class="modal-title">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="vertical-align:middle;margin-right:4px"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M10 7v6M7 10h6"/></svg>
-      Pesaje grupal
-    </div>
-    <button class="modal-close" onclick="closeModal('modal-pesaje-grupal')">✕</button>
-  </div>
-  <div class="modal-body">
-    <div class="form-section">Grupo</div>
-    <div class="form-grid">
-      <div class="fg">
-        <label class="fl">Lote *</label>
-        <select class="fi" id="wg-lote" onchange="updatePesajeLote()"></select>
-      </div>
-      <div class="fg">
-        <label class="fl">Fecha *</label>
-        <input class="fi" type="date" id="wg-fecha">
-      </div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin:12px 0;font-size:12px">
-      <div id="wg-info" style="color:var(--text3)">Selecciona un lote para ver los animales</div>
-    </div>
-    <div id="wg-tabla" style="max-height:240px;overflow-y:auto;display:none">
-      <table>
-        <thead><tr>
-          <th>ID</th><th>Nombre</th><th>Último peso kg</th><th>Nuevo peso kg</th>
-        </tr></thead>
-        <tbody id="wg-tbody"></tbody>
-      </table>
-    </div>
-    <div class="fg" style="margin-top:12px">
-      <label class="fl">Colaborador</label>
-      <select class="fi" id="wg-colab">
-        <option>Juan García</option><option>Carlos Ríos</option><option>María López</option>
-      </select>
-    </div>
-  </div>
-  <div class="modal-foot">
-    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-pesaje-grupal')">Cancelar</button>
-    <button class="btn btn-primary btn-sm" onclick="savePesajeGrupal()">Guardar pesajes</button>
-  </div>
-</div>
-</div>
-<script>
-
-// ═══ PESAJES ═══
-function openPesaje(animalId){
-  if(animalId) document.getElementById('w-animal').value=animalId;
-  document.getElementById('w-fecha').value=new Date().toISOString().slice(0,10);
-  document.getElementById('w-gdp-row').style.display='none';
-  openModal('modal-pesaje');
-}
-
+// ── Pesaje individual ─────────────────────────────────────────────────────────
 function autoFillPesaje(id){
-  if(!id||typeof AppData==='undefined') return;
-  const peso=AppData.pesoActual(id);
-  if(peso){
-    document.getElementById('w-peso-ant').value=peso+' kg';
-    document.getElementById('w-gdp-row').style.display='grid';
-  }
+  if(!id||typeof AppData==='undefined')return;
+  var peso=AppData.pesoActual(id);
+  if(peso){document.getElementById('w-peso-ant').value=peso+' kg';document.getElementById('w-gdp-row').style.display='grid';}
 }
-
 function calcGDP(){
-  const pesoNuevo=parseFloat(document.getElementById('w-peso')?.value)||0;
-  const pesoAntStr=document.getElementById('w-peso-ant')?.value||'';
-  const pesoAnt=parseFloat(pesoAntStr)||0;
-  if(!pesoNuevo||!pesoAnt) return;
-  // Asumir 30 días entre pesajes si no hay fecha exacta
-  const gdp=Math.round(((pesoNuevo-pesoAnt)*1000)/30);
-  const gdpEl=document.getElementById('w-gdp');
-  if(gdpEl) gdpEl.value=(gdp>=0?'+':'')+gdp+' g/día';
+  var pesoNuevo=parseFloat(document.getElementById('w-peso').value)||0;
+  var pesoAnt=parseFloat(document.getElementById('w-peso-ant').value)||0;
+  if(!pesoNuevo||!pesoAnt)return;
+  var gdp=Math.round(((pesoNuevo-pesoAnt)*1000)/30);
+  document.getElementById('w-gdp').value=(gdp>=0?'+':'')+gdp+' g/día';
 }
-
 function savePesaje(){
-  const animalId=document.getElementById('w-animal')?.value?.trim();
-  const peso=parseFloat(document.getElementById('w-peso')?.value);
-  const fecha=document.getElementById('w-fecha')?.value;
-  const colab=document.getElementById('w-colab')?.value||'Juan García';
-  const obs=document.getElementById('w-obs')?.value||'';
+  var animalId=document.getElementById('w-animal').value.trim();
+  var peso=parseFloat(document.getElementById('w-peso').value);
+  var fecha=document.getElementById('w-fecha').value;
+  var colab=document.getElementById('w-colab').value||'Juan García';
+  var obs=document.getElementById('w-obs').value||'';
   if(!animalId||!peso||!fecha){toast('Animal, peso y fecha son requeridos','err');return;}
-  
-  const gdpStr=document.getElementById('w-gdp')?.value||'';
-  const gdp=parseFloat(gdpStr)||null;
-
-  if(typeof AppData!=='undefined'){
-    AppData.add('pesajes',{
-      id:AppData.uid('PES'),
-      animal_id:animalId,
-      fecha,
-      peso_kg:peso,
-      gdp_calculado:gdp,
-      colaborador:colab,
-      observaciones:obs
-    });
-    toast('Pesaje registrado · #'+animalId+' → '+peso+' kg'+(gdp?' · GDP: '+gdpStr:''));
-  } else {
-    toast('Pesaje registrado (modo demo)');
-  }
+  var gdpStr=document.getElementById('w-gdp').value||'';
+  var gdp=parseFloat(gdpStr)||null;
+  AppData.add('pesajes',{id:AppData.uid('PES'),animal_id:animalId,fecha,peso_kg:peso,gdp_calculado:gdp,colaborador:colab,observaciones:obs});
+  toast('Pesaje registrado · #'+animalId+' → '+peso+' kg'+(gdp?' · GDP: '+gdpStr:''));
   closeModal('modal-pesaje');
-  // Refrescar tabla
-  if(typeof loadAnimalesFromAppData!=='undefined') loadAnimalesFromAppData();
-  else if(typeof renderAnimales!=='undefined') renderAnimales();
+  cargarDatos();
 }
 
+// ── Pesaje grupal ─────────────────────────────────────────────────────────────
+function initPesajeLotes(){
+  if(typeof AppData==='undefined')return;
+  var d=AppData.get();
+  var sel=document.getElementById('wg-lote');if(!sel)return;
+  var lotes=d.lotes&&d.lotes.length?d.lotes.map(function(l){return l.nombre;}):['Lote A','Lote B','Lote C','Lote D'];
+  sel.innerHTML=lotes.map(function(l){return '<option value="'+l+'">'+l+'</option>';}).join('');
+}
 function updatePesajeLote(){
-  if(typeof AppData==='undefined') return;
-  const lote=document.getElementById('wg-lote')?.value;
-  const d=AppData.get();
-  const animalesLote=d.animales.filter(a=>a.activo&&a.lote===lote);
-  const infoEl=document.getElementById('wg-info');
-  const tablaEl=document.getElementById('wg-tabla');
-  const tbody=document.getElementById('wg-tbody');
-  if(infoEl) infoEl.textContent=animalesLote.length+' animales en '+lote;
-  if(!animalesLote.length){if(tablaEl)tablaEl.style.display='none';return;}
-  if(tablaEl) tablaEl.style.display='block';
-  if(tbody) tbody.innerHTML=animalesLote.map(a=>{
-    const ult=AppData.pesoActual(a.id)||a.peso_inicial||'—';
-    return `<tr>
-      <td class="td-mono" style="font-size:11px">${a.id}</td>
-      <td style="font-size:12px">${a.nombre||'—'}</td>
-      <td class="td-muted">${ult} kg</td>
-      <td><input type="number" step="0.1" class="fi" style="padding:4px 8px;font-size:12px" placeholder="${ult}" data-id="${a.id}"></td>
-    </tr>`;
+  var lote=document.getElementById('wg-lote').value;
+  var d=AppData.get();
+  var animalesLote=d.animales.filter(function(a){return a.activo&&a.lote===lote;});
+  setEl('wg-info', animalesLote.length+' animales en '+lote);
+  var tablaEl=document.getElementById('wg-tabla');
+  var tbody=document.getElementById('wg-tbody');
+  if(!animalesLote.length){tablaEl.style.display='none';return;}
+  tablaEl.style.display='block';
+  tbody.innerHTML=animalesLote.map(function(a){
+    var ult=AppData.pesoActual(a.id)||a.peso_inicial||'—';
+    return '<tr><td style="font-size:11px">'+a.id+'</td><td style="font-size:12px">'+(a.nombre||'—')+'</td>'
+      +'<td class="td-m">'+ult+' kg</td>'
+      +'<td><input type="number" step="0.1" class="fi" style="padding:4px 8px;font-size:12px" placeholder="'+ult+'" data-id="'+a.id+'"></td></tr>';
   }).join('');
 }
-
 function savePesajeGrupal(){
-  if(typeof AppData==='undefined'){toast('AppData no disponible','err');return;}
-  const fecha=document.getElementById('wg-fecha')?.value;
-  const colab=document.getElementById('wg-colab')?.value||'Juan García';
+  var fecha=document.getElementById('wg-fecha').value;
+  var colab=document.getElementById('wg-colab').value||'Juan García';
   if(!fecha){toast('Fecha requerida','err');return;}
-  const inputs=document.querySelectorAll('#wg-tbody input[type="number"]');
-  let guardados=0;
-  inputs.forEach(inp=>{
-    const peso=parseFloat(inp.value);
-    const animalId=inp.getAttribute('data-id');
+  var inputs=document.querySelectorAll('#wg-tbody input[type="number"]');
+  var guardados=0;
+  inputs.forEach(function(inp){
+    var peso=parseFloat(inp.value);
+    var animalId=inp.getAttribute('data-id');
     if(peso&&animalId){
-      const gdpAnt=AppData.pesoActual(animalId)||0;
-      const gdp=gdpAnt?Math.round(((peso-gdpAnt)*1000)/30):null;
-      AppData.add('pesajes',{
-        id:AppData.uid('PES'),animal_id:animalId,fecha,
-        peso_kg:peso,gdp_calculado:gdp,colaborador:colab
-      });
+      var gdpAnt=AppData.pesoActual(animalId)||0;
+      var gdp=gdpAnt?Math.round(((peso-gdpAnt)*1000)/30):null;
+      AppData.add('pesajes',{id:AppData.uid('PES'),animal_id:animalId,fecha,peso_kg:peso,gdp_calculado:gdp,colaborador:colab});
       guardados++;
     }
   });
   closeModal('modal-pesaje-grupal');
-  toast(guardados+' pesajes registrados · GDP actualizado');
-  if(typeof loadAnimalesFromAppData!=='undefined') loadAnimalesFromAppData();
+  toast(guardados+' pesajes registrados');
+  cargarDatos();
 }
 
-// Llenar select de lotes en modal pesaje grupal
-(function initPesajeLotes(){
-  if(typeof AppData==='undefined') return;
-  const d=AppData.get();
-  const sel=document.getElementById('wg-lote');
-  if(!sel) return;
-  document.getElementById('wg-fecha').value=new Date().toISOString().slice(0,10);
-  const lotes=d.lotes&&d.lotes.length?d.lotes.map(l=>l.nombre):['Lote A','Lote B','Lote C','Lote D'];
-  sel.innerHTML=lotes.map(l=>`<option value="${l}">${l}</option>`).join('');
-})();
-
-</script>
-<script>
-
-// ═══ Utilidad de validación UI ═══
-function validateForm(fields) {
-  // fields = [{el: element, label: 'Nombre', required: true, type: 'number'}]
-  var errors = [];
-  fields.forEach(function(f) {
-    var el = typeof f.el === 'string' ? document.getElementById(f.el) : f.el;
-    if (!el) return;
-    var val = el.value ? el.value.trim() : '';
-    el.style.borderColor = ''; // reset
-    if (f.required && !val) {
-      el.style.borderColor = 'var(--red)';
-      el.style.boxShadow = '0 0 0 2px rgba(224,82,82,0.2)';
-      errors.push((f.label || 'Campo') + ' es requerido');
-      el.focus && errors.length === 1 && el.focus();
-    } else if (f.type === 'number' && val && isNaN(parseFloat(val))) {
-      el.style.borderColor = 'var(--red)';
-      errors.push((f.label || 'Campo') + ' debe ser un número');
-    } else if (f.min !== undefined && parseFloat(val) < f.min) {
-      el.style.borderColor = 'var(--amber)';
-      errors.push((f.label || 'Campo') + ' debe ser mayor a ' + f.min);
-    } else if (val) {
-      el.style.borderColor = 'var(--teal)';
-      setTimeout(function() { if(el) el.style.borderColor = ''; el.style.boxShadow = ''; }, 2000);
-    }
-  });
-  return errors;
-}
-
-// Limpiar highlights al escribir
-document.addEventListener('input', function(e) {
-  if (e.target.classList.contains('fi')) {
-    e.target.style.borderColor = '';
-    e.target.style.boxShadow = '';
-  }
-}, true);
-
-</script>
-<script>
-// ── Selector especie en page-header ─────────────────────────────────────
+// ── Selector especie ──────────────────────────────────────────────────────────
 function setEspecie(esp){
-  localStorage.setItem('laaamb-active-especie', esp);
-  document.querySelectorAll('.sp-tab').forEach(function(t){
-    t.classList.remove('active','active-bo');
-  });
-  var tab = document.getElementById('sp-'+esp);
-  if(tab){ tab.classList.add('active'); if(esp==='bovino') tab.classList.add('active-bo'); }
-  window.dispatchEvent(new CustomEvent('especie-changed', {detail:{especie:esp}}));
+  activeEspecie=esp;
+  localStorage.setItem('laaamb-active-especie',esp);
+  document.querySelectorAll('.sp-tab').forEach(function(t){t.classList.remove('active','active-bo');});
+  var tab=document.getElementById('sp-'+esp);
+  if(tab){tab.classList.add('active');if(esp==='bovino')tab.classList.add('active-bo');}
+  applyFilters();
 }
 function initEspecieTabs(){
-  var esp = localStorage.getItem('laaamb-active-especie')||'todas';
+  var esp=localStorage.getItem('laaamb-active-especie')||'todas';
   setEspecie(esp);
 }
-document.addEventListener('DOMContentLoaded', initEspecieTabs);
+
+// ── Validación UI ─────────────────────────────────────────────────────────────
+document.addEventListener('input',function(e){
+  if(e.target.classList.contains('fi')){e.target.style.borderColor='';e.target.style.boxShadow='';}
+},true);
 </script>
 </body>
 </html>
