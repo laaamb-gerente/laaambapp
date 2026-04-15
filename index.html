@@ -298,7 +298,11 @@ document.addEventListener('DOMContentLoaded', function() {
     var active = localStorage.getItem('laaamb-active-finca')||'default';
     var d = AppData.get();
     var all = [Object.assign({id:'default'}, d.finca||{nombre:'La Marinilla',area_ha:50})].concat(d.fincas||[]);
-    return {id: active, finca: all.find(function(f){return f.id===active;})||all[0]||{}, d: d};
+    // 'all' no es una finca real — devolver la principal como referencia
+    var finca = active === 'all'
+      ? (all[0]||{nombre:'LAAAMB',area_ha:0})
+      : (all.find(function(f){return f.id===active;})||all[0]||{});
+    return {id: active, finca: finca, d: d, all: all};
   }
 
   function animalesFinca(fincaId, animales){
@@ -308,27 +312,56 @@ document.addEventListener('DOMContentLoaded', function() {
 
   var DMAP=null, DMAP_LAYERS=[];
 
+  // Coordenadas aproximadas por municipio (fallback sin geometría)
+  var MUNICIPIO_COORDS = {
+    'ibagué': [4.438, -75.232], 'la marinilla': [6.177, -75.501],
+    'bogotá': [4.711, -74.072], 'medellín': [6.244, -75.574],
+    'cali': [3.451, -76.532], 'manizales': [5.070, -75.513],
+    'armenia': [4.534, -75.681], 'pereira': [4.814, -75.696],
+    'neiva': [2.935, -75.282], 'villavicencio': [4.142, -73.626],
+    'default': [4.438, -75.232] // centro Colombia aprox
+  };
+
+  function coordsMunicipio(nombre){
+    if(!nombre) return MUNICIPIO_COORDS['default'];
+    var key = nombre.toLowerCase().trim();
+    return MUNICIPIO_COORDS[key] || MUNICIPIO_COORDS['default'];
+  }
+
+  function centroidGeo(geojson){
+    if(!geojson) return null;
+    var coords = geojson.coordinates[0];
+    var lat = coords.reduce(function(s,c){return s+c[1];},0)/coords.length;
+    var lng = coords.reduce(function(s,c){return s+c[0];},0)/coords.length;
+    return [lat, lng];
+  }
+
   function renderDashboard(){
     var ctx = getActiveFinca();
     var finca=ctx.finca, d=ctx.d, active=ctx.id;
-    var animales = animalesFinca(active, d.animales||[]);
-    var lotes = (d.lotes||[]).filter(function(l){return l.activo&&(l.finca_id||'default')===active;});
+    var todasFincas = [Object.assign({id:'default'}, d.finca||{})].concat(d.fincas||[]);
+    var isAll = active === 'all';
 
-    // Eyebrow con finca activa
-    var eyebrow = [finca.nombre, finca.municipio||'', finca.departamento||'', 'Colombia'].filter(Boolean).join(' · ');
+    var animales, lotes, eyebrow;
+    if(isAll){
+      animales = (d.animales||[]).filter(function(a){return a.activo;});
+      lotes = (d.lotes||[]).filter(function(l){return l.activo;});
+      eyebrow = todasFincas.map(function(f){return f.nombre;}).join(' · ') + ' · Colombia';
+    } else {
+      animales = animalesFinca(active, d.animales||[]);
+      lotes = (d.lotes||[]).filter(function(l){return l.activo&&(l.finca_id||'default')===active;});
+      eyebrow = [finca.nombre, finca.municipio||'', finca.departamento||'', 'Colombia'].filter(Boolean).join(' · ');
+    }
+
     setEl('ph-eyebrow', eyebrow);
-
-    // KPIs filtrados por finca activa
     setEl('kpi-total', animales.length);
-    setEl('kpi-total-delta', 'activos en '+finca.nombre);
+    setEl('kpi-total-delta', isAll ? 'activos — todas las fincas' : 'activos en '+(finca.nombre||''));
 
     var gestantes = animales.filter(function(a){return a.estado==='Gestante';});
     setEl('kpi-gestantes', gestantes.length);
-
     var levante = animales.filter(function(a){return ['Levante','Cría','Cordera','Cordero'].includes(a.categoria);});
     setEl('kpi-levante', levante.length);
 
-    // Partos este mes
     var hoy = new Date();
     var partosMes = (d.partos||[]).filter(function(p){
       var f=new Date(p.fecha);
@@ -336,12 +369,17 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     setEl('kpi-partos', partosMes.length);
 
-    // Sidebar badge
     setEl('sb-count', animales.length);
     var subEl=document.getElementById('sb-farm-sub');
-    if(subEl) subEl.textContent=(finca.area_ha||'—')+' ha · '+animales.length+' animales';
+    if(subEl){
+      if(isAll){
+        var totalHa = (todasFincas||[]).reduce(function(s,f){return s+(parseFloat(f.area_ha)||0);},0);
+        subEl.textContent = totalHa.toFixed(0)+' ha · '+animales.length+' animales';
+      } else {
+        subEl.textContent = (finca.area_ha||'—')+' ha · '+animales.length+' animales';
+      }
+    }
 
-    // Retiro
     var enRetiro = (d.tratamientos||[]).filter(function(t){return t.dias_retiro>0&&t.activo;});
     var alertDiv = document.getElementById('alert-retiro');
     if(enRetiro.length&&alertDiv){
@@ -349,7 +387,6 @@ document.addEventListener('DOMContentLoaded', function() {
       setEl('alert-retiro-txt','Animales en período de retiro — no aptos para sacrificio: '+enRetiro.slice(0,2).map(function(t){return t.animal_id||'Grupo';}).join(', ')+(enRetiro.length>2?' y '+(enRetiro.length-2)+' más':''));
     }
 
-    // Actividad
     var acts = (d.actividad||[]).slice(0,12);
     var feed = document.getElementById('activity-feed');
     if(feed&&acts.length){
@@ -358,67 +395,150 @@ document.addEventListener('DOMContentLoaded', function() {
       }).join('');
     }
 
-    renderDashMap(finca, active, lotes, animales, d.geo||{});
+    renderDashMap(isAll ? null : finca, active, lotes, animales, d.geo||{}, isAll ? todasFincas : null);
   }
 
-  function renderDashMap(finca, active, lotes, animales, geo){
+  function renderDashMap(finca, active, lotes, animales, geo, todasFincas){
+    var isAll = active === 'all';
     var titleEl=document.getElementById('dash-map-title');
     var subEl=document.getElementById('dash-map-sub');
-    if(titleEl) titleEl.textContent='Vista GPS — '+(finca.nombre||'Finca');
-    if(subEl) subEl.textContent=(finca.area_ha||'—')+' ha · '+lotes.length+' lote'+(lotes.length!==1?'s':'')+' activos · '+animales.length+' animales'+(finca.municipio?' · '+finca.municipio:'');
+
+    if(isAll){
+      if(titleEl) titleEl.textContent='Vista GPS — Todas las fincas';
+      var totalHa = (todasFincas||[]).reduce(function(s,f){return s+(f.area_ha||0);},0);
+      if(subEl) subEl.textContent=totalHa.toFixed(0)+' ha totales · '+(todasFincas||[]).length+' fincas · '+animales.length+' animales';
+    } else {
+      if(titleEl) titleEl.textContent='Vista GPS — '+(finca.nombre||'Finca');
+      if(subEl) subEl.textContent=(finca.area_ha||'—')+' ha · '+lotes.length+' lote'+(lotes.length!==1?'s':'')+' activos · '+animales.length+' animales'+(finca.municipio?' · '+finca.municipio:'');
+    }
 
     if(!DMAP){
       DMAP=L.map('dash-map',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,keyboard:false,touchZoom:false});
       var gsat=L.tileLayer('https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{subdomains:'0123',maxZoom:20,maxNativeZoom:20});
       var glab=L.tileLayer('https://mt{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}',{subdomains:'0123',maxZoom:20,opacity:0.6});
       gsat.addTo(DMAP); glab.addTo(DMAP);
-      var fc=0;
-      gsat.on('tileerror',function(){fc++;if(fc===3){DMAP.removeLayer(gsat);L.tileLayer('https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(DMAP);}});
-      DMAP.setView([6.177,-75.501],14);
+      var failCount=0;
+      gsat.on('tileerror',function(){failCount++;if(failCount===3){DMAP.removeLayer(gsat);L.tileLayer('https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(DMAP);}});
+      DMAP.setView([4.438,-75.232],10);
     }
 
     DMAP_LAYERS.forEach(function(l){DMAP.removeLayer(l);}); DMAP_LAYERS=[];
     var bounds=[];
 
-    // Perímetro finca
-    var fKey='finca_'+active;
-    if(geo[fKey]){
-      var fCoords=geo[fKey].coordinates[0].map(function(c){return[c[1],c[0]];});
-      var fp=L.polygon(fCoords,{color:'#00AFB6',weight:2.5,fillOpacity:0.07,interactive:false});
-      fp.addTo(DMAP); DMAP_LAYERS.push(fp); bounds=bounds.concat(fCoords);
+    if(isAll){
+      // ── Modo todas las fincas ──────────────────────────
+      // Mostrar cada finca: perímetro + pin central con nombre
+      var fincaList = todasFincas || [];
+      var pinsAdded = [];
+
+      fincaList.forEach(function(f){
+        var fKey = 'finca_'+f.id;
+        var fCenter = null;
+
+        if(geo[fKey]){
+          // Tiene perímetro dibujado — usarlo
+          var fCoords = geo[fKey].coordinates[0].map(function(c){return[c[1],c[0]];});
+          var fp = L.polygon(fCoords,{color:'#00AFB6',weight:2,fillOpacity:0.08,interactive:false});
+          fp.addTo(DMAP); DMAP_LAYERS.push(fp);
+          bounds = bounds.concat(fCoords);
+          // Centro del polígono
+          var b = L.latLngBounds(fCoords);
+          fCenter = [b.getCenter().lat, b.getCenter().lng];
+        } else {
+          // Sin perímetro — usar coordenadas del municipio
+          fCenter = coordsMunicipio(f.municipio);
+        }
+
+        // Pin con nombre y hectáreas
+        if(fCenter){
+          pinsAdded.push(fCenter);
+          var animF = isAll
+            ? (f.id==='default'
+                ? animales.filter(function(a){return !a.finca_id||a.finca_id==='default';})
+                : animales.filter(function(a){return a.finca_id===f.id;}))
+            : animales;
+          var pin = L.marker(fCenter,{
+            icon:L.divIcon({
+              html: '<div style="font-family:Changa,sans-serif;text-align:center;pointer-events:none">'
+                +'<div style="background:rgba(0,175,182,.9);border:2px solid white;border-radius:var(--r,8px);padding:5px 10px;box-shadow:0 2px 8px rgba(0,0,0,.6);white-space:nowrap">'
+                +'<div style="font-size:12px;font-weight:700;color:#fff">'+f.nombre+'</div>'
+                +'<div style="font-size:10px;color:rgba(255,255,255,.85)">'+(f.area_ha||'—')+' ha · '+animF.length+' animales</div>'
+                +'</div>'
+                +'<div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid rgba(0,175,182,.9);margin:0 auto"></div>'
+                +'</div>',
+              className:'', iconAnchor:[55,52]
+            }), interactive:false
+          });
+          pin.addTo(DMAP); DMAP_LAYERS.push(pin);
+          // Añadir el pin al bounds si no hay perímetro
+          if(!geo[fKey]) bounds.push(fCenter);
+        }
+
+        // Lotes de esta finca
+        var fLotes = lotes.filter(function(l){return (l.finca_id||'default')===f.id;});
+        fLotes.forEach(function(l){
+          var lk='lote_'+l.id;
+          if(!geo[lk]) return;
+          var coords=geo[lk].coordinates[0].map(function(c){return[c[1],c[0]];});
+          var n=animales.filter(function(a){return a.lote===l.nombre&&(f.id==='default'?!a.finca_id||a.finca_id==='default':a.finca_id===f.id);}).length;
+          var cap=l.capacidad_max||1;
+          var pct=n/cap;
+          var color=pct>0.9?'#e05252':pct>0.7?'#e8a030':'#2ec77a';
+          var poly=L.polygon(coords,{color:color,weight:1.5,fillColor:color,fillOpacity:0.2,interactive:false});
+          poly.addTo(DMAP); DMAP_LAYERS.push(poly);
+          bounds=bounds.concat(coords);
+        });
+      });
+
+    } else {
+      // ── Modo una sola finca ────────────────────────────
+      var fKey='finca_'+active;
+      if(geo[fKey]){
+        var fCoords=geo[fKey].coordinates[0].map(function(c){return[c[1],c[0]];});
+        var fp=L.polygon(fCoords,{color:'#00AFB6',weight:2.5,fillOpacity:0.07,interactive:false});
+        fp.addTo(DMAP); DMAP_LAYERS.push(fp); bounds=bounds.concat(fCoords);
+      }
+
+      lotes.forEach(function(l){
+        var lk='lote_'+l.id;
+        if(!geo[lk]) return;
+        var coords=geo[lk].coordinates[0].map(function(c){return[c[1],c[0]];});
+        var n=animales.filter(function(a){return a.lote===l.nombre;}).length;
+        var cap=l.capacidad_max||1;
+        var pct=n/cap;
+        var color=pct>0.9?'#e05252':pct>0.7?'#e8a030':'#2ec77a';
+        var poly=L.polygon(coords,{color:color,weight:1.5,fillColor:color,fillOpacity:0.22,interactive:false});
+        poly.addTo(DMAP); DMAP_LAYERS.push(poly);
+        var center=poly.getBounds().getCenter();
+        var lbl=L.marker(center,{
+          icon:L.divIcon({
+            html:'<div style="font-family:Changa,sans-serif;text-align:center;pointer-events:none;white-space:nowrap">'
+              +'<div style="font-size:11px;font-weight:700;color:'+color+';text-shadow:0 1px 4px rgba(0,0,0,1)">'+l.nombre+'</div>'
+              +'<div style="font-size:10px;color:rgba(255,255,255,.85);text-shadow:0 1px 3px rgba(0,0,0,1)">'+n+'/'+cap+'</div>'
+              +'</div>',
+            className:'',iconAnchor:[30,14]
+          }),interactive:false
+        });
+        lbl.addTo(DMAP); DMAP_LAYERS.push(lbl); bounds=bounds.concat(coords);
+      });
+
+      // Sin geometría: centrar en municipio de la finca
+      if(!bounds.length && finca){
+        var fc = coordsMunicipio(finca.municipio);
+        setTimeout(function(){DMAP.setView(fc, 13);}, 80);
+        return;
+      }
     }
 
-    // Lotes
-    lotes.forEach(function(l){
-      var lk='lote_'+l.id;
-      if(!geo[lk]) return;
-      var coords=geo[lk].coordinates[0].map(function(c){return[c[1],c[0]];});
-      var n=animales.filter(function(a){return a.lote===l.nombre;}).length;
-      var cap=l.capacidad_max||1;
-      var pct=n/cap;
-      var color=pct>0.9?'#e05252':pct>0.7?'#e8a030':'#2ec77a';
-      var poly=L.polygon(coords,{color:color,weight:1.5,fillColor:color,fillOpacity:0.22,interactive:false});
-      poly.addTo(DMAP); DMAP_LAYERS.push(poly);
-      var center=poly.getBounds().getCenter();
-      var lbl=L.marker(center,{
-        icon:L.divIcon({
-          html:'<div style="font-family:Changa,sans-serif;text-align:center;pointer-events:none;white-space:nowrap">'
-            +'<div style="font-size:11px;font-weight:700;color:'+color+';text-shadow:0 1px 4px rgba(0,0,0,1)">'+l.nombre+'</div>'
-            +'<div style="font-size:10px;color:rgba(255,255,255,.85);text-shadow:0 1px 3px rgba(0,0,0,1)">'+n+'/'+cap+'</div>'
-            +'</div>',
-          className:'',iconAnchor:[30,14]
-        }),interactive:false
-      });
-      lbl.addTo(DMAP); DMAP_LAYERS.push(lbl); bounds=bounds.concat(coords);
-    });
-
-    // Fit bounds
+    // Fit a todos los bounds encontrados
     if(bounds.length>0){
-      setTimeout(function(){try{DMAP.fitBounds(L.latLngBounds(bounds),{padding:[28,28]});}catch(e){}},80);
-    } else if(geo[fKey]){
-      setTimeout(function(){try{var c=geo[fKey].coordinates[0].map(function(x){return[x[1],x[0]];});DMAP.fitBounds(L.latLngBounds(c),{padding:[28,28]});}catch(e){}},80);
-    } else {
-      DMAP.setView([6.177,-75.501],13);
+      setTimeout(function(){
+        try{
+          var lb = L.latLngBounds(bounds);
+          // Zoom mínimo 9 para no alejarse demasiado
+          DMAP.fitBounds(lb, {padding:[24,24], maxZoom:16});
+        }catch(e){}
+      },80);
     }
   }
 
