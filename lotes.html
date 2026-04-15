@@ -169,6 +169,29 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .map-tool-btn::after{content:attr(data-tip);position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);background:rgba(12,21,23,.95);color:var(--text);font-size:11px;font-family:'Changa',sans-serif;font-weight:500;white-space:nowrap;padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .map-tool-btn:hover::after{opacity:1}
 
+/* ── Panel edición de perímetro/lote ── */
+.map-edit-panel{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:402;
+  background:rgba(12,21,23,.96);border:1.5px solid var(--teal);border-radius:var(--r2);
+  padding:14px 18px;min-width:320px;box-shadow:0 4px 24px rgba(0,0,0,.6);
+  display:none;backdrop-filter:blur(6px)}
+.map-edit-panel.open{display:block}
+.map-edit-panel-title{font-family:'Sigmar',cursive;font-size:15px;color:var(--teal);margin-bottom:4px}
+.map-edit-panel-sub{font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.4}
+.map-edit-area-badge{display:inline-flex;align-items:center;gap:6px;
+  background:var(--teal-bg);border:1px solid var(--border2);border-radius:20px;
+  padding:4px 12px;font-size:13px;font-weight:700;color:var(--teal);margin-bottom:12px}
+.map-edit-btns{display:flex;gap:8px;flex-wrap:wrap}
+.map-edit-btn{padding:7px 14px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;display:flex;align-items:center;gap:5px}
+.map-edit-btn.save{background:var(--teal);color:#080f10}
+.map-edit-btn.save:hover{background:#1cc8d0}
+.map-edit-btn.cancel{background:var(--surface);color:var(--text2);border:1px solid var(--border2)}
+.map-edit-btn.cancel:hover{background:var(--surface2)}
+.map-edit-btn.delete{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,82,82,.25)}
+.map-edit-btn.delete:hover{background:rgba(224,82,82,.18)}
+
+/* ── Área badge sobre polígono de finca ── */
+.finca-area-badge{pointer-events:none}
+
 /* Botón deshacer punto */
 .map-undo-btn{display:none;width:38px;height:38px;border-radius:var(--r);background:rgba(232,160,48,.15);border:1px solid rgba(232,160,48,.4);color:var(--amber);cursor:pointer;align-items:center;justify-content:center;font-size:16px;transition:all var(--anim);box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .map-undo-btn:hover{background:rgba(232,160,48,.25);color:#fff}
@@ -335,6 +358,24 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
     </div>
     <!-- Status bar -->
     <div class="map-status-bar" id="map-status" style="display:none"></div>
+    <!-- Panel de edición de polígono existente -->
+    <div class="map-edit-panel" id="map-edit-panel">
+      <div class="map-edit-panel-title" id="mep-title">Editar perímetro</div>
+      <div class="map-edit-panel-sub" id="mep-sub">Arrastra los vértices azules para ajustar la forma</div>
+      <div class="map-edit-area-badge" id="mep-area">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>
+        <span id="mep-area-val">— ha</span>
+      </div>
+      <div class="map-edit-btns">
+        <button class="map-edit-btn save" id="mep-save" onclick="guardarEdicionPoligono()">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M4 10l4 4 8-8"/></svg> Guardar cambios
+        </button>
+        <button class="map-edit-btn cancel" onclick="cancelarEdicionPoligono()">Cancelar</button>
+        <button class="map-edit-btn delete" id="mep-delete" onclick="eliminarPoligonoActual()">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg> Eliminar
+        </button>
+      </div>
+    </div>
     <!-- Legend -->
     <div class="map-legend" id="map-legend">
       <div class="map-legend-title">Ocupación</div>
@@ -574,6 +615,12 @@ var tempPolylineClose=null; // línea de cierre preview
 var fincaLayers={}; // {fincaId: L.polygon}
 var loteLayers={}; // {loteId: L.polygon}
 var editableLayers={}; // polígonos en modo edición
+var editingPolyId=null;   // id del polígono en edición activa ('finca_XXX' o loteId)
+var editingPolyType=null; // 'finca' | 'lote'
+var editingHandles=[];    // marcadores draggables activos
+var editingPoly=null;     // referencia al L.polygon en edición
+var editingLatLngs=[];    // copia de latLngs para cancelar
+var fincaAreaLabels={};   // labels de área sobre perímetros
 
 function initMap(){
   MAP=L.map('map',{zoomControl:true,attributionControl:false});
@@ -841,15 +888,43 @@ function loadGeometries(){
 
 function renderFincaLayer(fincaId, geojson){
   if(fincaLayers[fincaId]) MAP.removeLayer(fincaLayers[fincaId]);
+  if(fincaAreaLabels[fincaId]) MAP.removeLayer(fincaAreaLabels[fincaId]);
+
   var coords=geojson.coordinates[0].map(function(c){return [c[1],c[0]];});
   var isActive=fincaId===activeFincaMap;
   var poly=L.polygon(coords,{
     color:'#00AFB6',weight:isActive?3:1.5,opacity:isActive?1:0.4,
-    fillColor:'#00AFB6',fillOpacity:isActive?0.06:0.02,
+    fillColor:'#00AFB6',fillOpacity:isActive?0.07:0.02,
     dashArray:isActive?null:'8,4'
   }).addTo(MAP);
-  poly.on('click',function(){setMapFinca(fincaId);});
+
+  // Click: si ya es activa → abrir panel edición; si no → seleccionar
+  poly.on('click',function(e){
+    L.DomEvent.stopPropagation(e);
+    if(fincaId===activeFincaMap){
+      abrirEdicionPoligono('finca', fincaId, poly, geojson);
+    } else {
+      setMapFinca(fincaId);
+    }
+  });
+
   fincaLayers[fincaId]=poly;
+
+  // Label de área sobre el perímetro
+  var areaHa=calcAreaHa(coords.map(function(c){return {lat:c[0],lng:c[1]};}));
+  var finca=getFincaById(fincaId);
+  var center=poly.getBounds().getCenter();
+  var label=L.marker(center,{
+    icon:L.divIcon({
+      html:'<div style="font-family:Changa,sans-serif;text-align:center;pointer-events:none">'
+        +'<div style="font-size:12px;font-weight:700;color:#00AFB6;text-shadow:0 1px 4px rgba(0,0,0,.9)">'+finca.nombre+'</div>'
+        +'<div style="font-size:11px;color:rgba(255,255,255,.8);text-shadow:0 1px 3px rgba(0,0,0,.9);margin-top:1px">'+areaHa.toFixed(1)+' ha</div>'
+        +'<div style="font-size:9px;color:rgba(0,175,182,.7);margin-top:1px">clic para editar</div>'
+        +'</div>',
+      className:'', iconAnchor:[40,20]
+    }), zIndexOffset:5, interactive:false
+  }).addTo(MAP);
+  fincaAreaLabels[fincaId]=label;
 }
 
 function renderLoteLayers(){
@@ -893,6 +968,14 @@ function renderLoteLayer(loteId, lote, geojson){
     +'</div>'
     +'</div>';
   poly.bindPopup(popupContent,{maxWidth:240,minWidth:200});
+  poly.on('click',function(e){
+    // Doble click abre panel edición directo
+    if(e.originalEvent && e.originalEvent.detail===2){
+      L.DomEvent.stopPropagation(e);
+      MAP.closePopup();
+      abrirEdicionPoligono('lote', loteId, poly, geojson);
+    }
+  });
 
   // Etiqueta centrada
   var center=poly.getBounds().getCenter();
@@ -909,79 +992,201 @@ function renderLoteLayer(loteId, lote, geojson){
   if(editMode) enableLoteEdit(loteId, poly, geojson);
 }
 
-// ── MODO EDICIÓN ────────────────────────────────────
+// ── MODO EDICIÓN INDIVIDUAL ──────────────────────────
+// El botón ✏ ya no activa un modo global — en su lugar
+// el usuario hace clic sobre un perímetro o lote para abrirlo.
+// El botón toolbar ahora abre edición del perímetro de la finca activa.
 function toggleEditMode(){
-  editMode=!editMode;
-  document.getElementById('btn-edit-mode').classList.toggle('active',editMode);
-  if(editMode){
-    showMapStatus('✏️ Modo edición — arrastra los vértices para reajustar los polígonos · Haz clic en "Editar" de nuevo para salir');
-    enableAllLoteEdit();
-  } else {
-    hideMapStatus();
-    disableAllLoteEdit();
-    // Guardar cambios
-    saveEditedGeometries();
-    toast('Cambios de polígonos guardados');
-  }
-}
-
-function enableAllLoteEdit(){
   var d=AppData.get();
   var geo=d.geo||{};
-  (d.lotes||[]).filter(function(l){return l.activo;}).forEach(function(l){
-    var key='lote_'+l.id;
-    if(geo[key]&&loteLayers[l.id]) enableLoteEdit(l.id, loteLayers[l.id].poly, geo[key]);
-  });
+  var key='finca_'+activeFincaMap;
+  if(!geo[key]){
+    toast('Esta finca no tiene perímetro dibujado todavía','err');
+    return;
+  }
+  if(!fincaLayers[activeFincaMap]){
+    toast('Carga el mapa primero','err');
+    return;
+  }
+  abrirEdicionPoligono('finca', activeFincaMap, fincaLayers[activeFincaMap], geo[key]);
 }
 
-function enableLoteEdit(loteId, poly, geojson){
-  // Añadir marcadores draggables en cada vértice
-  if(editableLayers[loteId]) disableLoteEdit(loteId);
-  var handles=[];
+// ── Panel de edición ─────────────────────────────────
+function abrirEdicionPoligono(tipo, id, poly, geojson){
+  // Si hay otra edición abierta, cancelar primero
+  if(editingPolyId) cancelarEdicionPoligono();
+
+  editingPolyType=tipo;
+  editingPolyId=id;
+  editingPoly=poly;
+
+  // Guardar copia para cancelar
   var latLngs=poly.getLatLngs()[0];
-  latLngs.forEach(function(ll,i){
+  editingLatLngs=latLngs.map(function(ll){return L.latLng(ll.lat,ll.lng);});
+
+  // Bloquear drag del mapa mientras se edita
+  MAP.dragging.disable();
+  MAP.doubleClickZoom.disable();
+
+  // Cambiar estilo del polígono a "en edición"
+  poly.setStyle({
+    color: tipo==='finca'?'#00AFB6':'#e8a030',
+    weight:3, dashArray:'6,3', opacity:1,
+    fillOpacity:0.12
+  });
+
+  // Crear handles draggables en cada vértice
+  editingHandles=[];
+  var currentLatLngs=poly.getLatLngs()[0];
+  currentLatLngs.forEach(function(ll,i){
     var h=L.marker(ll,{
       draggable:true,
-      icon:L.divIcon({html:'<div style="width:12px;height:12px;border-radius:50%;background:#00AFB6;border:2px solid white;cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,.5)"></div>',className:'',iconAnchor:[6,6]})
+      icon:L.divIcon({
+        html:'<div style="width:14px;height:14px;border-radius:50%;background:'+(tipo==='finca'?'#00AFB6':'#e8a030')+';border:2.5px solid white;cursor:grab;box-shadow:0 2px 6px rgba(0,0,0,.6)"></div>',
+        className:'', iconAnchor:[7,7]
+      })
     }).addTo(MAP);
     h.on('drag',function(e){
-      latLngs[i]=e.target.getLatLng();
-      poly.setLatLngs([latLngs]);
+      currentLatLngs[i]=e.target.getLatLng();
+      poly.setLatLngs([currentLatLngs]);
+      actualizarAreaPanel(currentLatLngs);
     });
-    handles.push(h);
+    h.on('dragstart',function(){
+      MAP.dragging.disable();
+    });
+    editingHandles.push(h);
   });
-  editableLayers[loteId]=handles;
+
+  // Mostrar panel
+  var nombre = tipo==='finca'
+    ? getFincaById(id).nombre+' — Perímetro'
+    : (function(){ var d=AppData.get(); var l=(d.lotes||[]).find(function(x){return x.id===id;}); return l?l.nombre:'Lote'; })();
+
+  document.getElementById('mep-title').textContent='✏ Editando: '+nombre;
+  document.getElementById('mep-sub').textContent='Arrastra los vértices para ajustar · Los cambios se guardan al presionar "Guardar"';
+  document.getElementById('mep-delete').textContent=(tipo==='finca'?'🗑 Eliminar perímetro':'🗑 Eliminar lote');
+  actualizarAreaPanel(currentLatLngs);
+  document.getElementById('map-edit-panel').classList.add('open');
+
+  // Ocultar label de área mientras edita
+  if(tipo==='finca'&&fincaAreaLabels[id]) fincaAreaLabels[id].setOpacity(0.3);
 }
 
-function disableLoteEdit(loteId){
-  if(editableLayers[loteId]){
-    editableLayers[loteId].forEach(function(h){MAP.removeLayer(h);});
-    delete editableLayers[loteId];
-  }
+function actualizarAreaPanel(latLngs){
+  var area=calcAreaHa(latLngs);
+  document.getElementById('mep-area-val').textContent=area.toFixed(2)+' ha';
 }
 
-function disableAllLoteEdit(){
-  Object.keys(editableLayers).forEach(function(id){disableLoteEdit(id);});
-}
+function guardarEdicionPoligono(){
+  if(!editingPolyId||!editingPoly) return;
+  var latLngs=editingPoly.getLatLngs()[0];
+  var coords=latLngs.map(function(ll){return [ll.lng,ll.lat];});
+  coords.push(coords[0]);
+  var geojson={type:'Polygon',coordinates:[coords]};
+  var areaHa=calcAreaHa(latLngs);
 
-function saveEditedGeometries(){
   var d=AppData.get();
   d.geo=d.geo||{};
-  (d.lotes||[]).filter(function(l){return l.activo;}).forEach(function(l){
-    if(loteLayers[l.id]){
-      var poly=loteLayers[l.id].poly;
-      var latLngs=poly.getLatLngs()[0];
-      var coords=latLngs.map(function(ll){return [ll.lng,ll.lat];});
-      coords.push(coords[0]);
-      d.geo['lote_'+l.id]={type:'Polygon',coordinates:[coords]};
-      // Recalcular área
-      var areaHa=calcAreaHa(latLngs);
-      var idx=(d.lotes||[]).findIndex(function(x){return x.id===l.id;});
-      if(idx>=0) d.lotes[idx].area_ha=Math.round(areaHa*10)/10;
+
+  if(editingPolyType==='finca'){
+    d.geo['finca_'+editingPolyId]=geojson;
+    // Actualizar area_ha
+    if(editingPolyId==='default'){
+      d.finca=d.finca||{};
+      d.finca.area_ha=Math.round(areaHa*10)/10;
+    } else {
+      var idx=(d.fincas||[]).findIndex(function(f){return f.id===editingPolyId;});
+      if(idx>=0) d.fincas[idx].area_ha=Math.round(areaHa*10)/10;
     }
-  });
-  AppData.save(d);
+    AppData.save(d);
+    // Re-render con nueva geometría y label actualizado
+    renderFincaLayer(editingPolyId, geojson);
+    toast('Perímetro de '+getFincaById(editingPolyId).nombre+' guardado · '+areaHa.toFixed(2)+' ha');
+  } else {
+    d.geo['lote_'+editingPolyId]=geojson;
+    var lIdx=(d.lotes||[]).findIndex(function(l){return l.id===editingPolyId;});
+    if(lIdx>=0){
+      d.lotes[lIdx].area_ha=Math.round(areaHa*10)/10;
+      AppData.save(d);
+      renderLoteLayer(editingPolyId, d.lotes[lIdx], geojson);
+    }
+    toast('Lote guardado · '+areaHa.toFixed(2)+' ha');
+  }
+
+  cerrarPanelEdicion();
+  renderLotesTab();
 }
+
+function cancelarEdicionPoligono(){
+  if(!editingPolyId||!editingPoly) return;
+  // Restaurar geometría original
+  editingPoly.setLatLngs([editingLatLngs]);
+  editingPoly.setStyle({
+    color: editingPolyType==='finca'?'#00AFB6':'#2ec77a',
+    weight: editingPolyType==='finca'?3:2,
+    dashArray:null, opacity:1,
+    fillOpacity: editingPolyType==='finca'?0.06:0.2
+  });
+  cerrarPanelEdicion();
+  toast('Edición cancelada — forma restaurada');
+}
+
+function eliminarPoligonoActual(){
+  if(!editingPolyId) return;
+  var nombre=editingPolyType==='finca'
+    ?'el perímetro de '+getFincaById(editingPolyId).nombre
+    :'este lote';
+  if(!confirm('¿Eliminar '+nombre+'? Esta acción no se puede deshacer.')) return;
+
+  var d=AppData.get();
+  d.geo=d.geo||{};
+
+  if(editingPolyType==='finca'){
+    delete d.geo['finca_'+editingPolyId];
+    AppData.save(d);
+    if(fincaLayers[editingPolyId]){MAP.removeLayer(fincaLayers[editingPolyId]);delete fincaLayers[editingPolyId];}
+    if(fincaAreaLabels[editingPolyId]){MAP.removeLayer(fincaAreaLabels[editingPolyId]);delete fincaAreaLabels[editingPolyId];}
+    toast('Perímetro eliminado — puedes dibujar uno nuevo');
+  } else {
+    delete d.geo['lote_'+editingPolyId];
+    d.lotes=(d.lotes||[]).filter(function(l){return l.id!==editingPolyId;});
+    AppData.save(d);
+    if(loteLayers[editingPolyId]){
+      if(loteLayers[editingPolyId].poly) MAP.removeLayer(loteLayers[editingPolyId].poly);
+      if(loteLayers[editingPolyId].label) MAP.removeLayer(loteLayers[editingPolyId].label);
+      delete loteLayers[editingPolyId];
+    }
+    renderLotesTab();
+    toast('Lote eliminado');
+  }
+  cerrarPanelEdicion();
+}
+
+function cerrarPanelEdicion(){
+  // Limpiar handles
+  editingHandles.forEach(function(h){MAP.removeLayer(h);});
+  editingHandles=[];
+  // Restaurar drag del mapa
+  MAP.dragging.enable();
+  MAP.doubleClickZoom.enable();
+  // Restaurar label
+  if(editingPolyType==='finca'&&editingPolyId&&fincaAreaLabels[editingPolyId]){
+    fincaAreaLabels[editingPolyId].setOpacity(1);
+  }
+  // Reset estado
+  editingPolyId=null;
+  editingPolyType=null;
+  editingPoly=null;
+  editingLatLngs=[];
+  // Cerrar panel
+  document.getElementById('map-edit-panel').classList.remove('open');
+}
+
+// Mantener compatibilidad (ya no usados pero por si acaso)
+function enableAllLoteEdit(){}
+function disableLoteEdit(id){}
+function disableAllLoteEdit(){}
+function saveEditedGeometries(){}
 
 // ── AREA CALC (aproximación Shoelace en grados → ha) ─
 function calcAreaHa(points){
