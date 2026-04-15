@@ -348,8 +348,8 @@ function renderMeds(){
     </div>`;
   }).join('');
 
-  document.getElementById('filter-count').textContent = filteredMeds.length + ' de ' + MEDS.length + ' productos';
-  document.getElementById('sb-count').textContent = MEDS.length;
+  setEl('filter-count', filteredMeds.length + ' de ' + MEDS.length + ' productos');
+  var _esbcount=document.getElementById('sb-count');if(_esbcount)_esbcount.textContent=MEDS.length;
   renderAlertas();
 }
 
@@ -367,7 +367,7 @@ function renderAlertas(){
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> <strong style="color:var(--amber)">${prontos.length} medicamento(s) vence(n) en ≤30 días:</strong> ${prontos.map(m=>m.nombre).join(' · ')}
     </div>`;
   }
-  document.getElementById('alertas-venc').innerHTML = html;
+  setElHTML('alertas-venc', html);
 }
 
 function filterMeds(val, field){
@@ -611,8 +611,8 @@ document.addEventListener('input', function(e) {
   var open=false;
   var BARS='<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
   var CROSS='<line x1="4" y1="4" x2="18" y2="18"/><line x1="18" y1="4" x2="4" y2="18"/>';
-  function show(){open=true;document.getElementById('sidebar').classList.add('on');document.getElementById('lov').classList.add('on');document.body.style.overflow='hidden';document.getElementById('lico').innerHTML=CROSS;}
-  function hide(){open=false;document.getElementById('sidebar').classList.remove('on');document.getElementById('lov').classList.remove('on');document.body.style.overflow='';document.getElementById('lico').innerHTML=BARS;}
+  function show(){open=true;document.getElementById('sidebar').classList.add('on');document.getElementById('lov').classList.add('on');document.body.style.overflow='hidden';setElHTML('lico', CROSS);}
+  function hide(){open=false;document.getElementById('sidebar').classList.remove('on');document.getElementById('lov').classList.remove('on');document.body.style.overflow='';setElHTML('lico', BARS);}
   document.addEventListener('DOMContentLoaded',function(){
     document.getElementById('lham').onclick=function(){open?hide():show();};
     document.getElementById('lov').onclick=hide;
