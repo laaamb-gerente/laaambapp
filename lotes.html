@@ -876,6 +876,11 @@ function iniciarNuevoLoteDesdeMapa(){
   showMapStatus('✏️ Dibuja el lote · clic=punto · doble clic=cerrar');
 }
 
+function iniciarNuevoLoteDesdeMapa(){
+  startDraw('lote');
+  showMapStatus('✏️ Dibuja el lote · clic=punto · doble clic=cerrar');
+}
+
 function finalizarDibujo(){
   if(currentPoints.length<3){toast('Necesitas al menos 3 puntos','err');return;}
   var pts=currentPoints.slice();
@@ -1021,6 +1026,7 @@ function renderLoteLayers(){
   var lotes=d.lotes||[];
   lotes.filter(function(l){return l.activo;}).forEach(function(l,i){
     var key='lote_'+l.id;
+    if(!geo[key]&&l.geometry&&l.geometry.length>=3){geo[key]={type:'Polygon',coordinates:[l.geometry.map(function(p){return[p.lng,p.lat];})]}; geo[key].coordinates[0].push(geo[key].coordinates[0][0]);}
     if(geo[key]) renderLoteLayer(l.id, l, geo[key]);
   });
 }
@@ -1602,6 +1608,7 @@ function guardarLote(){
   var d=AppData.get();
   d.lotes=d.lotes||[];
   var _pg=window._pendingLoteGeo||null;
+  var _pg=window._pendingLoteGeo||null;
   var data={
     nombre:nombre, finca_id:document.getElementById('lf-finca').value||'default',
     area_ha:parseFloat(document.getElementById('lf-area').value)||0,
@@ -1612,6 +1619,7 @@ function guardarLote(){
     descripcion:document.getElementById('lf-desc').value.trim(),
     activo:true
   };
+  if(_pg){data.geometry=_pg.points.map(function(p){return{lat:p.lat,lng:p.lng};});data.area_ha=parseFloat(_pg.area);}
   if(_pg){data.geometry=_pg.points.map(function(p){return{lat:p.lat,lng:p.lng};});data.area_ha=parseFloat(_pg.area);}
   if(_editingLoteId){
     var idx=d.lotes.findIndex(function(l){return l.id===_editingLoteId;});
