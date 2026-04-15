@@ -124,10 +124,10 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 #t-mapa{position:relative}
 #map{flex:1;min-height:0;background:var(--bg3)}
 .map-toolbar{position:absolute;top:12px;right:12px;z-index:400;display:flex;flex-direction:column;gap:6px}
-.map-tool-btn{width:38px;height:38px;border-radius:var(--r);background:var(--bg2);border:1px solid var(--border2);color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all var(--anim);box-shadow:0 2px 8px rgba(0,0,0,.4)}
-.map-tool-btn:hover{background:var(--surface);color:var(--teal);border-color:var(--border3)}
-.map-tool-btn.active{background:var(--teal-bg);color:var(--teal);border-color:var(--teal)}
-.map-tool-btn.danger{background:var(--red-bg);color:var(--red);border-color:rgba(224,82,82,.3)}
+.map-tool-btn{width:40px;height:40px;border-radius:var(--r);background:rgba(8,15,16,.9);border:1.5px solid rgba(255,255,255,.15);color:rgba(255,255,255,.85);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all var(--anim);box-shadow:0 2px 12px rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+.map-tool-btn:hover{background:rgba(0,175,182,.25);color:#fff;border-color:rgba(0,175,182,.6)}
+.map-tool-btn.active{background:var(--teal);color:#080f10;border-color:var(--teal);box-shadow:0 2px 16px rgba(0,175,182,.5)}
+.map-tool-btn.danger{background:rgba(224,82,82,.2);color:#ff8080;border-color:rgba(224,82,82,.4)}
 .map-legend{position:absolute;bottom:12px;left:12px;z-index:400;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-size:11px;box-shadow:0 2px 12px rgba(0,0,0,.4);min-width:160px}
 .map-legend-title{font-weight:700;color:var(--text);margin-bottom:6px;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
 .map-legend-item{display:flex;align-items:center;gap:6px;margin-bottom:4px;color:var(--text2)}
@@ -157,17 +157,35 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .map-coord-row button{padding:6px 10px;border-radius:var(--r);background:var(--teal-bg);border:1px solid var(--border2);color:var(--teal);cursor:pointer;font-size:11px;font-family:Changa,sans-serif;font-weight:600;white-space:nowrap;transition:all var(--anim);flex-shrink:0}
 .map-coord-row button:hover{background:var(--teal);color:#080f10}
 .map-finca-selector{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:400;display:flex;flex-direction:column;align-items:center;gap:0}
-.map-finca-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.5);margin-bottom:4px;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.map-finca-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.9);margin-bottom:5px;text-shadow:0 1px 4px rgba(0,0,0,1),0 0 8px rgba(0,0,0,.8)}
 .map-finca-btns{display:flex;gap:4px}
-.map-finca-btn{padding:7px 18px;border-radius:var(--r);background:rgba(12,21,23,.85);border:1px solid rgba(0,175,182,.25);color:rgba(255,255,255,.6);cursor:pointer;font-family:'Changa',sans-serif;font-size:12px;font-weight:600;transition:all var(--anim);box-shadow:0 2px 12px rgba(0,0,0,.5);backdrop-filter:blur(4px)}
-.map-finca-btn:hover{background:rgba(23,38,40,.95);color:var(--text);border-color:rgba(0,175,182,.5)}
-.map-finca-btn.active{background:var(--teal);color:#080f10;border-color:var(--teal);box-shadow:0 2px 16px rgba(0,175,182,.4)}
-.map-finca-btn.active::before{content:'✎ editando';display:block;font-size:8px;font-weight:400;letter-spacing:.5px;margin-bottom:1px;opacity:.7}
+.map-finca-btn{padding:8px 20px;border-radius:var(--r);background:rgba(8,15,16,.88);border:1.5px solid rgba(255,255,255,.2);color:rgba(255,255,255,.92);cursor:pointer;font-family:'Changa',sans-serif;font-size:12px;font-weight:700;transition:all var(--anim);box-shadow:0 2px 14px rgba(0,0,0,.7);backdrop-filter:blur(6px);text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.map-finca-btn:hover{background:rgba(0,175,182,.25);color:#fff;border-color:rgba(0,175,182,.6)}
+.map-finca-btn.active{background:var(--teal);color:#080f10;border-color:var(--teal);box-shadow:0 2px 20px rgba(0,175,182,.5);text-shadow:none}
+.map-finca-btn.active::before{content:'✎ editando';display:block;font-size:8px;font-weight:600;letter-spacing:.5px;margin-bottom:2px;opacity:.8}
 
 /* Tooltip en toolbar */
 .map-tool-btn{position:relative}
-.map-tool-btn::after{content:attr(data-tip);position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);background:rgba(12,21,23,.95);color:var(--text);font-size:11px;font-family:'Changa',sans-serif;font-weight:500;white-space:nowrap;padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.map-tool-btn::after{
+  content:attr(data-tip);
+  position:absolute;right:calc(100% + 10px);top:50%;transform:translateY(-50%);
+  background:#fff;
+  color:#0d2b2e;
+  font-size:11px;font-family:'Changa',sans-serif;font-weight:600;
+  white-space:nowrap;padding:6px 11px;border-radius:var(--r);
+  border:1px solid rgba(0,175,182,.3);
+  pointer-events:none;opacity:0;transition:opacity .18s;
+  box-shadow:0 3px 12px rgba(0,0,0,.25);
+  z-index:999
+}
 .map-tool-btn:hover::after{opacity:1}
+/* Flecha apuntando al botón */
+.map-tool-btn::before{
+  content:'';position:absolute;right:calc(100% + 4px);top:50%;transform:translateY(-50%);
+  border:5px solid transparent;border-left-color:#fff;
+  pointer-events:none;opacity:0;transition:opacity .18s;z-index:999
+}
+.map-tool-btn:hover::before{opacity:1}
 
 /* ── Panel edición de perímetro/lote ── */
 .map-edit-panel{
@@ -181,14 +199,14 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 /* Cabecera arrastrable */
 .map-edit-panel-drag{
   display:flex;align-items:center;justify-content:space-between;
-  padding:10px 14px 8px;cursor:grab;border-bottom:1px solid var(--border);
-  background:rgba(0,175,182,.08);border-radius:var(--r2) var(--r2) 0 0}
+  padding:10px 14px 8px;cursor:grab;border-bottom:1px solid rgba(0,175,182,.2);
+  background:rgba(0,175,182,.12);border-radius:var(--r2) var(--r2) 0 0}
 .map-edit-panel-drag:active{cursor:grabbing}
-.map-edit-panel-drag-icon{color:var(--text4);font-size:14px;letter-spacing:2px}
-.map-edit-panel-title{font-family:'Sigmar',cursive;font-size:13px;color:var(--teal);flex:1;margin-left:6px}
+.map-edit-panel-drag-icon{color:rgba(0,175,182,.7);font-size:14px;letter-spacing:2px}
+.map-edit-panel-title{font-family:'Sigmar',cursive;font-size:13px;color:#4eeef5;flex:1;margin-left:6px;text-shadow:0 0 12px rgba(0,175,182,.4)}
 /* Cuerpo */
 .map-edit-panel-body{padding:10px 14px 12px}
-.map-edit-panel-sub{font-size:10px;color:var(--text3);margin-bottom:8px;line-height:1.4}
+.map-edit-panel-sub{font-size:10px;color:rgba(180,220,225,.85);margin-bottom:8px;line-height:1.4}
 .map-edit-area-badge{display:inline-flex;align-items:center;gap:5px;
   background:var(--teal-bg);border:1px solid var(--border2);border-radius:20px;
   padding:3px 10px;font-size:12px;font-weight:700;color:var(--teal);margin-bottom:10px}
@@ -624,7 +642,7 @@ function getColabs(){
 // ══════════════════════════════════════════════════════
 // MAPA
 // ══════════════════════════════════════════════════════
-var MAP=null, SAT_LAYER=null, OSM_LAYER=null, isSat=true;
+var MAP=null, SAT_LAYER=null, OSM_LAYER=null, GOOGLE_SAT=null, GOOGLE_LABELS=null, ESRI_LAYER=null, isSat=true;
 var drawMode=null; // 'finca' | 'lote' | null
 var editMode=false;
 var activeFincaMap='default';
@@ -645,10 +663,50 @@ var fincaAreaLabels={};   // labels de área sobre perímetros
 function initMap(){
   MAP=L.map('map',{zoomControl:true,attributionControl:false});
 
-  // Capas
-  SAT_LAYER=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:20,attribution:'Esri'});
-  OSM_LAYER=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19});
+  // ── Tiles de alta calidad ──────────────────────────────
+  // Google Hybrid (satélite + etiquetas de calles) — mejor calidad disponible
+  // Misma fuente que usa Google Maps y equivalente a FlockFinder
+  var GOOGLE_SAT = L.tileLayer(
+    'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
+    {subdomains:'0123', maxZoom:21, maxNativeZoom:20,
+     attribution:'© Google', tileSize:256}
+  );
+  // Etiquetas de calles/caminos encima del satélite (capa transparente)
+  var GOOGLE_LABELS = L.tileLayer(
+    'https://mt{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}',
+    {subdomains:'0123', maxZoom:21, maxNativeZoom:20,
+     attribution:'© Google', tileSize:256, opacity:0.7}
+  );
+  // Esri World Imagery Clarity — alternativa si Google falla (también alta res)
+  var ESRI_LAYER = L.tileLayer(
+    'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {maxZoom:21, maxNativeZoom:19, attribution:'© Esri', tileSize:256}
+  );
+  // OSM para modo mapa
+  OSM_LAYER=L.tileLayer(
+    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {maxZoom:19, attribution:'© OpenStreetMap'}
+  );
+
+  // Intentar Google primero; si falla, usar Esri Clarity
+  SAT_LAYER = GOOGLE_SAT;
   SAT_LAYER.addTo(MAP);
+  GOOGLE_LABELS.addTo(MAP); // etiquetas de caminos sobre satélite
+
+  // Fallback automático: si tiles de Google no cargan, cambiar a Esri
+  var googleFailed = 0;
+  GOOGLE_SAT.on('tileerror', function(){
+    googleFailed++;
+    if(googleFailed === 3){
+      MAP.removeLayer(GOOGLE_SAT);
+      MAP.removeLayer(GOOGLE_LABELS);
+      SAT_LAYER = ESRI_LAYER;
+      ESRI_LAYER.addTo(MAP);
+      console.log('Google tiles no disponibles, usando Esri Clarity');
+    }
+  });
+
+  isSat = true;
 
   // Centro inicial — La Marinilla, Antioquia
   MAP.setView([6.177,-75.501],14);
@@ -699,11 +757,24 @@ function setMapFinca(id){
 }
 
 function toggleSatellite(){
-  if(isSat){ MAP.removeLayer(SAT_LAYER); OSM_LAYER.addTo(MAP); isSat=false; }
-  else { MAP.removeLayer(OSM_LAYER); SAT_LAYER.addTo(MAP); isSat=true; }
-  // Bring polygon layers to front
-  Object.values(fincaLayers).forEach(function(l){l.bringToFront();});
-  Object.values(loteLayers).forEach(function(l){l.bringToFront();});
+  if(isSat){
+    MAP.removeLayer(SAT_LAYER);
+    if(MAP.hasLayer(GOOGLE_LABELS)) MAP.removeLayer(GOOGLE_LABELS);
+    OSM_LAYER.addTo(MAP);
+    isSat=false;
+    document.getElementById('btn-satellite').setAttribute('data-tip','Ver satélite (alta resolución)');
+  } else {
+    MAP.removeLayer(OSM_LAYER);
+    SAT_LAYER.addTo(MAP);
+    if(SAT_LAYER===GOOGLE_SAT) GOOGLE_LABELS.addTo(MAP);
+    isSat=true;
+    document.getElementById('btn-satellite').setAttribute('data-tip','Ver mapa / calles');
+  }
+  // Traer polígonos al frente
+  setTimeout(function(){
+    Object.values(fincaLayers).forEach(function(l){if(l.bringToFront)l.bringToFront();});
+    Object.values(loteLayers).forEach(function(l){if(l.poly&&l.poly.bringToFront)l.poly.bringToFront();});
+  }, 200);
 }
 
 // ── DIBUJO ──────────────────────────────────────────
@@ -929,6 +1000,8 @@ function renderFincaLayer(fincaId, geojson){
   });
 
   fincaLayers[fincaId]=poly;
+  // Traer al frente de los tiles
+  setTimeout(function(){ if(poly&&poly.bringToFront) poly.bringToFront(); },300);
 
   // Label de área sobre el perímetro
   var areaHa=calcAreaHa(coords.map(function(c){return {lat:c[0],lng:c[1]};}));
@@ -937,9 +1010,9 @@ function renderFincaLayer(fincaId, geojson){
   var label=L.marker(center,{
     icon:L.divIcon({
       html:'<div style="font-family:Changa,sans-serif;text-align:center;pointer-events:none">'
-        +'<div style="font-size:12px;font-weight:700;color:#00AFB6;text-shadow:0 1px 4px rgba(0,0,0,.9)">'+finca.nombre+'</div>'
-        +'<div style="font-size:11px;color:rgba(255,255,255,.8);text-shadow:0 1px 3px rgba(0,0,0,.9);margin-top:1px">'+areaHa.toFixed(1)+' ha</div>'
-        +'<div style="font-size:9px;color:rgba(0,175,182,.7);margin-top:1px">clic para editar</div>'
+        +'<div style="font-size:13px;font-weight:700;color:#4eeef5;text-shadow:0 1px 6px rgba(0,0,0,1),0 0 16px rgba(0,0,0,.9)">'+finca.nombre+'</div>'
+        +'<div style="font-size:12px;color:#fff;text-shadow:0 1px 5px rgba(0,0,0,1),0 0 12px rgba(0,0,0,.9);font-weight:600;margin-top:2px">'+areaHa.toFixed(1)+' ha</div>'
+        +'<div style="font-size:9px;color:rgba(100,230,240,.8);margin-top:2px;text-shadow:0 1px 4px rgba(0,0,0,1)">clic para editar</div>'
         +'</div>',
       className:'', iconAnchor:[40,20]
     }), zIndexOffset:5, interactive:false
