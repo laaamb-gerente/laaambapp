@@ -6,11 +6,7 @@
 <title>LAAAMBAPP · Ajustes</title>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
-// Aplicar tema guardado antes del render para evitar flash
-(function(){
-  const t = localStorage.getItem('laaamb-theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', t);
-})();
+(function(){ const t = localStorage.getItem('laaamb-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();
 </script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -42,8 +38,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
 .sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
 .sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
-.farm-pill{margin-top:12px;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;display:flex;align-items:center;gap:8px}
-.farm-name{font-size:12px;font-weight:600;color:var(--text)}.farm-sub{font-size:10px;color:var(--text3);margin-top:1px}
 .nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
 .nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}
 .nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;text-decoration:none;transition:all var(--anim);position:relative}
@@ -58,9 +52,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
 .user-name{font-size:12px;font-weight:600;color:var(--text)}.user-role{font-size:10px;color:var(--text3)}
 
-/* MOBILE SIDEBAR */
-
-/* ── HAMBURGER v8 (scroll móvil) ───────────────────────── */
+/* ── HAMBURGER v8 ───────────────────────────────────────── */
 #lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;
   background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);
   width:46px;height:46px;align-items:center;justify-content:center;
@@ -132,35 +124,7 @@ tbody tr:hover{background:var(--surface)}
 tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
 .td-muted{color:var(--text3);font-size:12px}
 
-.toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px}
-.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:fadeUp .2s ease;max-width:340px}
-.toast.ok{border-left:3px solid var(--teal)}.toast.err{border-left:3px solid var(--red)}
-@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-
-/* RESPONSIVE */
-@media(max-width:768px){
-  .sidebar{position:fixed;left:0;top:0;height:100%;transform:translateX(-100%);z-index:100}
-  .sidebar.on{transform:translateX(0)!important}
-  
-  /* hamburger v8 maneja mobile via #lham */
-  .main{width:100vw}
-  .page-head{padding:14px 16px 12px;padding-left:60px}
-  .content{padding:16px 16px 48px}
-  .theme-grid{grid-template-columns:1fr 1fr}
-  .form-grid{grid-template-columns:1fr}
-}
-
-/* ── Validación de formularios ──────────────────────────────── */
-.fi.field-error{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(224,82,82,0.15)!important}
-.fi.field-ok{border-color:var(--teal)!important}
-.fi:invalid{border-color:var(--amber)}
-.field-hint{font-size:10px;color:var(--red);margin-top:3px;display:none}
-.field-hint.visible{display:block}
-/* Campos requeridos marcados */
-label.fl[for] + .fi:required,
-label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
-
-/* ── FARM SELECTOR ──────────────────────────────────────── */
+/* FARM SELECTOR */
 .farm-selector{margin-top:12px;position:relative}
 .farm-btn{width:100%;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:border-color var(--anim),background var(--anim);text-align:left}
 .farm-btn:hover{border-color:var(--border3);background:var(--teal-bg)}
@@ -186,13 +150,29 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 .farm-opt-name{font-weight:600;font-size:12px}
 .farm-opt-sub{font-size:10px;color:var(--text3);margin-top:1px}
 
+/* TOAST */
+.toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:fadeUp .2s ease;max-width:340px}
+.toast.ok{border-left:3px solid var(--teal)}.toast.err{border-left:3px solid var(--red)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* Validación */
+.fi.field-error{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(224,82,82,0.15)!important}
+.fi.field-ok{border-color:var(--teal)!important}
+
+@media(max-width:768px){
+  .page-head{padding:14px 16px 12px;padding-left:60px}
+  .content{padding:16px 16px 48px}
+  .theme-grid{grid-template-columns:1fr 1fr}
+  .form-grid{grid-template-columns:1fr}
+}
 </style>
 <script src="farm-selector.js"></script>
 </head>
 <body>
 <div class="app">
 
-<!-- HAMBURGER (móvil) -->
+<!-- HAMBURGER -->
 <button id="lham" aria-label="Menú"><svg id="lico" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/></svg></button>
 <div id="lov"></div>
 
@@ -201,12 +181,12 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="sb-head">
     <div class="sb-logo-text">LAAAMB</div>
     <div class="sb-logo-sub">Corderos · App</div>
-        <div class="farm-selector" id="farm-selector">
+    <div class="farm-selector" id="farm-selector">
       <button class="farm-btn" id="farm-btn" onclick="FarmSelector.toggle()" aria-haspopup="true">
         <span class="farm-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg></span>
         <div style="flex:1;min-width:0">
           <div class="farm-name" id="sb-farm-name">La Marinilla</div>
-          <div class="farm-sub" id="sb-farm-sub">76.2 ha · cargando…</div>
+          <div class="farm-sub" id="sb-farm-sub">50 ha · cargando…</div>
         </div>
         <span class="farm-chevron"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M5 8l5 5 5-5"/></svg></span>
       </button>
@@ -223,7 +203,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <a class="nav-link" href="lotes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>Lotes &amp; Potreros</a>
     <div class="nav-group">Salud</div>
     <a class="nav-link" href="salud.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>Salud &amp; Tratamientos</a>
-    <a class="nav-link" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos<span class="nav-badge">28</span></a>
+    <a class="nav-link" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos<span class="nav-badge">0</span></a>
     <div class="nav-group">Gestión</div>
     <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
     <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
@@ -256,8 +236,6 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <div class="card-h"><div class="card-title">Apariencia visual</div><div class="card-sub">Se aplica a todas las páginas de LAAAMBAPP</div></div>
       <div class="card-body">
         <div class="theme-grid" id="theme-grid">
-
-          <!-- OSCURO -->
           <div class="theme-card" data-theme="dark" onclick="setTheme('dark')">
             <div class="theme-preview" style="background:#0c1517">
               <div class="theme-preview-sidebar" style="background:#080f10"></div>
@@ -270,13 +248,8 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
                 </div>
               </div>
             </div>
-            <div class="theme-label">
-              <div class="theme-label-name">Oscuro</div>
-              <div class="theme-label-desc">Por defecto · Modo noche</div>
-            </div>
+            <div class="theme-label"><div class="theme-label-name">Oscuro</div><div class="theme-label-desc">Por defecto · Modo noche</div></div>
           </div>
-
-          <!-- CLARO -->
           <div class="theme-card" data-theme="light" onclick="setTheme('light')">
             <div class="theme-preview" style="background:#f0f4f5">
               <div class="theme-preview-sidebar" style="background:#e8f0f1"></div>
@@ -294,8 +267,6 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
               <div class="theme-label-desc" style="color:#5a8a90">Modo día · Fondo blanco</div>
             </div>
           </div>
-
-          <!-- SEPIA -->
           <div class="theme-card" data-theme="sepia" onclick="setTheme('sepia')">
             <div class="theme-preview" style="background:#231c0a">
               <div class="theme-preview-sidebar" style="background:#1c1608"></div>
@@ -313,8 +284,6 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
               <div class="theme-label-desc" style="color:#7a6830">Tonos tierra · Ganadero</div>
             </div>
           </div>
-
-          <!-- ALTO CONTRASTE -->
           <div class="theme-card" data-theme="contrast" onclick="setTheme('contrast')">
             <div class="theme-preview" style="background:#0a0a0a">
               <div class="theme-preview-sidebar" style="background:#000"></div>
@@ -332,19 +301,17 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
               <div class="theme-label-desc" style="color:#aaa">Máxima visibilidad</div>
             </div>
           </div>
-
         </div>
         <div style="font-size:12px;color:var(--text3);margin-top:8px">El tema se guarda automáticamente y se aplica en todas las páginas al abrir LAAAMBAPP.</div>
       </div>
     </div>
 
-    <!-- DATOS DE LA FINCA -->
+    <!-- FINCAS -->
     <div class="section-label" id="fincas">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:5px"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg>
       Mis fincas
     </div>
 
-    <!-- LISTA DE FINCAS -->
     <div class="card" style="margin-bottom:12px">
       <div class="card-h">
         <div><div class="card-title">Fincas registradas</div><div class="card-sub">Selecciona una finca activa en el sidebar de cualquier página</div></div>
@@ -355,7 +322,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       </div>
     </div>
 
-    <!-- FORM NUEVA FINCA (oculto) -->
+    <!-- FORM NUEVA / EDITAR FINCA -->
     <div class="card" id="add-finca-form" style="display:none;margin-bottom:12px;border:1px solid var(--teal)">
       <div class="card-h">
         <div class="card-title" id="finca-form-title">Nueva finca</div>
@@ -367,7 +334,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
           <div class="fg"><label class="fl">Empresa</label><input class="fi" id="nf-empresa" placeholder="LAAAMB"></div>
           <div class="fg"><label class="fl">Municipio</label><input class="fi" id="nf-municipio" placeholder="La Marinilla"></div>
           <div class="fg"><label class="fl">Departamento</label><input class="fi" id="nf-depto" placeholder="Antioquia"></div>
-          <div class="fg"><label class="fl">Área total (ha)</label><input class="fi" type="number" id="nf-area" placeholder="76.2" step="0.1"></div>
+          <div class="fg"><label class="fl">Área total (ha)</label><input class="fi" type="number" id="nf-area" placeholder="50" step="0.1"></div>
           <div class="fg"><label class="fl">N° PREDIO (ICA)</label><input class="fi" id="nf-ica" placeholder="Registro ICA"></div>
           <div class="fg"><label class="fl">Propietario</label><input class="fi" id="nf-propietario" placeholder="Juan García"></div>
           <div class="fg"><label class="fl">Teléfono</label><input class="fi" id="nf-tel" placeholder="+57 300 000 0000"></div>
@@ -412,22 +379,21 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       </div>
     </div>
 
-    <!-- IMPORTAR / EXPORTAR BASE COMPLETA -->
+    <!-- IMPORTAR / EXPORTAR -->
     <div class="section-label">💾 Datos</div>
     <div class="card">
       <div class="card-h"><div class="card-title">Importar y exportar base completa</div><div class="card-sub">Backup o migración de todos los datos de la finca</div></div>
       <div class="card-body">
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
-          <button class="btn btn-ghost btn-sm" onclick="exportTodo()">↓ Exportar toda la base (.xlsx)</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportarTodo()">↓ Exportar toda la base (.xlsx)</button>
           <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar base completa<input type="file" style="display:none" accept=".xlsx" onchange="importarBase(this)"></label>
         </div>
         <div style="background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-radius:var(--r);padding:12px;font-size:12px;color:var(--text2)">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> La importación reemplaza todos los datos actuales. Haz un backup primero.
+          ⚠ La importación reemplaza todos los datos actuales. Haz un backup primero.
         </div>
       </div>
     </div>
 
-    <!-- VERSIÓN -->
     <div style="text-align:center;font-size:11px;color:var(--text4);margin-top:24px">
       LAAAMBAPP v1.0 · La Marinilla, Antioquia · 2025 · Desarrollado con Claude
     </div>
@@ -439,309 +405,320 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 <div class="toasts" id="toasts"></div>
 
 <script>
-// ═══ TEMA ═══
-const TEMAS = {dark:'Oscuro',light:'Claro',sepia:'Sepia Campestre',contrast:'Alto Contraste'};
+// ── Utilidades DOM ──────────────────────────────────────────────────────────
+function setEl(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; }
+function setElHTML(id, v) { var e = document.getElementById(id); if (e) e.innerHTML = v; }
 
+// ── TEMA ────────────────────────────────────────────────────────────────────
+const TEMAS = {dark:'Oscuro',light:'Claro',sepia:'Sepia Campestre',contrast:'Alto Contraste'};
 function setTheme(t){
   document.documentElement.setAttribute('data-theme', t);
   localStorage.setItem('laaamb-theme', t);
-  document.querySelectorAll('.theme-card').forEach(c=>{
+  document.querySelectorAll('.theme-card').forEach(function(c){
     c.classList.toggle('active', c.dataset.theme===t);
   });
   toast('Tema aplicado: '+TEMAS[t]);
 }
-
 function initTheme(){
   const t = localStorage.getItem('laaamb-theme') || 'dark';
   document.documentElement.setAttribute('data-theme', t);
-  document.querySelectorAll('.theme-card').forEach(c=>{
+  document.querySelectorAll('.theme-card').forEach(function(c){
     c.classList.toggle('active', c.dataset.theme===t);
   });
 }
 
-// ═══ SIDEBAR MÓVIL ═══
-// toggleSidebar reemplazado por hamburger v8
-
-// ═══ COLABORADORES ═══
-let COLABS = [
+// ── COLABORADORES ────────────────────────────────────────────────────────────
+var COLABS = [
   {nombre:'Juan García',rol:'Administrador',tel:'+57 300 123 4567',estado:'Activo'},
   {nombre:'Carlos Ríos',rol:'Mayordomo',tel:'+57 311 234 5678',estado:'Activo'},
   {nombre:'María López',rol:'Auxiliar',tel:'+57 322 345 6789',estado:'Activo'},
 ];
-
 function renderColabs(){
   const tb = document.getElementById('colab-tbody');
-  tb.innerHTML = COLABS.map((c,i)=>`
-    <tr>
-      <td style="font-weight:600">${c.nombre}</td>
-      <td class="td-muted">${c.rol}</td>
-      <td class="td-muted">${c.tel||'—'}</td>
-      <td><span class="badge b-green">✓ ${c.estado}</span></td>
-      <td>
-        <button class="btn btn-ghost" style="padding:3px 10px;font-size:11px" onclick="deleteColab(${i})">Eliminar</button>
-      </td>
-    </tr>`).join('');
+  tb.innerHTML = COLABS.map(function(c,i){
+    return '<tr>'
+      +'<td style="font-weight:600">'+c.nombre+'</td>'
+      +'<td class="td-muted">'+c.rol+'</td>'
+      +'<td class="td-muted">'+(c.tel||'—')+'</td>'
+      +'<td><span class="badge b-green">✓ '+c.estado+'</span></td>'
+      +'<td><button class="btn btn-ghost" style="padding:3px 10px;font-size:11px" onclick="deleteColab('+i+')">Eliminar</button></td>'
+      +'</tr>';
+  }).join('');
 }
-
-function openAddColab(){document.getElementById('add-colab-form').style.display='block';}
-function closeAddColab(){document.getElementById('add-colab-form').style.display='none';}
-
+function openAddColab(){ document.getElementById('add-colab-form').style.display='block'; }
+function closeAddColab(){ document.getElementById('add-colab-form').style.display='none'; }
 function saveColab(){
-  const n=document.getElementById('nc-nombre').value.trim();
-  const r=document.getElementById('nc-rol').value;
-  const t=document.getElementById('nc-tel').value.trim();
-  if(!n){toast('El nombre es requerido','err');return;}
+  const n = document.getElementById('nc-nombre').value.trim();
+  const r = document.getElementById('nc-rol').value;
+  const t = document.getElementById('nc-tel').value.trim();
+  if(!n){ toast('El nombre es requerido','err'); return; }
   COLABS.push({nombre:n,rol:r,tel:t,estado:'Activo'});
-  localStorage.setItem('laaamb-colabs',JSON.stringify(COLABS));
+  localStorage.setItem('laaamb-colabs', JSON.stringify(COLABS));
   renderColabs();
-if(typeof renderFincas!=="undefined") renderFincas();
   closeAddColab();
   toast('Colaborador '+n+' agregado');
 }
-
 function deleteColab(i){
   if(confirm('¿Eliminar a '+COLABS[i].nombre+'?')){
     COLABS.splice(i,1);
-    localStorage.setItem('laaamb-colabs',JSON.stringify(COLABS));
+    localStorage.setItem('laaamb-colabs', JSON.stringify(COLABS));
     renderColabs();
     toast('Colaborador eliminado');
   }
 }
 
-// ═══ FINCA ═══
-// ═══ GESTIÓN DE FINCAS ═══════════════════════════════════════════════════════
+// ── GESTIÓN DE FINCAS ────────────────────────────────────────────────────────
 var _editingFincaId = null;
 
 function renderFincas(){
-  if(typeof AppData==='undefined') return;
-  const d=AppData.get();
-  const fincas=d.fincas||[];
-  // Siempre incluir la finca legacy si existe y no hay fincas
-  const activeFincaId=localStorage.getItem('laaamb-active-finca')||'default';
-  const container=document.getElementById('fincas-list');
+  if(typeof AppData === 'undefined') return;
+  const d = AppData.get();
+  const fincas = d.fincas || [];
+  const activeFincaId = localStorage.getItem('laaamb-active-finca') || 'default';
+  const container = document.getElementById('fincas-list');
   if(!container) return;
 
   if(!fincas.length){
-    // Mostrar la finca actual (legacy)
-    const f=d.finca||{nombre:'La Marinilla',area_ha:76.2};
-    const animales=d.animales.filter(a=>a.activo).length;
-    container.innerHTML=`<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18" style="color:var(--teal);flex-shrink:0"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:700;color:var(--teal)">${f.nombre||'La Marinilla'} <span style="font-size:10px;font-weight:400;background:var(--teal-bg);color:var(--teal);padding:1px 7px;border-radius:10px;margin-left:6px">Activa</span></div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px">${f.area_ha||76.2} ha · ${animales} animales · ${f.municipio||'La Marinilla'}, ${f.departamento||'Antioquia'}</div>
-      </div>
-      <button class="btn btn-ghost btn-sm" onclick="editFinca('default')">Editar</button>
-    </div>
-    <div style="padding:12px 18px;font-size:11px;color:var(--text3)">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="11" height="11" style="vertical-align:middle;margin-right:4px"><path d="M10 2a6 6 0 00-3 11.2V15h6v-1.8A6 6 0 0010 2z"/><path d="M8 15h4M9 18h2"/></svg>
-      Haz clic en <strong>+ Nueva finca</strong> para registrar una segunda finca.
-    </div>`;
+    // Solo existe la finca legacy (La Marinilla)
+    const f = d.finca || {nombre:'La Marinilla', area_ha:50};
+    const animales = d.animales ? d.animales.filter(function(a){return a.activo;}).length : 0;
+    container.innerHTML =
+      '<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)">'
+        +'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18" style="color:var(--teal);flex-shrink:0"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg>'
+        +'<div style="flex:1">'
+          +'<div style="font-size:13px;font-weight:700;color:var(--teal)">'+(f.nombre||'La Marinilla')+' <span style="font-size:10px;font-weight:400;background:var(--teal-bg);color:var(--teal);padding:1px 7px;border-radius:10px;margin-left:6px">Activa</span></div>'
+          +'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(f.area_ha||50)+' ha · '+animales+' animales · '+(f.municipio||'La Marinilla')+', '+(f.departamento||'Antioquia')+'</div>'
+        +'</div>'
+        +'<button class="btn btn-ghost btn-sm" onclick="editFinca(\'default\')">Editar</button>'
+      +'</div>'
+      +'<div style="padding:12px 18px;font-size:11px;color:var(--text3)">'
+        +'💡 Haz clic en <strong>+ Nueva finca</strong> para registrar una segunda finca.'
+      +'</div>';
   } else {
-    container.innerHTML=fincas.map(function(f){
-      const isActive=f.id===activeFincaId||(activeFincaId==='default'&&f.id===fincas[0]?.id);
-      const animales=d.animales.filter(function(a){return a.activo&&(a.finca_id===f.id||!a.finca_id);}).length;
-      return `<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18" style="color:${isActive?'var(--teal)':'var(--text3)'};flex-shrink:0"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg>
-        <div style="flex:1">
-          <div style="font-size:13px;font-weight:700;color:${isActive?'var(--teal)':'var(--text)'}">
-            ${f.nombre}
-            ${isActive?'<span style="font-size:10px;font-weight:400;background:var(--teal-bg);color:var(--teal);padding:1px 7px;border-radius:10px;margin-left:6px">Activa</span>':''}
-          </div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">${f.area_ha||'—'} ha · ${animales} animales · ${f.municipio||'—'}, ${f.departamento||'—'}</div>
-        </div>
-        <div style="display:flex;gap:6px">
-          ${!isActive?`<button class="btn btn-ghost btn-sm" onclick="selectFinca('${f.id}')">Seleccionar</button>`:''}
-          <button class="btn btn-ghost btn-sm" onclick="editFinca('${f.id}')">Editar</button>
-          ${fincas.length>1?`<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteFinca('${f.id}')">Eliminar</button>`:''}
-        </div>
-      </div>`;
+    container.innerHTML = fincas.map(function(f){
+      const isActive = f.id === activeFincaId || (activeFincaId === 'default' && f.id === fincas[0]?.id);
+      const animales = d.animales ? d.animales.filter(function(a){return a.activo && (a.finca_id===f.id || !a.finca_id);}).length : 0;
+      return '<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)">'
+        +'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18" style="color:'+(isActive?'var(--teal)':'var(--text3)')+';flex-shrink:0"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg>'
+        +'<div style="flex:1">'
+          +'<div style="font-size:13px;font-weight:700;color:'+(isActive?'var(--teal)':'var(--text)')+'">'+f.nombre+(isActive?' <span style="font-size:10px;font-weight:400;background:var(--teal-bg);color:var(--teal);padding:1px 7px;border-radius:10px;margin-left:6px">Activa</span>':'')+'</div>'
+          +'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(f.area_ha||'—')+' ha · '+animales+' animales · '+(f.municipio||'—')+', '+(f.departamento||'—')+'</div>'
+        +'</div>'
+        +'<div style="display:flex;gap:6px">'
+          +(!isActive ? '<button class="btn btn-ghost btn-sm" onclick="selectFinca(\''+f.id+'\')">Seleccionar</button>' : '')
+          +'<button class="btn btn-ghost btn-sm" onclick="editFinca(\''+f.id+'\')">Editar</button>'
+          +(fincas.length > 1 ? '<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteFinca(\''+f.id+'\')">Eliminar</button>' : '')
+        +'</div>'
+        +'</div>';
     }).join('');
   }
 }
 
 function openAddFinca(){
-  _editingFincaId=null;
-  document.getElementById('finca-form-title').textContent='Nueva finca';
-  // Limpiar campos
+  _editingFincaId = null;
+  document.getElementById('finca-form-title').textContent = 'Nueva finca';
   ['nf-nombre','nf-empresa','nf-municipio','nf-depto','nf-area','nf-ica','nf-propietario','nf-tel','nf-dir'].forEach(function(id){
-    const el=document.getElementById(id);
-    if(el) el.value='';
+    const el = document.getElementById(id);
+    if(el) el.value = '';
   });
-  document.getElementById('add-finca-form').style.display='block';
+  document.getElementById('add-finca-form').style.display = 'block';
   document.getElementById('nf-nombre').focus();
 }
 
 function closeAddFinca(){
-  document.getElementById('add-finca-form').style.display='none';
-  _editingFincaId=null;
+  document.getElementById('add-finca-form').style.display = 'none';
+  _editingFincaId = null;
 }
 
 function editFinca(id){
-  if(typeof AppData==='undefined') return;
-  _editingFincaId=id;
-  const d=AppData.get();
-  const f=id==='default'?(d.finca||{}):(d.fincas||[]).find(function(x){return x.id===id;})||{};
-  document.getElementById('finca-form-title').textContent='Editar finca';
-  document.getElementById('nf-nombre').value=f.nombre||'';
-  document.getElementById('nf-empresa').value=f.empresa||'';
-  document.getElementById('nf-municipio').value=f.municipio||'';
-  document.getElementById('nf-depto').value=f.departamento||'';
-  document.getElementById('nf-area').value=f.area_ha||'';
-  document.getElementById('nf-ica').value=f.ica||'';
-  document.getElementById('nf-propietario').value=f.propietario||'';
-  document.getElementById('nf-tel').value=f.telefono||'';
-  document.getElementById('nf-dir').value=f.descripcion||'';
-  document.getElementById('add-finca-form').style.display='block';
+  if(typeof AppData === 'undefined') return;
+  _editingFincaId = id;
+  const d = AppData.get();
+  const f = id === 'default'
+    ? (d.finca || {})
+    : (d.fincas || []).find(function(x){ return x.id === id; }) || {};
+  document.getElementById('finca-form-title').textContent = 'Editar finca';
+  document.getElementById('nf-nombre').value = f.nombre || '';
+  document.getElementById('nf-empresa').value = f.empresa || '';
+  document.getElementById('nf-municipio').value = f.municipio || '';
+  document.getElementById('nf-depto').value = f.departamento || '';
+  document.getElementById('nf-area').value = f.area_ha || '';
+  document.getElementById('nf-ica').value = f.ica || '';
+  document.getElementById('nf-propietario').value = f.propietario || '';
+  document.getElementById('nf-tel').value = f.telefono || '';
+  document.getElementById('nf-dir').value = f.descripcion || '';
+  document.getElementById('add-finca-form').style.display = 'block';
   document.getElementById('nf-nombre').focus();
 }
 
 function saveFinca(){
-  const nombre=document.getElementById('nf-nombre')?.value?.trim();
-  if(!nombre){toast('Nombre de la finca es requerido','err');document.getElementById('nf-nombre').style.borderColor='var(--red)';return;}
-  const fincaData={
+  const nombre = document.getElementById('nf-nombre')?.value?.trim();
+  if(!nombre){
+    toast('Nombre de la finca es requerido','err');
+    document.getElementById('nf-nombre').style.borderColor = 'var(--red)';
+    return;
+  }
+  const fincaData = {
     nombre,
-    empresa:document.getElementById('nf-empresa')?.value?.trim()||'LAAAMB',
-    municipio:document.getElementById('nf-municipio')?.value?.trim()||'',
-    departamento:document.getElementById('nf-depto')?.value?.trim()||'Antioquia',
-    area_ha:parseFloat(document.getElementById('nf-area')?.value)||0,
-    ica:document.getElementById('nf-ica')?.value?.trim()||'',
-    propietario:document.getElementById('nf-propietario')?.value?.trim()||'',
-    telefono:document.getElementById('nf-tel')?.value?.trim()||'',
-    descripcion:document.getElementById('nf-dir')?.value?.trim()||'',
+    empresa: document.getElementById('nf-empresa')?.value?.trim() || 'LAAAMB',
+    municipio: document.getElementById('nf-municipio')?.value?.trim() || '',
+    departamento: document.getElementById('nf-depto')?.value?.trim() || 'Antioquia',
+    area_ha: parseFloat(document.getElementById('nf-area')?.value) || 0,
+    ica: document.getElementById('nf-ica')?.value?.trim() || '',
+    propietario: document.getElementById('nf-propietario')?.value?.trim() || '',
+    telefono: document.getElementById('nf-tel')?.value?.trim() || '',
+    descripcion: document.getElementById('nf-dir')?.value?.trim() || '',
   };
-  if(typeof AppData==='undefined'){toast('AppData no disponible','err');return;}
-  const d=AppData.get();
+  if(typeof AppData === 'undefined'){ toast('AppData no disponible','err'); return; }
+  const d = AppData.get();
 
-  if(_editingFincaId==='default'||(!_editingFincaId&&(!d.fincas||!d.fincas.length))){
+  if(_editingFincaId === 'default' || (!_editingFincaId && (!d.fincas || !d.fincas.length))){
     // Editar finca legacy
-    d.finca={...d.finca,...fincaData};
+    d.finca = Object.assign({}, d.finca, fincaData);
     AppData.save(d);
-    // Actualizar selector en sidebar
-    if(typeof FarmSelector!=='undefined') FarmSelector.updateBtn();
-    localStorage.setItem('laaamb-finca-nombre',nombre);
+    localStorage.setItem('laaamb-finca-nombre', nombre);
   } else if(_editingFincaId){
-    // Editar finca existente
-    d.fincas=d.fincas||[];
-    const idx=d.fincas.findIndex(function(f){return f.id===_editingFincaId;});
-    if(idx!==-1) d.fincas[idx]={...d.fincas[idx],...fincaData};
+    // Editar finca existente en array
+    d.fincas = d.fincas || [];
+    const idx = d.fincas.findIndex(function(f){ return f.id === _editingFincaId; });
+    if(idx !== -1) d.fincas[idx] = Object.assign({}, d.fincas[idx], fincaData);
     AppData.save(d);
   } else {
     // Nueva finca
-    d.fincas=d.fincas||[];
-    // Si es la primera finca adicional, migrar la legacy
-    if(!d.fincas.length&&d.finca){
-      d.fincas.push({id:'default',...d.finca});
+    d.fincas = d.fincas || [];
+    // Si es la primera finca adicional, migrar la legacy al array
+    if(!d.fincas.length && d.finca){
+      d.fincas.push(Object.assign({id:'default'}, d.finca));
     }
-    const newId='finca-'+Date.now().toString(36);
-    d.fincas.push({id:newId,...fincaData});
+    const newId = 'finca-' + Date.now().toString(36);
+    d.fincas.push(Object.assign({id:newId}, fincaData));
     AppData.save(d);
     // Activar la nueva finca
-    localStorage.setItem('laaamb-active-finca',newId);
-    if(typeof FarmSelector!=='undefined') FarmSelector.updateBtn();
+    localStorage.setItem('laaamb-active-finca', newId);
   }
 
   closeAddFinca();
   renderFincas();
-  if(typeof FarmSelector!=='undefined') FarmSelector.updateBtn();
+  // Actualizar sidebar farm selector
+  if(typeof FarmSelector !== 'undefined'){
+    FarmSelector.updateBtn();
+  }
+  // Actualizar badge sidebar
+  updateSidebarBadgesLocal();
   toast('"'+nombre+'" guardada correctamente');
 }
 
 function selectFinca(id){
-  localStorage.setItem('laaamb-active-finca',id);
-  if(typeof FarmSelector!=='undefined') FarmSelector.updateBtn();
+  localStorage.setItem('laaamb-active-finca', id);
+  if(typeof FarmSelector !== 'undefined') FarmSelector.updateBtn();
   renderFincas();
   toast('Finca activa cambiada');
 }
 
 function deleteFinca(id){
   if(!confirm('¿Eliminar esta finca? Los animales y datos asociados no se eliminan.')) return;
-  if(typeof AppData==='undefined') return;
-  const d=AppData.get();
-  d.fincas=(d.fincas||[]).filter(function(f){return f.id!==id;});
+  if(typeof AppData === 'undefined') return;
+  const d = AppData.get();
+  d.fincas = (d.fincas || []).filter(function(f){ return f.id !== id; });
   AppData.save(d);
-  // Si era la activa, seleccionar la primera disponible
-  if(localStorage.getItem('laaamb-active-finca')===id){
-    const primera=d.fincas[0];
-    localStorage.setItem('laaamb-active-finca',primera?primera.id:'default');
-    if(typeof FarmSelector!=='undefined') FarmSelector.updateBtn();
+  if(localStorage.getItem('laaamb-active-finca') === id){
+    const primera = d.fincas[0];
+    localStorage.setItem('laaamb-active-finca', primera ? primera.id : 'default');
+    if(typeof FarmSelector !== 'undefined') FarmSelector.updateBtn();
   }
   renderFincas();
   toast('Finca eliminada');
 }
 
-// ═══ EXPORT/IMPORT ═══
-function exportTodo(){
-  toast('Generando backup completo de la base de datos…','ok');
-  setTimeout(()=>toast('Backup exportado — guárdalo en lugar seguro'),1200);
+// ── EXPORT / IMPORT ──────────────────────────────────────────────────────────
+function exportarTodo(){
+  if(typeof AppData === 'undefined' || typeof XLSX === 'undefined'){ toast('Módulo no disponible','err'); return; }
+  try{
+    const allData = AppData.exportAll ? AppData.exportAll() : {};
+    const wb = XLSX.utils.book_new();
+    Object.entries(allData).forEach(function([col, rows]){
+      if(rows && rows.length > 1) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), col.slice(0,31));
+    });
+    XLSX.writeFile(wb, 'laaamb-backup-'+new Date().toISOString().slice(0,10)+'.xlsx');
+    toast('Backup completo exportado');
+  }catch(e){ toast('Error exportando: '+e.message,'err'); }
 }
 function importarBase(input){
-  if(!input.files[0])return;
+  if(!input.files[0]) return;
   if(confirm('¿Importar esta base? Esto reemplazará todos los datos actuales.')){
     toast('Base importada correctamente');
   }
-  input.value='';
+  input.value = '';
 }
 
-// ═══ TOAST ═══
-function toast(msg,type='ok'){
-  const c=document.getElementById('toasts');const t=document.createElement('div');t.className='toast '+type;
-  t.innerHTML='<span style="color:var(--teal)">✓</span> '+msg;c.appendChild(t);setTimeout(()=>t.remove(),3000);
+// ── TOAST ────────────────────────────────────────────────────────────────────
+function toast(msg, type='ok'){
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = '<span style="color:var(--teal)">✓</span> ' + msg;
+  c.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 3000);
 }
 
-// INIT
-const savedColabs = localStorage.getItem('laaamb-colabs');
-if(savedColabs) COLABS = JSON.parse(savedColabs);
-initTheme();
-renderColabs();
-</script>
-<script>
-// ── Badges dinámicos sidebar ──────────────────────────────────────────────────
-(function updateSidebarBadges(){
-  if(typeof AppData==='undefined') return;
+// ── Badges sidebar (local, para actualizar después de guardar finca) ──────────
+function updateSidebarBadgesLocal(){
+  if(typeof AppData === 'undefined') return;
   try{
-    const s=AppData.stats();
-    const d=AppData.get();
+    const s = AppData.stats();
+    const d = AppData.get();
     document.querySelectorAll('.nav-badge').forEach(function(b){
-      const link=b.closest('a');
-      if(link&&link.href&&link.href.includes('animales')) b.textContent=s.total;
-      if(link&&link.href&&link.href.includes('medicamentos')) b.textContent=d.medicamentos.filter(function(m){return m.activo!==false;}).length;
+      const link = b.closest('a');
+      if(link && link.href && link.href.includes('animales')) b.textContent = s.total;
+      if(link && link.href && link.href.includes('medicamentos')) b.textContent = d.medicamentos.filter(function(m){return m.activo!==false;}).length;
     });
-    const farmSub=document.querySelector('.farm-sub');
-    const finca=d.finca||{};
-    if(farmSub) farmSub.textContent=(finca.area_ha||76.2)+' ha · '+s.total+' animales';
+    const farmSub = document.getElementById('sb-farm-sub');
+    const finca = d.finca || {};
+    if(farmSub) farmSub.textContent = (finca.area_ha || 50) + ' ha · ' + s.total + ' animales';
   }catch(e){}
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+(function init(){
+  const savedColabs = localStorage.getItem('laaamb-colabs');
+  if(savedColabs) COLABS = JSON.parse(savedColabs);
+  initTheme();
+  renderColabs();
+  // FIX: renderizar fincas al cargar la página
+  if(typeof AppData !== 'undefined'){
+    renderFincas();
+    updateSidebarBadgesLocal();
+    if(typeof FarmSelector !== 'undefined') FarmSelector.updateBtn();
+  } else {
+    // Fallback: esperar a DOMContentLoaded por si AppData carga después
+    document.addEventListener('DOMContentLoaded', function(){
+      if(typeof AppData !== 'undefined'){
+        renderFincas();
+        updateSidebarBadgesLocal();
+        if(typeof FarmSelector !== 'undefined') FarmSelector.updateBtn();
+      }
+    });
+  }
 })();
 </script>
+
 <script>
-function exportarTodo(){
-  if(typeof AppData==='undefined'){alert('AppData no disponible');return;}
-  try{
-    const allData=AppData.exportAll();
-    const wb=XLSX.utils.book_new();
-    Object.entries(allData).forEach(([col,rows])=>{
-      if(rows&&rows.length>1) XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),col.slice(0,31));
-    });
-    XLSX.writeFile(wb,'laaamb-backup-'+new Date().toISOString().slice(0,10)+'.xlsx');
-    const t=document.getElementById('toasts');const el=document.createElement('div');el.className='toast ok';el.innerHTML='<span style="color:var(--teal)">✓</span> Backup completo exportado';t.appendChild(el);setTimeout(()=>el.remove(),3500);
-  }catch(e){alert('Error exportando: '+e.message);}
-}
-</script>
-<script>
+// ── Hamburger v8 ─────────────────────────────────────────────────────────────
 (function(){
-  var open=false;
-  var BARS='<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
-  var CROSS='<line x1="4" y1="4" x2="18" y2="18"/><line x1="18" y1="4" x2="4" y2="18"/>';
-  function show(){open=true;document.getElementById('sidebar').classList.add('on');document.getElementById('lov').classList.add('on');document.body.style.overflow='hidden';document.getElementById('lico').innerHTML=CROSS;}
-  function hide(){open=false;document.getElementById('sidebar').classList.remove('on');document.getElementById('lov').classList.remove('on');document.body.style.overflow='';document.getElementById('lico').innerHTML=BARS;}
-  document.addEventListener('DOMContentLoaded',function(){
-    document.getElementById('lham').onclick=function(){open?hide():show();};
-    document.getElementById('lov').onclick=hide;
+  var open = false;
+  var BARS = '<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
+  var CROSS = '<line x1="4" y1="4" x2="18" y2="18"/><line x1="18" y1="4" x2="4" y2="18"/>';
+  function show(){ open=true; document.getElementById('sidebar').classList.add('on'); document.getElementById('lov').classList.add('on'); document.body.style.overflow='hidden'; document.getElementById('lico').innerHTML=CROSS; }
+  function hide(){ open=false; document.getElementById('sidebar').classList.remove('on'); document.getElementById('lov').classList.remove('on'); document.body.style.overflow=''; document.getElementById('lico').innerHTML=BARS; }
+  document.addEventListener('DOMContentLoaded', function(){
+    document.getElementById('lham').onclick = function(){ open ? hide() : show(); };
+    document.getElementById('lov').onclick = hide;
     document.querySelectorAll('#sidebar a.nav-link').forEach(function(a){
-      a.addEventListener('click',function(){if(window.innerWidth<=768)hide();});
+      a.addEventListener('click', function(){ if(window.innerWidth<=768) hide(); });
     });
   });
 })();
 </script>
+
 </body>
 </html>
