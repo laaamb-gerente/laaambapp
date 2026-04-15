@@ -872,25 +872,43 @@ function deshacerUltimoPunto(){
 }
 
 function iniciarNuevoLoteDesdeMapa(){
-  startDraw('lote');
-  showMapStatus('Dibuja el lote: clic=punto, doble clic=cerrar');
+  // Ir al tab mapa
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  var tb=document.getElementById('t-mapa');
+  if(tb){tb.classList.add('active');var tc=tb.closest('.tab-content')||document.querySelector('.tab-content');if(tc)tc.classList.add('active');}
+  var mapDiv=document.getElementById('map');
+  if(mapDiv){var p=mapDiv.parentElement;while(p&&!p.classList.contains('tab-content'))p=p.parentElement;if(p)p.classList.add('active');}
+  startDrawLote();
 }
 
 function finalizarDibujo(){
   if(currentPoints.length<3){toast('Necesitas al menos 3 puntos','err');return;}
   var pts=currentPoints.slice();
-  var area=calcAreaHa(currentPoints);
-  window._pendingLoteGeo={points:pts,area:area};
-  if(window._previewPoly){MAP.removeLayer(window._previewPoly);}
-  window._previewPoly=L.polygon(pts.map(function(p){return[p.lat,p.lng];}),{color:'#00AFB6',weight:2,opacity:0.9,fillOpacity:0.12,dashArray:'6 4'}).addTo(MAP);
-  MAP.fitBounds(window._previewPoly.getBounds(),{padding:[40,40]});
-  drawMode=null;MAP.getContainer().style.cursor='';currentPoints=[];
-  document.getElementById('btn-undo-point').style.display='none';
-  openModal('modal-nuevo-lote');
-  var areaEl=document.getElementById('lf-area');if(areaEl){areaEl.value=area.toFixed(2);areaEl.readOnly=true;}
-  if(activeFincaMap&&activeFincaMap!=='default'){var sel=document.getElementById('lf-finca');if(sel)sel.value=activeFincaMap;}
-  showMapStatus('Poligono listo: '+area.toFixed(2)+' ha - Completa datos y guarda');
+  var geojson={type:'Polygon',coordinates:[pts.map(function(p){return [p.lng,p.lat];})]};
+  geojson.coordinates[0].push(geojson.coordinates[0][0]); // cerrar
+
+  // Calcular área aprox en ha
+  var areaHa=calcAreaHa(pts);
+
+  clearTempDraw();
+
+  if(drawMode==='finca'){
+    guardarPerimetroFinca(activeFincaMap, geojson, areaHa);
+    toast('Perímetro guardado · ' + areaHa.toFixed(2) + ' ha calculadas y grabadas en Ajustes');
+  } else if(drawMode==='lote'){
+    // Pedir nombre del lote
+    var nombre=prompt('Nombre del lote (ej: Lote E):');
+    if(!nombre){cancelDraw();return;}
+    guardarNuevoLoteConGeo(activeFincaMap, nombre, geojson, areaHa);
+  }
+  drawMode=null;
+  MAP.getContainer().style.cursor='';
+  document.getElementById('btn-draw-finca').classList.remove('active');
+  document.getElementById('btn-draw-lote').classList.remove('active');
+  hideMapStatus();
 }
+
 function cancelDraw(){
   clearTempDraw();
   drawMode=null;
