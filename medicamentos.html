@@ -17,6 +17,7 @@ html[data-theme="contrast"]{--teal:#00ffff;--teal-d:#00cccc;--teal-bg:rgba(0,255
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
 ::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
 .app{display:flex;height:100vh;width:100vw}
+
 /* SIDEBAR */
 .sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0;transition:transform .3s ease}
 .sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:.5}
@@ -38,9 +39,28 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
 .avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
 .user-name{font-size:12px;font-weight:600;color:var(--text)}.user-role{font-size:10px;color:var(--text3)}
-/* MOBILE */
-.hamburger{display:none;position:fixed;top:14px;left:14px;z-index:200;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);width:40px;height:40px;align-items:center;justify-content:center;cursor:pointer;font-size:18px;color:var(--text)}
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9}
+
+/* ── HAMBURGER v8 ───────────────────────────────────────── */
+#lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);
+  width:46px;height:46px;align-items:center;justify-content:center;
+  cursor:pointer;color:var(--text);flex-shrink:0}
+#lham svg{pointer-events:none}
+#lov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);
+  z-index:9990;backdrop-filter:blur(2px)}
+#lov.on{display:block}
+@media(max-width:768px){
+  #lham{display:flex}
+  #sidebar{position:fixed!important;top:0!important;left:0!important;
+    height:100vh!important;transform:translateX(-100%)!important;
+    z-index:9995!important;transition:transform .28s ease!important;
+    display:flex!important;overflow-y:auto!important;
+    overflow-x:hidden!important;-webkit-overflow-scrolling:touch}
+  #sidebar.on{transform:translateX(0)!important}
+  .sb-foot{position:sticky;bottom:0;background:var(--bg2)}
+  .main{width:100vw!important}
+}
+
 /* MAIN */
 .main{flex:1;overflow:hidden;display:flex;flex-direction:column}
 .page-head{padding:18px 28px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--bg2);flex-wrap:wrap}
@@ -50,6 +70,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .ph-actions{display:flex;gap:8px;flex-wrap:wrap}
 .filters-bar{padding:12px 28px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex-shrink:0}
 .content{flex:1;overflow-y:auto;padding:20px 24px 48px}
+
 /* COMPONENTS */
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:all var(--anim);white-space:nowrap}
 .btn-primary{background:var(--teal);color:#080f10}.btn-primary:hover{background:#1cc8d0;transform:translateY(-1px)}
@@ -61,6 +82,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .fi{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:8px 11px;color:var(--text);font-size:13px;font-family:'Changa',sans-serif;outline:none;transition:border-color var(--anim)}
 .fi:focus{border-color:var(--teal)}.fi::placeholder{color:var(--text3)}
 select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%233d6e74' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
+
 /* MED CARD */
 .med-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:12px}
 .med-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:16px;display:flex;align-items:flex-start;gap:14px;transition:all var(--anim);cursor:pointer;position:relative}
@@ -69,23 +91,20 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .med-card.venc-pronto{border-left:3px solid var(--amber)}
 .med-card.venc-ok{border-left:3px solid var(--teal)}
 .med-ico{width:42px;height:42px;border-radius:var(--r);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:1px solid var(--border2)}
-.med-ico.inyectable{background:var(--teal-bg)}
-.med-ico.oral{background:var(--amber-bg)}
-.med-ico.vacuna{background:var(--sky-bg)}
-.med-ico.topico{background:var(--wine-bg)}
+.med-ico.inyectable{background:var(--teal-bg)}.med-ico.oral{background:var(--amber-bg)}.med-ico.vacuna{background:var(--sky-bg)}.med-ico.topico{background:var(--wine-bg)}
 .med-info{flex:1;min-width:0}
 .med-nombre{font-size:14px;font-weight:700;color:var(--text);margin-bottom:2px}
 .med-principio{font-size:11px;color:var(--teal);font-weight:600}
 .med-cat{font-size:10px;color:var(--text3);margin-top:1px}
 .med-detalles{display:flex;gap:12px;margin-top:8px;flex-wrap:wrap}
-.med-det{font-size:11px;color:var(--text3)}
-.med-det strong{color:var(--text2)}
+.med-det{font-size:11px;color:var(--text3)}.med-det strong{color:var(--text2)}
 .med-stock-row{display:flex;align-items:center;gap:8px;margin-top:8px}
 .stock-num{font-size:18px;font-weight:700;color:var(--text);line-height:1}
 .stock-label{font-size:10px;color:var(--text3)}
 .stock-track{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
 .stock-fill{height:100%;border-radius:2px}
 .venc-badge{position:absolute;top:12px;right:12px}
+
 /* MODAL */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;padding:20px}
 .overlay.open{opacity:1;pointer-events:all}
@@ -104,27 +123,13 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:fadeUp .2s ease;max-width:340px}
 .toast.ok{border-left:3px solid var(--teal)}.toast.err{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--amber)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-@media(max-width:768px){
-  .sidebar{position:fixed;left:0;top:0;height:100%;transform:translateX(-100%);z-index:100}
-  .sidebar.on{transform:translateX(0)!important}
-  
-  /* hamburger v8 maneja mobile via #lham */
-  .page-head{padding:14px 16px 12px;padding-left:60px}
-  .filters-bar{padding:10px 16px}
-  .content{padding:16px 16px 48px}
-  .med-grid{grid-template-columns:1fr}
-  .form-grid{grid-template-columns:1fr}
-}
 
-/* ── Validación de formularios ──────────────────────────────── */
-.fi.field-error{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(224,82,82,0.15)!important}
-.fi.field-ok{border-color:var(--teal)!important}
-.fi:invalid{border-color:var(--amber)}
-.field-hint{font-size:10px;color:var(--red);margin-top:3px;display:none}
-.field-hint.visible{display:block}
-/* Campos requeridos marcados */
-label.fl[for] + .fi:required,
-label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
+/* ── Species tabs (chips estilo consistente con otras páginas) ─ */
+.species-tabs{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+.sp-tab{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-family:'Changa',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:var(--surface);color:var(--text3);transition:all var(--anim)}
+.sp-tab:hover{border-color:var(--border3);color:var(--text);background:var(--surface2)}
+.sp-tab.active{background:var(--teal-bg);color:var(--teal);border-color:var(--border3)}
+.sp-tab.active-bo{background:var(--amber-bg);color:var(--amber);border-color:rgba(241,143,34,.35)}
 
 /* ── FARM SELECTOR ──────────────────────────────────────── */
 .farm-selector{margin-top:12px;position:relative}
@@ -152,28 +157,45 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 .farm-opt-name{font-weight:600;font-size:12px}
 .farm-opt-sub{font-size:10px;color:var(--text3);margin-top:1px}
 
+/* ── Validación de formularios ── */
+.fi.field-error{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(224,82,82,0.15)!important}
+.fi.field-ok{border-color:var(--teal)!important}
+.field-hint{font-size:10px;color:var(--red);margin-top:3px;display:none}
+.field-hint.visible{display:block}
+
+@media(max-width:768px){
+  .page-head{padding:14px 16px 12px;padding-left:60px}
+  .filters-bar{padding:10px 16px}
+  .content{padding:16px 16px 48px}
+  .med-grid{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+}
 </style>
 <script src="farm-selector.js"></script>
 </head>
 <body>
 <div class="app">
+
+<!-- HAMBURGER -->
 <button id="lham" aria-label="Menú"><svg id="lico" viewBox="0 0 22 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="20" height="20"><line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/></svg></button>
 <div id="lov"></div>
 
+<!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sb-head">
     <div class="sb-logo-text">LAAAMB</div>
     <div class="sb-logo-sub">Corderos · App</div>
-        <div class="farm-selector" id="farm-selector">
+    <div class="farm-selector" id="farm-selector">
       <button class="farm-btn" id="farm-btn" onclick="FarmSelector.toggle()" aria-haspopup="true">
         <span class="farm-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg></span>
         <div style="flex:1;min-width:0">
           <div class="farm-name" id="sb-farm-name">La Marinilla</div>
-          <div class="farm-sub" id="sb-farm-sub">76.2 ha · cargando…</div>
+          <div class="farm-sub" id="sb-farm-sub">50 ha · cargando…</div>
         </div>
         <span class="farm-chevron"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M5 8l5 5 5-5"/></svg></span>
       </button>
-      <div class="farm-dropdown" id="farm-dropdown"></div></div>
+      <div class="farm-dropdown" id="farm-dropdown"></div>
+    </div>
   </div>
   <nav class="nav-scroll">
     <div class="nav-group">Principal</div>
@@ -185,7 +207,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <a class="nav-link" href="lotes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>Lotes &amp; Potreros</a>
     <div class="nav-group">Salud</div>
     <a class="nav-link" href="salud.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>Salud &amp; Tratamientos</a>
-    <a class="nav-link active" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos<span class="nav-badge" id="sb-count">28</span></a>
+    <a class="nav-link active" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos<span class="nav-badge" id="sb-count">0</span></a>
     <div class="nav-group">Gestión</div>
     <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
     <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
@@ -197,16 +219,24 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   </div>
 </aside>
 
+<!-- MAIN -->
 <div class="main">
   <div class="page-head">
     <div>
       <div class="ph-eyebrow">La Marinilla · Salud</div>
       <div class="ph-title">Medicamentos</div>
-      <div class="ph-sub" id="ph-sub">28 productos · 3 por vencer · 2 con stock bajo</div>
-        <div class="species-tabs" id="species-tabs">
-        <button class="sp-tab" id="sp-todas" onclick="setEspecie('todas')">Todas</button>
-        <button class="sp-tab" id="sp-ovino" onclick="setEspecie('ovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/></svg> Ovinos</button>
-        <button class="sp-tab" id="sp-bovino" onclick="setEspecie('bovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="12" rx="6" ry="4"/><circle cx="14" cy="8" r="2.5"/></svg> Bovinos</button>
+      <div class="ph-sub" id="ph-sub">Cargando inventario…</div>
+      <!-- Species tabs con CSS correcto -->
+      <div class="species-tabs" id="species-tabs">
+        <button class="sp-tab active" id="sp-todas" onclick="setEspecie('todas')">Todas</button>
+        <button class="sp-tab" id="sp-ovino" onclick="setEspecie('ovino')">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/></svg>
+          Ovinos
+        </button>
+        <button class="sp-tab" id="sp-bovino" onclick="setEspecie('bovino')">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="12" rx="6" ry="4"/><circle cx="14" cy="8" r="2.5"/></svg>
+          Bovinos
+        </button>
       </div>
     </div>
     <div class="ph-actions">
@@ -226,7 +256,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     </select>
     <select class="fi" style="width:160px" onchange="filterMeds(this.value,'venc')">
       <option value="">Todos los vencimientos</option>
-      <option value="urgente"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Vence en 7 días</option>
+      <option value="urgente">⚠ Vence en 7 días</option>
       <option value="pronto">⏰ Vence en 30 días</option>
       <option value="ok">✓ Sin alerta</option>
     </select>
@@ -235,13 +265,11 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <option>Inyectable</option><option>Oral (líquido)</option>
       <option>Oral (sólido)</option><option>Vacuna</option>
     </select>
-    <span style="font-size:12px;color:var(--text3);margin-left:auto" id="filter-count">28 productos</span>
+    <span style="font-size:12px;color:var(--text3);margin-left:auto" id="filter-count">— productos</span>
   </div>
 
   <div class="content">
-    <!-- Alertas vencimiento -->
     <div id="alertas-venc" style="margin-bottom:14px"></div>
-    <!-- Grid medicamentos -->
     <div class="med-grid" id="meds-grid"></div>
   </div>
 </div>
@@ -249,35 +277,43 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 
 <!-- MODAL AGREGAR -->
 <div class="overlay" id="modal-add" onclick="if(event.target===this)closeModal('modal-add')">
-<div class="modal">
-  <div class="modal-head"><div class="modal-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="vertical-align:middle;margin-right:4px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>Agregar medicamento</div><button class="modal-close" onclick="closeModal('modal-add')">✕</button></div>
-  <div class="modal-body">
-    <div class="form-grid">
-      <div class="fg"><label class="fl">Nombre comercial *</label><input class="fi fi-full" id="m-nombre" placeholder="Ivermectina 1%"></div>
-      <div class="fg"><label class="fl">Principio activo *</label><input class="fi fi-full" id="m-principio" placeholder="Ivermectina"></div>
-      <div class="fg"><label class="fl">Categoría</label><select class="fi fi-full" id="m-cat"><option>Antiparasitario</option><option>Antibiótico</option><option>Vitamina</option><option>Antiinflamatorio</option><option>Vacuna</option><option>Hormonal</option><option>Otro</option></select></div>
-      <div class="fg"><label class="fl">Presentación</label><select class="fi fi-full" id="m-pres"><option>Inyectable</option><option>Oral (líquido)</option><option>Oral (sólido)</option><option>Vacuna</option><option>Tópico</option></select></div>
-      <div class="fg"><label class="fl">N° de lote</label><input class="fi fi-full" id="m-lote" placeholder="IV-2025-001"></div>
-      <div class="fg"><label class="fl">Cantidad actual (mL/g/tab)</label><input class="fi fi-full" type="number" id="m-stock" placeholder="500"></div>
-      <div class="fg"><label class="fl">Stock máximo</label><input class="fi fi-full" type="number" id="m-max" placeholder="1000"></div>
-      <div class="fg"><label class="fl">Fecha vencimiento *</label><input class="fi fi-full" type="date" id="m-venc"></div>
-      <div class="fg"><label class="fl">Tiempo retiro (días) *</label><input class="fi fi-full" type="number" id="m-retiro" placeholder="14"></div>
-      <div class="fg"><label class="fl">Costo unitario (COP/mL)</label><input class="fi fi-full" type="number" id="m-costo" placeholder="85000"></div>
-      <div class="fg"><label class="fl">Dosis estándar</label><input class="fi fi-full" placeholder="0.2 mL/10kg SC"></div>
-      <div class="fg"><label class="fl">Temperatura almacenamiento</label><select class="fi fi-full"><option>Temperatura ambiente</option><option>Refrigeración 2-8°C</option><option>Congelación</option></select></div>
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Agregar medicamento</div>
+      <button class="modal-close" onclick="closeModal('modal-add')">✕</button>
     </div>
-    <div class="fg"><label class="fl">Observaciones / Advertencias</label><textarea class="fi fi-full" placeholder="Contraindicaciones, precauciones…" rows="2" style="resize:vertical"></textarea></div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg"><label class="fl">Nombre comercial *</label><input class="fi fi-full" id="m-nombre" placeholder="Ivermectina 1%"></div>
+        <div class="fg"><label class="fl">Principio activo *</label><input class="fi fi-full" id="m-principio" placeholder="Ivermectina"></div>
+        <div class="fg"><label class="fl">Categoría</label><select class="fi fi-full" id="m-cat"><option>Antiparasitario</option><option>Antibiótico</option><option>Vitamina</option><option>Antiinflamatorio</option><option>Vacuna</option><option>Hormonal</option><option>Otro</option></select></div>
+        <div class="fg"><label class="fl">Presentación</label><select class="fi fi-full" id="m-pres"><option>Inyectable</option><option>Oral (líquido)</option><option>Oral (sólido)</option><option>Vacuna</option><option>Tópico</option></select></div>
+        <div class="fg"><label class="fl">N° de lote</label><input class="fi fi-full" id="m-lote" placeholder="IV-2025-001"></div>
+        <div class="fg"><label class="fl">Cantidad actual (mL/g/tab)</label><input class="fi fi-full" type="number" id="m-stock" placeholder="500"></div>
+        <div class="fg"><label class="fl">Stock máximo</label><input class="fi fi-full" type="number" id="m-max" placeholder="1000"></div>
+        <div class="fg"><label class="fl">Fecha vencimiento *</label><input class="fi fi-full" type="date" id="m-venc"></div>
+        <div class="fg"><label class="fl">Tiempo retiro (días) *</label><input class="fi fi-full" type="number" id="m-retiro" placeholder="14"></div>
+        <div class="fg"><label class="fl">Costo unitario (COP/mL)</label><input class="fi fi-full" type="number" id="m-costo" placeholder="85000"></div>
+        <div class="fg"><label class="fl">Dosis estándar</label><input class="fi fi-full" id="m-dosis" placeholder="0.2 mL/10kg SC"></div>
+        <div class="fg"><label class="fl">Temperatura almacenamiento</label><select class="fi fi-full" id="m-temp"><option>Temperatura ambiente</option><option>Refrigeración 2-8°C</option><option>Congelación</option></select></div>
+      </div>
+      <div class="fg"><label class="fl">Observaciones / Advertencias</label><textarea class="fi fi-full" id="m-obs" placeholder="Contraindicaciones, precauciones…" rows="2" style="resize:vertical"></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-add')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="saveMed()">Guardar medicamento</button>
+    </div>
   </div>
-  <div class="modal-foot">
-    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-add')">Cancelar</button>
-    <button class="btn btn-primary btn-sm" onclick="saveMed()">Guardar medicamento</button>
-  </div>
-</div>
 </div>
 
 <div class="toasts" id="toasts"></div>
 
 <script>
+// ── Utilidades DOM ──────────────────────────────────────────────────────────
+function setEl(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; }
+function setElHTML(id, v) { var e = document.getElementById(id); if (e) e.innerHTML = v; }
+
+// ── Estado ──────────────────────────────────────────────────────────────────
 let MEDS = [
   {nombre:'Ivermectina 1%',principio:'Ivermectina',cat:'Antiparasitario',pres:'Inyectable',lote:'IV-2024-341',stock:340,max:500,dosis:'0.2 mL/10kg SC',retiro:14,venc:'2026-08-12',costo:85000},
   {nombre:'Oxitetraciclina 20%',principio:'Oxitetraciclina',cat:'Antibiótico',pres:'Inyectable',lote:'OX-A2341',stock:180,max:250,dosis:'5 mL/10kg IM',retiro:28,venc:'2025-04-18',costo:42000},
@@ -290,61 +326,54 @@ let MEDS = [
   {nombre:'Vacuna Clostridial',principio:'Multi-bacterinas',cat:'Vacuna',pres:'Vacuna',lote:'VAC-CL-2401',stock:120,max:200,dosis:'2 mL SC',retiro:0,venc:'2025-09-15',costo:8500},
   {nombre:'Penicilina G',principio:'Bencilpenicilina',cat:'Antibiótico',pres:'Inyectable',lote:'PEN-0921',stock:480,max:500,dosis:'22,000 UI/kg IM',retiro:14,venc:'2026-03-20',costo:15000},
 ];
-
 let filteredMeds = [...MEDS];
 let activeFilters = {q:'',cat:'',venc:'',pres:''};
 
+// ── Helpers ─────────────────────────────────────────────────────────────────
 function vencStatus(vencStr){
   const dias = Math.round((new Date(vencStr) - new Date()) / 86400000);
   if(dias <= 7) return 'urgente';
   if(dias <= 30) return 'pronto';
   return 'ok';
 }
-function diasVenc(vencStr){
-  return Math.round((new Date(vencStr) - new Date()) / 86400000);
-}
+function diasVenc(vencStr){ return Math.round((new Date(vencStr) - new Date()) / 86400000); }
 
+// ── Render grid ─────────────────────────────────────────────────────────────
 function renderMeds(){
   const grid = document.getElementById('meds-grid');
-  const ICO = {Inyectable:'💉',Oral:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>','Oral (líquido)':'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>','Oral (sólido)':'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>',Vacuna:'🩺',Tópico:'🧴'};
-  const PRES_CLASS = {Inyectable:'inyectable',Oral:'oral','Oral (líquido)':'oral','Oral (sólido)':'oral',Vacuna:'vacuna',Tópico:'topico'};
-  const today = new Date();
-
-  grid.innerHTML = filteredMeds.map((m,i) => {
+  const PRES_ICO = {Inyectable:'💉','Oral (líquido)':'🧪','Oral (sólido)':'💊',Vacuna:'🩺',Tópico:'🧴'};
+  const PRES_CLASS = {Inyectable:'inyectable','Oral (líquido)':'oral','Oral (sólido)':'oral',Vacuna:'vacuna',Tópico:'topico'};
+  grid.innerHTML = filteredMeds.map(function(m){
     const dias = diasVenc(m.venc);
     const vs = vencStatus(m.venc);
-    const stockPct = Math.round((m.stock/m.max)*100);
+    const stockPct = Math.round((m.stock / m.max) * 100);
     const stockColor = stockPct < 20 ? 'var(--red)' : stockPct < 40 ? 'var(--amber)' : 'var(--teal)';
-    const vencColor = vs==='urgente' ? 'var(--red)' : vs==='pronto' ? 'var(--amber)' : 'var(--green)';
-    const vencText = vs==='urgente' ? `<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Vence en ${dias}d` : vs==='pronto' ? `⏰ Vence en ${dias}d` : `✓ OK (${dias}d)`;
+    const vencText = vs==='urgente' ? '⚠ Vence en '+dias+'d' : vs==='pronto' ? '⏰ Vence en '+dias+'d' : '✓ OK ('+dias+'d)';
     const vencBadge = vs==='urgente' ? 'b-red' : vs==='pronto' ? 'b-amber' : 'b-green';
-    return `
-    <div class="med-card venc-${vs}" onclick="toast('${m.nombre} · Lote ${m.lote}','info')">
-      <div class="med-ico ${PRES_CLASS[m.pres]||'inyectable'}">${ICO[m.pres]||'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>'}</div>
-      <div class="med-info">
-        <div class="med-nombre">${m.nombre}</div>
-        <div class="med-principio">${m.principio}</div>
-        <div class="med-cat">${m.cat} · ${m.pres} · Lote ${m.lote}</div>
-        <div class="med-detalles">
-          <div class="med-det">Dosis: <strong>${m.dosis}</strong></div>
-          <div class="med-det">Retiro: <strong>${m.retiro} días</strong></div>
-          <div class="med-det">Costo: <strong>$${m.costo.toLocaleString('es-CO')}</strong></div>
-        </div>
-        <div class="med-stock-row">
-          <div>
-            <div class="stock-num">${m.stock}<span style="font-size:11px;color:var(--text3);margin-left:2px">mL</span></div>
-            <div class="stock-label">de ${m.max} mL stock</div>
-          </div>
-          <div class="stock-track"><div class="stock-fill" style="width:${stockPct}%;background:${stockColor}"></div></div>
-          <div style="font-size:11px;font-weight:600;color:${stockColor}">${stockPct}%</div>
-        </div>
-      </div>
-      <div class="venc-badge"><span class="badge ${vencBadge}" style="font-size:10px">${vencText}</span></div>
-    </div>`;
+    return '<div class="med-card venc-'+vs+'" onclick="toast(\''+m.nombre+' · Lote '+m.lote+'\',\'info\')">'
+      +'<div class="med-ico '+(PRES_CLASS[m.pres]||'inyectable')+'">'+(PRES_ICO[m.pres]||'💉')+'</div>'
+      +'<div class="med-info">'
+        +'<div class="med-nombre">'+m.nombre+'</div>'
+        +'<div class="med-principio">'+m.principio+'</div>'
+        +'<div class="med-cat">'+m.cat+' · '+m.pres+' · Lote '+m.lote+'</div>'
+        +'<div class="med-detalles">'
+          +'<div class="med-det">Dosis: <strong>'+m.dosis+'</strong></div>'
+          +'<div class="med-det">Retiro: <strong>'+m.retiro+' días</strong></div>'
+          +'<div class="med-det">Costo: <strong>$'+m.costo.toLocaleString('es-CO')+'</strong></div>'
+        +'</div>'
+        +'<div class="med-stock-row">'
+          +'<div><div class="stock-num">'+m.stock+'<span style="font-size:11px;color:var(--text3);margin-left:2px">mL</span></div>'
+          +'<div class="stock-label">de '+m.max+' mL stock</div></div>'
+          +'<div class="stock-track"><div class="stock-fill" style="width:'+stockPct+'%;background:'+stockColor+'"></div></div>'
+          +'<div style="font-size:11px;font-weight:600;color:'+stockColor+'">'+stockPct+'%</div>'
+        +'</div>'
+      +'</div>'
+      +'<div class="venc-badge"><span class="badge '+vencBadge+'" style="font-size:10px">'+vencText+'</span></div>'
+      +'</div>';
   }).join('');
-
   setEl('filter-count', filteredMeds.length + ' de ' + MEDS.length + ' productos');
-  var _esbcount=document.getElementById('sb-count');if(_esbcount)_esbcount.textContent=MEDS.length;
+  setEl('sb-count', MEDS.length);
+  setEl('ph-sub', MEDS.length + ' productos · ' + MEDS.filter(m=>vencStatus(m.venc)==='urgente').length + ' por vencer · ' + MEDS.filter(m=>m.stock/m.max<0.2).length + ' con stock bajo');
   renderAlertas();
 }
 
@@ -353,163 +382,126 @@ function renderAlertas(){
   const prontos = MEDS.filter(m => vencStatus(m.venc) === 'pronto');
   let html = '';
   if(urgentes.length){
-    html += `<div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-left:3px solid var(--red);border-radius:var(--r);padding:12px 16px;margin-bottom:8px;font-size:12px;color:var(--text2)">
-      <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12" style="vertical-align:middle;margin-right:2px;color:var(--red)"><circle cx="10" cy="10" r="5"/></svg> <strong style="color:var(--red)">${urgentes.length} medicamento(s) vence(n) en ≤7 días:</strong> ${urgentes.map(m=>m.nombre+' ('+diasVenc(m.venc)+'d)').join(' · ')}
-    </div>`;
+    html += '<div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-left:3px solid var(--red);border-radius:var(--r);padding:12px 16px;margin-bottom:8px;font-size:12px;color:var(--text2)">'
+      +'<strong style="color:var(--red)">⚠ '+urgentes.length+' medicamento(s) vence(n) en ≤7 días:</strong> '
+      +urgentes.map(m=>m.nombre+' ('+diasVenc(m.venc)+'d)').join(' · ')+'</div>';
   }
   if(prontos.length){
-    html += `<div style="background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-left:3px solid var(--amber);border-radius:var(--r);padding:12px 16px;margin-bottom:8px;font-size:12px;color:var(--text2)">
-      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> <strong style="color:var(--amber)">${prontos.length} medicamento(s) vence(n) en ≤30 días:</strong> ${prontos.map(m=>m.nombre).join(' · ')}
-    </div>`;
+    html += '<div style="background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-left:3px solid var(--amber);border-radius:var(--r);padding:12px 16px;margin-bottom:8px;font-size:12px;color:var(--text2)">'
+      +'<strong style="color:var(--amber)">⏰ '+prontos.length+' medicamento(s) vence(n) en ≤30 días:</strong> '
+      +prontos.map(m=>m.nombre).join(' · ')+'</div>';
   }
   setElHTML('alertas-venc', html);
 }
 
+// ── Filtros ─────────────────────────────────────────────────────────────────
 function filterMeds(val, field){
   activeFilters[field] = val;
-  filteredMeds = MEDS.filter(m => {
-    const q = activeFilters.q.toLowerCase();
+  filteredMeds = MEDS.filter(function(m){
+    var q = activeFilters.q.toLowerCase();
     if(q && !m.nombre.toLowerCase().includes(q) && !m.principio.toLowerCase().includes(q)) return false;
     if(activeFilters.cat && m.cat !== activeFilters.cat) return false;
     if(activeFilters.venc && vencStatus(m.venc) !== activeFilters.venc) return false;
     if(activeFilters.pres && m.pres !== activeFilters.pres) return false;
     return true;
   });
-  // Cargar desde AppData si disponible
+  renderMeds();
+}
+
+// ── Selector especie ────────────────────────────────────────────────────────
+function setEspecie(esp){
+  localStorage.setItem('laaamb-active-especie', esp);
+  document.querySelectorAll('.sp-tab').forEach(function(t){
+    t.classList.remove('active','active-bo');
+  });
+  var tab = document.getElementById('sp-'+esp);
+  if(tab){
+    tab.classList.add('active');
+    if(esp==='bovino') tab.classList.add('active-bo');
+  }
+  window.dispatchEvent(new CustomEvent('especie-changed', {detail:{especie:esp}}));
+}
+function initEspecieTabs(){
+  var esp = localStorage.getItem('laaamb-active-especie') || 'todas';
+  setEspecie(esp);
+}
+
+// ── AppData integration ─────────────────────────────────────────────────────
 function loadMedsFromAppData(){
-  if(typeof AppData==='undefined'){renderMeds();return;}
-  const d=AppData.get();
-  if(!d.medicamentos||!d.medicamentos.length){renderMeds();return;}
-  // Reemplazar MEDS con datos reales de AppData
-  MEDS.length=0;
-  const PRES_ICON={Inyectable:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><path d="M13 3l4 4-9 9-5 1 1-5 9-9z"/><path d="M15 5l-2 2"/></svg>',Oral:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>',Vacuna:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><path d="M4 16l3-3m5-9l4 4-8 8-4-4 4-4m1-1l4 4"/></svg>',default:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>'};
-  d.medicamentos.filter(m=>m.activo!==false).forEach(m=>{
+  if(typeof AppData === 'undefined'){ renderMeds(); return; }
+  const d = AppData.get();
+  if(!d.medicamentos || !d.medicamentos.length){ renderMeds(); return; }
+  MEDS.length = 0;
+  d.medicamentos.filter(m => m.activo !== false).forEach(function(m){
     MEDS.push({
       _id: m.id,
-      nombre: m.nombre||'Sin nombre',
-      principio: m.principio_activo||'—',
-      cat: m.categoria||'Medicamento veterinario',
-      pres: m.presentacion||'Inyectable',
-      lote: m.nro_lote||'—',
-      stock: parseFloat(m.stock_actual)||0,
-      stockMax: parseFloat(m.stock_maximo)||parseFloat(m.stock_actual)*2||100,
-      dosis: m.dosis_estandar||'Según indicación',
-      retiro: parseInt(m.dias_retiro)||0,
-      venc: m.fecha_vencimiento||'2099-01-01',
-      costo: parseFloat(m.costo_por_unidad)||0,
-      proveedor: m.proveedor||'—',
-      ico: PRES_ICON[m.presentacion]||PRES_ICON.default
+      nombre: m.nombre || 'Sin nombre',
+      principio: m.principio_activo || '—',
+      cat: m.categoria || 'Medicamento veterinario',
+      pres: m.presentacion || 'Inyectable',
+      lote: m.nro_lote || '—',
+      stock: parseFloat(m.stock_actual) || 0,
+      max: parseFloat(m.stock_maximo) || parseFloat(m.stock_actual)*2 || 100,
+      dosis: m.dosis_estandar || 'Según indicación',
+      retiro: parseInt(m.dias_retiro) || 0,
+      venc: m.fecha_vencimiento || '2099-01-01',
+      costo: parseFloat(m.costo_por_unidad) || 0,
     });
   });
-  // Actualizar badge sidebar
-  const sbMeds=document.getElementById('sb-meds');
-  if(sbMeds) sbMeds.textContent=MEDS.length;
+  filteredMeds = [...MEDS];
   renderMeds();
-  // Alertas de vencimiento
-  const hoy=new Date();
-  const urgentes=MEDS.filter(m=>Math.round((new Date(m.venc)-hoy)/86400000)<=7&&m.stock>0);
-  const prontos=MEDS.filter(m=>{const d=Math.round((new Date(m.venc)-hoy)/86400000);return d>7&&d<=30&&m.stock>0;});
-  const alertBox=document.getElementById('alert-venc');
-  if(alertBox){
-    let html='';
-    if(urgentes.length) html+=`<div style="font-size:11px;color:var(--red);font-weight:700;margin-bottom:4px"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="vertical-align:middle;margin-right:2px"><circle cx="10" cy="10" r="7"/><path d="M10 6v5M10 14h.01"/></svg> ${urgentes.length} medicamento(s) vence(n) en ≤7 días: ${urgentes.map(m=>m.nombre+'('+m.stock+'mL)').join(', ')}</div>`;
-    if(prontos.length) html+=`<div style="font-size:11px;color:var(--amber);font-weight:600"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> ${prontos.length} vence(n) en ≤30 días: ${prontos.map(m=>m.nombre).join(', ')}</div>`;
-    if(html) alertBox.innerHTML=html;
-  }
 }
 
-// Conectar saveMed a AppData
-const _saveMedOrig=window.saveMed||function(){};
-function saveMed(){
-  const inputs=document.querySelectorAll('#modal-add-med .fi');
-  const nombre=inputs[0]?.value?.trim();
-  const principio=inputs[1]?.value?.trim()||'';
-  const sel=document.querySelectorAll('#modal-add-med select');
-  const cat=sel[0]?.value||'Antiparasitario';
-  const pres=sel[1]?.value||'Inyectable';
-  const lote=inputs[2]?.value?.trim()||'';
-  const stock=parseFloat(inputs[3]?.value)||0;
-  const stockMax=parseFloat(inputs[4]?.value)||stock*2;
-  const dosis=inputs[5]?.value||'';
-  const retiro=parseInt(inputs[6]?.value)||0;
-  const venc=inputs[7]?.value||'';
-  const costo=parseFloat(inputs[8]?.value)||0;
-  const obs=document.querySelector('#modal-add-med textarea')?.value||'';
-  if(!nombre){toast('Nombre del medicamento requerido','err');return;}
-  if(typeof AppData!=='undefined'){
-    AppData.add('medicamentos',{
-      id:AppData.uid('MED'),nombre,principio_activo:principio,categoria:cat,
-      presentacion:pres,nro_lote:lote,stock_actual:stock,stock_maximo:stockMax,
-      dosis_estandar:dosis,dias_retiro:retiro,fecha_vencimiento:venc,
-      costo_por_unidad:costo,observaciones:obs,activo:true
-    });
-    // Limpiar form
-    inputs.forEach(i=>{if(i.tagName==='INPUT')i.value='';});
-    closeModal('modal-add-med');
-    toast(nombre+' agregado al inventario');
-    loadMedsFromAppData();
-  } else {
-    closeModal('modal-add-med');
-    toast(nombre+' agregado al inventario');
-    renderMeds();
-  }
-}
-
-// Conectar importar medicamentos a AppData
-const _importMedsOrig=window.importMeds||function(){};
-function importMeds(input){
-  const file=input.files[0];if(!file)return;
-  const reader=new FileReader();
-  reader.onload=function(e){
-    try{
-      const wb=XLSX.read(e.target.result,{type:'binary'});
-      const ws=wb.Sheets[wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(ws,{header:1});
-      const headers=rows[0]||[];
-      const dataRows=rows.slice(1).filter(r=>r.some(c=>c));
-      if(typeof AppData!=='undefined'){
-        const {valid,errors}=AppData.validateImport('medicamentos',dataRows,headers);
-        if(valid.length){
-          AppData.confirmImport('medicamentos',valid,false);
-          loadMedsFromAppData();
-          toast('✓ '+valid.length+' medicamentos importados'+(errors.length?' · '+errors.length+' errores':''));
-        } else {
-          toast('Sin registros válidos'+(errors.length?' · '+errors.length+' errores':''),'err');
-        }
-      } else {
-        toast('✓ '+dataRows.length+' medicamentos leídos (AppData no disponible)');
-      }
-      input.value='';
-    }catch(err){toast('Error leyendo archivo: '+err.message,'err');}
-  };reader.readAsBinaryString(file);
-}
-
-loadMedsFromAppData();
-}
-
+// ── CRUD ────────────────────────────────────────────────────────────────────
 function saveMed(){
   const nombre = document.getElementById('m-nombre').value.trim();
-  if(!nombre){toast('El nombre es requerido','err');return;}
-  MEDS.unshift({
-    nombre, principio:document.getElementById('m-principio').value,
-    cat:document.getElementById('m-cat').value, pres:document.getElementById('m-pres').value,
-    lote:document.getElementById('m-lote').value||'—',
-    stock:parseInt(document.getElementById('m-stock').value)||0,
-    max:parseInt(document.getElementById('m-max').value)||100,
-    dosis:'—', retiro:parseInt(document.getElementById('m-retiro').value)||0,
-    venc:document.getElementById('m-venc').value||'2026-12-31',
-    costo:parseInt(document.getElementById('m-costo').value)||0
-  });
-  filteredMeds=[...MEDS];
-  renderMeds();
+  if(!nombre){ toast('El nombre es requerido','err'); return; }
+  const med = {
+    nombre,
+    principio: document.getElementById('m-principio').value.trim(),
+    cat: document.getElementById('m-cat').value,
+    pres: document.getElementById('m-pres').value,
+    lote: document.getElementById('m-lote').value || '—',
+    stock: parseInt(document.getElementById('m-stock').value) || 0,
+    max: parseInt(document.getElementById('m-max').value) || 100,
+    dosis: document.getElementById('m-dosis').value || '—',
+    retiro: parseInt(document.getElementById('m-retiro').value) || 0,
+    venc: document.getElementById('m-venc').value || '2026-12-31',
+    costo: parseInt(document.getElementById('m-costo').value) || 0,
+  };
+  if(typeof AppData !== 'undefined'){
+    AppData.add('medicamentos', {
+      id: AppData.uid('MED'),
+      nombre: med.nombre,
+      principio_activo: med.principio,
+      categoria: med.cat,
+      presentacion: med.pres,
+      nro_lote: med.lote,
+      stock_actual: med.stock,
+      stock_maximo: med.max,
+      dosis_estandar: med.dosis,
+      dias_retiro: med.retiro,
+      fecha_vencimiento: med.venc,
+      costo_por_unidad: med.costo,
+      observaciones: document.getElementById('m-obs').value || '',
+      activo: true
+    });
+    loadMedsFromAppData();
+  } else {
+    MEDS.unshift(med);
+    filteredMeds = [...MEDS];
+    renderMeds();
+  }
   closeModal('modal-add');
-  toast(nombre+' agregado al inventario');
+  toast(nombre + ' agregado al inventario');
 }
 
 function exportMeds(){
   const wb = XLSX.utils.book_new();
-  const data = [['Nombre','Principio activo','Categoría','Presentación','Lote','Stock mL','Stock máx','Dosis','Retiro días','Vencimiento','Costo COP/mL'],
-    ...MEDS.map(m=>[m.nombre,m.principio,m.cat,m.pres,m.lote,m.stock,m.max,m.dosis,m.retiro,m.venc,m.costo])];
+  const data = [
+    ['Nombre','Principio activo','Categoría','Presentación','Lote','Stock mL','Stock máx','Dosis','Retiro días','Vencimiento','Costo COP/mL'],
+    ...MEDS.map(m=>[m.nombre,m.principio,m.cat,m.pres,m.lote,m.stock,m.max,m.dosis,m.retiro,m.venc,m.costo])
+  ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'Medicamentos');
   XLSX.writeFile(wb, 'laaamb-medicamentos.xlsx');
   toast('Excel exportado');
@@ -520,119 +512,98 @@ function importMeds(input){
   const r = new FileReader();
   r.onload = function(e){
     try{
-      const wb = XLSX.read(e.target.result,{type:'binary'});
+      const wb = XLSX.read(e.target.result, {type:'binary'});
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws,{header:1});
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1});
       const d = rows.slice(1).filter(r=>r.some(c=>c));
+      if(typeof AppData !== 'undefined'){
+        const headers = rows[0] || [];
+        d.forEach(function(row){
+          AppData.add('medicamentos',{
+            id: AppData.uid('MED'),
+            nombre: row[0]||'',
+            principio_activo: row[1]||'',
+            categoria: row[2]||'Otro',
+            presentacion: row[3]||'Inyectable',
+            nro_lote: row[4]||'',
+            stock_actual: parseFloat(row[5])||0,
+            stock_maximo: parseFloat(row[6])||100,
+            dosis_estandar: row[7]||'',
+            dias_retiro: parseInt(row[8])||0,
+            fecha_vencimiento: row[9]||'',
+            costo_por_unidad: parseFloat(row[10])||0,
+            activo: true
+          });
+        });
+        loadMedsFromAppData();
+      }
       toast('✓ '+d.length+' medicamentos importados');
       input.value='';
-    }catch(err){toast('Error leyendo archivo','err');}
+    }catch(err){ toast('Error leyendo archivo','err'); }
   };
   r.readAsBinaryString(f);
 }
 
-// toggleSidebar reemplazado por hamburger v8
+// ── Modal helpers ────────────────────────────────────────────────────────────
+function openModal(id){ document.getElementById(id)?.classList.add('open'); }
+function closeModal(id){ document.getElementById(id)?.classList.remove('open'); }
 
-function openModal(id){document.getElementById(id)?.classList.add('open')}
-function closeModal(id){document.getElementById(id)?.classList.remove('open')}
-function toast(msg,type='ok'){
-  const c=document.getElementById('toasts');const t=document.createElement('div');t.className='toast '+type;
-  const ic={ok:'<span style="color:var(--teal)">✓</span>',err:'<span style="color:var(--red)">✕</span>',info:'<span style="color:var(--amber)">ℹ</span>'};
-  t.innerHTML=(ic[type]||ic.ok)+' '+msg;c.appendChild(t);setTimeout(()=>t.remove(),3500);
+// ── Toast ────────────────────────────────────────────────────────────────────
+function toast(msg, type='ok'){
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  const ic = {ok:'<span style="color:var(--teal)">✓</span>',err:'<span style="color:var(--red)">✕</span>',info:'<span style="color:var(--amber)">ℹ</span>'};
+  t.innerHTML = (ic[type]||ic.ok) + ' ' + msg;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(), 3500);
 }
 
-// INIT
+// ── INIT ─────────────────────────────────────────────────────────────────────
 document.getElementById('m-venc').value = new Date(Date.now()+365*86400000).toISOString().slice(0,10);
-filteredMeds = [...MEDS];
-renderMeds();
+loadMedsFromAppData();
+initEspecieTabs();
 </script>
+
+<script>
+// ── Hamburger v8 ─────────────────────────────────────────────────────────────
+(function(){
+  var open = false;
+  var BARS = '<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
+  var CROSS = '<line x1="4" y1="4" x2="18" y2="18"/><line x1="18" y1="4" x2="4" y2="18"/>';
+  function show(){ open=true; document.getElementById('sidebar').classList.add('on'); document.getElementById('lov').classList.add('on'); document.body.style.overflow='hidden'; document.getElementById('lico').innerHTML=CROSS; }
+  function hide(){ open=false; document.getElementById('sidebar').classList.remove('on'); document.getElementById('lov').classList.remove('on'); document.body.style.overflow=''; document.getElementById('lico').innerHTML=BARS; }
+  document.addEventListener('DOMContentLoaded', function(){
+    document.getElementById('lham').onclick = function(){ open ? hide() : show(); };
+    document.getElementById('lov').onclick = hide;
+    document.querySelectorAll('#sidebar a.nav-link').forEach(function(a){
+      a.addEventListener('click', function(){ if(window.innerWidth<=768) hide(); });
+    });
+  });
+})();
+</script>
+
 <script>
 // ── Badges dinámicos sidebar ──────────────────────────────────────────────────
 (function updateSidebarBadges(){
-  if(typeof AppData==='undefined') return;
+  if(typeof AppData === 'undefined') return;
   try{
-    const s=AppData.stats();
-    const d=AppData.get();
+    const s = AppData.stats();
+    const d = AppData.get();
     document.querySelectorAll('.nav-badge').forEach(function(b){
-      const link=b.closest('a');
-      if(link&&link.href&&link.href.includes('animales')) b.textContent=s.total;
-      if(link&&link.href&&link.href.includes('medicamentos')) b.textContent=d.medicamentos.filter(function(m){return m.activo!==false;}).length;
+      const link = b.closest('a');
+      if(link && link.href && link.href.includes('animales')) b.textContent = s.total;
+      if(link && link.href && link.href.includes('medicamentos')) b.textContent = d.medicamentos.filter(function(m){return m.activo!==false;}).length;
     });
-    const farmSub=document.querySelector('.farm-sub');
-    const finca=d.finca||{};
-    if(farmSub) farmSub.textContent=(finca.area_ha||76.2)+' ha · '+s.total+' animales';
+    // Sidebar farm pill — leer área de AppData, fallback 50
+    const farmSub = document.getElementById('sb-farm-sub');
+    const finca = d.finca || {};
+    if(farmSub) farmSub.textContent = (finca.area_ha || 50) + ' ha · ' + s.total + ' animales';
+    // FarmSelector también
+    if(typeof FarmSelector !== 'undefined') FarmSelector.updateBtn();
   }catch(e){}
 })();
 </script>
-<script>
 
-// ═══ Utilidad de validación UI ═══
-function validateForm(fields) {
-  // fields = [{el: element, label: 'Nombre', required: true, type: 'number'}]
-  var errors = [];
-  fields.forEach(function(f) {
-    var el = typeof f.el === 'string' ? document.getElementById(f.el) : f.el;
-    if (!el) return;
-    var val = el.value ? el.value.trim() : '';
-    el.style.borderColor = ''; // reset
-    if (f.required && !val) {
-      el.style.borderColor = 'var(--red)';
-      el.style.boxShadow = '0 0 0 2px rgba(224,82,82,0.2)';
-      errors.push((f.label || 'Campo') + ' es requerido');
-      el.focus && errors.length === 1 && el.focus();
-    } else if (f.type === 'number' && val && isNaN(parseFloat(val))) {
-      el.style.borderColor = 'var(--red)';
-      errors.push((f.label || 'Campo') + ' debe ser un número');
-    } else if (f.min !== undefined && parseFloat(val) < f.min) {
-      el.style.borderColor = 'var(--amber)';
-      errors.push((f.label || 'Campo') + ' debe ser mayor a ' + f.min);
-    } else if (val) {
-      el.style.borderColor = 'var(--teal)';
-      setTimeout(function() { if(el) el.style.borderColor = ''; el.style.boxShadow = ''; }, 2000);
-    }
-  });
-  return errors;
-}
-
-// Limpiar highlights al escribir
-document.addEventListener('input', function(e) {
-  if (e.target.classList.contains('fi')) {
-    e.target.style.borderColor = '';
-    e.target.style.boxShadow = '';
-  }
-}, true);
-
-
-// ── Selector especie en page-header ─────────────────────────────────────
-function setEspecie(esp){
-  localStorage.setItem('laaamb-active-especie', esp);
-  document.querySelectorAll('.sp-tab').forEach(function(t){
-    t.classList.remove('active','active-bo');
-  });
-  var tab = document.getElementById('sp-'+esp);
-  if(tab){ tab.classList.add('active'); if(esp==='bovino') tab.classList.add('active-bo'); }
-  window.dispatchEvent(new CustomEvent('especie-changed', {detail:{especie:esp}}));
-}
-function initEspecieTabs(){
-  var esp = localStorage.getItem('laaamb-active-especie')||'todas';
-  setEspecie(esp);
-}
-document.addEventListener('DOMContentLoaded', initEspecieTabs);
-
-(function(){
-  var open=false;
-  var BARS='<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
-  var CROSS='<line x1="4" y1="4" x2="18" y2="18"/><line x1="18" y1="4" x2="4" y2="18"/>';
-  function show(){open=true;document.getElementById('sidebar').classList.add('on');document.getElementById('lov').classList.add('on');document.body.style.overflow='hidden';setElHTML('lico', CROSS);}
-  function hide(){open=false;document.getElementById('sidebar').classList.remove('on');document.getElementById('lov').classList.remove('on');document.body.style.overflow='';setElHTML('lico', BARS);}
-  document.addEventListener('DOMContentLoaded',function(){
-    document.getElementById('lham').onclick=function(){open?hide():show();};
-    document.getElementById('lov').onclick=hide;
-    document.querySelectorAll('#sidebar a.nav-link').forEach(function(a){
-      a.addEventListener('click',function(){if(window.innerWidth<=768)hide();});
-    });
-  });
-})();
-</script>
 </body>
 </html>
