@@ -557,11 +557,12 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
       <div class="fg"><label class="fl">Capacidad máx. animales</label><input class="fi" type="number" id="lf-cap" placeholder="160"></div>
       <div class="fg"><label class="fl">Tipo de pasto</label>
         <select class="fi" id="lf-pasto">
-          <option>Kikuyo</option><option>Brachiaria</option><option>Estrella</option>
-          <option>Ryegrass</option><option>Mixto</option><option>Otro</option>
+          <option>Mulato II</option><option>Cayman</option><option>Mavuno</option><option>Camello</option><option>Nativos</option>
+          <option>Kikuyo</option><option>Brachiaria</option><option>Estrella</option><option>Ryegrass</option><option>Mixto</option><option>Otro</option>
         </select>
       </div>
       <div class="fg"><label class="fl">Condición pasto (0-100)</label><input class="fi" type="number" id="lf-condicion" placeholder="75" min="0" max="100"></div>
+      <div class="fg2"><div class="fg"><label class="fl">Dias descanso objetivo</label><input class="fi" type="number" id="lf-dias-descanso" placeholder="30" min="1" max="365"></div><div class="fg"><label class="fl">Dias pastoreo objetivo</label><input class="fi" type="number" id="lf-dias-pastoreo" placeholder="7" min="1" max="60"></div></div>
       <div class="fg"><label class="fl">Fuente de agua</label>
         <select class="fi" id="lf-agua">
           <option>Bebedero</option><option>Nacimiento</option><option>Quebrada</option><option>Reservorio</option>
@@ -790,20 +791,15 @@ function startDrawFinca(){
 
 function iniciarNuevoLoteDesdeMapa(){
   var tabMapa=document.getElementById('t-mapa');
-  if(tabMapa && !tabMapa.classList.contains('active')){
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  if(tabMapa&&!tabMapa.classList.contains('active')){
+    document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+    document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active');});
     tabMapa.classList.add('active');
-    var mc=document.getElementById('map');
-    if(mc){var p=mc.parentElement;while(p&&!p.classList.contains('tab-content'))p=p.parentElement;if(p)p.classList.add('active');}
+    var mc=document.getElementById('map');if(mc){var p=mc.parentElement;while(p&&!p.classList.contains('tab-content'))p=p.parentElement;if(p)p.classList.add('active');}
   }
-  var d=AppData.get();
-  var geoKey='finca_'+activeFincaMap;
-  if(!fincaLayers[activeFincaMap] && d.geo && d.geo[geoKey]){
-    renderFincaLayer(activeFincaMap, d.geo[geoKey]);
-  }
-  editMode=false;
-  document.getElementById('btn-edit-mode').classList.remove('active');
+  var d=AppData.get();var geoKey='finca_'+activeFincaMap;
+  if(!fincaLayers[activeFincaMap]&&d.geo&&d.geo[geoKey])renderFincaLayer(activeFincaMap,d.geo[geoKey]);
+  editMode=false;document.getElementById('btn-edit-mode').classList.remove('active');
   startDrawLote();
 }
 
@@ -1570,6 +1566,41 @@ function abrirEditarLoteDesdeMap(loteId){
 // ══════════════════════════════════════════════════════
 // TAB LOTES
 // ══════════════════════════════════════════════════════
+function diasDesde(fecha){
+  if(!fecha)return 0;
+  return Math.round((new Date()-new Date(fecha))/(864e5));
+}
+
+function loteEstadoBadge(lote){
+  var animales=getAnimalesForLote(lote.nombre,lote.finca_id||'default');
+  var html='';
+  var hoy=new Date();
+  if(animales.length>0&&lote.fecha_inicio_pastoreo){
+    var dias=diasDesde(lote.fecha_inicio_pastoreo);
+    var obj=lote.dias_pastoreo_obj||7;
+    var pct=Math.min(100,Math.round(dias/obj*100));
+    var color=pct>=100?'#e05252':pct>=80?'#e8a030':'#2ec77a';
+    html+='<div style="margin-top:6px;background:rgba(46,199,122,.1);border:1px solid rgba(46,199,122,.3);border-radius:6px;padding:6px 10px;font-size:11px;">'+
+      '<span style="color:#2ec77a;font-weight:700">♣ Pastoreando</span> · <strong style="color:'+color+'">'+ dias +' / '+ obj +' dias</strong>';
+    if(pct>=100)html+=' <span style="color:#e05252">⚠ Rotar ya</span>';
+    html+='</div>';
+  } else if(lote.fecha_inicio_descanso){
+    var diasD=diasDesde(lote.fecha_inicio_descanso);
+    var objD=lote.dias_descanso_obj||30;
+    var pctD=Math.min(100,Math.round(diasD/objD*100));
+    var barColor=pctD>=100?'#2ec77a':pctD>=70?'#e8a030':'#e05252';
+    html+='<div style="margin-top:6px;background:rgba(56,176,216,.08);border:1px solid rgba(56,176,216,.2);border-radius:6px;padding:6px 10px;font-size:11px;">'+
+      '<span style="color:#38b0d8;font-weight:700">☁ Descansando</span> · <strong style="color:'+barColor+'">'+ diasD +' / '+ objD +' dias</strong>';
+    if(pctD>=100)html+=' <span style="color:#2ec77a">✅ Listo para pastorear</span>';
+    html+='</div>';
+  }
+  if(lote.ultima_carga&&lote.ultima_carga.kg_ha){
+    html+='<div style="margin-top:4px;font-size:11px;color:#7eadb2;">'+
+      '⚡ Carga: <strong>'+lote.ultima_carga.kg_ha.toLocaleString()+' kg/ha</strong> · '+ lote.ultima_carga.animales +' animales · '+ lote.ultima_carga.fecha +'</div>';
+  }
+  return html;
+}
+
 function renderLotesTab(){
   var d=AppData.get();
   var lotes=(d.lotes||[]).filter(function(l){return l.activo;});
@@ -1636,6 +1667,8 @@ function guardarLote(){
     tipo_pasto:document.getElementById('lf-pasto').value,
     condicion_pasto:parseInt(document.getElementById('lf-condicion').value)||75,
     fuente_agua:document.getElementById('lf-agua').value,
+    dias_descanso_obj:parseInt(document.getElementById('lf-dias-descanso').value)||30,
+    dias_pastoreo_obj:parseInt(document.getElementById('lf-dias-pastoreo').value)||7,
     descripcion:document.getElementById('lf-desc').value.trim(),
     activo:true
   };
@@ -1858,6 +1891,35 @@ function confirmarMovimiento(){
     colaborador:colab, observaciones:obs,
     created_at:new Date().toISOString()
   };
+
+  // Registrar fecha inicio pastoreo en lote destino
+  if(ld){
+    var ldIdx=d.lotes.findIndex(function(l){return l.nombre===ld;});
+    if(ldIdx>=0){
+      d.lotes[ldIdx].fecha_inicio_pastoreo=fecha;
+      d.lotes[ldIdx].fecha_inicio_descanso=null;
+      // Carga animal: kg/ha
+      var loteDest=d.lotes[ldIdx];
+      var animalesEnLote=d.animales.filter(function(a){return a.lote===ld&&a.activo;});
+      var kgTotal=animalesEnLote.reduce(function(s,a){return s+(parseFloat(a.peso_actual)||0);},0);
+      var ha=parseFloat(loteDest.area_ha)||parseFloat(loteDest.area)||0;
+      d.lotes[ldIdx].ultima_carga={fecha:fecha,animales:animalesEnLote.length,kg_total:kgTotal,ha:ha,kg_ha:ha>0?Math.round(kgTotal/ha):0};
+    }
+  }
+  // Registrar fecha inicio descanso en lote origen
+  if(lo&&lo!==ld){
+    var loIdx=d.lotes.findIndex(function(l){return l.nombre===lo;});
+    if(loIdx>=0){
+      var ini=d.lotes[loIdx].fecha_inicio_pastoreo;
+      if(ini){
+        var dias=Math.round((new Date(fecha)-new Date(ini))/(864e5));
+        d.lotes[loIdx].dias_pastoreo_real=dias;
+      }
+      d.lotes[loIdx].fecha_inicio_descanso=fecha;
+      d.lotes[loIdx].fecha_inicio_pastoreo=null;
+    }
+  }
+
   d.movimientos=d.movimientos||[];
   d.movimientos.unshift(mov);
   AppData.save(d);
