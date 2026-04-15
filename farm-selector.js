@@ -141,3 +141,102 @@ const FarmSelector = (function(){
 document.addEventListener('DOMContentLoaded', function(){
   if(typeof AppData !== 'undefined') FarmSelector.init();
 });
+
+// ═══ SpeciesFilter — filtro de especie global ════════════════════════════════
+const SpeciesFilter = (function(){
+  const KEY = 'laaamb-active-especie';
+
+  function get() {
+    return localStorage.getItem(KEY) || 'todas';
+  }
+
+  function set(especie) {
+    localStorage.setItem(KEY, especie);
+    window.dispatchEvent(new CustomEvent('especie-changed', { detail: { especie } }));
+    render();
+    updateBtn();
+  }
+
+  function getLabel() {
+    const e = get();
+    if (e === 'todas') return 'Todas las especies';
+    if (typeof AppData !== 'undefined' && AppData.ESPECIES && AppData.ESPECIES[e])
+      return AppData.ESPECIES[e].label + 's';
+    return e.charAt(0).toUpperCase() + e.slice(1) + 's';
+  }
+
+  function render() {
+    const dd = document.getElementById('species-dropdown');
+    if (!dd) return;
+    const active = get();
+    const especies = typeof AppData !== 'undefined' && AppData.ESPECIES
+      ? Object.entries(AppData.ESPECIES)
+      : [['ovino',{label:'Ovino'}],['bovino',{label:'Bovino'}]];
+
+    const d = typeof AppData !== 'undefined' ? AppData.get() : {animales:[]};
+
+    let html = '';
+    // Opción "Todas"
+    html += `<div class="species-option ${active==='todas'?'active':''}" onclick="SpeciesFilter.set('todas')">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="flex-shrink:0"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>
+      <span style="flex:1">Todas las especies</span>
+      <span class="species-check">${active==='todas'?'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M4 10l4 4 8-8"/></svg>':''}</span>
+    </div>`;
+
+    especies.forEach(function([key, esp]) {
+      const n = d.animales.filter(function(a){ return a.activo && (a.especie||'ovino')===key; }).length;
+      const isActive = active === key;
+      html += `<div class="species-option ${isActive?'active':''}" onclick="SpeciesFilter.set('${key}')">
+        <span style="flex-shrink:0;color:var(--teal)">${esp.icon||''}</span>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:12px">${esp.labelPlural||esp.label+'s'}</div>
+          <div style="font-size:10px;color:var(--text3)">${n} animales</div>
+        </div>
+        <span class="species-check">${isActive?'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><path d="M4 10l4 4 8-8"/></svg>':''}</span>
+      </div>`;
+    });
+
+    dd.innerHTML = html;
+  }
+
+  function updateBtn() {
+    const el = document.getElementById('species-btn-label');
+    if (el) el.textContent = getLabel();
+    const pill = document.getElementById('species-filter-pill');
+    const active = get();
+    if (pill) {
+      pill.style.borderColor = active !== 'todas' ? 'var(--teal)' : 'var(--border2)';
+      pill.style.color = active !== 'todas' ? 'var(--teal)' : 'var(--text2)';
+    }
+  }
+
+  function toggle() {
+    const dd = document.getElementById('species-dropdown');
+    if (!dd) return;
+    if (dd.classList.contains('open')) {
+      dd.classList.remove('open');
+    } else {
+      render();
+      dd.classList.add('open');
+    }
+  }
+
+  // Cerrar al clic fuera
+  document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('species-filter-wrap');
+    if (wrap && !wrap.contains(e.target)) {
+      const dd = document.getElementById('species-dropdown');
+      if (dd) dd.classList.remove('open');
+    }
+  });
+
+  function init() {
+    updateBtn();
+  }
+
+  return { get, set, getLabel, render, updateBtn, toggle, init };
+})();
+
+document.addEventListener('DOMContentLoaded', function(){
+  if (typeof AppData !== 'undefined') SpeciesFilter.init();
+});
