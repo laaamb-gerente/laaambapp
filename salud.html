@@ -350,6 +350,17 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 .species-option.active{color:var(--teal);font-weight:600}
 .species-check{color:var(--teal);flex-shrink:0;width:14px}
 
+
+/* ── Species tabs en page-header ──────────────────── */
+.species-tabs{display:flex;gap:4px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.sp-tab{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;
+  font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);
+  background:transparent;color:var(--text3);font-family:'Changa',sans-serif;
+  transition:all .2s;white-space:nowrap}
+.sp-tab:hover{border-color:var(--border3);color:var(--text)}
+.sp-tab.active{background:var(--teal);border-color:var(--teal);color:#080f10}
+.sp-tab.active-bo{background:var(--amber);border-color:var(--amber);color:#080f10}
+
 </style>
 </head>
 <body>
@@ -413,7 +424,13 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <button class="btn btn-ghost btn-sm" onclick="openModal('modal-trat-grupal')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><circle cx="7" cy="7" r="3"/><path d="M1 17c0-2.8 2.2-5 5-5"/><circle cx="14" cy="7" r="3"/><path d="M10 17c0-2.8 2.2-5 5-5"/></svg> Tratamiento grupal</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('modal-trat-individual')">+ Tratamiento individual</button>
     </div>
-  </div>
+  
+      <div class="species-tabs" id="species-tabs">
+        <button class="sp-tab" id="sp-todas" onclick="setEspecie('todas')">Todas</button>
+        <button class="sp-tab" id="sp-ovino" onclick="setEspecie('ovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/></svg> Ovinos</button>
+        <button class="sp-tab" id="sp-bovino" onclick="setEspecie('bovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="12" rx="6" ry="4"/><circle cx="14" cy="8" r="2.5"/></svg> Bovinos</button>
+      </div>
+    </div>
 
   <div class="tab-nav">
     <div class="tn active" onclick="switchTab(this,'t-resumen')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="3" y="11" width="3" height="6"/><rect x="8" y="7" width="3" height="10"/><rect x="13" y="3" width="3" height="14"/></svg>Resumen</div>
@@ -1481,6 +1498,23 @@ document.addEventListener('input', function(e) {
     e.target.style.boxShadow = '';
   }
 }, true);
+
+
+// ── Selector especie en page-header ─────────────────────────────────────
+function setEspecie(esp){
+  localStorage.setItem('laaamb-active-especie', esp);
+  document.querySelectorAll('.sp-tab').forEach(function(t){
+    t.classList.remove('active','active-bo');
+  });
+  var tab = document.getElementById('sp-'+esp);
+  if(tab){ tab.classList.add('active'); if(esp==='bovino') tab.classList.add('active-bo'); }
+  window.dispatchEvent(new CustomEvent('especie-changed', {detail:{especie:esp}}));
+}
+function initEspecieTabs(){
+  var esp = localStorage.getItem('laaamb-active-especie')||'todas';
+  setEspecie(esp);
+}
+document.addEventListener('DOMContentLoaded', initEspecieTabs);
 
 (function(){
   var open=false;
