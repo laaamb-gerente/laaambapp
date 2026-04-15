@@ -789,26 +789,21 @@ function startDrawFinca(){
 }
 
 function iniciarNuevoLoteDesdeMapa(){
-  // Ir al tab mapa si no está activo
   var tabMapa=document.getElementById('t-mapa');
   if(tabMapa && !tabMapa.classList.contains('active')){
     document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
     tabMapa.classList.add('active');
-    var mc=document.getElementById('map').closest('.tab-content');
-    if(mc)mc.classList.add('active');
+    var mc=document.getElementById('map');
+    if(mc){var p=mc.parentElement;while(p&&!p.classList.contains('tab-content'))p=p.parentElement;if(p)p.classList.add('active');}
   }
-  // Asegurar que el perimetro de la finca activa este en fincaLayers
   var d=AppData.get();
   var geoKey='finca_'+activeFincaMap;
   if(!fincaLayers[activeFincaMap] && d.geo && d.geo[geoKey]){
     renderFincaLayer(activeFincaMap, d.geo[geoKey]);
   }
-  // Deshabilitar edicion de finca (bloquear perimetro)
-  disableAllLoteEdit();
   editMode=false;
   document.getElementById('btn-edit-mode').classList.remove('active');
-  // Iniciar dibujo de lote
   startDrawLote();
 }
 
@@ -1016,6 +1011,7 @@ function renderFincaLayer(fincaId, geojson){
 
   // Click: si ya es activa → abrir panel edición; si no → seleccionar
   poly.on('click',function(e){
+    if(drawMode==='lote'){addDrawPoint(e.latlng);return;}
     L.DomEvent.stopPropagation(e);
     if(fincaId===activeFincaMap){
       abrirEdicionPoligono('finca', fincaId, poly, geojson);
