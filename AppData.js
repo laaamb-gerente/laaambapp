@@ -30,9 +30,9 @@ const AppData = (function() {
   // ── Esquemas de campos por entidad ──────────────────────────────────────────
   const SCHEMAS = {
     animales: [
-      'id','nombre','sexo','categoria','raza','fecha_nacimiento','peso_inicial',
+      'id','nombre','especie','sexo','categoria','raza','fecha_nacimiento','peso_inicial',
       'lote','costo_adquisicion','madre_id','padre_id','estado',
-      'origen','observaciones','fecha_ingreso','activo','created_at'
+      'origen','observaciones','fecha_ingreso','activo','finca_id','created_at'
     ],
     pesajes: [
       'id','animal_id','fecha','peso_kg','gdp_calculado',
@@ -91,17 +91,89 @@ const AppData = (function() {
     ]
   };
 
+
+  // ── Configuración por especie ─────────────────────────────────────────────
+  const ESPECIES = {
+    ovino: {
+      label: 'Ovino',
+      labelPlural: 'Ovinos',
+      icon: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/><path d="M7 15l-1 2M10 15v2M13 15l1 2"/></svg>',
+      categorias: {
+        H: ['Reproductora', 'Cordera', 'Levante', 'Cría'],
+        M: ['Reproductor', 'Cordero', 'Levante', 'Cría'],
+      },
+      razas: ['Dorper', 'White Dorper', 'Katahdin', 'Kerry Hill', 'Pelibuey', 'Hampshire', 'Merino', 'Rambouillet', 'Suffolk', 'Criollo'],
+      metas: {
+        gdp_g_dia: 250,          // g/día
+        peso_sacrificio_kg: 48,  // kg
+        dias_gestacion: 147,
+        ciclo_reproductivo: 17,  // días
+        fertilidad_pct: 90,
+        mortalidad_pct: 2,
+        crias_parto: 1.5,
+        condicion_corporal_optima: 3.5,
+      },
+      pesos_referencia: {
+        nacimiento: 4,
+        destete: 15,
+        levante: 30,
+        sacrificio: 48,
+        reproductora: 45,
+        reproductor: 70,
+      }
+    },
+    bovino: {
+      label: 'Bovino',
+      labelPlural: 'Bovinos',
+      icon: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><ellipse cx="10" cy="12" rx="6" ry="4"/><circle cx="14" cy="8" r="2.5"/><path d="M7 9c-1-2-2-3-4-2M13 9c1-2 2-3 4-2"/><path d="M7 16l-1 2.5M10 16v2.5M13 16l1 2.5"/></svg>',
+      categorias: {
+        H: ['Vaca', 'Vaquilla', 'Levante', 'Ternera'],
+        M: ['Toro', 'Novillo', 'Levante', 'Ternero'],
+      },
+      razas: ['Brahman', 'Angus', 'Hereford', 'Simmental', 'Gyr', 'Holstein', 'Normando', 'Cebú', 'Brangus', 'Romosinuano', 'Blanco Orejinegro', 'Criollo'],
+      metas: {
+        gdp_g_dia: 1000,          // g/día
+        peso_sacrificio_kg: 450,  // kg
+        dias_gestacion: 283,
+        ciclo_reproductivo: 21,   // días
+        fertilidad_pct: 85,
+        mortalidad_pct: 3,
+        crias_parto: 1.0,
+        condicion_corporal_optima: 3.5,
+      },
+      pesos_referencia: {
+        nacimiento: 35,
+        destete: 150,
+        levante: 300,
+        sacrificio: 450,
+        vaca: 400,
+        toro: 600,
+      }
+    }
+  };
+
+  // Categorías "engorde" por especie (para filtros rápidos)
+  const CATEGORIAS_ENGORDE = {
+    ovino: ['Cordero', 'Cordera'],
+    bovino: ['Novillo', 'Vaquilla'],
+  };
+
+  const CATEGORIAS_REPRODUCCION = {
+    ovino: ['Reproductora', 'Reproductor'],
+    bovino: ['Vaca', 'Toro'],
+  };
+
   // ── Datos de ejemplo (solo si no hay datos reales) ───────────────────────────
   const EJEMPLO = {
     animales: [
-      {id:'OV-0234',nombre:'Bella',sexo:'H',categoria:'Reproductora',raza:'Dorper',fecha_nacimiento:'2022-01-15',peso_inicial:35,lote:'Lote A',costo_adquisicion:380000,madre_id:'',padre_id:'RE-001',estado:'Gestante',origen:'Nacido en finca',observaciones:'Top madre hato',fecha_ingreso:'2022-01-15',activo:true,created_at:new Date().toISOString()},
-      {id:'OV-1102',nombre:'Luna',sexo:'H',categoria:'Reproductora',raza:'Dorper',fecha_nacimiento:'2021-03-08',peso_inicial:38,lote:'Lote B',costo_adquisicion:420000,madre_id:'',padre_id:'RE-001',estado:'Activa',origen:'Nacido en finca',observaciones:'',fecha_ingreso:'2021-03-08',activo:true,created_at:new Date().toISOString()},
-      {id:'OV-0788',nombre:'Rosa',sexo:'H',categoria:'Reproductora',raza:'Katahdin',fecha_nacimiento:'2022-06-20',peso_inicial:32,lote:'Lote A',costo_adquisicion:350000,madre_id:'',padre_id:'RE-003',estado:'Activa',origen:'Comprado',observaciones:'',fecha_ingreso:'2022-07-01',activo:true,created_at:new Date().toISOString()},
-      {id:'OV-2341',nombre:'',sexo:'H',categoria:'Reproductora',raza:'Dorper',fecha_nacimiento:'2020-04-10',peso_inicial:40,lote:'Lote C',costo_adquisicion:360000,madre_id:'',padre_id:'RE-001',estado:'En tratamiento',origen:'Nacido en finca',observaciones:'Tratamiento activo neumonía',fecha_ingreso:'2020-04-10',activo:true,created_at:new Date().toISOString()},
-      {id:'OV-0441',nombre:'',sexo:'H',categoria:'Reproductora',raza:'Katahdin',fecha_nacimiento:'2021-01-05',peso_inicial:30,lote:'Lote A',costo_adquisicion:350000,madre_id:'',padre_id:'RE-001',estado:'Vacía',origen:'Comprado',observaciones:'3 ciclos vacía',fecha_ingreso:'2021-01-10',activo:true,created_at:new Date().toISOString()},
-      {id:'RE-003',nombre:'Príncipe',sexo:'M',categoria:'Reproductor',raza:'Dorper',fecha_nacimiento:'2021-08-14',peso_inicial:55,lote:'Lote B',costo_adquisicion:1200000,madre_id:'',padre_id:'',estado:'Reproductor',origen:'Comprado',observaciones:'Fertilidad 96%',fecha_ingreso:'2021-09-01',activo:true,created_at:new Date().toISOString()},
-      {id:'RE-007',nombre:'Zeus',sexo:'M',categoria:'Reproductor',raza:'Dorper',fecha_nacimiento:'2023-02-20',peso_inicial:50,lote:'Lote C',costo_adquisicion:1100000,madre_id:'',padre_id:'',estado:'Reproductor',origen:'Comprado',observaciones:'Fertilidad 92%',fecha_ingreso:'2023-03-01',activo:true,created_at:new Date().toISOString()},
-      {id:'RE-001',nombre:'Titan',sexo:'M',categoria:'Reproductor',raza:'Dorper',fecha_nacimiento:'2020-05-10',peso_inicial:60,lote:'Lote A',costo_adquisicion:1300000,madre_id:'',padre_id:'',estado:'Reproductor',origen:'Comprado',observaciones:'Fertilidad 89%',fecha_ingreso:'2020-06-01',activo:true,created_at:new Date().toISOString()},
+      {id:'OV-0234',nombre:'Bella',especie:'ovino',sexo:'H',categoria:'Reproductora',raza:'Dorper',fecha_nacimiento:'2022-01-15',peso_inicial:35,lote:'Lote A',costo_adquisicion:380000,madre_id:'',padre_id:'RE-001',estado:'Gestante',origen:'Nacido en finca',observaciones:'Top madre hato',fecha_ingreso:'2022-01-15',activo:true,created_at:new Date().toISOString()},
+      {id:'OV-1102',nombre:'Luna',especie:'ovino',sexo:'H',categoria:'Reproductora',raza:'Dorper',fecha_nacimiento:'2021-03-08',peso_inicial:38,lote:'Lote B',costo_adquisicion:420000,madre_id:'',padre_id:'RE-001',estado:'Activa',origen:'Nacido en finca',observaciones:'',fecha_ingreso:'2021-03-08',activo:true,created_at:new Date().toISOString()},
+      {id:'OV-0788',nombre:'Rosa',especie:'ovino',sexo:'H',categoria:'Reproductora',raza:'Katahdin',fecha_nacimiento:'2022-06-20',peso_inicial:32,lote:'Lote A',costo_adquisicion:350000,madre_id:'',padre_id:'RE-003',estado:'Activa',origen:'Comprado',observaciones:'',fecha_ingreso:'2022-07-01',activo:true,created_at:new Date().toISOString()},
+      {id:'OV-2341',nombre:'',especie:'ovino',sexo:'H',categoria:'Reproductora',raza:'Dorper',fecha_nacimiento:'2020-04-10',peso_inicial:40,lote:'Lote C',costo_adquisicion:360000,madre_id:'',padre_id:'RE-001',estado:'En tratamiento',origen:'Nacido en finca',observaciones:'Tratamiento activo neumonía',fecha_ingreso:'2020-04-10',activo:true,created_at:new Date().toISOString()},
+      {id:'OV-0441',nombre:'',especie:'ovino',sexo:'H',categoria:'Reproductora',raza:'Katahdin',fecha_nacimiento:'2021-01-05',peso_inicial:30,lote:'Lote A',costo_adquisicion:350000,madre_id:'',padre_id:'RE-001',estado:'Vacía',origen:'Comprado',observaciones:'3 ciclos vacía',fecha_ingreso:'2021-01-10',activo:true,created_at:new Date().toISOString()},
+      {id:'RE-003',nombre:'Príncipe',especie:'ovino',sexo:'M',categoria:'Reproductor',raza:'Dorper',fecha_nacimiento:'2021-08-14',peso_inicial:55,lote:'Lote B',costo_adquisicion:1200000,madre_id:'',padre_id:'',estado:'Reproductor',origen:'Comprado',observaciones:'Fertilidad 96%',fecha_ingreso:'2021-09-01',activo:true,created_at:new Date().toISOString()},
+      {id:'RE-007',nombre:'Zeus',especie:'ovino',sexo:'M',categoria:'Reproductor',raza:'Dorper',fecha_nacimiento:'2023-02-20',peso_inicial:50,lote:'Lote C',costo_adquisicion:1100000,madre_id:'',padre_id:'',estado:'Reproductor',origen:'Comprado',observaciones:'Fertilidad 92%',fecha_ingreso:'2023-03-01',activo:true,created_at:new Date().toISOString()},
+      {id:'RE-001',nombre:'Titan',especie:'ovino',sexo:'M',categoria:'Reproductor',raza:'Dorper',fecha_nacimiento:'2020-05-10',peso_inicial:60,lote:'Lote A',costo_adquisicion:1300000,madre_id:'',padre_id:'',estado:'Reproductor',origen:'Comprado',observaciones:'Fertilidad 89%',fecha_ingreso:'2020-06-01',activo:true,created_at:new Date().toISOString()},
     ],
     pesajes: [],
     montas: [],
@@ -197,20 +269,30 @@ const AppData = (function() {
   }
 
   // ── Estadísticas derivadas ────────────────────────────────────────────────────
-  function stats() {
+  function stats(especieFiltro) {
     const d = get();
-    const activos = d.animales.filter(a => a.activo);
-    const hembras = activos.filter(a => a.sexo === 'H');
-    const machos  = activos.filter(a => a.sexo === 'M' && a.categoria === 'Reproductor');
-    const levante = activos.filter(a => a.categoria === 'Levante' || a.categoria === 'Cría');
+    // especieFiltro: 'ovino' | 'bovino' | null (todos)
+    const activos = d.animales.filter(a => a.activo && (!especieFiltro || (a.especie||'ovino') === especieFiltro));
+    const ovinos  = d.animales.filter(a => a.activo && (a.especie||'ovino') === 'ovino');
+    const bovinos = d.animales.filter(a => a.activo && (a.especie||'ovino') === 'bovino');
+
+    const hembras   = activos.filter(a => a.sexo === 'H');
+    const machos    = activos.filter(a => a.sexo === 'M');
+    const reproductores = activos.filter(a => a.sexo === 'M' && ['Reproductor','Toro'].includes(a.categoria));
+    const levante   = activos.filter(a => ['Levante','Cría','Ternero','Ternera','Cordero','Cordera','Novillo','Vaquilla'].includes(a.categoria));
+    const engorde   = activos.filter(a => ['Cordero','Cordera','Novillo','Vaquilla'].includes(a.categoria));
     const gestantes = activos.filter(a => a.estado === 'Gestante');
 
-    // GDP promedio desde últimos pesajes
-    let gdp = null;
-    if (d.pesajes.length > 0) {
-      const gdps = d.pesajes.filter(p => p.gdp_calculado).map(p => p.gdp_calculado);
-      if (gdps.length) gdp = Math.round(gdps.reduce((a,b) => a+b, 0) / gdps.length);
-    }
+    // GDP promedio por especie
+    const calcGDP = function(esp) {
+      const pesajesEsp = d.pesajes.filter(function(p) {
+        if (!p.gdp_calculado) return false;
+        const animal = d.animales.find(function(a) { return a.id === p.animal_id; });
+        return animal && (!esp || (animal.especie||'ovino') === esp);
+      });
+      if (!pesajesEsp.length) return null;
+      return Math.round(pesajesEsp.reduce((s,p) => s + p.gdp_calculado, 0) / pesajesEsp.length);
+    };
 
     // Tratamientos activos
     const tratActivos = d.tratamientos.filter(t => t.estado === 'En curso').length;
@@ -220,16 +302,32 @@ const AppData = (function() {
     const mesActual = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
     const muertesmes = d.bajas.filter(b => b.tipo_baja === 'muerte' && b.fecha && b.fecha.startsWith(mesActual)).length;
 
+    // Metas según especie
+    const meta = especieFiltro && ESPECIES[especieFiltro] ? ESPECIES[especieFiltro].metas : null;
+
     return {
       total: activos.length,
+      total_ovinos: ovinos.length,
+      total_bovinos: bovinos.length,
       hembras: hembras.length,
       machos: machos.length,
+      reproductores: reproductores.length,
       levante: levante.length,
+      engorde: engorde.length,
       gestantes: gestantes.length,
-      gdp_promedio: gdp,
+      gdp_promedio: calcGDP(especieFiltro),
+      gdp_ovinos: calcGDP('ovino'),
+      gdp_bovinos: calcGDP('bovino'),
       tratamientos_activos: tratActivos,
       muertes_mes: muertesmes,
-      mortalidad_pct: activos.length > 0 ? ((muertesmes / activos.length) * 100).toFixed(2) : 0
+      mortalidad_pct: activos.length > 0 ? ((muertesmes / activos.length) * 100).toFixed(2) : 0,
+      // Metas de la especie activa
+      meta_gdp: meta ? meta.gdp_g_dia : null,
+      meta_fertilidad: meta ? meta.fertilidad_pct : null,
+      meta_mortalidad: meta ? meta.mortalidad_pct : null,
+      meta_dias_gestacion: meta ? meta.dias_gestacion : null,
+      // Especie filtrada
+      especie: especieFiltro || 'todas',
     };
   }
 
@@ -343,8 +441,13 @@ const AppData = (function() {
     }
 
     if (collection === 'animales') {
-      // Marcar como activo por defecto
-      d[collection].forEach(a => { if (a.activo === undefined) a.activo = true; });
+      // Marcar como activo por defecto y normalizar especie
+      d[collection].forEach(a => {
+        if (a.activo === undefined) a.activo = true;
+        if (!a.especie) a.especie = 'ovino'; // default
+        a.especie = String(a.especie).toLowerCase().trim();
+        if (!['ovino','bovino'].includes(a.especie)) a.especie = 'ovino';
+      });
     }
 
     save(d);
@@ -408,9 +511,10 @@ const AppData = (function() {
   // ── Plantillas de importación ─────────────────────────────────────────────────
   const TEMPLATES = {
     animales: [
-      ['ID/Arete*','Nombre','Sexo (H/M)*','Categoría*','Raza*','Fecha nacimiento (YYYY-MM-DD)','Peso inicial kg','Lote*','Costo adquisición COP','Madre ID','Padre ID','Estado','Origen','Observaciones'],
-      ['OV-0471','Bella','H','Reproductora','Dorper','2022-01-15',35,'Lote A',380000,'','RE-001','Activa','Nacido en finca',''],
-      ['OV-0472','','M','Reproductor','Dorper','2021-08-14',55,'Lote B',1200000,'','','Reproductor','Comprado',''],
+      ['ID/Arete*','Nombre','Especie (ovino/bovino)*','Sexo (H/M)*','Categoría*','Raza*','Fecha nacimiento (YYYY-MM-DD)','Peso inicial kg','Lote*','Costo adquisición COP','Madre ID','Padre ID','Estado','Origen','Observaciones'],
+      ['OV-0471','Bella','ovino','H','Reproductora','Dorper','2022-01-15',35,'Lote A',380000,'','RE-001','Activa','Nacido en finca',''],
+      ['OV-0472','','ovino','M','Reproductor','Dorper','2021-08-14',55,'Lote B',1200000,'','','Reproductor','Comprado',''],
+      ['BO-0101','','bovino','M','Novillo','Brahman','2023-06-01',250,'Lote A',0,'','','Levante','Nacido en finca',''],
     ],
     pesajes: [
       ['ID Animal*','Fecha pesaje (YYYY-MM-DD)*','Peso kg*','Colaborador','Observaciones'],
@@ -589,6 +693,10 @@ const AppData = (function() {
   return {
     // Core
     get, save, load,
+    // Especies
+    ESPECIES,
+    CATEGORIAS_ENGORDE,
+    CATEGORIAS_REPRODUCCION,
     // CRUD
     add: addRecord,
     update: updateRecord,
