@@ -131,6 +131,16 @@ textarea.fi{resize:vertical;min-height:60px}
   .ic-row{grid-template-columns:1fr 1fr!important}
   table{min-width:680px}
 }
+
+/* ── Validación de formularios ──────────────────────────────── */
+.fi.field-error{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(224,82,82,0.15)!important}
+.fi.field-ok{border-color:var(--teal)!important}
+.fi:invalid{border-color:var(--amber)}
+.field-hint{font-size:10px;color:var(--red);margin-top:3px;display:none}
+.field-hint.visible{display:block}
+/* Campos requeridos marcados */
+label.fl[for] + .fi:required,
+label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 </style>
 </head>
 <body>
@@ -913,6 +923,45 @@ function savePesajeGrupal(){
   const lotes=d.lotes&&d.lotes.length?d.lotes.map(l=>l.nombre):['Lote A','Lote B','Lote C','Lote D'];
   sel.innerHTML=lotes.map(l=>`<option value="${l}">${l}</option>`).join('');
 })();
+
+</script>
+<script>
+
+// ═══ Utilidad de validación UI ═══
+function validateForm(fields) {
+  // fields = [{el: element, label: 'Nombre', required: true, type: 'number'}]
+  var errors = [];
+  fields.forEach(function(f) {
+    var el = typeof f.el === 'string' ? document.getElementById(f.el) : f.el;
+    if (!el) return;
+    var val = el.value ? el.value.trim() : '';
+    el.style.borderColor = ''; // reset
+    if (f.required && !val) {
+      el.style.borderColor = 'var(--red)';
+      el.style.boxShadow = '0 0 0 2px rgba(224,82,82,0.2)';
+      errors.push((f.label || 'Campo') + ' es requerido');
+      el.focus && errors.length === 1 && el.focus();
+    } else if (f.type === 'number' && val && isNaN(parseFloat(val))) {
+      el.style.borderColor = 'var(--red)';
+      errors.push((f.label || 'Campo') + ' debe ser un número');
+    } else if (f.min !== undefined && parseFloat(val) < f.min) {
+      el.style.borderColor = 'var(--amber)';
+      errors.push((f.label || 'Campo') + ' debe ser mayor a ' + f.min);
+    } else if (val) {
+      el.style.borderColor = 'var(--teal)';
+      setTimeout(function() { if(el) el.style.borderColor = ''; el.style.boxShadow = ''; }, 2000);
+    }
+  });
+  return errors;
+}
+
+// Limpiar highlights al escribir
+document.addEventListener('input', function(e) {
+  if (e.target.classList.contains('fi')) {
+    e.target.style.borderColor = '';
+    e.target.style.boxShadow = '';
+  }
+}, true);
 
 </script>
 </body>
