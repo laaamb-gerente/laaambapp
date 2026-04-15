@@ -179,6 +179,14 @@ textarea.fi{resize:vertical;min-height:60px}
     </div>
     <div class="ph-actions">
       <button class="btn btn-ghost" onclick="openImport()">↑ Importar CSV/Excel</button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-pesaje')">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M10 7v6M7 10h6"/></svg>
+        Pesaje
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-pesaje-grupal')">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><circle cx="7" cy="7" r="3"/><path d="M1 17c0-2.8 2.2-5 5-5"/><circle cx="14" cy="7" r="3"/><path d="M10 17c0-2.8 2.2-5 5-5"/></svg>
+        Pesaje grupal
+      </button>
       <button class="btn btn-ghost" onclick="exportarTodo()">↓ Excel completo</button>
       <button class="btn btn-ghost" onclick="exportarCSV()">↓ CSV</button>
       <button class="btn btn-primary" onclick="abrirNuevo()">+ Registrar animal</button>
@@ -221,6 +229,14 @@ textarea.fi{resize:vertical;min-height:60px}
         <div style="font-size:12px">Importa tu base de datos o registra el primer animal</div>
         <div style="display:flex;gap:8px;justify-content:center;margin-top:14px">
           <button class="btn btn-ghost" onclick="openImport()">↑ Importar CSV/Excel</button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-pesaje')">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M10 7v6M7 10h6"/></svg>
+        Pesaje
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-pesaje-grupal')">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><circle cx="7" cy="7" r="3"/><path d="M1 17c0-2.8 2.2-5 5-5"/><circle cx="14" cy="7" r="3"/><path d="M10 17c0-2.8 2.2-5 5-5"/></svg>
+        Pesaje grupal
+      </button>
           <button class="btn btn-primary" onclick="abrirNuevo()">+ Registrar animal</button>
         </div>
       </div>
@@ -672,6 +688,232 @@ function toast(msg,type){
   t.innerHTML=(ic[type]||ic.ok)+' '+msg;
   c.appendChild(t);setTimeout(function(){t.remove();},3500);
 }
+</script>
+
+<!-- ══ MODAL PESAJE ══ -->
+<div class="overlay" id="modal-pesaje" onclick="if(event.target===this)closeModal('modal-pesaje')">
+<div class="modal modal-md">
+  <div class="modal-head">
+    <div class="modal-title">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="vertical-align:middle;margin-right:4px"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M10 7v6M7 10h6"/></svg>
+      Registrar pesaje
+    </div>
+    <button class="modal-close" onclick="closeModal('modal-pesaje')">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-section">Animal</div>
+    <div class="form-grid">
+      <div class="fg">
+        <label class="fl">ID / Arete *</label>
+        <input class="fi" id="w-animal" placeholder="OV-0234" oninput="autoFillPesaje(this.value)">
+      </div>
+      <div class="fg">
+        <label class="fl">Peso actual (kg) *</label>
+        <input class="fi" type="number" id="w-peso" step="0.1" placeholder="48.5" oninput="calcGDP()">
+      </div>
+      <div class="fg">
+        <label class="fl">Fecha pesaje *</label>
+        <input class="fi" type="date" id="w-fecha">
+      </div>
+      <div class="fg">
+        <label class="fl">Colaborador</label>
+        <select class="fi" id="w-colab">
+          <option>Juan García</option>
+          <option>Carlos Ríos</option>
+          <option>María López</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-grid" id="w-gdp-row" style="display:none">
+      <div class="fg">
+        <label class="fl">Peso anterior</label>
+        <input class="fi" id="w-peso-ant" readonly style="background:var(--bg4);color:var(--text3)">
+      </div>
+      <div class="fg">
+        <label class="fl">GDP calculado</label>
+        <input class="fi" id="w-gdp" readonly style="background:var(--bg4);color:var(--teal);font-weight:700" placeholder="g/día">
+      </div>
+    </div>
+    <div class="fg"><label class="fl">Observaciones</label>
+      <textarea class="fi" id="w-obs" rows="2" placeholder="Condición corporal, notas…"></textarea>
+    </div>
+    <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2)">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M10 2a6 6 0 00-3 11.2V15h6v-1.8A6 6 0 0010 2z"/><path d="M8 15h4M9 18h2"/></svg>
+      El GDP se calcula automáticamente con el pesaje anterior del mismo animal.
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-pesaje')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" onclick="savePesaje()">Guardar pesaje</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL PESAJE GRUPAL ══ -->
+<div class="overlay" id="modal-pesaje-grupal" onclick="if(event.target===this)closeModal('modal-pesaje-grupal')">
+<div class="modal modal-md">
+  <div class="modal-head">
+    <div class="modal-title">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="vertical-align:middle;margin-right:4px"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M10 7v6M7 10h6"/></svg>
+      Pesaje grupal
+    </div>
+    <button class="modal-close" onclick="closeModal('modal-pesaje-grupal')">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-section">Grupo</div>
+    <div class="form-grid">
+      <div class="fg">
+        <label class="fl">Lote *</label>
+        <select class="fi" id="wg-lote" onchange="updatePesajeLote()"></select>
+      </div>
+      <div class="fg">
+        <label class="fl">Fecha *</label>
+        <input class="fi" type="date" id="wg-fecha">
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin:12px 0;font-size:12px">
+      <div id="wg-info" style="color:var(--text3)">Selecciona un lote para ver los animales</div>
+    </div>
+    <div id="wg-tabla" style="max-height:240px;overflow-y:auto;display:none">
+      <table>
+        <thead><tr>
+          <th>ID</th><th>Nombre</th><th>Último peso kg</th><th>Nuevo peso kg</th>
+        </tr></thead>
+        <tbody id="wg-tbody"></tbody>
+      </table>
+    </div>
+    <div class="fg" style="margin-top:12px">
+      <label class="fl">Colaborador</label>
+      <select class="fi" id="wg-colab">
+        <option>Juan García</option><option>Carlos Ríos</option><option>María López</option>
+      </select>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-pesaje-grupal')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" onclick="savePesajeGrupal()">Guardar pesajes</button>
+  </div>
+</div>
+</div>
+<script>
+
+// ═══ PESAJES ═══
+function openPesaje(animalId){
+  if(animalId) document.getElementById('w-animal').value=animalId;
+  document.getElementById('w-fecha').value=new Date().toISOString().slice(0,10);
+  document.getElementById('w-gdp-row').style.display='none';
+  openModal('modal-pesaje');
+}
+
+function autoFillPesaje(id){
+  if(!id||typeof AppData==='undefined') return;
+  const peso=AppData.pesoActual(id);
+  if(peso){
+    document.getElementById('w-peso-ant').value=peso+' kg';
+    document.getElementById('w-gdp-row').style.display='grid';
+  }
+}
+
+function calcGDP(){
+  const pesoNuevo=parseFloat(document.getElementById('w-peso')?.value)||0;
+  const pesoAntStr=document.getElementById('w-peso-ant')?.value||'';
+  const pesoAnt=parseFloat(pesoAntStr)||0;
+  if(!pesoNuevo||!pesoAnt) return;
+  // Asumir 30 días entre pesajes si no hay fecha exacta
+  const gdp=Math.round(((pesoNuevo-pesoAnt)*1000)/30);
+  const gdpEl=document.getElementById('w-gdp');
+  if(gdpEl) gdpEl.value=(gdp>=0?'+':'')+gdp+' g/día';
+}
+
+function savePesaje(){
+  const animalId=document.getElementById('w-animal')?.value?.trim();
+  const peso=parseFloat(document.getElementById('w-peso')?.value);
+  const fecha=document.getElementById('w-fecha')?.value;
+  const colab=document.getElementById('w-colab')?.value||'Juan García';
+  const obs=document.getElementById('w-obs')?.value||'';
+  if(!animalId||!peso||!fecha){toast('Animal, peso y fecha son requeridos','err');return;}
+  
+  const gdpStr=document.getElementById('w-gdp')?.value||'';
+  const gdp=parseFloat(gdpStr)||null;
+
+  if(typeof AppData!=='undefined'){
+    AppData.add('pesajes',{
+      id:AppData.uid('PES'),
+      animal_id:animalId,
+      fecha,
+      peso_kg:peso,
+      gdp_calculado:gdp,
+      colaborador:colab,
+      observaciones:obs
+    });
+    toast('Pesaje registrado · #'+animalId+' → '+peso+' kg'+(gdp?' · GDP: '+gdpStr:''));
+  } else {
+    toast('Pesaje registrado (modo demo)');
+  }
+  closeModal('modal-pesaje');
+  // Refrescar tabla
+  if(typeof loadAnimalesFromAppData!=='undefined') loadAnimalesFromAppData();
+  else if(typeof renderAnimales!=='undefined') renderAnimales();
+}
+
+function updatePesajeLote(){
+  if(typeof AppData==='undefined') return;
+  const lote=document.getElementById('wg-lote')?.value;
+  const d=AppData.get();
+  const animalesLote=d.animales.filter(a=>a.activo&&a.lote===lote);
+  const infoEl=document.getElementById('wg-info');
+  const tablaEl=document.getElementById('wg-tabla');
+  const tbody=document.getElementById('wg-tbody');
+  if(infoEl) infoEl.textContent=animalesLote.length+' animales en '+lote;
+  if(!animalesLote.length){if(tablaEl)tablaEl.style.display='none';return;}
+  if(tablaEl) tablaEl.style.display='block';
+  if(tbody) tbody.innerHTML=animalesLote.map(a=>{
+    const ult=AppData.pesoActual(a.id)||a.peso_inicial||'—';
+    return `<tr>
+      <td class="td-mono" style="font-size:11px">${a.id}</td>
+      <td style="font-size:12px">${a.nombre||'—'}</td>
+      <td class="td-muted">${ult} kg</td>
+      <td><input type="number" step="0.1" class="fi" style="padding:4px 8px;font-size:12px" placeholder="${ult}" data-id="${a.id}"></td>
+    </tr>`;
+  }).join('');
+}
+
+function savePesajeGrupal(){
+  if(typeof AppData==='undefined'){toast('AppData no disponible','err');return;}
+  const fecha=document.getElementById('wg-fecha')?.value;
+  const colab=document.getElementById('wg-colab')?.value||'Juan García';
+  if(!fecha){toast('Fecha requerida','err');return;}
+  const inputs=document.querySelectorAll('#wg-tbody input[type="number"]');
+  let guardados=0;
+  inputs.forEach(inp=>{
+    const peso=parseFloat(inp.value);
+    const animalId=inp.getAttribute('data-id');
+    if(peso&&animalId){
+      const gdpAnt=AppData.pesoActual(animalId)||0;
+      const gdp=gdpAnt?Math.round(((peso-gdpAnt)*1000)/30):null;
+      AppData.add('pesajes',{
+        id:AppData.uid('PES'),animal_id:animalId,fecha,
+        peso_kg:peso,gdp_calculado:gdp,colaborador:colab
+      });
+      guardados++;
+    }
+  });
+  closeModal('modal-pesaje-grupal');
+  toast(guardados+' pesajes registrados · GDP actualizado');
+  if(typeof loadAnimalesFromAppData!=='undefined') loadAnimalesFromAppData();
+}
+
+// Llenar select de lotes en modal pesaje grupal
+(function initPesajeLotes(){
+  if(typeof AppData==='undefined') return;
+  const d=AppData.get();
+  const sel=document.getElementById('wg-lote');
+  if(!sel) return;
+  document.getElementById('wg-fecha').value=new Date().toISOString().slice(0,10);
+  const lotes=d.lotes&&d.lotes.length?d.lotes.map(l=>l.nombre):['Lote A','Lote B','Lote C','Lote D'];
+  sel.innerHTML=lotes.map(l=>`<option value="${l}">${l}</option>`).join('');
+})();
+
 </script>
 </body>
 </html>
