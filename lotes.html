@@ -170,24 +170,38 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .map-tool-btn:hover::after{opacity:1}
 
 /* ── Panel edición de perímetro/lote ── */
-.map-edit-panel{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:402;
-  background:rgba(12,21,23,.96);border:1.5px solid var(--teal);border-radius:var(--r2);
-  padding:14px 18px;min-width:320px;box-shadow:0 4px 24px rgba(0,0,0,.6);
-  display:none;backdrop-filter:blur(6px)}
+.map-edit-panel{
+  position:absolute;bottom:60px;left:12px;z-index:402;
+  background:rgba(12,21,23,.97);border:1.5px solid var(--teal);border-radius:var(--r2);
+  padding:0;min-width:260px;max-width:300px;
+  box-shadow:0 4px 24px rgba(0,0,0,.7);
+  display:none;backdrop-filter:blur(8px);
+  user-select:none}
 .map-edit-panel.open{display:block}
-.map-edit-panel-title{font-family:'Sigmar',cursive;font-size:15px;color:var(--teal);margin-bottom:4px}
-.map-edit-panel-sub{font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.4}
-.map-edit-area-badge{display:inline-flex;align-items:center;gap:6px;
+/* Cabecera arrastrable */
+.map-edit-panel-drag{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px 8px;cursor:grab;border-bottom:1px solid var(--border);
+  background:rgba(0,175,182,.08);border-radius:var(--r2) var(--r2) 0 0}
+.map-edit-panel-drag:active{cursor:grabbing}
+.map-edit-panel-drag-icon{color:var(--text4);font-size:14px;letter-spacing:2px}
+.map-edit-panel-title{font-family:'Sigmar',cursive;font-size:13px;color:var(--teal);flex:1;margin-left:6px}
+/* Cuerpo */
+.map-edit-panel-body{padding:10px 14px 12px}
+.map-edit-panel-sub{font-size:10px;color:var(--text3);margin-bottom:8px;line-height:1.4}
+.map-edit-area-badge{display:inline-flex;align-items:center;gap:5px;
   background:var(--teal-bg);border:1px solid var(--border2);border-radius:20px;
-  padding:4px 12px;font-size:13px;font-weight:700;color:var(--teal);margin-bottom:12px}
-.map-edit-btns{display:flex;gap:8px;flex-wrap:wrap}
-.map-edit-btn{padding:7px 14px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .15s;display:flex;align-items:center;gap:5px}
+  padding:3px 10px;font-size:12px;font-weight:700;color:var(--teal);margin-bottom:10px}
+.map-edit-btns{display:flex;gap:6px;flex-wrap:wrap}
+.map-edit-btn{padding:6px 12px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:11px;font-weight:600;cursor:pointer;border:none;transition:all .15s;display:flex;align-items:center;gap:4px}
 .map-edit-btn.save{background:var(--teal);color:#080f10}
 .map-edit-btn.save:hover{background:#1cc8d0}
 .map-edit-btn.cancel{background:var(--surface);color:var(--text2);border:1px solid var(--border2)}
 .map-edit-btn.cancel:hover{background:var(--surface2)}
 .map-edit-btn.delete{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,82,82,.25)}
 .map-edit-btn.delete:hover{background:rgba(224,82,82,.18)}
+/* Midpoint handles */
+.midpoint-handle{cursor:pointer;transition:opacity .15s}
 
 /* ── Área badge sobre polígono de finca ── */
 .finca-area-badge{pointer-events:none}
@@ -360,20 +374,26 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
     <div class="map-status-bar" id="map-status" style="display:none"></div>
     <!-- Panel de edición de polígono existente -->
     <div class="map-edit-panel" id="map-edit-panel">
-      <div class="map-edit-panel-title" id="mep-title">Editar perímetro</div>
-      <div class="map-edit-panel-sub" id="mep-sub">Arrastra los vértices azules para ajustar la forma</div>
-      <div class="map-edit-area-badge" id="mep-area">
-        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>
-        <span id="mep-area-val">— ha</span>
+      <!-- Cabecera arrastrable -->
+      <div class="map-edit-panel-drag" id="mep-drag-handle">
+        <span class="map-edit-panel-drag-icon">⠿</span>
+        <span class="map-edit-panel-title" id="mep-title">Editar perímetro</span>
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="color:var(--text3);flex-shrink:0"><path d="M5 8l5 5 5-5"/></svg>
       </div>
-      <div class="map-edit-btns">
-        <button class="map-edit-btn save" id="mep-save" onclick="guardarEdicionPoligono()">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M4 10l4 4 8-8"/></svg> Guardar cambios
-        </button>
-        <button class="map-edit-btn cancel" onclick="cancelarEdicionPoligono()">Cancelar</button>
-        <button class="map-edit-btn delete" id="mep-delete" onclick="eliminarPoligonoActual()">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg> Eliminar
-        </button>
+      <!-- Cuerpo -->
+      <div class="map-edit-panel-body">
+        <div class="map-edit-panel-sub" id="mep-sub">Arrastra vértices · Clic en línea = nuevo punto</div>
+        <div class="map-edit-area-badge" id="mep-area">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>
+          <span id="mep-area-val">— ha</span>
+        </div>
+        <div class="map-edit-btns">
+          <button class="map-edit-btn save" onclick="guardarEdicionPoligono()">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M4 10l4 4 8-8"/></svg> Guardar
+          </button>
+          <button class="map-edit-btn cancel" onclick="cancelarEdicionPoligono()">Cancelar</button>
+          <button class="map-edit-btn delete" id="mep-delete" onclick="eliminarPoligonoActual()">🗑</button>
+        </div>
       </div>
     </div>
     <!-- Legend -->
@@ -1012,8 +1032,9 @@ function toggleEditMode(){
 }
 
 // ── Panel de edición ─────────────────────────────────
+var midpointHandles=[]; // handles de punto medio para insertar vértices
+
 function abrirEdicionPoligono(tipo, id, poly, geojson){
-  // Si hay otra edición abierta, cancelar primero
   if(editingPolyId) cancelarEdicionPoligono();
 
   editingPolyType=tipo;
@@ -1024,57 +1045,157 @@ function abrirEdicionPoligono(tipo, id, poly, geojson){
   var latLngs=poly.getLatLngs()[0];
   editingLatLngs=latLngs.map(function(ll){return L.latLng(ll.lat,ll.lng);});
 
-  // Bloquear drag del mapa mientras se edita
-  MAP.dragging.disable();
+  // NO bloqueamos el mapa — el usuario puede seguir moviéndolo
   MAP.doubleClickZoom.disable();
 
-  // Cambiar estilo del polígono a "en edición"
-  poly.setStyle({
-    color: tipo==='finca'?'#00AFB6':'#e8a030',
-    weight:3, dashArray:'6,3', opacity:1,
-    fillOpacity:0.12
-  });
+  // Estilo de edición
+  var color=tipo==='finca'?'#00AFB6':'#e8a030';
+  poly.setStyle({color:color,weight:3,dashArray:'6,3',opacity:1,fillOpacity:0.12});
 
-  // Crear handles draggables en cada vértice
+  // Construir handles de vértices + midpoints
+  rebuildEditHandles(poly, color);
+
+  // Nombre
+  var nombre=tipo==='finca'
+    ? getFincaById(id).nombre
+    : (function(){var d=AppData.get();var l=(d.lotes||[]).find(function(x){return x.id===id;});return l?l.nombre:'Lote';})();
+
+  document.getElementById('mep-title').textContent='✏ '+nombre;
+  document.getElementById('mep-delete').title=(tipo==='finca'?'Eliminar perímetro':'Eliminar lote');
+  actualizarAreaPanel(poly.getLatLngs()[0]);
+  document.getElementById('map-edit-panel').classList.add('open');
+  initPanelDrag();
+
+  if(tipo==='finca'&&fincaAreaLabels[id]) fincaAreaLabels[id].setOpacity(0.25);
+}
+
+// Reconstruye todos los handles (vértices + midpoints) tras cualquier cambio
+function rebuildEditHandles(poly, color){
+  // Limpiar anteriores
+  editingHandles.forEach(function(h){MAP.removeLayer(h);});
   editingHandles=[];
-  var currentLatLngs=poly.getLatLngs()[0];
-  currentLatLngs.forEach(function(ll,i){
+  midpointHandles.forEach(function(h){MAP.removeLayer(h);});
+  midpointHandles=[];
+
+  color=color||(editingPolyType==='finca'?'#00AFB6':'#e8a030');
+  var latLngs=poly.getLatLngs()[0];
+  var n=latLngs.length;
+
+  // ── Vértices draggables ──
+  latLngs.forEach(function(ll,i){
     var h=L.marker(ll,{
       draggable:true,
+      zIndexOffset:20,
       icon:L.divIcon({
-        html:'<div style="width:14px;height:14px;border-radius:50%;background:'+(tipo==='finca'?'#00AFB6':'#e8a030')+';border:2.5px solid white;cursor:grab;box-shadow:0 2px 6px rgba(0,0,0,.6)"></div>',
+        html:'<div style="width:14px;height:14px;border-radius:50%;background:'+color+';border:2.5px solid white;cursor:grab;box-shadow:0 2px 8px rgba(0,0,0,.7)" title="Arrastra para mover"></div>',
         className:'', iconAnchor:[7,7]
       })
     }).addTo(MAP);
-    h.on('drag',function(e){
-      currentLatLngs[i]=e.target.getLatLng();
-      poly.setLatLngs([currentLatLngs]);
-      actualizarAreaPanel(currentLatLngs);
-    });
+
     h.on('dragstart',function(){
-      MAP.dragging.disable();
+      // Ocultar midpoints mientras arrastra — menos ruido visual
+      midpointHandles.forEach(function(m){m.setOpacity(0);});
+    });
+    h.on('drag',function(e){
+      latLngs[i]=e.target.getLatLng();
+      poly.setLatLngs([latLngs]);
+      actualizarAreaPanel(latLngs);
+    });
+    h.on('dragend',function(){
+      // Reconstruir todo con posiciones actualizadas
+      rebuildEditHandles(poly, color);
     });
     editingHandles.push(h);
   });
 
-  // Mostrar panel
-  var nombre = tipo==='finca'
-    ? getFincaById(id).nombre+' — Perímetro'
-    : (function(){ var d=AppData.get(); var l=(d.lotes||[]).find(function(x){return x.id===id;}); return l?l.nombre:'Lote'; })();
-
-  document.getElementById('mep-title').textContent='✏ Editando: '+nombre;
-  document.getElementById('mep-sub').textContent='Arrastra los vértices para ajustar · Los cambios se guardan al presionar "Guardar"';
-  document.getElementById('mep-delete').textContent=(tipo==='finca'?'🗑 Eliminar perímetro':'🗑 Eliminar lote');
-  actualizarAreaPanel(currentLatLngs);
-  document.getElementById('map-edit-panel').classList.add('open');
-
-  // Ocultar label de área mientras edita
-  if(tipo==='finca'&&fincaAreaLabels[id]) fincaAreaLabels[id].setOpacity(0.3);
+  // ── Midpoints: clic inserta vértice nuevo ──
+  for(var i=0;i<n;i++){
+    var a=latLngs[i];
+    var b=latLngs[(i+1)%n];
+    var mid=L.latLng((a.lat+b.lat)/2,(a.lng+b.lng)/2);
+    (function(segIdx, midLatLng){
+      var m=L.marker(midLatLng,{
+        zIndexOffset:10,
+        icon:L.divIcon({
+          html:'<div style="width:10px;height:10px;border-radius:50%;background:white;border:2px solid '+color+';cursor:pointer;opacity:0.7;box-shadow:0 1px 4px rgba(0,0,0,.5)" title="Clic para agregar vértice aquí"></div>',
+          className:'midpoint-handle', iconAnchor:[5,5]
+        })
+      }).addTo(MAP);
+      m.on('click',function(e){
+        L.DomEvent.stopPropagation(e);
+        // Insertar nuevo punto después de segIdx
+        var cur=poly.getLatLngs()[0];
+        cur.splice(segIdx+1,0,L.latLng(midLatLng.lat,midLatLng.lng));
+        poly.setLatLngs([cur]);
+        actualizarAreaPanel(cur);
+        rebuildEditHandles(poly, color);
+      });
+      midpointHandles.push(m);
+    })(i, mid);
+  }
 }
 
 function actualizarAreaPanel(latLngs){
   var area=calcAreaHa(latLngs);
   document.getElementById('mep-area-val').textContent=area.toFixed(2)+' ha';
+}
+
+// ── Panel draggable ───────────────────────────────────
+function initPanelDrag(){
+  var panel=document.getElementById('map-edit-panel');
+  var handle=document.getElementById('mep-drag-handle');
+  var dragging=false, startX, startY, startLeft, startBottom;
+
+  handle.onmousedown=function(e){
+    if(e.button!==0) return;
+    dragging=true;
+    startX=e.clientX; startY=e.clientY;
+    var rect=panel.getBoundingClientRect();
+    var mapRect=MAP.getContainer().getBoundingClientRect();
+    startLeft=rect.left-mapRect.left;
+    startBottom=mapRect.bottom-rect.bottom;
+    panel.style.left=startLeft+'px';
+    panel.style.bottom=startBottom+'px';
+    panel.style.right='auto';
+    panel.style.transform='none';
+    e.preventDefault();
+  };
+  document.onmousemove=function(e){
+    if(!dragging) return;
+    var dx=e.clientX-startX, dy=e.clientY-startY;
+    var mapRect=MAP.getContainer().getBoundingClientRect();
+    var newLeft=Math.max(0,Math.min(startLeft+dx, mapRect.width-panel.offsetWidth));
+    var newBottom=Math.max(0,Math.min(startBottom-dy, mapRect.height-panel.offsetHeight));
+    panel.style.left=newLeft+'px';
+    panel.style.bottom=newBottom+'px';
+  };
+  document.onmouseup=function(){dragging=false;};
+
+  // Touch support
+  handle.ontouchstart=function(e){
+    var t=e.touches[0];
+    dragging=true;
+    startX=t.clientX; startY=t.clientY;
+    var rect=panel.getBoundingClientRect();
+    var mapRect=MAP.getContainer().getBoundingClientRect();
+    startLeft=rect.left-mapRect.left;
+    startBottom=mapRect.bottom-rect.bottom;
+    panel.style.left=startLeft+'px';
+    panel.style.bottom=startBottom+'px';
+    panel.style.right='auto';
+    panel.style.transform='none';
+  };
+  document.ontouchmove=function(e){
+    if(!dragging) return;
+    var t=e.touches[0];
+    var dx=t.clientX-startX, dy=t.clientY-startY;
+    var mapRect=MAP.getContainer().getBoundingClientRect();
+    var newLeft=Math.max(0,Math.min(startLeft+dx, mapRect.width-panel.offsetWidth));
+    var newBottom=Math.max(0,Math.min(startBottom-dy, mapRect.height-panel.offsetHeight));
+    panel.style.left=newLeft+'px';
+    panel.style.bottom=newBottom+'px';
+  };
+  document.ontouchend=function(){dragging=false;};
 }
 
 function guardarEdicionPoligono(){
@@ -1163,11 +1284,12 @@ function eliminarPoligonoActual(){
 }
 
 function cerrarPanelEdicion(){
-  // Limpiar handles
+  // Limpiar handles de vértices y midpoints
   editingHandles.forEach(function(h){MAP.removeLayer(h);});
   editingHandles=[];
-  // Restaurar drag del mapa
-  MAP.dragging.enable();
+  midpointHandles.forEach(function(h){MAP.removeLayer(h);});
+  midpointHandles=[];
+  // Restaurar doble click zoom
   MAP.doubleClickZoom.enable();
   // Restaurar label
   if(editingPolyType==='finca'&&editingPolyId&&fincaAreaLabels[editingPolyId]){
