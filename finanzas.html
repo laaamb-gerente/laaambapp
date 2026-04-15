@@ -831,12 +831,11 @@ function saveGasto(){
 }
 
 function saveIngreso(){
-  const peso=parseFloat(document.querySelectorAll("#modal-ingreso .fi")[1]?.value)||0;
-  const precio2=parseFloat(document.getElementById("i-precio")?.value)||0;
-  if(!peso||!precio2){toast("Completa peso y precio por kg","err");return;}
   const tipo=document.querySelectorAll('#modal-ingreso select')[0]?.value||'Venta sacrificio';
   const animales=document.querySelectorAll('#modal-ingreso input.fi')[0]?.value||'—';
   const peso=parseFloat(document.querySelectorAll('#modal-ingreso input.fi')[1]?.value)||0;
+  const precio2=parseFloat(document.getElementById('i-precio')?.value)||0;
+  if(!peso||!precio2){toast('Completa peso y precio por kg','err');return;}
   const precio=parseFloat(document.getElementById('i-precio')?.value)||0;
   const comprador=document.querySelectorAll('#modal-ingreso input.fi')[3]?.value||'—';
   const fecha=document.getElementById('i-fecha')?.value||new Date().toISOString().slice(0,10);
