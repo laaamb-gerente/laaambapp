@@ -6,6 +6,7 @@
 <title>LAAAMBAPP · OKRs & Análisis</title>
 <script>(function(){var t=localStorage.getItem("laaamb-theme")||"dark";document.documentElement.setAttribute("data-theme",t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="AppData.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -304,7 +305,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
     <div class="sb-logo-text">LAAAMB</div>
     <div class="sb-logo-sub">Corderos · App</div>
     <div class="farm-pill">
-      <span style="font-size:18px">🏔️</span>
+      <span style="color:var(--teal);line-height:1"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg></span>
       <div><div class="farm-name">La Marinilla</div><div class="farm-sub">76.2 ha · <span id="sb-total">470</span> animales</div></div>
     </div>
   </div>
@@ -344,18 +345,18 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
     <div class="ph-actions">
       <button class="btn btn-ghost btn-sm" onclick="exportExcel()">↓ Excel completo</button>
       <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar datos<input type="file" class="import-hidden" accept=".xlsx,.xls,.csv" onchange="importData(this)"></label>
-      <button class="btn btn-primary btn-sm" onclick="exportInforme()">📄 Generar informe</button>
+      <button class="btn btn-primary btn-sm" onclick="exportInforme()"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><path d="M4 3h8l4 4v10H4V3z"/><path d="M12 3v4h4"/><path d="M7 10h6M7 13h4"/></svg> Generar informe</button>
     </div>
   </div>
 
   <!-- TAB NAV -->
   <div class="tab-nav">
-    <div class="tn active" onclick="switchTab(this,'t-produccion')">📈 Producción</div>
-    <div class="tn" onclick="switchTab(this,'t-reproduccion')">🐑 Reproducción</div>
-    <div class="tn" onclick="switchTab(this,'t-mortalidad')">💀 Mortalidad</div>
-    <div class="tn" onclick="switchTab(this,'t-ranking')">🏆 Rankings</div>
-    <div class="tn" onclick="switchTab(this,'t-culling')">⚠️ Culling</div>
-    <div class="tn" onclick="switchTab(this,'t-ia')">🤖 Análisis IA</div>
+    <div class="tn active" onclick="switchTab(this,'t-produccion')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><polyline points="2 15 7 9 11 12 18 4"/></svg>Producción</div>
+    <div class="tn" onclick="switchTab(this,'t-reproduccion')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/></svg>Reproducción</div>
+    <div class="tn" onclick="switchTab(this,'t-mortalidad')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="5" y="3" width="10" height="11" rx="5"/><path d="M8 10v3M12 10v3"/></svg>Mortalidad</div>
+    <div class="tn" onclick="switchTab(this,'t-ranking')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M7 3h6v7a3 3 0 01-6 0V3z"/><path d="M7 7H4a2 2 0 000 4h3M13 7h3a2 2 0 010 4h-3"/></svg>Rankings</div>
+    <div class="tn" onclick="switchTab(this,'t-culling')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg>Culling</div>
+    <div class="tn" onclick="switchTab(this,'t-ia')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="4" y="3" width="12" height="10" rx="2"/><path d="M10 13v4M7 17h6"/><path d="M7 7h6M8 10h4"/></svg>Análisis IA</div>
   </div>
 
   <div class="content" id="main-content">
@@ -392,7 +393,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
             <div class="bar-row"><div class="bar-lbl">Lote B (132 ovejas)</div><div class="bar-track"><div class="bar-fill" style="width:82%;background:var(--teal)"></div></div><div class="bar-val">182g</div></div>
             <div class="bar-row"><div class="bar-lbl">Lote C (98 ovejas)</div><div class="bar-track"><div class="bar-fill" style="width:75%;background:var(--amber)"></div></div><div class="bar-val">168g</div></div>
             <div class="bar-row"><div class="bar-lbl">Lote D (193 ovejas)</div><div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--red)"></div></div><div class="bar-val">134g</div></div>
-            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)">⚠ Lote D tiene GDP crítico — sobrecarga de 13.8 ov/ha afecta directamente la ganancia de peso</div>
+            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Lote D tiene GDP crítico — sobrecarga de 13.8 ov/ha afecta directamente la ganancia de peso</div>
           </div>
         </div>
         <div class="card">
@@ -421,9 +422,9 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
               <div class="prog-wrap"><div class="prog-header"><span class="prog-label">Natalidad meta 95%</span><span class="prog-val">94%</span></div><div class="prog-track"><div class="prog-fill" style="width:94%;background:var(--green)"></div></div><div class="prog-meta">99% cumplido · Casi en meta</div></div>
             </div>
             <div>
-              <div class="prog-wrap"><div class="prog-header"><span class="prog-label">Mortalidad meta &lt;2%</span><span class="prog-val">2.1%</span></div><div class="prog-track"><div class="prog-fill" style="width:95%;background:var(--amber)"></div></div><div class="prog-meta">⚠ Ligeramente sobre meta</div></div>
+              <div class="prog-wrap"><div class="prog-header"><span class="prog-label">Mortalidad meta &lt;2%</span><span class="prog-val">2.1%</span></div><div class="prog-track"><div class="prog-fill" style="width:95%;background:var(--amber)"></div></div><div class="prog-meta"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Ligeramente sobre meta</div></div>
               <div class="prog-wrap"><div class="prog-header"><span class="prog-label">Crías/parto meta 1.8</span><span class="prog-val">1.72</span></div><div class="prog-track"><div class="prog-fill" style="width:76%;background:var(--orange)"></div></div><div class="prog-meta">96% cumplido · Mejorar genética</div></div>
-              <div class="prog-wrap"><div class="prog-header"><span class="prog-label">Carga Lote D meta &lt;8</span><span class="prog-val">13.8</span></div><div class="prog-track"><div class="prog-fill" style="width:100%;background:var(--red)"></div></div><div class="prog-meta">🔴 Crítico — redistribuir urgente</div></div>
+              <div class="prog-wrap"><div class="prog-header"><span class="prog-label">Carga Lote D meta &lt;8</span><span class="prog-val">13.8</span></div><div class="prog-track"><div class="prog-fill" style="width:100%;background:var(--red)"></div></div><div class="prog-meta"><svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12" style="vertical-align:middle;margin-right:2px;color:var(--red)"><circle cx="10" cy="10" r="5"/></svg> Crítico — redistribuir urgente</div></div>
             </div>
           </div>
         </div>
@@ -433,7 +434,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
     <!-- ══ TAB: REPRODUCCIÓN ══ -->
     <div id="t-reproduccion" class="tab-pane" style="display:none">
       <div class="g4">
-        <div class="kpi c-sky"><div class="kpi-label">Fertilidad</div><div class="kpi-val">87<span class="kpi-unit">%</span></div><div class="kpi-delta warn">⚑ Meta: 90%</div></div>
+        <div class="kpi c-sky"><div class="kpi-label">Fertilidad</div><div class="kpi-val">87<span class="kpi-unit">%</span></div><div class="kpi-delta warn"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M10 2c-.5 0-1 .3-1.2.8L3.5 14.5c-.4.8.2 1.7 1.1 1.7h10.8c.9 0 1.5-.9 1.1-1.7L11.2 2.8C11 2.3 10.5 2 10 2z"/><path d="M10 8v4M10 14.5h.01"/></svg> Meta: 90%</div></div>
         <div class="kpi c-green"><div class="kpi-label">Natalidad</div><div class="kpi-val">94<span class="kpi-unit">%</span></div><div class="kpi-delta up">▲ 2pp vs período ant.</div></div>
         <div class="kpi c-teal"><div class="kpi-label">Crías / parto</div><div class="kpi-val">1.72</div><div class="kpi-delta up">▲ 0.08 vs año ant.</div></div>
         <div class="kpi c-orange"><div class="kpi-label">Intervalo entre partos</div><div class="kpi-val">7.4<span class="kpi-unit">m</span></div><div class="kpi-delta neu">Meta: &lt;7 meses</div></div>
@@ -458,16 +459,16 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
           <div class="card-h"><div class="card-title">Ovejas vacías por ciclos</div><div class="card-sub">Requieren atención</div></div>
           <div class="card-body">
             <div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-radius:var(--r);padding:14px;margin-bottom:10px">
-              <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px">🔴 3+ ciclos — Culling inmediato</div>
+              <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px"><svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12" style="vertical-align:middle;margin-right:2px;color:var(--red)"><circle cx="10" cy="10" r="5"/></svg> 3+ ciclos — Culling inmediato</div>
               <div style="font-size:24px;font-weight:700;color:var(--text)">7 <span style="font-size:14px;color:var(--text3);font-weight:400">animales</span></div>
               <div style="font-size:11px;color:var(--text3);margin-top:4px">#OV-0441 · #OV-1109 · #OV-0823 · y 4 más</div>
             </div>
             <div style="background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-radius:var(--r);padding:14px;margin-bottom:10px">
-              <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:8px">🟡 2 ciclos — Evaluar</div>
+              <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:8px"><svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12" style="vertical-align:middle;margin-right:2px;color:var(--amber)"><circle cx="10" cy="10" r="5"/></svg> 2 ciclos — Evaluar</div>
               <div style="font-size:24px;font-weight:700;color:var(--text)">12 <span style="font-size:14px;color:var(--text3);font-weight:400">animales</span></div>
             </div>
             <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px">
-              <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">⚪ 1 ciclo — Monitorear</div>
+              <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="vertical-align:middle;margin-right:2px"><circle cx="10" cy="10" r="5"/></svg> 1 ciclo — Monitorear</div>
               <div style="font-size:24px;font-weight:700;color:var(--text)">18 <span style="font-size:14px;color:var(--text3);font-weight:400">animales</span></div>
             </div>
           </div>
@@ -507,7 +508,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
             <div class="bar-row"><div class="bar-lbl">Enterotoxemia</div><div class="bar-track"><div class="bar-fill" style="width:16%;background:var(--sky)"></div></div><div class="bar-val">8%</div></div>
             <div class="bar-row"><div class="bar-lbl">Otras</div><div class="bar-track"><div class="bar-fill" style="width:16%;background:var(--text4)"></div></div><div class="bar-val">8%</div></div>
             <div style="margin-top:14px;padding:10px;background:var(--red-bg);border-radius:var(--r);font-size:12px;color:var(--red)">
-              🔴 <strong>Neumonía</strong> es la causa #1. Revisar ventilación en Lote D y protocolo de vacunación.
+              <svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12" style="vertical-align:middle;margin-right:2px;color:var(--red)"><circle cx="10" cy="10" r="5"/></svg> <strong>Neumonía</strong> es la causa #1. Revisar ventilación en Lote D y protocolo de vacunación.
             </div>
           </div>
         </div>
@@ -521,7 +522,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
             <div class="bar-row"><div class="bar-lbl">Mar 2025</div><div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--amber)"></div></div><div class="bar-val">2</div></div>
             <div class="bar-row"><div class="bar-lbl">Abr 2025</div><div class="bar-track"><div class="bar-fill" style="width:30%;background:var(--green)"></div></div><div class="bar-val">1</div></div>
             <div style="margin-top:14px;padding:10px;background:var(--amber-bg);border-radius:var(--r);font-size:12px;color:var(--amber)">
-              ⚠ Pico en Feb 2025 coincide con temporada de lluvias — reforzar manejo sanitario preventivo.
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Pico en Feb 2025 coincide con temporada de lluvias — reforzar manejo sanitario preventivo.
             </div>
           </div>
         </div>
@@ -549,7 +550,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
       <div class="g3">
         <!-- Mejores madres -->
         <div class="card">
-          <div class="card-h"><div><div class="card-title">🥇 Mejores madres</div><div class="card-sub">Índice: partos + crías + GDP prole</div></div></div>
+          <div class="card-h"><div><div class="card-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:4px"><path d="M10 2l2 5h5l-4 3 1.5 5L10 12l-4.5 3L7 10 3 7h5L10 2z"/></svg>Mejores madres</div><div class="card-sub">Índice: partos + crías + GDP prole</div></div></div>
           <div class="card-body">
             <div class="rank-item"><div class="rank-pos gold">1</div><div><div class="rank-id">#OV-0234 — Bella</div><div class="rank-name">Dorper · Lote A · 4 partos</div></div><div class="rank-stats"><div class="rank-score">94</div><div class="rank-detail">1.85 crías · GDP 195g</div></div></div>
             <div class="rank-item"><div class="rank-pos silver">2</div><div><div class="rank-id">#OV-1102 — Luna</div><div class="rank-name">Dorper · Lote B · 5 partos</div></div><div class="rank-stats"><div class="rank-score">91</div><div class="rank-detail">1.80 crías · GDP 188g</div></div></div>
@@ -561,7 +562,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
 
         <!-- Mejores reproductores -->
         <div class="card">
-          <div class="card-h"><div><div class="card-title">🐏 Mejores reproductores</div><div class="card-sub">Fertilidad · crías · GDP prole</div></div></div>
+          <div class="card-h"><div><div class="card-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:4px"><ellipse cx="9" cy="11" rx="5" ry="4"/><circle cx="13" cy="8" r="2"/><path d="M5 15l-1 2M8 15v2M11 15v2"/></svg>Mejores reproductores</div><div class="card-sub">Fertilidad · crías · GDP prole</div></div></div>
           <div class="card-body">
             <div class="rank-item"><div class="rank-pos gold">1</div><div><div class="rank-id">#RE-003 — Príncipe</div><div class="rank-name">Dorper · 87 crías registradas</div></div><div class="rank-stats"><div class="rank-score">96<span style="font-size:11px;color:var(--text3)">%</span></div><div class="rank-detail">GDP prole 191g</div></div></div>
             <div class="rank-item"><div class="rank-pos silver">2</div><div><div class="rank-id">#RE-007 — Zeus</div><div class="rank-name">Dorper · 64 crías registradas</div></div><div class="rank-stats"><div class="rank-score">92<span style="font-size:11px;color:var(--text3)">%</span></div><div class="rank-detail">GDP prole 187g</div></div></div>
@@ -577,7 +578,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
             <div class="rank-item"><div class="rank-pos silver">2</div><div><div class="rank-id">#OV-3302</div><div class="rank-name">Dorper · Hija de Bella · 6m</div></div><div class="rank-stats"><div class="rank-score">198</div><div class="rank-detail">g/d · 17kg actual</div></div></div>
             <div class="rank-item"><div class="rank-pos bronze">3</div><div><div class="rank-id">#OV-3401</div><div class="rank-name">Katahdin · Hija de Luna · 5m</div></div><div class="rank-stats"><div class="rank-score">185</div><div class="rank-detail">g/d · 14kg actual</div></div></div>
             <div style="margin-top:14px;padding:10px;background:var(--teal-bg2);border-radius:var(--r);font-size:11px;color:var(--text2)">
-              💡 Las 3 mejores crías son hijas de <strong style="color:var(--teal)">Bella × Príncipe</strong> — cruce con mejor índice genético del hato.
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:3px"><path d="M10 2a6 6 0 00-3 11.2V15h6v-1.8A6 6 0 0010 2z"/><path d="M8 15h4M9 18h2"/></svg> Las 3 mejores crías son hijas de <strong style="color:var(--teal)">Bella × Príncipe</strong> — cruce con mejor índice genético del hato.
             </div>
           </div>
         </div>
@@ -593,7 +594,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
           </div>
         </div>
         <div class="card-body" style="text-align:center;padding:32px;color:var(--text3)">
-          <div style="font-size:28px;margin-bottom:8px">👥</div>
+          <div style="margin-bottom:8px;color:var(--text3)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="28" height="28"><circle cx="7" cy="7" r="3"/><path d="M1 18c0-3.3 2.7-6 6-6"/><circle cx="14" cy="7" r="3"/><path d="M10 18c0-3.3 2.7-6 6-6"/></svg></div>
           <div style="font-size:14px;color:var(--text2);margin-bottom:4px">Selecciona un grupo desde la página de Animales</div>
           <div style="font-size:12px">Usa los filtros de Animales, selecciona las ovejas que quieras analizar y haz clic en "Analizar grupo"</div>
         </div>
@@ -658,7 +659,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
     <div id="t-ia" class="tab-pane" style="display:none">
       <div class="ai-box">
         <div class="ai-header">
-          <div class="ai-icon">🤖</div>
+          <div class="ai-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="28" height="28"><rect x="4" y="3" width="12" height="10" rx="2"/><path d="M10 13v4M7 17h6"/><path d="M7 7h6M8 10h4"/></svg></div>
           <div><div class="ai-title">Análisis IA — La Marinilla</div><div class="ai-sub">Consulta inteligente sobre tu rebaño · Powered by Claude</div></div>
         </div>
         <div class="ai-chips">
@@ -680,7 +681,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
 
       <!-- Importar/Exportar masivo -->
       <div class="card" style="margin-top:14px">
-        <div class="card-h"><div><div class="card-title">📊 Importación y exportación masiva</div><div class="card-sub">Sube o descarga toda tu base de datos</div></div></div>
+        <div class="card-h"><div><div class="card-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:4px"><rect x="3" y="11" width="3" height="6"/><rect x="8" y="7" width="3" height="10"/><rect x="13" y="3" width="3" height="14"/></svg>Importación y exportación masiva</div><div class="card-sub">Sube o descarga toda tu base de datos</div></div></div>
         <div class="card-body">
           <div class="data-actions">
             <span class="data-actions-label">Exportar:</span>
@@ -697,13 +698,13 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
             <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Montas masivo<input type="file" class="import-hidden" accept=".xlsx,.xls,.csv" onchange="importData(this,'montas')"></label>
           </div>
           <div style="font-size:12px;color:var(--text3);margin-top:8px">
-            💡 Descarga primero la plantilla del tipo de importación, llena los datos y vuelve a subir. El sistema valida cada fila antes de guardar.
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:3px"><path d="M10 2a6 6 0 00-3 11.2V15h6v-1.8A6 6 0 0010 2z"/><path d="M8 15h4M9 18h2"/></svg> Descarga primero la plantilla del tipo de importación, llena los datos y vuelve a subir. El sistema valida cada fila antes de guardar.
           </div>
           <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('animales')">📋 Plantilla animales</button>
-            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('pesajes')">📋 Plantilla pesajes</button>
-            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('ecografias')">📋 Plantilla ecografías</button>
-            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('montas')">📋 Plantilla montas</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('animales')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle"><path d="M4 3h8l4 4v10H4V3z"/><path d="M12 3v4h4"/></svg> Plantilla animales</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('pesajes')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle"><path d="M4 3h8l4 4v10H4V3z"/><path d="M12 3v4h4"/></svg> Plantilla pesajes</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('ecografias')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle"><path d="M4 3h8l4 4v10H4V3z"/><path d="M12 3v4h4"/></svg> Plantilla ecografías</button>
+            <button class="btn btn-ghost btn-sm" onclick="downloadTemplate('montas')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle"><path d="M4 3h8l4 4v10H4V3z"/><path d="M12 3v4h4"/></svg> Plantilla montas</button>
           </div>
         </div>
       </div>
@@ -787,7 +788,7 @@ async function askAI(q){
   if(!q) input.value = question;
   const resp = document.getElementById('ai-response');
   resp.className = 'ai-response visible';
-  resp.innerHTML = '<p class="ai-thinking">🤖 Analizando datos de La Marinilla…</p>';
+  resp.innerHTML = '<p class="ai-thinking"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:3px"><rect x="4" y="3" width="12" height="10" rx="2"/><path d="M10 13v4M7 17h6"/><path d="M7 7h6M8 10h4"/></svg> Analizando datos de La Marinilla…</p>';
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
@@ -801,7 +802,7 @@ async function askAI(q){
     });
     const data = await res.json();
     const text = data.content?.map(b=>b.text||'').join('')||'Sin respuesta';
-    resp.innerHTML = '<div style="font-size:10px;color:var(--teal);margin-bottom:8px;font-weight:600">🤖 ANÁLISIS IA · LA MARINILLA</div>'
+    resp.innerHTML = '<div style="font-size:10px;color:var(--teal);margin-bottom:8px;font-weight:600"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:3px"><rect x="4" y="3" width="12" height="10" rx="2"/><path d="M10 13v4M7 17h6"/><path d="M7 7h6M8 10h4"/></svg> ANÁLISIS IA · LA MARINILLA</div>'
       + text.split('\n').filter(l=>l.trim()).map(l=>`<p>${l}</p>`).join('');
   } catch(e){
     resp.innerHTML = '<p style="color:var(--red)">Error de conexión. Verifica tu internet.</p>';
@@ -814,11 +815,11 @@ function exportExcel(){
   // KPIs sheet
   const kpis = [
     ['Indicador','Valor','Meta','Estado'],
-    ['GDP promedio (g/d)',182,200,'⚠ Bajo meta'],
-    ['Fertilidad (%)',87,90,'⚠ Bajo meta'],
+    ['GDP promedio (g/d)',182,200,'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Bajo meta'],
+    ['Fertilidad (%)',87,90,'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Bajo meta'],
     ['Natalidad (%)',94,95,'✓ Casi en meta'],
-    ['Mortalidad (%)',2.1,2,'⚠ Sobre meta'],
-    ['Crías/parto',1.72,1.8,'⚠ Bajo meta'],
+    ['Mortalidad (%)',2.1,2,'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Sobre meta'],
+    ['Crías/parto',1.72,1.8,'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Bajo meta'],
     ['Total animales',470,'—','OK'],
     ['En levante',87,'—','OK'],
     ['Gestantes',43,'—','OK'],
@@ -932,7 +933,7 @@ function importData(input, tipo){
         if(!row[0]) errors.push('Fila '+(i+2)+': ID requerido');
       });
       if(errors.length){
-        toast('⚠ '+errors.length+' errores encontrados. Revisa el archivo.','err');
+        toast('<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> '+errors.length+' errores encontrados. Revisa el archivo.','err');
         console.log('Errores importación:',errors);
         return;
       }
