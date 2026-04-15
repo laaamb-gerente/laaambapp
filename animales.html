@@ -4,306 +4,132 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LAAAMBAPP · Animales</title>
-<script>(function(){var t=localStorage.getItem("laaamb-theme")||"dark";document.documentElement.setAttribute("data-theme",t);})();</script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
+<script>(function(){var t=localStorage.getItem('laaamb-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="AppData.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-/* Kill Klaviyo */
-[class*="klaviyo"],[id*="klaviyo"],[class*="kl-"],[id*="kl-"],[data-form-id]{display:none!important}
-:root{
-  --teal:#00AFB6;--teal-d:#008a90;--teal-dd:#006268;
-  --teal-bg:rgba(0,175,182,0.10);--teal-bg2:rgba(0,175,182,0.06);
-  --wine:#9C3F66;--wine-bg:rgba(156,63,102,0.12);
-  --orange:#F18F22;--orange-bg:rgba(241,143,34,0.12);
-  --bg:#080f10;--bg2:#0c1517;--bg3:#101d1f;--bg4:#152224;
-  --surface:#172628;--surface2:#1d3235;
-  --border:rgba(0,175,182,0.10);--border2:rgba(0,175,182,0.20);--border3:rgba(0,175,182,0.35);
-  --green:#2ec77a;--green-bg:rgba(46,199,122,0.10);
-  --red:#e05252;--red-bg:rgba(224,82,82,0.10);
-  --amber:#e8a030;--amber-bg:rgba(232,160,48,0.10);
-  --sky:#38b0d8;--sky-bg:rgba(56,176,216,0.10);
-  --text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;
-  --r:8px;--r2:14px;--sidebar:236px;--anim:0.16s cubic-bezier(.4,0,.2,1);
-}
-html[data-theme="light"]{--teal:#007a80;--teal-d:#005f64;--teal-bg:rgba(0,122,128,.10);--teal-bg2:rgba(0,122,128,.05);--bg:#f0f4f5;--bg2:#ffffff;--bg3:#f7fafa;--bg4:#e8f0f1;--surface:#e8f0f1;--surface2:#d4e4e6;--border:rgba(0,100,110,.12);--border2:rgba(0,100,110,.22);--border3:rgba(0,100,110,.40);--green:#1a9455;--green-bg:rgba(26,148,85,.10);--red:#c0392b;--red-bg:rgba(192,57,43,.09);--amber:#b87400;--amber-bg:rgba(184,116,0,.10);--sky:#1a7fa0;--sky-bg:rgba(26,127,160,.10);--text:#0d2b2e;--text2:#2d5a60;--text3:#5a8a90;--text4:#a0c4c8;}
-html[data-theme="sepia"]{--teal:#5a7a3a;--teal-d:#3d5a28;--teal-bg:rgba(90,122,58,.12);--teal-bg2:rgba(90,122,58,.06);--bg:#1c1608;--bg2:#231c0a;--bg3:#2a220c;--bg4:#332a10;--surface:#2e2510;--surface2:#3d3218;--border:rgba(180,140,60,.12);--border2:rgba(180,140,60,.22);--border3:rgba(180,140,60,.38);--green:#6a9a3a;--green-bg:rgba(106,154,58,.12);--red:#c04a2a;--red-bg:rgba(192,74,42,.10);--amber:#c8900a;--amber-bg:rgba(200,144,10,.12);--sky:#4a7a6a;--sky-bg:rgba(74,122,106,.12);--text:#e8d8a0;--text2:#b8a060;--text3:#7a6830;--text4:#4a4018;}
-html[data-theme="contrast"]{--teal:#00ffff;--teal-d:#00cccc;--teal-bg:rgba(0,255,255,.15);--teal-bg2:rgba(0,255,255,.08);--bg:#000;--bg2:#0a0a0a;--bg3:#111;--bg4:#1a1a1a;--surface:#1a1a1a;--surface2:#222;--border:rgba(0,255,255,.20);--border2:rgba(0,255,255,.40);--border3:rgba(0,255,255,.60);--green:#00ff7f;--green-bg:rgba(0,255,127,.15);--red:#ff4444;--red-bg:rgba(255,68,68,.15);--amber:#ffdd00;--amber-bg:rgba(255,221,0,.15);--sky:#00bfff;--sky-bg:rgba(0,191,255,.15);--text:#fff;--text2:#e0e0e0;--text3:#aaa;--text4:#555;}
+:root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);--wine:#9C3F66;--wine-bg:rgba(156,63,102,.12);--orange:#F18F22;--orange-bg:rgba(241,143,34,.12);--bg:#080f10;--bg2:#0c1517;--bg3:#101d1f;--surface:#172628;--surface2:#1d3235;--border:rgba(0,175,182,.10);--border2:rgba(0,175,182,.20);--border3:rgba(0,175,182,.35);--green:#2ec77a;--green-bg:rgba(46,199,122,.10);--red:#e05252;--red-bg:rgba(224,82,82,.10);--amber:#e8a030;--amber-bg:rgba(232,160,48,.10);--sky:#38b0d8;--sky-bg:rgba(56,176,216,.10);--text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;--r:8px;--r2:14px;--sidebar:236px;--anim:.16s cubic-bezier(.4,0,.2,1)}
+html[data-theme="light"]{--teal:#007a80;--teal-d:#005f64;--teal-bg:rgba(0,122,128,.10);--teal-bg2:rgba(0,122,128,.05);--bg:#f0f4f5;--bg2:#ffffff;--bg3:#f7fafa;--surface:#e8f0f1;--surface2:#d4e4e6;--border:rgba(0,100,110,.12);--border2:rgba(0,100,110,.22);--border3:rgba(0,100,110,.40);--green:#1a9455;--green-bg:rgba(26,148,85,.10);--red:#c0392b;--red-bg:rgba(192,57,43,.09);--amber:#b87400;--amber-bg:rgba(184,116,0,.10);--sky:#1a7fa0;--sky-bg:rgba(26,127,160,.10);--text:#0d2b2e;--text2:#2d5a60;--text3:#5a8a90;--text4:#a0c4c8}
+html[data-theme="sepia"]{--teal:#5a7a3a;--teal-d:#3d5a28;--teal-bg:rgba(90,122,58,.12);--teal-bg2:rgba(90,122,58,.06);--bg:#1c1608;--bg2:#231c0a;--bg3:#2a220c;--surface:#2e2510;--surface2:#3d3218;--border:rgba(180,140,60,.12);--border2:rgba(180,140,60,.22);--border3:rgba(180,140,60,.38);--green:#6a9a3a;--green-bg:rgba(106,154,58,.12);--red:#c04a2a;--red-bg:rgba(192,74,42,.10);--amber:#c8900a;--amber-bg:rgba(200,144,10,.12);--sky:#4a7a6a;--sky-bg:rgba(74,122,106,.12);--text:#e8d8a0;--text2:#b8a060;--text3:#7a6830;--text4:#4a4018}
+html[data-theme="contrast"]{--teal:#00ffff;--teal-d:#00cccc;--teal-bg:rgba(0,255,255,.15);--teal-bg2:rgba(0,255,255,.08);--bg:#000;--bg2:#0a0a0a;--bg3:#111;--surface:#1a1a1a;--surface2:#222;--border:rgba(0,255,255,.20);--border2:rgba(0,255,255,.40);--border3:rgba(0,255,255,.60);--green:#00ff7f;--green-bg:rgba(0,255,127,.15);--red:#ff4444;--red-bg:rgba(255,68,68,.15);--amber:#ffdd00;--amber-bg:rgba(255,221,0,.15);--sky:#00bfff;--sky-bg:rgba(0,191,255,.15);--text:#fff;--text2:#e0e0e0;--text3:#aaa;--text4:#555}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
-::-webkit-scrollbar{width:3px;height:3px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
-
-/* ── LAYOUT ─────────────────────── */
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
 .app{display:flex;height:100vh;width:100vw}
 .sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0}
 .sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:.5}
-.main{flex:1;overflow:hidden;display:flex;flex-direction:column;background:var(--bg)}
-
-/* ── SIDEBAR ────────────────────── */
 .sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
-.sb-logo-row{display:flex;align-items:center;gap:10px}
-.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal);line-height:1}
+.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
 .sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
 .farm-pill{margin-top:12px;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;display:flex;align-items:center;gap:8px}
-.farm-ico{font-size:18px;flex-shrink:0;line-height:1}
-.farm-name{font-size:12px;font-weight:600;color:var(--text)}
-.farm-sub{font-size:10px;color:var(--text3);margin-top:1px;letter-spacing:.3px}
+.farm-name{font-size:12px;font-weight:600;color:var(--text)}.farm-sub{font-size:10px;color:var(--text3);margin-top:1px}
 .nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
 .nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}
-.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;font-weight:400;text-decoration:none;transition:all var(--anim);position:relative}
+.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;text-decoration:none;transition:all var(--anim);position:relative}
 .nav-link:hover{background:var(--surface);color:var(--text)}
 .nav-link.active{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
 .nav-link.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--teal);border-radius:2px}
-.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}
-.nav-link.active .nav-ico,.nav-link:hover .nav-ico{opacity:1}
+.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}.nav-link.active .nav-ico,.nav-link:hover .nav-ico{opacity:1}
 .nav-badge{margin-left:auto;font-size:10px;font-weight:600;background:var(--surface2);color:var(--teal);padding:1px 7px;border-radius:10px;border:1px solid var(--border2)}
-.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border)}
-.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);cursor:pointer;border:1px solid var(--border);transition:border-color var(--anim)}
-.user-row:hover{border-color:var(--border2)}
+.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border);position:sticky;bottom:0;background:var(--bg2)}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
 .avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
-.user-name{font-size:12px;font-weight:600;color:var(--text)}
-.user-role{font-size:10px;color:var(--text3);margin-top:1px}
-
-/* ── PAGE HEADER ────────────────── */
-.page-head{padding:20px 28px 16px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.ph-left{}
-.ph-eyebrow{font-size:10px;font-weight:600;color:var(--teal-d);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
-.ph-title{font-family:'Sigmar',cursive;font-size:24px;color:var(--text);letter-spacing:.3px;line-height:1}
-.ph-sub{font-size:12px;color:var(--text3);margin-top:3px}
-.ph-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
-
-/* ── FILTERS BAR ────────────────── */
-.filters-bar{padding:12px 28px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--bg2)}
-.search-wrap{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:0 12px;min-width:260px;transition:border-color var(--anim)}
-.search-wrap:focus-within{border-color:var(--teal)}
-.search-wrap svg{width:14px;height:14px;color:var(--text3);flex-shrink:0}
-.search-wrap input{background:transparent;border:none;outline:none;color:var(--text);font-size:13px;padding:8px 0;font-family:'Changa',sans-serif;width:100%}
-.search-wrap input::placeholder{color:var(--text3)}
-.filter-select{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:7px 28px 7px 10px;color:var(--text2);font-size:12px;font-family:'Changa',sans-serif;outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%233d6e74' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;cursor:pointer;transition:border-color var(--anim)}
-.filter-select:focus{border-color:var(--teal);color:var(--text)}
-.filter-count{font-size:11px;color:var(--text3);margin-left:auto;font-weight:500;white-space:nowrap}
-.filter-btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--text3);font-family:'Changa',sans-serif;transition:all var(--anim)}
-.filter-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--border3)}
-.filter-btn.active{background:var(--teal-bg);color:var(--teal);border-color:var(--border2)}
-
-/* ── TABLE AREA ─────────────────── */
-.table-area{flex:1;overflow-y:auto;padding:0}
+.user-name{font-size:12px;font-weight:600;color:var(--text)}.user-role{font-size:10px;color:var(--text3)}
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.page-head{padding:16px 24px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg2);flex-wrap:wrap}
+.ph-eyebrow{font-size:10px;font-weight:600;color:var(--teal-d);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+.ph-title{font-family:'Sigmar',cursive;font-size:22px;color:var(--text)}
+.ph-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.ph-actions{display:flex;gap:6px;flex-wrap:wrap}
+.filters-bar{padding:10px 24px;border-bottom:1px solid var(--border);background:var(--bg2);display:flex;gap:8px;flex-wrap:wrap;align-items:center;flex-shrink:0}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:0 10px;flex:1;min-width:180px;max-width:260px;transition:border-color var(--anim)}
+.search-box:focus-within{border-color:var(--teal)}
+.search-box svg{width:13px;height:13px;color:var(--text3);flex-shrink:0}
+.search-box input{background:transparent;border:none;outline:none;color:var(--text);font-size:13px;padding:7px 0;font-family:'Changa',sans-serif;width:100%}
+.search-box input::placeholder{color:var(--text3)}
+.fsel{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:7px 26px 7px 9px;color:var(--text2);font-size:12px;font-family:'Changa',sans-serif;outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%233d6e74' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 7px center;cursor:pointer}
+.fsel:focus{border-color:var(--teal);color:var(--text)}
+.filter-count{font-size:11px;color:var(--text3);margin-left:auto;white-space:nowrap}
+.table-wrap{flex:1;overflow-y:auto}
+.table-scroll{overflow-x:auto;min-height:100%}
 table{width:100%;border-collapse:collapse;font-size:13px}
-thead{position:sticky;top:0;z-index:5}
-thead th{background:var(--bg3);color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
-thead th.sortable{cursor:pointer;user-select:none}
-thead th.sortable:hover{color:var(--teal)}
-thead th.sorted{color:var(--teal)}
+thead th{background:var(--bg3);color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:9px 12px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:2}
+thead th.sort{cursor:pointer;user-select:none}thead th.sort:hover{color:var(--teal)}
 tbody tr{border-bottom:1px solid var(--border);transition:background var(--anim);cursor:pointer}
-tbody tr:last-child{border-bottom:none}
 tbody tr:hover{background:var(--surface)}
-tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
-.td-mono{font-family:'Changa',sans-serif;font-size:12px;font-weight:600;color:var(--teal)}
-.td-muted{color:var(--text3);font-size:12px}
-.td-name{font-weight:600}
-.animal-icon{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-right:8px}
-.animal-icon.h{background:var(--teal-bg2);border:1px solid var(--border2)}
-.animal-icon.m{background:var(--wine-bg);border:1px solid rgba(156,63,102,.25)}
-.td-animal{display:flex;align-items:center}
-
-/* ── BADGES ─────────────────────── */
-.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:600;white-space:nowrap}
-.b-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
-.b-green{background:var(--green-bg);color:var(--green)}
-.b-amber{background:var(--amber-bg);color:var(--amber)}
-.b-red{background:var(--red-bg);color:var(--red)}
-.b-sky{background:var(--sky-bg);color:var(--sky)}
-.b-wine{background:var(--wine-bg);color:var(--wine)}
-.b-orange{background:var(--orange-bg);color:var(--orange)}
-.b-gray{background:var(--surface);color:var(--text3)}
-
-/* ── BUTTONS ────────────────────── */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:all var(--anim);white-space:nowrap}
-.btn-primary{background:var(--teal);color:#080f10}
-.btn-primary:hover{background:#1cc8d0;transform:translateY(-1px)}
-.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
-.btn-ghost:hover{background:var(--surface);color:var(--teal);border-color:var(--border3)}
-.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,82,82,.25)}
-.btn-danger:hover{background:rgba(224,82,82,.2)}
-.btn-sm{padding:5px 11px;font-size:12px}
+tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
+.td-id{font-size:12px;font-weight:700;color:var(--teal)}
+.td-m{color:var(--text3);font-size:12px}
+.td-animal{display:flex;align-items:center;gap:8px}
+.a-ico{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.a-ico.H{background:var(--teal-bg);border:1px solid var(--border2)}
+.a-ico.M{background:var(--wine-bg);border:1px solid rgba(156,63,102,.2)}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all var(--anim);white-space:nowrap;text-decoration:none}
+.btn-primary{background:var(--teal);color:#080f10}.btn-primary:hover{background:#1cc8d0;transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}.btn-ghost:hover{background:var(--surface);color:var(--teal);border-color:var(--border3)}
+.btn-danger{background:var(--red-bg);color:var(--red);border:1px solid rgba(224,82,82,.2)}.btn-danger:hover{background:rgba(224,82,82,.15)}
 .btn-xs{padding:4px 9px;font-size:11px}
-
-/* ── MODAL ──────────────────────── */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:1000;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;padding:20px}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:600;white-space:nowrap}
+.b-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}.b-green{background:var(--green-bg);color:var(--green)}.b-amber{background:var(--amber-bg);color:var(--amber)}.b-red{background:var(--red-bg);color:var(--red)}.b-sky{background:var(--sky-bg);color:var(--sky)}.b-wine{background:var(--wine-bg);color:var(--wine)}.b-orange{background:var(--orange-bg);color:var(--orange)}.b-gray{background:var(--surface);color:var(--text3)}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:1000;display:flex;align-items:flex-start;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;padding:20px;overflow-y:auto}
 .overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,.6);transform:translateY(8px);transition:transform .2s}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);width:100%;max-width:680px;box-shadow:0 24px 64px rgba(0,0,0,.6);transform:translateY(8px);transition:transform .2s;margin:auto}
 .overlay.open .modal{transform:translateY(0)}
-.modal-sm{max-width:520px}
-.modal-md{max-width:700px}
-.modal-lg{max-width:960px}
-.modal-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
-.modal-title{font-family:'Sigmar',cursive;font-size:18px;color:var(--text);letter-spacing:.3px}
-.modal-close{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;padding:4px;transition:color var(--anim)}
-.modal-close:hover{color:var(--text)}
-.modal-body{padding:20px 22px}
-.modal-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
-
-/* ── FORM ───────────────────────── */
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
-.form-full{grid-column:1/-1}
-.fg{margin-bottom:14px}
-.fg:last-child{margin-bottom:0}
-label.fl{display:block;font-size:11px;font-weight:600;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
-.fi{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:8px 11px;color:var(--text);font-size:13px;font-family:'Changa',sans-serif;outline:none;transition:border-color var(--anim)}
-.fi:focus{border-color:var(--teal)}
-.fi::placeholder{color:var(--text3)}
-select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%233d6e74' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
-textarea.fi{resize:vertical;min-height:72px}
-.form-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);margin:18px 0 12px;display:flex;align-items:center;gap:8px}
-.form-section::after{content:'';flex:1;height:1px;background:var(--border)}
-
-/* ── ANIMAL PROFILE ─────────────── */
-.profile-hero{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:20px;margin-bottom:18px;display:flex;gap:18px;align-items:flex-start}
-.profile-avatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;border:2px solid var(--border2)}
-.profile-avatar.h{background:var(--teal-bg)}
-.profile-avatar.m{background:var(--wine-bg)}
-.profile-info{flex:1}
-.profile-name{font-family:'Sigmar',cursive;font-size:20px;color:var(--text);letter-spacing:.2px}
-.profile-id{font-size:11px;color:var(--teal);font-weight:600;margin-top:2px;letter-spacing:.5px}
-.profile-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-.profile-cost{text-align:right;flex-shrink:0}
-.profile-cost-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
-.profile-cost-val{font-family:'Changa',sans-serif;font-size:22px;font-weight:700;color:var(--amber);margin-top:2px}
-.profile-cost-sub{font-size:10px;color:var(--text3);margin-top:1px}
-
-/* ── TABS ───────────────────────── */
-.tab-bar{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:16px;flex-shrink:0}
-.tab{padding:9px 16px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim);white-space:nowrap}
-.tab:hover{color:var(--text)}
-.tab.active{color:var(--teal);border-bottom-color:var(--teal)}
-.tab-pane{display:none}
-.tab-pane.active{display:block}
-
-/* ── INFO GRID ──────────────────── */
-.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
-.info-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px}
-.info-card-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
-.info-card-val{font-size:15px;font-weight:700;color:var(--text);font-family:'Changa',sans-serif}
-.info-card-sub{font-size:11px;color:var(--text3);margin-top:2px}
-
-/* ── TIMELINE ───────────────────── */
-.tl{padding-left:20px;position:relative}
-.tl::before{content:'';position:absolute;left:5px;top:3px;bottom:0;width:1px;background:var(--border)}
-.tl-item{position:relative;margin-bottom:16px}
-.tl-item:last-child{margin-bottom:0}
-.tl-dot{position:absolute;left:-17px;top:4px;width:8px;height:8px;border-radius:50%;border:2px solid var(--bg2)}
-.tl-date{font-size:10px;color:var(--text3);font-weight:500}
-.tl-user{font-size:10px;color:var(--teal);margin-left:5px;font-weight:600}
-.tl-text{font-size:13px;color:var(--text);margin-top:2px;line-height:1.4}
-.tl-meta{font-size:11px;color:var(--text3);margin-top:2px}
-
-/* ── EMPTY STATE ────────────────── */
+.modal-lg{max-width:900px}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid var(--border)}
+.modal-title{font-family:'Sigmar',cursive;font-size:17px;color:var(--text)}
+.modal-close{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:20px;line-height:1;padding:4px}.modal-close:hover{color:var(--text)}
+.modal-body{padding:18px 20px}
+.modal-foot{padding:12px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.fg{margin-bottom:12px}
+.fl{display:block;font-size:11px;font-weight:600;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.fi{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;color:var(--text);font-size:13px;font-family:'Changa',sans-serif;outline:none;transition:border-color var(--anim)}
+.fi:focus{border-color:var(--teal)}.fi::placeholder{color:var(--text3)}
+select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%233d6e74' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;padding-right:26px;cursor:pointer}
+textarea.fi{resize:vertical;min-height:60px}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fsec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);margin:16px 0 10px;display:flex;align-items:center;gap:8px}
+.fsec::after{content:'';flex:1;height:1px;background:var(--border)}
+.drop-zone{border:2px dashed var(--border2);border-radius:var(--r2);padding:28px;text-align:center;cursor:pointer;transition:all var(--anim);display:block}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--teal);background:var(--teal-bg2)}
+.preview-wrap{max-height:240px;overflow:auto;border:1px solid var(--border);border-radius:var(--r);margin-top:14px}
+.preview-wrap table{font-size:11px}
+.preview-wrap thead th{font-size:9px;padding:6px 8px}
+.preview-wrap tbody td{padding:5px 8px}
+.steps{display:flex;gap:0;margin-bottom:18px}
+.step{flex:1;text-align:center;position:relative}
+.step::after{content:'';position:absolute;top:13px;left:50%;right:-50%;height:2px;background:var(--border2);z-index:0}
+.step:last-child::after{display:none}
+.step-dot{width:26px;height:26px;border-radius:50%;border:2px solid var(--border2);background:var(--bg2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--text3);margin:0 auto 5px;position:relative;z-index:1;transition:all .2s}
+.step.active .step-dot{border-color:var(--teal);background:var(--teal);color:#080f10}
+.step.done .step-dot{border-color:var(--green);background:var(--green);color:#080f10}
+.step-label{font-size:10px;color:var(--text3);font-weight:600}
+.step.active .step-label{color:var(--teal)}.step.done .step-label{color:var(--green)}
 .empty{text-align:center;padding:48px 20px;color:var(--text3)}
-.empty-ico{font-size:36px;margin-bottom:12px;opacity:.5}
-.empty-text{font-size:14px;margin-bottom:4px;color:var(--text2)}
-.empty-sub{font-size:12px}
-
-/* ── TOAST ──────────────────────── */
-.toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px}
-.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:fadeUp .2s ease;max-width:300px}
-.toast.ok{border-left:3px solid var(--teal)}
-.toast.err{border-left:3px solid var(--red)}
+.ic-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.ic-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px}
+.ic-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.ic-val{font-size:14px;font-weight:700;color:var(--text)}
+#lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);width:46px;height:46px;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 16px rgba(0,0,0,.45)}
+#lham svg{width:22px;height:22px;stroke:var(--text);stroke-width:2;fill:none;stroke-linecap:round}
+#lov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990}
+.toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);animation:fadeUp .2s ease;max-width:320px;pointer-events:all}
+.toast.ok{border-left:3px solid var(--teal)}.toast.err{border-left:3px solid var(--red)}.toast.info{border-left:3px solid var(--amber)}
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
-
-/* ── LINEAGE TREE ───────────────── */
-.lineage{text-align:center;padding:8px 0}
-
-/* ── PROGRESS ───────────────────── */
-.prog-track{height:5px;background:var(--surface2);border-radius:3px;overflow:hidden;margin-top:5px}
-.prog-fill{height:100%;border-radius:3px}
-
-@media(max-width:900px){.form-grid,.form-grid-3{grid-template-columns:1fr}.info-grid{grid-template-columns:1fr 1fr}}
-
-/* ── HAMBURGER & RESPONSIVE ─────────────────────────────── */
-.hamburger{display:none;position:fixed;top:12px;left:12px;z-index:300;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);width:44px;height:44px;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,.4);transition:all var(--anim)}
-.hamburger:hover{border-color:var(--teal);background:var(--surface)}
-.hamburger svg{width:20px;height:20px;flex-shrink:0}
-.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:99;backdrop-filter:blur(3px)}
-.sidebar{transition:transform .28s cubic-bezier(.4,0,.2,1) !important}
-@media(max-width:900px){.g4{grid-template-columns:1fr 1fr !important}}
-@media(max-width:768px){
-  .sidebar{position:fixed !important;left:0;top:0;height:100% !important;transform:translateX(-100%) !important;z-index:200;box-shadow:6px 0 32px rgba(0,0,0,.5)}
-  .sidebar.open{transform:translateX(0) !important}
-  .sidebar-overlay.open{display:block !important}
-  .hamburger{display:flex !important}
-  .main{width:100vw !important}
-  .page-head{padding:12px 14px 10px !important;padding-left:64px !important;flex-wrap:wrap;gap:8px}
-  .ph-title{font-size:20px !important}
-  .ph-actions{flex-wrap:wrap;gap:6px}
-  .ph-actions .btn{font-size:11px !important;padding:5px 10px !important}
-  .tab-nav{padding:0 12px !important}
-  .tn{padding:8px 12px !important;font-size:12px !important}
-  .content{padding:12px 12px 60px !important}
-  .g2,.g3{grid-template-columns:1fr !important}
-  .g4{grid-template-columns:1fr !important}
-  .kpi{padding:12px !important}
-  .kpi-val{font-size:22px !important}
-  .card-body{padding:12px !important}
-  .card-h{padding:12px 14px !important}
-  .form-grid,.form-grid-3{grid-template-columns:1fr !important}
-  table{font-size:12px}
-  thead th{padding:8px 10px !important}
-  tbody td{padding:9px 10px !important}
-  div[style*="overflow-x:auto"],div[style*="overflow-x: auto"]{overflow-x:auto;-webkit-overflow-scrolling:touch}
-}
-
-/* ═══ MOBILE HAMBURGER — FINAL ═══ */
-#lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;
-  background:var(--bg2);border:1.5px solid var(--border2);
-  border-radius:var(--r);width:46px;height:46px;
-  align-items:center;justify-content:center;cursor:pointer;
-  box-shadow:0 2px 16px rgba(0,0,0,.45)}
-#lham svg{width:22px;height:22px;stroke:var(--text);stroke-width:2;
-  fill:none;stroke-linecap:round}
-#lov{display:none;position:fixed;inset:0;
-  background:rgba(0,0,0,.7);z-index:9990}
 @media(max-width:768px){
   #lham{display:flex}
   #lov.on{display:block}
-  #sidebar{position:fixed!important;top:0!important;left:0!important;
-    height:100vh!important;transform:translateX(-100%)!important;
-    z-index:9995!important;transition:transform .28s ease!important;
-    display:flex!important}
+  #sidebar{position:fixed!important;top:0!important;left:0!important;height:100vh!important;transform:translateX(-100%)!important;z-index:9995!important;transition:transform .28s ease!important;display:flex!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch}
   #sidebar.on{transform:translateX(0)!important}
   .main{width:100vw!important}
-  .page-head{padding:12px 14px!important;padding-left:66px!important;flex-wrap:wrap;gap:8px}
-  .ph-title{font-size:20px!important}
-  .ph-actions{flex-wrap:wrap;gap:6px}
-  .tab-nav{padding:0 10px!important}
-  .content{padding:12px!important;padding-bottom:60px!important}
-  .g2,.g3{grid-template-columns:1fr!important}
-  .g4{grid-template-columns:1fr 1fr!important}
-  .form-grid,.form-grid-3{grid-template-columns:1fr!important}
-  .kpi-val{font-size:22px!important}
-}
-@media(max-width:480px){.g4{grid-template-columns:1fr!important}}
-
-/* ── SIDEBAR MOBILE SCROLL FIX ── */
-@media(max-width:768px){
-  #sidebar{
-    overflow-y:auto !important;
-    overflow-x:hidden !important;
-    height:100vh !important;
-    max-height:100vh !important;
-    -webkit-overflow-scrolling:touch;
-  }
-  #sidebar .nav-scroll{
-    overflow-y:visible !important;
-    flex-shrink:0;
-  }
-  #sidebar .sb-foot{
-    flex-shrink:0;
-    position:sticky;
-    bottom:0;
-    background:var(--bg2);
-  }
+  .page-head{padding:10px 12px!important;padding-left:64px!important;flex-wrap:wrap;gap:6px}
+  .ph-title{font-size:19px!important}
+  .filters-bar{padding:8px 12px!important}
+  .fgrid{grid-template-columns:1fr!important}
+  .ic-row{grid-template-columns:1fr 1fr!important}
+  table{min-width:680px}
 }
 </style>
 </head>
@@ -312,593 +138,540 @@ textarea.fi{resize:vertical;min-height:72px}
 <button id="lham" aria-label="Menú"><svg id="lico" viewBox="0 0 22 22"><line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/></svg></button>
 <div id="lov"></div>
 
-
-
-<!-- ═══ SIDEBAR ═══ -->
 <aside class="sidebar" id="sidebar">
   <div class="sb-head">
-    <div class="sb-logo-row">
-      <div>
-        <div class="sb-logo-text">LAAAMB</div>
-        <div class="sb-logo-sub">Corderos · App</div>
-      </div>
-    </div>
-    <div class="farm-pill">
-      <span class="farm-ico">🏔️</span>
-      <div>
-        <div class="farm-name">La Marinilla</div>
-        <div class="farm-sub">76.2 ha · 470 animales</div>
-      </div>
+    <div class="sb-logo-text">LAAAMB</div>
+    <div class="sb-logo-sub">Corderos · App</div>
+    <div class="farm-pill"><span style="font-size:18px">🏔️</span>
+      <div><div class="farm-name" id="sb-finca">La Marinilla</div><div class="farm-sub" id="sb-stats">Cargando…</div></div>
     </div>
   </div>
   <nav class="nav-scroll">
     <div class="nav-group">Principal</div>
-    <a class="nav-link" href="index.html">
-      <svg class="nav-ico" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>
-      Dashboard
-    </a>
-    <a class="nav-link" href="okr.html">
-      <svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>
-      OKRs &amp; Análisis
-    </a>
+    <a class="nav-link" href="index.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a class="nav-link" href="okr.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>OKRs &amp; Análisis</a>
     <div class="nav-group">Ganadería</div>
-    <a class="nav-link active" href="animales.html">
-      <svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
-      Animales
-      <span class="nav-badge" id="sb-count">470</span>
-    </a>
-    <a class="nav-link" href="reproduccion.html">
-      <svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 3"/></svg>
-      Reproducción
-    </a>
-    <a class="nav-link" href="lotes.html">
-      <svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/><path d="M10 3v13"/><path d="M3 7l7 4 7-4"/></svg>
-      Lotes &amp; Potreros
-    </a>
+    <a class="nav-link active" href="animales.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Animales<span class="nav-badge" id="sb-count">—</span></a>
+    <a class="nav-link" href="reproduccion.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 3"/></svg>Reproducción</a>
+    <a class="nav-link" href="lotes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>Lotes &amp; Potreros</a>
     <div class="nav-group">Salud</div>
-    <a class="nav-link" href="salud.html">
-      <svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>
-      Salud &amp; Tratamientos
-    </a>
-    <a class="nav-link" href="medicamentos.html">
-      <svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>
-      Medicamentos
-      <span class="nav-badge">28</span>
-    </a>
+    <a class="nav-link" href="salud.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>Salud &amp; Tratamientos</a>
+    <a class="nav-link" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos</a>
     <div class="nav-group">Gestión</div>
-    <a class="nav-link" href="finanzas.html">
-      <svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>
-      Costos &amp; Finanzas
-    </a>
-    <a class="nav-link" href="bajas.html">
-      <svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6m2 0V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
-      Bajas &amp; Ventas
-    </a>
+    <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
+    <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
+    <div class="nav-group">Sistema</div>
+    <a class="nav-link" href="ajustes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.9 4.9l1.4 1.4M13.7 13.7l1.4 1.4M4.9 15.1l1.4-1.4M13.7 6.3l1.4-1.4"/></svg>Ajustes</a>
   </nav>
   <div class="sb-foot">
-    <div class="user-row">
-      <div class="avatar">JG</div>
+    <div class="user-row"><div class="avatar">JG</div>
       <div><div class="user-name">Juan García</div><div class="user-role">Administrador</div></div>
     </div>
   </div>
 </aside>
 
-<!-- ═══ MAIN ═══ -->
 <div class="main">
-
-  <!-- PAGE HEADER -->
   <div class="page-head">
-    <div class="ph-left">
+    <div>
       <div class="ph-eyebrow">La Marinilla · Ganadería</div>
       <div class="ph-title">Inventario Animal</div>
-      <div class="ph-sub" id="ph-sub">470 animales registrados</div>
+      <div class="ph-sub" id="ph-sub">Cargando…</div>
     </div>
     <div class="ph-actions">
-      <button class="btn btn-ghost btn-sm" onclick="exportCSV()">↓ Exportar CSV</button>
-      <button class="btn btn-primary btn-sm" onclick="openModal('modal-nuevo')">+ Registrar animal</button>
+      <button class="btn btn-ghost" onclick="openImport()">↑ Importar CSV/Excel</button>
+      <button class="btn btn-ghost" onclick="exportarTodo()">↓ Excel completo</button>
+      <button class="btn btn-ghost" onclick="exportarCSV()">↓ CSV</button>
+      <button class="btn btn-primary" onclick="abrirNuevo()">+ Registrar animal</button>
     </div>
   </div>
 
-  <!-- FILTERS -->
   <div class="filters-bar">
-    <div class="search-wrap">
+    <div class="search-box">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-      <input type="text" id="search-input" placeholder="Buscar por ID, nombre, arete…" oninput="applyFilters()">
+      <input type="text" id="q" placeholder="ID, nombre, raza…" oninput="applyFilters()">
     </div>
-    <select class="filter-select" id="f-sexo" onchange="applyFilters()">
-      <option value="">Todos los sexos</option>
-      <option value="H">Hembras</option>
-      <option value="M">Machos</option>
-    </select>
-    <select class="filter-select" id="f-estado" onchange="applyFilters()">
-      <option value="">Todos los estados</option>
-      <option value="Activa">Activas</option>
-      <option value="Gestante">Gestantes</option>
-      <option value="Vacía">Vacías</option>
-      <option value="En tratamiento">En tratamiento</option>
-      <option value="Reproductor">Reproductores</option>
-      <option value="Levante">Levante</option>
-    </select>
-    <select class="filter-select" id="f-lote" onchange="applyFilters()">
-      <option value="">Todos los lotes</option>
-      <option value="Lote A">Lote A</option>
-      <option value="Lote B">Lote B</option>
-      <option value="Lote C">Lote C</option>
-      <option value="Lote D">Lote D</option>
-    </select>
-    <select class="filter-select" id="f-raza" onchange="applyFilters()">
-      <option value="">Todas las razas</option>
-      <option value="Dorper">Dorper</option>
-      <option value="Katahdin">Katahdin</option>
-      <option value="Hampshire">Hampshire</option>
-      <option value="Pelibuey">Pelibuey</option>
-      <option value="Cruce">Cruce</option>
-    </select>
-    <button class="filter-btn" onclick="clearFilters()">✕ Limpiar</button>
+    <select class="fsel" id="f-sexo" onchange="applyFilters()"><option value="">Sexo</option><option value="H">Hembras</option><option value="M">Machos</option></select>
+    <select class="fsel" id="f-estado" onchange="applyFilters()"><option value="">Estado</option><option>Activa</option><option>Gestante</option><option>Vacía</option><option>En tratamiento</option><option>Reproductor</option><option>Levante</option><option>Cría</option></select>
+    <select class="fsel" id="f-lote" onchange="applyFilters()"><option value="">Lote</option><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select>
+    <select class="fsel" id="f-raza" onchange="applyFilters()"><option value="">Raza</option><option>Dorper</option><option>Katahdin</option><option>Hampshire</option><option>Pelibuey</option><option>Cruce</option></select>
+    <select class="fsel" id="f-activo" onchange="applyFilters()"><option value="true">Solo activos</option><option value="">Todos</option></select>
+    <button class="btn btn-ghost btn-xs" onclick="limpiarFiltros()">✕</button>
     <span class="filter-count" id="filter-count"></span>
   </div>
 
-  <!-- TABLE -->
-  <div class="table-area">
-    <table>
-      <thead>
-        <tr>
-          <th class="sortable" onclick="sortBy('id')">Arete / ID <span id="sort-id"></span></th>
+  <div class="table-wrap">
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          <th class="sort" onclick="sortBy('id')">ID / Arete</th>
           <th>Animal</th>
-          <th class="sortable" onclick="sortBy('raza')">Raza</th>
-          <th class="sortable" onclick="sortBy('edad')">Edad</th>
-          <th class="sortable" onclick="sortBy('peso')">Peso</th>
+          <th class="sort" onclick="sortBy('raza')">Raza</th>
+          <th class="sort" onclick="sortBy('fecha_nacimiento')">Edad</th>
+          <th class="sort" onclick="sortBy('peso')">Peso</th>
           <th>Estado</th>
           <th>Lote</th>
-          <th class="sortable" onclick="sortBy('gdp')">GDP</th>
-          <th class="sortable" onclick="sortBy('costo')">Costo acum.</th>
+          <th class="sort" onclick="sortBy('costo')">Costo acum.</th>
           <th>Acciones</th>
-        </tr>
-      </thead>
-      <tbody id="animal-tbody"></tbody>
-    </table>
-    <div id="empty-state" class="empty" style="display:none">
-      <div class="empty-ico">🔍</div>
-      <div class="empty-text">Sin resultados</div>
-      <div class="empty-sub">Intenta con otros filtros</div>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div id="empty" class="empty" style="display:none">
+        <div style="font-size:36px;margin-bottom:12px;opacity:.4">🐑</div>
+        <div style="font-size:14px;color:var(--text2);margin-bottom:6px">Sin animales registrados</div>
+        <div style="font-size:12px">Importa tu base de datos o registra el primer animal</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-top:14px">
+          <button class="btn btn-ghost" onclick="openImport()">↑ Importar CSV/Excel</button>
+          <button class="btn btn-primary" onclick="abrirNuevo()">+ Registrar animal</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 </div>
 
-<!-- ═══ MODAL NUEVO ANIMAL ═══ -->
-<div class="overlay" id="modal-nuevo" onclick="if(event.target===this)closeModal('modal-nuevo')">
-<div class="modal modal-md">
-  <div class="modal-head">
-    <div class="modal-title">Registrar nuevo animal</div>
-    <button class="modal-close" onclick="closeModal('modal-nuevo')">✕</button>
-  </div>
+<!-- MODAL NUEVO / EDITAR -->
+<div class="overlay" id="m-nuevo" onclick="if(event.target===this)closeModal('m-nuevo')">
+<div class="modal">
+  <div class="modal-head"><div class="modal-title" id="m-nuevo-title">Registrar animal</div><button class="modal-close" onclick="closeModal('m-nuevo')">✕</button></div>
   <div class="modal-body">
-    <div class="form-section">Identificación</div>
-    <div class="form-grid">
-      <div class="fg"><label class="fl">Arete / ID *</label><input class="fi" placeholder="OV-0471" id="n-id"/></div>
-      <div class="fg"><label class="fl">Nombre</label><input class="fi" placeholder="Opcional"/></div>
+    <div class="fsec">Identificación</div>
+    <div class="fgrid">
+      <div class="fg"><label class="fl">ID / Arete *</label><input class="fi" id="n-id" placeholder="OV-0471"></div>
+      <div class="fg"><label class="fl">Nombre</label><input class="fi" id="n-nombre" placeholder="Opcional"></div>
       <div class="fg"><label class="fl">Sexo *</label><select class="fi" id="n-sexo"><option value="H">Hembra</option><option value="M">Macho</option></select></div>
-      <div class="fg"><label class="fl">Categoría *</label><select class="fi"><option>Cría</option><option>Levante</option><option>Reproductora</option><option>Reproductor</option><option>Engorde</option></select></div>
-      <div class="fg"><label class="fl">Raza *</label><select class="fi"><option>Dorper</option><option>Katahdin</option><option>Hampshire</option><option>Pelibuey</option><option>Cruce</option></select></div>
-      <div class="fg"><label class="fl">Origen</label><select class="fi"><option>Nacido en finca</option><option>Comprado</option></select></div>
+      <div class="fg"><label class="fl">Categoría *</label><select class="fi" id="n-cat"><option>Cría</option><option>Levante</option><option>Reproductora</option><option>Reproductor</option><option>Engorde</option></select></div>
+      <div class="fg"><label class="fl">Raza *</label><select class="fi" id="n-raza"><option>Dorper</option><option>Katahdin</option><option>Hampshire</option><option>Pelibuey</option><option>Cruce</option><option>Otra</option></select></div>
+      <div class="fg"><label class="fl">Origen</label><select class="fi" id="n-origen"><option>Nacido en finca</option><option>Comprado</option></select></div>
     </div>
-    <div class="form-section">Datos</div>
-    <div class="form-grid">
-      <div class="fg"><label class="fl">Fecha nac. / ingreso *</label><input class="fi" type="date" id="n-fecha"/></div>
-      <div class="fg"><label class="fl">Peso inicial (kg)</label><input class="fi" type="number" placeholder="32" step="0.1"/></div>
-      <div class="fg"><label class="fl">Lote *</label><select class="fi"><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select></div>
-      <div class="fg"><label class="fl">Costo adquisición (COP)</label><input class="fi" type="number" placeholder="350000"/></div>
-      <div class="fg"><label class="fl">Madre (ID)</label><input class="fi" placeholder="OV-1234 o Externo"/></div>
-      <div class="fg"><label class="fl">Padre (ID)</label><input class="fi" placeholder="RE-003 o Externo"/></div>
+    <div class="fsec">Datos</div>
+    <div class="fgrid">
+      <div class="fg"><label class="fl">Fecha nac. / ingreso *</label><input class="fi" type="date" id="n-fecha"></div>
+      <div class="fg"><label class="fl">Peso inicial (kg)</label><input class="fi" type="number" id="n-peso" placeholder="32" step="0.1"></div>
+      <div class="fg"><label class="fl">Lote *</label><select class="fi" id="n-lote"><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select></div>
+      <div class="fg"><label class="fl">Estado</label><select class="fi" id="n-estado"><option>Activa</option><option>Gestante</option><option>Vacía</option><option>Reproductor</option><option>Levante</option><option>Cría</option></select></div>
+      <div class="fg"><label class="fl">Costo adquisición (COP)</label><input class="fi" type="number" id="n-costo" placeholder="350000"></div>
+      <div class="fg"><label class="fl">Padre (ID)</label><input class="fi" id="n-padre" placeholder="RE-003"></div>
     </div>
-    <div class="fg form-full"><label class="fl">Observaciones</label><textarea class="fi" placeholder="Notas adicionales…"></textarea></div>
+    <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" id="n-obs" rows="2"></textarea></div>
   </div>
   <div class="modal-foot">
-    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-nuevo')">Cancelar</button>
-    <button class="btn btn-primary btn-sm" onclick="saveAnimal()">Guardar animal</button>
+    <button class="btn btn-ghost" onclick="closeModal('m-nuevo')">Cancelar</button>
+    <button class="btn btn-primary" onclick="guardarAnimal()">Guardar</button>
   </div>
 </div>
 </div>
 
-<!-- ═══ MODAL PERFIL ═══ -->
-<div class="overlay" id="modal-perfil" onclick="if(event.target===this)closeModal('modal-perfil')">
+<!-- MODAL IMPORTAR -->
+<div class="overlay" id="m-import" onclick="if(event.target===this){closeModal('m-import');resetImport()}">
 <div class="modal modal-lg">
-  <div class="modal-head">
-    <div class="modal-title" id="perfil-title">Perfil del animal</div>
-    <button class="modal-close" onclick="closeModal('modal-perfil')">✕</button>
+  <div class="modal-head"><div class="modal-title">↑ Importar animales</div><button class="modal-close" onclick="closeModal('m-import');resetImport()">✕</button></div>
+  <div class="modal-body">
+    <div class="steps">
+      <div class="step active" id="step1"><div class="step-dot">1</div><div class="step-label">Subir archivo</div></div>
+      <div class="step" id="step2"><div class="step-dot">2</div><div class="step-label">Revisar datos</div></div>
+      <div class="step" id="step3"><div class="step-dot">3</div><div class="step-label">Listo</div></div>
+    </div>
+
+    <div id="import-s1">
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-ghost" onclick="descargarPlantilla()">↓ Plantilla Excel</button>
+        <span style="font-size:12px;color:var(--text3)">Descarga, llena y sube · o sube tu propio archivo</span>
+      </div>
+      <label class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFile(this.files[0])">
+        <div style="font-size:32px;margin-bottom:8px">📂</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:4px">Arrastra tu archivo aquí o haz clic</div>
+        <div style="font-size:12px;color:var(--text3)">Excel (.xlsx · .xls) · CSV (.csv) — Máx. 10 MB</div>
+      </label>
+      <div style="margin-top:12px;background:var(--bg3);border-radius:var(--r);padding:12px;font-size:12px;color:var(--text3)">
+        <strong style="color:var(--text2)">Columnas reconocidas:</strong> ID/Arete · Nombre · Sexo (H/M) · Categoría · Raza · Fecha nacimiento · Peso kg · Lote · Costo COP · Madre ID · Padre ID · Estado · Observaciones
+      </div>
+    </div>
+
+    <div id="import-s2" style="display:none">
+      <div id="import-summary"></div>
+      <div id="import-errors"></div>
+      <div class="preview-wrap"><table id="preview-table"></table></div>
+      <div style="margin-top:10px">
+        <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);cursor:pointer">
+          <input type="checkbox" id="replace-check"> Reemplazar inventario completo (no agregar, sino sustituir todo)
+        </label>
+      </div>
+    </div>
+
+    <div id="import-s3" style="display:none;text-align:center;padding:32px">
+      <div style="font-size:48px;margin-bottom:12px">✅</div>
+      <div style="font-size:18px;font-weight:700;color:var(--green)" id="import-done"></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:6px">Inventario actualizado en este dispositivo</div>
+    </div>
   </div>
+  <div class="modal-foot" id="import-foot">
+    <button class="btn btn-ghost" onclick="closeModal('m-import');resetImport()">Cancelar</button>
+    <button class="btn btn-primary" id="btn-confirm" style="display:none" onclick="confirmarImport()">✓ Confirmar importación</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL PERFIL -->
+<div class="overlay" id="m-perfil" onclick="if(event.target===this)closeModal('m-perfil')">
+<div class="modal modal-lg">
+  <div class="modal-head"><div class="modal-title" id="perfil-title">Perfil</div><button class="modal-close" onclick="closeModal('m-perfil')">✕</button></div>
   <div class="modal-body" id="perfil-body"></div>
+  <div class="modal-foot">
+    <button class="btn btn-danger btn-xs" id="btn-baja">Dar de baja</button>
+    <button class="btn btn-ghost" onclick="closeModal('m-perfil')">Cerrar</button>
+    <button class="btn btn-primary" id="btn-edit">Editar</button>
+  </div>
 </div>
 </div>
 
 <div class="toasts" id="toasts"></div>
 
 <script>
-// ═══════════════ DATA ═══════════════
-const ANIMALS = [
-  {id:'OV-0234',name:'Bella',sex:'H',cat:'Reproductora',race:'Dorper',born:'2022-01-15',weight:48,status:'Gestante',lote:'Lote A',gdp:195,cost:920000,partos:4,crias:7,madre:'OV-0120',padre:'RE-001',obs:'Excelente madre, índice genético top'},
-  {id:'OV-1102',name:'Luna',sex:'H',cat:'Reproductora',race:'Dorper',born:'2021-03-08',weight:52,status:'Activa',lote:'Lote B',gdp:188,cost:1050000,partos:5,crias:9,madre:'OV-0055',padre:'RE-001',obs:''},
-  {id:'OV-0788',name:'Rosa',sex:'H',cat:'Reproductora',race:'Katahdin',born:'2022-06-20',weight:44,status:'Activa',lote:'Lote A',gdp:182,cost:780000,partos:3,crias:6,madre:'Externo',padre:'RE-003',obs:''},
-  {id:'OV-2341',name:'',sex:'H',cat:'Reproductora',race:'Dorper',born:'2020-04-10',weight:55,status:'En tratamiento',lote:'Lote C',gdp:175,cost:1320000,partos:3,crias:5,madre:'OV-0211',padre:'RE-001',obs:'Tratamiento activo Oxitetraciclina'},
-  {id:'OV-0441',name:'',sex:'H',cat:'Reproductora',race:'Katahdin',born:'2021-01-05',weight:41,status:'Vacía',lote:'Lote A',gdp:141,cost:1240000,partos:2,crias:2,madre:'Externo',padre:'RE-001',obs:'3 ciclos vacía — evaluar culling'},
-  {id:'OV-1109',name:'',sex:'H',cat:'Reproductora',race:'Pelibuey',born:'2021-06-12',weight:38,status:'Vacía',lote:'Lote D',gdp:155,cost:980000,partos:1,crias:1,madre:'Externo',padre:'RE-007',obs:'2 ciclos vacía'},
-  {id:'OV-2087',name:'',sex:'H',cat:'Reproductora',race:'Dorper',born:'2020-11-30',weight:49,status:'Vacía',lote:'Lote D',gdp:162,cost:1640000,partos:3,crias:4,madre:'OV-0310',padre:'RE-001',obs:'2 ciclos vacía'},
-  {id:'OV-1234',name:'',sex:'H',cat:'Reproductora',race:'Hampshire',born:'2022-09-15',weight:46,status:'Gestante',lote:'Lote B',gdp:178,cost:850000,partos:2,crias:3,madre:'Externo',padre:'RE-003',obs:'Parto esperado mañana'},
-  {id:'OV-0892',name:'',sex:'H',cat:'Reproductora',race:'Dorper',born:'2019-06-01',weight:53,status:'Gestante',lote:'Lote C',gdp:165,cost:1580000,partos:4,crias:8,madre:'OV-0042',padre:'RE-001',obs:''},
-  {id:'OV-2210',name:'',sex:'H',cat:'Reproductora',race:'Katahdin',born:'2023-06-20',weight:36,status:'Gestante',lote:'Lote D',gdp:190,cost:620000,partos:1,crias:0,madre:'OV-1102',padre:'RE-007',obs:'1er parto próximo'},
-  {id:'OV-3301',name:'Nube',sex:'H',cat:'Levante',race:'Dorper',born:'2024-10-05',weight:18,status:'Levante',lote:'Lote A',gdp:210,cost:180000,partos:0,crias:0,madre:'OV-0234',padre:'RE-003',obs:'Cría de Bella'},
-  {id:'OV-3302',name:'',sex:'H',cat:'Levante',race:'Dorper',born:'2024-10-05',weight:17,status:'Levante',lote:'Lote A',gdp:198,cost:180000,partos:0,crias:0,madre:'OV-0234',padre:'RE-003',obs:''},
-  {id:'OV-3401',name:'',sex:'H',cat:'Levante',race:'Katahdin',born:'2024-11-12',weight:14,status:'Levante',lote:'Lote B',gdp:185,cost:150000,partos:0,crias:0,madre:'OV-1102',padre:'RE-007',obs:''},
-  {id:'RE-003',name:'Príncipe',sex:'M',cat:'Reproductor',race:'Dorper',born:'2021-08-14',weight:82,status:'Reproductor',lote:'Lote B',gdp:null,cost:2050000,partos:null,crias:87,madre:'Externo',padre:'Externo',obs:'Top reproductor. Fertilidad 96%'},
-  {id:'RE-007',name:'Zeus',sex:'M',cat:'Reproductor',race:'Dorper',born:'2023-02-20',weight:74,status:'Reproductor',lote:'Lote C',gdp:null,cost:1800000,partos:null,crias:64,madre:'Externo',padre:'Externo',obs:'Fertilidad 92%'},
-  {id:'RE-001',name:'Titan',sex:'M',cat:'Reproductor',race:'Dorper',born:'2020-05-10',weight:88,status:'Reproductor',lote:'Lote A',gdp:null,cost:2200000,partos:null,crias:112,madre:'Externo',padre:'Externo',obs:'Fertilidad 89%'},
-];
+var allAnimales=[], filtered=[], sortField='id', sortAsc=true, importRows=[], importHeaders=[], editingId=null;
+const STATUS_BADGE={'Activa':'b-green','Gestante':'b-sky','Vacía':'b-amber','En tratamiento':'b-wine','Reproductor':'b-teal','Levante':'b-orange','Cría':'b-gray','Muerto':'b-red','Vendido':'b-red'};
 
-// Status badge map
-const STATUS_BADGE = {
-  'Activa':'b-green','Gestante':'b-sky','Vacía':'b-amber',
-  'En tratamiento':'b-wine','Reproductor':'b-teal','Levante':'b-orange','Baja':'b-red'
-};
+document.addEventListener('DOMContentLoaded',function(){
+  initSidebar(); cargarDatos(); initDrop();
+  document.getElementById('n-fecha').value=new Date().toISOString().slice(0,10);
+});
 
-let filtered = [...ANIMALS];
-let sortField = 'id';
-let sortAsc = true;
-
-// ═══════════════ UTILS ═══════════════
-function calcAge(born){
-  if(!born) return '—';
-  const b = new Date(born), n = new Date();
-  const months = (n.getFullYear()-b.getFullYear())*12+(n.getMonth()-b.getMonth());
-  if(months < 1) return Math.floor((n-b)/86400000)+' días';
-  if(months < 24) return months+' meses';
-  return (months/12).toFixed(1)+' años';
-}
-function fmtCost(v){
-  if(!v) return '—';
-  return '$'+Math.round(v/1000)+'K';
-}
-function fmtCostFull(v){
-  if(!v) return '—';
-  return '$'+v.toLocaleString('es-CO');
-}
-function toast(msg,type='ok'){
-  const c=document.getElementById('toasts');
-  const t=document.createElement('div');
-  t.className='toast '+type;
-  t.innerHTML=(type==='ok'?'<span style="color:var(--teal)">✓</span>':'<span style="color:var(--red)">✕</span>')+' '+msg;
-  c.appendChild(t);
-  setTimeout(()=>t.remove(),3000);
-}
-function openModal(id){document.getElementById(id).classList.add('open')}
-function closeModal(id){document.getElementById(id).classList.remove('open')}
-
-// ═══════════════ RENDER TABLE ═══════════════
-function renderTable(){
-  const tbody = document.getElementById('animal-tbody');
-  const empty = document.getElementById('empty-state');
-  if(!filtered.length){tbody.innerHTML='';empty.style.display='block';return;}
-  empty.style.display='none';
-  tbody.innerHTML = filtered.map(a => `
-    <tr onclick="openPerfil('${a.id}')">
-      <td class="td-mono">#${a.id}</td>
-      <td>
-        <div class="td-animal">
-          <div class="animal-icon ${a.sex==='H'?'h':'m'}">${a.sex==='H'?'🐑':'🐏'}</div>
-          <div>
-            <div class="td-name">${a.name||'—'}</div>
-            <div class="td-muted">${a.cat}</div>
-          </div>
-        </div>
-      </td>
-      <td>${a.race}</td>
-      <td class="td-muted">${calcAge(a.born)}</td>
-      <td class="td-muted">${a.weight} kg</td>
-      <td><span class="badge ${STATUS_BADGE[a.status]||'b-gray'}">${a.status}</span></td>
-      <td class="td-muted">${a.lote}</td>
-      <td class="td-muted">${a.gdp?a.gdp+' g/d':'—'}</td>
-      <td class="td-muted">${fmtCost(a.cost)}</td>
-      <td>
-        <div style="display:flex;gap:4px">
-          <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();openPerfil('${a.id}')">Ver</button>
-          <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();toast('Abriendo tratamiento…')">+ Trat.</button>
-        </div>
-      </td>
-    </tr>`).join('');
-  document.getElementById('filter-count').textContent = filtered.length+' de '+ANIMALS.length+' animales';
-  document.getElementById('sb-count').textContent = ANIMALS.length;
-  document.getElementById('ph-sub').textContent = filtered.length+' animales mostrados';
+function cargarDatos(){
+  var d=AppData.get();
+  var finca=d.finca||{};
+  if(finca.nombre) document.getElementById('sb-finca').textContent=finca.nombre;
+  allAnimales=d.animales||[];
+  var activos=allAnimales.filter(function(a){return a.activo!==false;});
+  document.getElementById('sb-count').textContent=activos.length;
+  document.getElementById('sb-stats').textContent=activos.length+' animales activos';
+  applyFilters();
 }
 
-// ═══════════════ FILTERS ═══════════════
 function applyFilters(){
-  const q=(document.getElementById('search-input').value||'').toLowerCase();
-  const sexo=document.getElementById('f-sexo').value;
-  const estado=document.getElementById('f-estado').value;
-  const lote=document.getElementById('f-lote').value;
-  const raza=document.getElementById('f-raza').value;
-  filtered = ANIMALS.filter(a=>{
-    if(q && !a.id.toLowerCase().includes(q) && !a.name.toLowerCase().includes(q) && !a.race.toLowerCase().includes(q)) return false;
-    if(sexo && a.sex!==sexo) return false;
-    if(estado && a.status!==estado) return false;
-    if(lote && a.lote!==lote) return false;
-    if(raza && a.race!==raza) return false;
+  var q=(document.getElementById('q').value||'').toLowerCase();
+  var sexo=document.getElementById('f-sexo').value;
+  var estado=document.getElementById('f-estado').value;
+  var lote=document.getElementById('f-lote').value;
+  var raza=document.getElementById('f-raza').value;
+  var soloActivos=document.getElementById('f-activo').value==='true';
+  filtered=allAnimales.filter(function(a){
+    if(soloActivos&&a.activo===false) return false;
+    if(q&&!String(a.id||'').toLowerCase().includes(q)&&!String(a.nombre||'').toLowerCase().includes(q)&&!String(a.raza||'').toLowerCase().includes(q)) return false;
+    if(sexo&&a.sexo!==sexo) return false;
+    if(estado&&a.estado!==estado) return false;
+    if(lote&&a.lote!==lote) return false;
+    if(raza&&a.raza!==raza) return false;
     return true;
   });
   sortAndRender();
 }
-function clearFilters(){
-  document.getElementById('search-input').value='';
-  document.getElementById('f-sexo').value='';
-  document.getElementById('f-estado').value='';
-  document.getElementById('f-lote').value='';
-  document.getElementById('f-raza').value='';
-  filtered=[...ANIMALS];
+
+function limpiarFiltros(){
+  document.getElementById('q').value='';
+  ['f-sexo','f-estado','f-lote','f-raza'].forEach(function(i){document.getElementById(i).value='';});
+  document.getElementById('f-activo').value='true';
+  applyFilters();
+}
+
+function sortBy(f){
+  if(sortField===f) sortAsc=!sortAsc; else{sortField=f;sortAsc=true;}
   sortAndRender();
 }
 
-// ═══════════════ SORT ═══════════════
-function sortBy(field){
-  if(sortField===field) sortAsc=!sortAsc;
-  else{sortField=field;sortAsc=true;}
-  document.querySelectorAll('[id^="sort-"]').forEach(el=>el.textContent='');
-  const el=document.getElementById('sort-'+field);
-  if(el) el.textContent=sortAsc?' ↑':' ↓';
-  sortAndRender();
-}
 function sortAndRender(){
-  filtered.sort((a,b)=>{
-    let va=a[sortField]??'', vb=b[sortField]??'';
+  filtered.sort(function(a,b){
+    var va,vb;
+    if(sortField==='peso'){va=AppData.pesoActual(a.id)||0;vb=AppData.pesoActual(b.id)||0;}
+    else if(sortField==='costo'){va=AppData.costoAnimal(a.id)||0;vb=AppData.costoAnimal(b.id)||0;}
+    else{va=a[sortField]||'';vb=b[sortField]||'';}
     if(typeof va==='number') return sortAsc?va-vb:vb-va;
     return sortAsc?String(va).localeCompare(String(vb)):String(vb).localeCompare(String(va));
   });
-  renderTable();
+  renderTabla();
 }
 
-// ═══════════════ PROFILE ═══════════════
-function openPerfil(id){
-  const a = ANIMALS.find(x=>x.id===id);
+function calcEdad(f){
+  if(!f) return '—';
+  var m=Math.floor((Date.now()-new Date(f))/(30.44*24*3600*1000));
+  if(m<1) return Math.floor((Date.now()-new Date(f))/(24*3600*1000))+'d';
+  if(m<24) return m+'m';
+  return (m/12).toFixed(1)+'a';
+}
+function fmtCOP(v){if(!v) return '—';return '$'+Math.round(v/1000)+'K';}
+
+function renderTabla(){
+  var tbody=document.getElementById('tbody');
+  var empty=document.getElementById('empty');
+  var total=allAnimales.filter(function(a){return a.activo!==false;}).length;
+  document.getElementById('ph-sub').textContent=filtered.length+' animales mostrados · '+total+' activos en total';
+  document.getElementById('filter-count').textContent=filtered.length+' resultados';
+  if(!filtered.length){tbody.innerHTML='';empty.style.display='block';return;}
+  empty.style.display='none';
+  tbody.innerHTML=filtered.map(function(a){
+    var peso=AppData.pesoActual(a.id);
+    var costo=AppData.costoAnimal(a.id);
+    var op=a.activo===false?'opacity:.4;':'';
+    return '<tr onclick="verPerfil(\''+a.id+'\')" style="'+op+'">'
+      +'<td class="td-id">#'+a.id+'</td>'
+      +'<td><div class="td-animal"><div class="a-ico '+(a.sexo||'H')+'">'+(a.sexo==='H'?'🐑':'🐏')+'</div>'
+      +'<div><div style="font-weight:600">'+(a.nombre||'—')+'</div><div class="td-m">'+(a.categoria||'')+'</div></div></div></td>'
+      +'<td class="td-m">'+(a.raza||'—')+'</td>'
+      +'<td class="td-m">'+calcEdad(a.fecha_nacimiento)+'</td>'
+      +'<td class="td-m">'+(peso?peso+' kg':'—')+'</td>'
+      +'<td><span class="badge '+(STATUS_BADGE[a.estado]||'b-gray')+'">'+(a.estado||'—')+'</span></td>'
+      +'<td class="td-m">'+(a.lote||'—')+'</td>'
+      +'<td class="td-m">'+fmtCOP(costo)+'</td>'
+      +'<td><div style="display:flex;gap:4px">'
+      +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();verPerfil(\''+a.id+'\')">Ver</button>'
+      +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirEditar(\''+a.id+'\')">✏</button>'
+      +'</div></td></tr>';
+  }).join('');
+}
+
+function verPerfil(id){
+  var a=allAnimales.find(function(x){return x.id===id;});
   if(!a) return;
-  document.getElementById('perfil-title').textContent = '#'+a.id+(a.name?' — '+a.name:'');
-  const body = document.getElementById('perfil-body');
-  body.innerHTML = `
-    <div class="profile-hero">
-      <div class="profile-avatar ${a.sex==='H'?'h':'m'}">${a.sex==='H'?'🐑':'🐏'}</div>
-      <div class="profile-info">
-        <div class="profile-name">${a.name||('#'+a.id)}</div>
-        <div class="profile-id">#${a.id} · ${a.race} · ${a.sex==='H'?'Hembra':'Macho'} · ${a.cat}</div>
-        <div class="profile-tags">
-          <span class="badge ${STATUS_BADGE[a.status]||'b-gray'}">${a.status}</span>
-          <span class="badge b-gray">${a.lote}</span>
-          <span class="badge b-gray">${a.weight} kg</span>
-          <span class="badge b-gray">${calcAge(a.born)}</span>
-          ${a.gdp?`<span class="badge b-teal">GDP ${a.gdp} g/d</span>`:''}
-        </div>
-        <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-          <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-perfil');toast('Abriendo tratamiento…')">+ Tratamiento</button>
-          <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-perfil');toast('Abriendo monta…')">+ Monta</button>
-          <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-perfil');toast('Abriendo pesaje…')">+ Pesaje</button>
-          <button class="btn btn-danger btn-sm" onclick="closeModal('modal-perfil');toast('Abriendo baja…')">Dar de baja</button>
-        </div>
-      </div>
-      <div class="profile-cost">
-        <div class="profile-cost-label">Costo acumulado</div>
-        <div class="profile-cost-val">${fmtCostFull(a.cost)}</div>
-        <div class="profile-cost-sub">COP</div>
-      </div>
-    </div>
+  document.getElementById('perfil-title').textContent='#'+a.id+(a.nombre?' — '+a.nombre:'');
+  var peso=AppData.pesoActual(id);
+  var costo=AppData.costoAnimal(id);
+  var d=AppData.get();
+  var pesajes=(d.pesajes||[]).filter(function(p){return p.animal_id===id;}).slice(0,5);
+  var trts=(d.tratamientos||[]).filter(function(t){return String(t.animales_ids||'').includes(id);}).slice(0,5);
+  document.getElementById('perfil-body').innerHTML=
+    '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">'
+    +'<div style="width:54px;height:54px;border-radius:50%;background:var(--teal-bg);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">'+(a.sexo==='H'?'🐑':'🐏')+'</div>'
+    +'<div style="flex:1"><div style="font-family:Sigmar,cursive;font-size:18px;color:var(--text)">'+(a.nombre||'Sin nombre')+'</div>'
+    +'<div style="font-size:11px;color:var(--teal);font-weight:600;margin-top:2px">#'+a.id+' · '+(a.raza||'')+'</div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'
+    +'<span class="badge '+(STATUS_BADGE[a.estado]||'b-gray')+'">'+(a.estado||'—')+'</span>'
+    +'<span class="badge b-gray">'+(a.lote||'—')+'</span>'
+    +(peso?'<span class="badge b-teal">'+peso+' kg</span>':'')
+    +'<span class="badge b-gray">'+calcEdad(a.fecha_nacimiento)+'</span>'
+    +'</div></div>'
+    +'<div style="text-align:right;flex-shrink:0"><div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Costo acumulado</div>'
+    +'<div style="font-size:20px;font-weight:700;color:var(--amber);margin-top:2px">'+(costo?'$'+costo.toLocaleString('es-CO'):'—')+'</div></div>'
+    +'</div>'
+    +'<div class="ic-row">'
+    +ic('Raza',a.raza)+ic('Categoría',a.categoria)+ic('Edad',calcEdad(a.fecha_nacimiento))
+    +ic('Lote',a.lote)+ic('Fecha nac.',a.fecha_nacimiento||'—')+ic('Origen',a.origen||'—')
+    +ic('Padre ID',a.padre_id||'—')+ic('Madre ID',a.madre_id||'—')+ic('Costo adq.',fmtCOP(a.costo_adquisicion))
+    +'</div>'
+    +(a.observaciones?'<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px;font-size:12px;color:var(--text2);margin-bottom:14px">📝 '+a.observaciones+'</div>':'')
+    +(pesajes.length?'<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text4);margin-bottom:6px">Últimos pesajes</div>'
+      +'<div style="background:var(--bg3);border-radius:var(--r);overflow:hidden;margin-bottom:14px"><table><thead><tr><th>Fecha</th><th>Peso</th><th>GDP</th><th>Colaborador</th></tr></thead><tbody>'
+      +pesajes.map(function(p){return '<tr><td class="td-m">'+p.fecha+'</td><td style="font-weight:600;color:var(--teal)">'+p.peso_kg+' kg</td><td class="td-m">'+(p.gdp_calculado||'—')+'</td><td class="td-m">'+(p.colaborador||'—')+'</td></tr>';}).join('')
+      +'</tbody></table></div>':'')
+    +(trts.length?'<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text4);margin-bottom:6px">Historial médico</div>'
+      +'<div style="background:var(--bg3);border-radius:var(--r);overflow:hidden"><table><thead><tr><th>Fecha</th><th>Medicamento</th><th>Dx</th><th>Estado</th></tr></thead><tbody>'
+      +trts.map(function(t){return '<tr><td class="td-m">'+(t.fecha_inicio||'—')+'</td><td>'+(t.medicamento_nombre||'—')+'</td><td class="td-m">'+(t.diagnostico||'—')+'</td><td><span class="badge '+(t.estado==='En curso'?'b-sky':'b-green')+'">'+(t.estado||'—')+'</span></td></tr>';}).join('')
+      +'</tbody></table></div>':'');
 
-    <div class="tab-bar">
-      <div class="tab active" onclick="switchTab(this,'pt-general')">General</div>
-      <div class="tab" onclick="switchTab(this,'pt-historial')">Historial médico</div>
-      <div class="tab" onclick="switchTab(this,'pt-reproduccion')">Reproducción</div>
-      <div class="tab" onclick="switchTab(this,'pt-crias')">Crías</div>
-      <div class="tab" onclick="switchTab(this,'pt-lineaje')">Lineaje</div>
-      <div class="tab" onclick="switchTab(this,'pt-costos')">Costos</div>
-    </div>
+  document.getElementById('btn-edit').onclick=function(){closeModal('m-perfil');abrirEditar(id);};
+  document.getElementById('btn-baja').onclick=function(){
+    if(confirm('¿Confirmar baja de #'+id+'? El animal saldrá del inventario activo.')){
+      AppData.registrarBaja({animal_id:id,tipo_baja:'muerte',fecha:new Date().toISOString().slice(0,10),colaborador:'Juan García'});
+      cargarDatos(); closeModal('m-perfil'); toast('Baja de #'+id+' registrada');
+    }
+  };
+  openModal('m-perfil');
+}
+function ic(l,v){return '<div class="ic-card"><div class="ic-label">'+l+'</div><div class="ic-val">'+v+'</div></div>';}
 
-    <!-- GENERAL -->
-    <div id="pt-general" class="tab-pane active">
-      <div class="info-grid">
-        ${ic('Raza',a.race)}
-        ${ic('Edad',calcAge(a.born))}
-        ${ic('Peso actual',a.weight+' kg')}
-        ${ic('Lote',a.lote)}
-        ${ic('Estado',a.status)}
-        ${ic('GDP estimado',a.gdp?(a.gdp+' g/d'):'—')}
-        ${ic('Fecha nac./ingreso',a.born||'—')}
-        ${ic('Origen',a.madre==='Externo'?'Comprado':'Nacido en finca')}
-        ${ic('N° partos',a.partos!=null?String(a.partos):'—')}
-      </div>
-      ${a.obs?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;font-size:13px;color:var(--text2)">📝 ${a.obs}</div>`:''}
-    </div>
-
-    <!-- HISTORIAL -->
-    <div id="pt-historial" class="tab-pane">
-      <div class="tl">
-        <div class="tl-item">
-          <div class="tl-dot" style="background:var(--sky)"></div>
-          <div><span class="tl-date">08/04/2025</span><span class="tl-user">· Juan García</span></div>
-          <div class="tl-text">Tratamiento: Oxitetraciclina 20% — ${(a.weight*5/10).toFixed(1)} mL IM</div>
-          <div class="tl-meta">Dx: Neumonía bacteriana · Duración: 5 días · Retiro: 28 días</div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot" style="background:var(--amber)"></div>
-          <div><span class="tl-date">10/03/2025</span><span class="tl-user">· Carlos Ríos</span></div>
-          <div class="tl-text">Desparasitación: Ivermectina 1% — ${(a.weight*0.2/10).toFixed(1)} mL SC</div>
-          <div class="tl-meta">Grupal Lote ${a.lote.replace('Lote ','')} · Preventivo</div>
-        </div>
-        <div class="tl-item">
-          <div class="tl-dot" style="background:var(--teal)"></div>
-          <div><span class="tl-date">15/01/2025</span><span class="tl-user">· María López</span></div>
-          <div class="tl-text">Vitamina ADE — ${(a.weight/20).toFixed(1)} mL IM</div>
-          <div class="tl-meta">Control semestral preventivo</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- REPRODUCCIÓN -->
-    <div id="pt-reproduccion" class="tab-pane">
-      ${a.sex==='M' ? `
-        <div class="info-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
-          ${ic('Total crías registradas',String(a.crias||0))}
-          ${ic('Fertilidad estimada','96%')}
-          ${ic('GDP media prole','191 g/d')}
-        </div>
-        <p style="font-size:13px;color:var(--text3)">Reproductor activo. Ver sección Reproducción para historial completo de montas.</p>
-      ` : `
-        <div class="info-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
-          ${ic('N° partos',String(a.partos||0))}
-          ${ic('Total crías',String(a.crias||0))}
-          ${ic('Crías/parto',a.partos?(a.crias/a.partos).toFixed(2):'—')}
-          ${ic('Último parto','10/04/2025')}
-        </div>
-        <div class="tl">
-          <div class="tl-item">
-            <div class="tl-dot" style="background:var(--teal)"></div>
-            <div><span class="tl-date">10/04/2025 — ${a.partos}° parto</span></div>
-            <div class="tl-text">2 crías: Macho 6.2 kg + Hembra 5.8 kg</div>
-            <div class="tl-meta">Padre: #RE-003 · Parto normal</div>
-          </div>
-          <div class="tl-item">
-            <div class="tl-dot" style="background:var(--teal)"></div>
-            <div><span class="tl-date">02/02/2024 — ${(a.partos||1)-1}° parto</span></div>
-            <div class="tl-text">2 crías: Macho 5.9 kg + Hembra 6.1 kg</div>
-            <div class="tl-meta">Padre: #RE-007 · Parto normal</div>
-          </div>
-        </div>
-      `}
-    </div>
-
-    <!-- CRÍAS -->
-    <div id="pt-crias" class="tab-pane">
-      ${(!a.crias || a.crias===0) ? '<div class="empty"><div class="empty-ico">🐣</div><div class="empty-text">Sin crías registradas</div></div>' : `
-      <table>
-        <thead><tr><th>ID Cría</th><th>Sexo</th><th>Peso nac.</th><th>Fecha nac.</th><th>Padre</th><th>Estado</th></tr></thead>
-        <tbody>
-          <tr><td class="td-mono">#OV-3301</td><td>Macho</td><td>6.2 kg</td><td>10/04/2025</td><td>#RE-003</td><td><span class="badge b-orange">Levante</span></td></tr>
-          <tr><td class="td-mono">#OV-3302</td><td>Hembra</td><td>5.8 kg</td><td>10/04/2025</td><td>#RE-003</td><td><span class="badge b-orange">Levante</span></td></tr>
-          <tr><td class="td-mono">#OV-2901</td><td>Macho</td><td>5.9 kg</td><td>02/02/2024</td><td>#RE-007</td><td><span class="badge b-amber">Vendido</span></td></tr>
-        </tbody>
-      </table>`}
-    </div>
-
-    <!-- LINEAJE -->
-    <div id="pt-lineaje" class="tab-pane">
-      <div class="lineage">
-        <svg viewBox="0 0 520 200" width="100%" style="max-width:520px">
-          <!-- Abuelos -->
-          <rect x="20" y="10" width="120" height="40" rx="6" fill="var(--bg4)" stroke="var(--border)" stroke-width=".8"/>
-          <text x="80" y="27" text-anchor="middle" font-family="Changa" font-size="10" fill="var(--text2)">Abuela materna</text>
-          <text x="80" y="41" text-anchor="middle" font-family="Changa" font-size="9" fill="var(--text3)">#OV-0042 · Dorper</text>
-          <rect x="160" y="10" width="120" height="40" rx="6" fill="var(--bg4)" stroke="var(--border)" stroke-width=".8"/>
-          <text x="220" y="27" text-anchor="middle" font-family="Changa" font-size="10" fill="var(--text2)">Abuelo materno</text>
-          <text x="220" y="41" text-anchor="middle" font-family="Changa" font-size="9" fill="var(--text3)">#RE-000 · Importado</text>
-          <rect x="320" y="10" width="120" height="40" rx="6" fill="var(--bg4)" stroke="var(--border)" stroke-width=".8"/>
-          <text x="380" y="27" text-anchor="middle" font-family="Changa" font-size="10" fill="var(--text2)">Padre</text>
-          <text x="380" y="41" text-anchor="middle" font-family="Changa" font-size="9" fill="var(--text3)">#${a.padre} · Dorper</text>
-          <!-- Madre -->
-          <rect x="90" y="90" width="120" height="40" rx="6" fill="var(--surface)" stroke="var(--border2)" stroke-width=".8"/>
-          <text x="150" y="107" text-anchor="middle" font-family="Changa" font-size="10" fill="var(--text)">Madre</text>
-          <text x="150" y="121" text-anchor="middle" font-family="Changa" font-size="9" fill="var(--text3)">#${a.madre} · Dorper</text>
-          <!-- Lines abuelos → madre -->
-          <line x1="80" y1="50" x2="80" y2="70" stroke="var(--border)" stroke-width=".8"/>
-          <line x1="220" y1="50" x2="220" y2="70" stroke="var(--border)" stroke-width=".8"/>
-          <line x1="80" y1="70" x2="220" y2="70" stroke="var(--border)" stroke-width=".8"/>
-          <line x1="150" y1="70" x2="150" y2="90" stroke="var(--border)" stroke-width=".8"/>
-          <!-- Line padre → join -->
-          <line x1="380" y1="50" x2="380" y2="130" stroke="var(--border)" stroke-width=".8"/>
-          <!-- Animal -->
-          <rect x="170" y="158" width="160" height="42" rx="8" fill="var(--teal-bg)" stroke="var(--teal)" stroke-width="1.2"/>
-          <text x="250" y="176" text-anchor="middle" font-family="Sigmar" font-size="12" fill="var(--teal)">#${a.id}</text>
-          <text x="250" y="192" text-anchor="middle" font-family="Changa" font-size="10" fill="var(--text2)">${a.race} · ${calcAge(a.born)}</text>
-          <!-- Lines madre+padre → animal -->
-          <line x1="150" y1="130" x2="150" y2="169" stroke="var(--border2)" stroke-width=".8"/>
-          <line x1="150" y1="169" x2="240" y2="169" stroke="var(--border2)" stroke-width=".8"/>
-          <line x1="380" y1="130" x2="380" y2="169" stroke="var(--border)" stroke-width=".8"/>
-          <line x1="380" y1="169" x2="330" y2="169" stroke="var(--border)" stroke-width=".8"/>
-        </svg>
-      </div>
-    </div>
-
-    <!-- COSTOS -->
-    <div id="pt-costos" class="tab-pane">
-      <div class="info-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px">
-        ${ic('Compra','$'+Math.round(a.cost*0.3/1000)+'K')}
-        ${ic('Alimentación','$'+Math.round(a.cost*0.45/1000)+'K')}
-        ${ic('Sanidad','$'+Math.round(a.cost*0.15/1000)+'K')}
-        ${ic('Total acum.',fmtCostFull(a.cost),'var(--amber)')}
-      </div>
-      <div class="form-section">Agregar costo</div>
-      <div class="form-grid">
-        <div class="fg"><label class="fl">Tipo</label><select class="fi"><option>Alimentación</option><option>Medicamento</option><option>Mano de obra</option><option>Compra</option><option>Otro</option></select></div>
-        <div class="fg"><label class="fl">Valor (COP)</label><input class="fi" type="number" placeholder="25000"/></div>
-        <div class="fg"><label class="fl">Fecha</label><input class="fi" type="date"/></div>
-        <div class="fg" style="display:flex;align-items:flex-end"><button class="btn btn-primary btn-sm" style="width:100%" onclick="toast('Costo registrado')">Agregar</button></div>
-      </div>
-    </div>
-  `;
-  openModal('modal-perfil');
+function abrirNuevo(){
+  editingId=null;
+  document.getElementById('m-nuevo-title').textContent='Registrar animal';
+  document.getElementById('n-id').disabled=false;
+  ['n-id','n-nombre','n-obs','n-padre'].forEach(function(i){document.getElementById(i).value='';});
+  document.getElementById('n-peso').value='';
+  document.getElementById('n-costo').value='';
+  document.getElementById('n-fecha').value=new Date().toISOString().slice(0,10);
+  openModal('m-nuevo');
 }
 
-function ic(label, val, color=''){
-  return `<div class="info-card"><div class="info-card-label">${label}</div><div class="info-card-val" style="${color?'color:'+color:''}">${val}</div></div>`;
+function abrirEditar(id){
+  var a=allAnimales.find(function(x){return x.id===id;});
+  if(!a) return;
+  editingId=id;
+  document.getElementById('m-nuevo-title').textContent='Editar #'+id;
+  document.getElementById('n-id').value=a.id; document.getElementById('n-id').disabled=true;
+  document.getElementById('n-nombre').value=a.nombre||'';
+  document.getElementById('n-sexo').value=a.sexo||'H';
+  document.getElementById('n-cat').value=a.categoria||'Reproductora';
+  document.getElementById('n-raza').value=a.raza||'Dorper';
+  document.getElementById('n-origen').value=a.origen||'Nacido en finca';
+  document.getElementById('n-fecha').value=a.fecha_nacimiento||'';
+  document.getElementById('n-peso').value=a.peso_inicial||'';
+  document.getElementById('n-lote').value=a.lote||'Lote A';
+  document.getElementById('n-estado').value=a.estado||'Activa';
+  document.getElementById('n-costo').value=a.costo_adquisicion||'';
+  document.getElementById('n-padre').value=a.padre_id||'';
+  document.getElementById('n-obs').value=a.observaciones||'';
+  openModal('m-nuevo');
 }
 
-function switchTab(el, id){
-  const body = el.closest('.modal-body, .tab-area');
-  body.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active');
-  body.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
-  const pane = document.getElementById(id);
-  if(pane) pane.classList.add('active');
-}
-
-// ═══════════════ SAVE ═══════════════
-function saveAnimal(){
-  const id = document.getElementById('n-id').value.trim();
+function guardarAnimal(){
+  var id=document.getElementById('n-id').value.trim().toUpperCase();
   if(!id){toast('El ID es requerido','err');return;}
-  if(ANIMALS.find(a=>a.id===id)){toast('ID ya existe','err');return;}
-  const born = document.getElementById('n-fecha').value;
-  ANIMALS.push({id,name:'',sex:document.getElementById('n-sexo').value,cat:'Cría',race:'Dorper',born,weight:0,status:'Activa',lote:'Lote A',gdp:null,cost:0,partos:0,crias:0,madre:'',padre:'',obs:''});
-  filtered=[...ANIMALS];
-  sortAndRender();
-  closeModal('modal-nuevo');
-  toast('Animal #'+id+' registrado');
+  var record={id:id,nombre:document.getElementById('n-nombre').value.trim(),sexo:document.getElementById('n-sexo').value,categoria:document.getElementById('n-cat').value,raza:document.getElementById('n-raza').value,origen:document.getElementById('n-origen').value,fecha_nacimiento:document.getElementById('n-fecha').value,peso_inicial:parseFloat(document.getElementById('n-peso').value)||0,lote:document.getElementById('n-lote').value,estado:document.getElementById('n-estado').value,costo_adquisicion:parseInt(document.getElementById('n-costo').value)||0,padre_id:document.getElementById('n-padre').value.trim(),observaciones:document.getElementById('n-obs').value.trim(),activo:true};
+  if(editingId){
+    AppData.update('animales',editingId,record);
+    toast('Animal #'+id+' actualizado');
+  } else {
+    if(AppData.list('animales').find(function(a){return a.id===id;})){toast('ID #'+id+' ya existe','err');return;}
+    AppData.add('animales',record);
+    toast('Animal #'+id+' registrado');
+  }
+  document.getElementById('n-id').disabled=false;
+  closeModal('m-nuevo'); cargarDatos();
 }
 
-function exportCSV(){
-  const rows=[['ID','Nombre','Sexo','Raza','Edad','Peso','Estado','Lote','GDP','Costo']];
-  ANIMALS.forEach(a=>rows.push([a.id,a.name,a.sex==='H'?'Hembra':'Macho',a.race,calcAge(a.born),a.weight,a.status,a.lote,a.gdp||'',a.cost]));
-  const csv=rows.map(r=>r.join(',')).join('\n');
-  const blob=new Blob([csv],{type:'text/csv'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download='laaamb-animales.csv';a.click();
-  toast('CSV exportado');
+// IMPORTAR
+function openImport(){resetImport();openModal('m-import');}
+function resetImport(){
+  importRows=[];importHeaders=[];
+  document.getElementById('import-s1').style.display='block';
+  document.getElementById('import-s2').style.display='none';
+  document.getElementById('import-s3').style.display='none';
+  document.getElementById('btn-confirm').style.display='none';
+  document.getElementById('file-input').value='';
+  document.getElementById('import-foot').innerHTML='<button class="btn btn-ghost" onclick="closeModal(\'m-import\');resetImport()">Cancelar</button><button class="btn btn-primary" id="btn-confirm" style="display:none" onclick="confirmarImport()">✓ Confirmar importación</button>';
+  ['step1','step2','step3'].forEach(function(s,i){document.getElementById(s).className='step'+(i===0?' active':'');});
 }
 
-// Kill Klaviyo
-function killKlaviyo(){['[class*="klaviyo"]','[id*="klaviyo"]','[class*="kl-"]'].forEach(s=>{try{document.querySelectorAll(s).forEach(el=>el.style.display='none')}catch(e){}});}
-killKlaviyo();setTimeout(killKlaviyo,800);setTimeout(killKlaviyo,2000);
-new MutationObserver(killKlaviyo).observe(document.body,{childList:true,subtree:false});
+function initDrop(){
+  var dz=document.getElementById('drop-zone');
+  dz.addEventListener('dragover',function(e){e.preventDefault();dz.classList.add('drag-over');});
+  dz.addEventListener('dragleave',function(){dz.classList.remove('drag-over');});
+  dz.addEventListener('drop',function(e){e.preventDefault();dz.classList.remove('drag-over');if(e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);});
+  dz.addEventListener('click',function(){document.getElementById('file-input').click();});
+}
 
-// INIT
-renderTable();
-document.getElementById('filter-count').textContent = ANIMALS.length+' de '+ANIMALS.length+' animales';
-</script>
-<script>
-(function(){
+function handleFile(file){
+  if(!file) return;
+  if(file.size>10*1024*1024){toast('Archivo demasiado grande (max 10MB)','err');return;}
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var rows;
+      if(file.name.toLowerCase().endsWith('.csv')){
+        var text=e.target.result;
+        rows=text.split('\n').filter(function(l){return l.trim();}).map(function(l){return l.split(',').map(function(v){return v.trim().replace(/^"|"$/g,'');});});
+      } else {
+        var wb=XLSX.read(e.target.result,{type:'binary'});
+        var ws=wb.Sheets[wb.SheetNames[0]];
+        rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      }
+      if(!rows||rows.length<2){toast('El archivo está vacío o no tiene datos','err');return;}
+      importHeaders=rows[0].map(function(h){return String(h||'').trim();});
+      var dataRows=rows.slice(1).filter(function(r){return r.some(function(c){return c!==''&&c!==null&&c!==undefined;});});
+      var result=AppData.validateImport('animales',dataRows,importHeaders);
+      importRows=result.valid;
+      showPreview(result.valid,result.errors);
+    }catch(err){toast('Error leyendo el archivo: '+err.message,'err');}
+  };
+  if(file.name.toLowerCase().endsWith('.csv')) reader.readAsText(file,'UTF-8');
+  else reader.readAsBinaryString(file);
+}
+
+function showPreview(valid,errors){
+  document.getElementById('import-s1').style.display='none';
+  document.getElementById('import-s2').style.display='block';
+  document.getElementById('step1').className='step done';
+  document.getElementById('step2').className='step active';
+
+  document.getElementById('import-summary').innerHTML=
+    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">'
+    +'<div style="background:var(--green-bg);border:1px solid rgba(46,199,122,.2);border-radius:var(--r);padding:10px 16px;text-align:center"><div style="font-size:22px;font-weight:700;color:var(--green)">'+valid.length+'</div><div style="font-size:11px;color:var(--text3)">filas válidas</div></div>'
+    +(errors.length?'<div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-radius:var(--r);padding:10px 16px;text-align:center"><div style="font-size:22px;font-weight:700;color:var(--red)">'+errors.length+'</div><div style="font-size:11px;color:var(--text3)">con error (no se importarán)</div></div>':'')
+    +'</div>';
+
+  if(errors.length){
+    document.getElementById('import-errors').innerHTML=
+      '<div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.15);border-radius:var(--r);padding:10px;max-height:80px;overflow-y:auto;margin-bottom:8px">'
+      +errors.slice(0,8).map(function(e){return '<div style="font-size:11px;color:var(--red)">Fila '+e.fila+': '+e.errores.join(' · ')+'</div>';}).join('')
+      +(errors.length>8?'<div style="font-size:11px;color:var(--text3)">...y '+(errors.length-8)+' más</div>':'')
+      +'</div>';
+  } else {
+    document.getElementById('import-errors').innerHTML='';
+  }
+
+  var fields=['id','nombre','sexo','categoria','raza','lote','estado','fecha_nacimiento'];
+  document.getElementById('preview-table').innerHTML=
+    '<thead><tr>'+fields.map(function(f){return '<th>'+f+'</th>';}).join('')+'</tr></thead>'
+    +'<tbody>'+valid.slice(0,15).map(function(r){return '<tr>'+fields.map(function(f){return '<td>'+(r[f]||'—')+'</td>';}).join('')+'</tr>';}).join('')
+    +(valid.length>15?'<tr><td colspan="'+fields.length+'" style="text-align:center;color:var(--text3);font-size:11px">...y '+(valid.length-15)+' más</td></tr>':'')
+    +'</tbody>';
+
+  if(valid.length>0) document.getElementById('btn-confirm').style.display='inline-flex';
+}
+
+function confirmarImport(){
+  var replace=document.getElementById('replace-check').checked;
+  var n=AppData.confirmImport('animales',importRows,replace);
+  document.getElementById('import-s2').style.display='none';
+  document.getElementById('import-s3').style.display='block';
+  document.getElementById('step2').className='step done';
+  document.getElementById('step3').className='step done';
+  document.getElementById('import-done').textContent=n+' animales importados correctamente';
+  document.getElementById('import-foot').innerHTML='<button class="btn btn-primary" onclick="closeModal(\'m-import\');resetImport();cargarDatos()">Ver inventario →</button>';
+  toast(n+' animales importados');
+}
+
+// EXPORTAR
+function exportarTodo(){
+  var datos=AppData.exportAll();
+  var wb=XLSX.utils.book_new();
+  Object.entries(datos).forEach(function(e){
+    var ws=XLSX.utils.aoa_to_sheet(e[1]);
+    XLSX.utils.book_append_sheet(wb,ws,e[0].slice(0,31));
+  });
+  XLSX.writeFile(wb,'laaamb-base-completa-'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast('Base completa exportada en Excel');
+}
+
+function exportarCSV(){
+  var filas=AppData.exportCollection('animales');
+  if(filas.length<=1){toast('No hay animales para exportar','info');return;}
+  var csv=filas.map(function(r){return r.map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='laaamb-animales-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  URL.revokeObjectURL(url);
+  toast('CSV exportado ('+(filas.length-1)+' animales · todos los campos)');
+}
+
+function descargarPlantilla(){
+  var filas=AppData.getTemplate('animales');
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.aoa_to_sheet(filas);
+  ws['!cols']=filas[0].map(function(){return {wch:18};});
+  XLSX.utils.book_append_sheet(wb,ws,'Animales');
+  XLSX.writeFile(wb,'plantilla-animales-laaamb.xlsx');
+  toast('Plantilla descargada — llena y sube con el botón Importar');
+}
+
+function openModal(id){var el=document.getElementById(id);if(el) el.classList.add('open');}
+function closeModal(id){var el=document.getElementById(id);if(el) el.classList.remove('open');}
+
+function initSidebar(){
   var open=false;
   var BARS='<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
   var CROSS='<line x1="4" y1="4" x2="18" y2="18"/><line x1="18" y1="4" x2="4" y2="18"/>';
   function show(){open=true;document.getElementById('sidebar').classList.add('on');document.getElementById('lov').classList.add('on');document.body.style.overflow='hidden';document.getElementById('lico').innerHTML=CROSS;}
   function hide(){open=false;document.getElementById('sidebar').classList.remove('on');document.getElementById('lov').classList.remove('on');document.body.style.overflow='';document.getElementById('lico').innerHTML=BARS;}
-  document.addEventListener('DOMContentLoaded',function(){
-    document.getElementById('lham').onclick=function(){open?hide():show();};
-    document.getElementById('lov').onclick=hide;
-    document.querySelectorAll('#sidebar a.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<=768)hide();});});
-  });
-})();
+  document.getElementById('lham').onclick=function(){open?hide():show();};
+  document.getElementById('lov').onclick=hide;
+  document.querySelectorAll('#sidebar a.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<=768) hide();});});
+}
+
+function toast(msg,type){
+  type=type||'ok';
+  var c=document.getElementById('toasts');
+  var t=document.createElement('div');t.className='toast '+type;
+  var ic={ok:'<span style="color:var(--teal)">✓</span>',err:'<span style="color:var(--red)">✕</span>',info:'<span style="color:var(--amber)">ℹ</span>'};
+  t.innerHTML=(ic[type]||ic.ok)+' '+msg;
+  c.appendChild(t);setTimeout(function(){t.remove();},3500);
+}
 </script>
 </body>
 </html>
