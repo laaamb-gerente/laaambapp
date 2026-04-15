@@ -1021,14 +1021,27 @@ const ph=document.getElementById('p-hora');if(ph)ph.value=new Date().toTimeStrin
 if(typeof AppData!=='undefined') loadReproFromAppData();
 else renderAll();
 </script>
+
+
 <script>
 
-</script>
-<script>
+// ── Badges dinámicos sidebar ──────────────────────────────────────────────────
+(function updateSidebarBadges(){
+  if(typeof AppData==='undefined') return;
+  try{
+    const s=AppData.stats();
+    const d=AppData.get();
+    document.querySelectorAll('.nav-badge').forEach(function(b){
+      const link=b.closest('a');
+      if(link&&link.href&&link.href.includes('animales')) b.textContent=s.total;
+      if(link&&link.href&&link.href.includes('medicamentos')) b.textContent=d.medicamentos.filter(function(m){return m.activo!==false;}).length;
+    });
+    const farmSub=document.querySelector('.farm-sub');
+    const finca=d.finca||{};
+    if(farmSub) farmSub.textContent=(finca.area_ha||76.2)+' ha · '+s.total+' animales';
+  }catch(e){}
+})();
 
-}
-</script>
-<script>
 (function(){
   var open=false;
   var BARS='<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
