@@ -963,6 +963,82 @@ const today = new Date().toISOString().slice(0,10);
 const sixMonthsAgo = new Date(Date.now()-180*86400000).toISOString().slice(0,10);
 document.getElementById('d-from').value = sixMonthsAgo;
 document.getElementById('d-to').value = today;
+
+// ═══ APPDATA INTEGRATION ═══
+(function loadOKRFromAppData(){
+  if(typeof AppData==='undefined') return;
+  const d=AppData.get();
+  const s=AppData.stats();
+
+  // KPIs principales — actualizar con datos reales
+  const kpiVals=document.querySelectorAll('.kpi-val');
+  if(kpiVals[0]&&s.total) kpiVals[0].textContent=s.total;
+  if(kpiVals[1]&&s.gdp_promedio) kpiVals[1].innerHTML=s.gdp_promedio+'<span class="kpi-unit">g/d</span>';
+  if(kpiVals[2]&&s.gestantes!==undefined) kpiVals[2].textContent=s.gestantes;
+  if(kpiVals[3]) kpiVals[3].textContent=d.partos.length;
+
+  // Fertilidad real = gestantes / hembras activas
+  const fertPct=s.hembras>0?Math.round((s.gestantes/s.hembras)*100):0;
+  if(kpiVals[4]&&fertPct) kpiVals[4].innerHTML=fertPct+'<span class="kpi-unit">%</span>';
+
+  // Tabla comparativa de métricas
+  const GDP=s.gdp_promedio||'—';
+  const MORT=parseFloat(s.mortalidad_pct)||0;
+  const comparData=[
+    ['GDP promedio (g/d)', GDP, 200, GDP&&GDP!=='—'&&GDP<200?'Bajo meta':'—'],
+    ['Fertilidad (%)', fertPct||'—', 90, fertPct&&fertPct<90?'Bajo meta':'—'],
+    ['Natalidad (%)', d.partos.length?'Calculando':'—', 95, '—'],
+    ['Mortalidad (%)', MORT, 2, MORT>2?'Sobre meta':'—'],
+    ['Crías/parto', d.crias_parto&&d.partos.length?(d.crias_parto.length/d.partos.length).toFixed(2):'—', 1.8, '—'],
+  ];
+
+  // Actualizar ranking de reproductores con datos reales
+  const reproductores=d.animales.filter(a=>a.activo&&a.sexo==='M'&&a.categoria==='Reproductor');
+  const rankCard=document.querySelector('#t-ranking .card');
+  if(rankCard&&reproductores.length){
+    const starSVG=(color)=>`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="color:${color};flex-shrink:0"><path d="M10 2l2 5h5l-4 3 1.5 5L10 12l-4.5 3L7 10 3 7h5L10 2z"/></svg>`;
+    const colors=['var(--amber)','var(--text2)','var(--orange)'];
+    const tlHTML=reproductores.slice(0,5).map((r,i)=>{
+      const crias=d.crias_parto?d.crias_parto.filter(cp=>cp.padre_id===r.id).length:0;
+      return `<div class="tl-item" ${i===Math.min(4,reproductores.length-1)?'style="margin-bottom:0"':''}>
+        <div class="tl-dot" style="background:${colors[Math.min(i,2)]}"></div>
+        <div class="tl-text" style="display:flex;align-items:center;gap:4px">${i<3?starSVG(colors[i]):''}<strong>#${r.id}</strong>${r.nombre?' — '+r.nombre:''}</div>
+        <div class="tl-meta">${r.raza||'—'} · ${crias} crías · Lote: ${r.lote||'—'}</div>
+      </div>`;
+    }).join('');
+    const tlContainer=rankCard.querySelector('.tl,.card-body');
+    if(tlContainer) tlContainer.innerHTML='<div class="tl">'+tlHTML+'</div>';
+  }
+
+  // Actualizar ranking de madres
+  const madres=d.animales.filter(a=>a.activo&&a.sexo==='H'&&a.categoria==='Reproductora');
+  const madresConPartos=madres.map(m=>({
+    ...m, nPartos: d.partos.filter(p=>p.madre_id===m.id).length
+  })).sort((a,b)=>b.nPartos-a.nPartos);
+  const madresCard=document.querySelector('#t-ranking .card:last-child');
+  if(madresCard&&madresConPartos.length){
+    const starSVG=(color)=>`<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="color:${color};flex-shrink:0"><path d="M10 2l2 5h5l-4 3 1.5 5L10 12l-4.5 3L7 10 3 7h5L10 2z"/></svg>`;
+    const colors=['var(--amber)','var(--text2)','var(--orange)'];
+    const tlHTML=madresConPartos.slice(0,5).map((m,i)=>
+      `<div class="tl-item" ${i===Math.min(4,madresConPartos.length-1)?'style="margin-bottom:0"':''}>
+        <div class="tl-dot" style="background:${colors[Math.min(i,2)]}"></div>
+        <div class="tl-text" style="display:flex;align-items:center;gap:4px">${i<3?starSVG(colors[i]):''}<strong>#${m.id}</strong>${m.nombre?' — '+m.nombre:''}</div>
+        <div class="tl-meta">${m.raza||'—'} · ${m.nPartos} partos · Estado: ${m.estado||'Activa'}</div>
+      </div>`
+    ).join('');
+    const tlContainer=madresCard.querySelector('.tl,.card-body');
+    if(tlContainer) tlContainer.innerHTML='<div class="tl">'+tlHTML+'</div>';
+  }
+
+  // IA tab — actualizar contexto con datos reales para el análisis
+  window._OKR_CONTEXT={
+    total:s.total, hembras:s.hembras, machos:s.machos,
+    gestantes:s.gestantes, levante:s.levante,
+    tratamientos:s.tratamientos_activos, gdp:s.gdp_promedio,
+    partos:d.partos.length, fertilidad:fertPct, mortalidad:MORT,
+    lotes:d.lotes.map(l=>l.nombre).join(', ')
+  };
+})();
 </script>
 <script>
 
@@ -972,6 +1048,25 @@ document.getElementById('d-to').value = today;
 }
 </script>
 <script>
+
+// ── Badges dinámicos sidebar ──────────────────────────────────────────────────
+(function updateSidebarBadges(){
+  if(typeof AppData==='undefined') return;
+  try{
+    const s=AppData.stats();
+    const d=AppData.get();
+    // Badge animales
+    document.querySelectorAll('.nav-badge').forEach(function(b){
+      const link=b.closest('a');
+      if(link&&link.href&&link.href.includes('animales')) b.textContent=s.total;
+      if(link&&link.href&&link.href.includes('medicamentos')) b.textContent=d.medicamentos.filter(m=>m.activo!==false).length;
+    });
+    // Farm sub
+    const farmSub=document.querySelector('.farm-sub');
+    const finca=d.finca||{};
+    if(farmSub) farmSub.textContent=(finca.area_ha||76.2)+' ha · '+s.total+' animales';
+  }catch(e){}
+})();
 (function(){
   var open=false;
   var BARS='<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
