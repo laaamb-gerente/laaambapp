@@ -259,6 +259,16 @@ textarea.fi{resize:vertical;min-height:68px}
     background:var(--bg2);
   }
 }
+
+/* ── Validación de formularios ──────────────────────────────── */
+.fi.field-error{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(224,82,82,0.15)!important}
+.fi.field-ok{border-color:var(--teal)!important}
+.fi:invalid{border-color:var(--amber)}
+.field-hint{font-size:10px;color:var(--red);margin-top:3px;display:none}
+.field-hint.visible{display:block}
+/* Campos requeridos marcados */
+label.fl[for] + .fi:required,
+label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 </style>
 </head>
 <body>
@@ -762,6 +772,10 @@ function saveParto(){
   const colabs  = document.querySelectorAll('#modal-parto select');
   const colab   = colabs[colabs.length-1]?.value||'Juan García';
 
+  var errs=typeof validateForm!=='undefined'?validateForm([
+    {el:'p-madre',label:'ID Madre',required:true},
+    {el:'p-fecha',label:'Fecha',required:true},
+  ]):[];
   if(!madreId||!fecha){toast('Madre y fecha son requeridos','err');return;}
 
   // Recolectar datos de crías del formulario dinámico
@@ -799,6 +813,9 @@ function saveMonta(){
   const hembraId= document.getElementById('m-hembra')?.value?.trim()||document.querySelectorAll('#modal-monta input.fi')[0]?.value?.trim()||'';
   const machoId = document.getElementById('m-macho')?.value?.trim()||document.querySelectorAll('#modal-monta input.fi')[1]?.value?.trim()||'';
   const fecha   = document.getElementById('m-fecha')?.value;
+  var errs2=typeof validateForm!=='undefined'?validateForm([
+    {el:'m-fecha',label:'Fecha',required:true},
+  ]):[];
   if(!fecha){toast('Selecciona la fecha de monta','err');return;}
   const ecoDate = new Date(fecha);
   ecoDate.setDate(ecoDate.getDate()+30);
@@ -1041,6 +1058,43 @@ else renderAll();
     if(farmSub) farmSub.textContent=(finca.area_ha||76.2)+' ha · '+s.total+' animales';
   }catch(e){}
 })();
+
+
+// ═══ Utilidad de validación UI ═══
+function validateForm(fields) {
+  // fields = [{el: element, label: 'Nombre', required: true, type: 'number'}]
+  var errors = [];
+  fields.forEach(function(f) {
+    var el = typeof f.el === 'string' ? document.getElementById(f.el) : f.el;
+    if (!el) return;
+    var val = el.value ? el.value.trim() : '';
+    el.style.borderColor = ''; // reset
+    if (f.required && !val) {
+      el.style.borderColor = 'var(--red)';
+      el.style.boxShadow = '0 0 0 2px rgba(224,82,82,0.2)';
+      errors.push((f.label || 'Campo') + ' es requerido');
+      el.focus && errors.length === 1 && el.focus();
+    } else if (f.type === 'number' && val && isNaN(parseFloat(val))) {
+      el.style.borderColor = 'var(--red)';
+      errors.push((f.label || 'Campo') + ' debe ser un número');
+    } else if (f.min !== undefined && parseFloat(val) < f.min) {
+      el.style.borderColor = 'var(--amber)';
+      errors.push((f.label || 'Campo') + ' debe ser mayor a ' + f.min);
+    } else if (val) {
+      el.style.borderColor = 'var(--teal)';
+      setTimeout(function() { if(el) el.style.borderColor = ''; el.style.boxShadow = ''; }, 2000);
+    }
+  });
+  return errors;
+}
+
+// Limpiar highlights al escribir
+document.addEventListener('input', function(e) {
+  if (e.target.classList.contains('fi')) {
+    e.target.style.borderColor = '';
+    e.target.style.boxShadow = '';
+  }
+}, true);
 
 (function(){
   var open=false;
