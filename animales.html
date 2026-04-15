@@ -430,14 +430,17 @@ document.addEventListener('DOMContentLoaded',function(){
   document.getElementById('n-fecha').value=new Date().toISOString().slice(0,10);
 });
 
+
+// ─ Helper: setEl — asigna textContent solo si el elemento existe
+
 function cargarDatos(){
   var d=AppData.get();
   var finca=d.finca||{};
-  if(finca.nombre) document.getElementById('sb-finca').textContent=finca.nombre;
+  var _sf=document.getElementById('sb-finca');if(_sf)_sf.textContent=finca.nombre;
   allAnimales=d.animales||[];
   var activos=allAnimales.filter(function(a){return a.activo!==false;});
-  document.getElementById('sb-count').textContent=activos.length;
-  document.getElementById('sb-stats').textContent=activos.length+' animales activos';
+  var _esbcount=document.getElementById('sb-count');if(_esbcount)_esbcount.textContent=activos.length;
+  var _esbstats=document.getElementById('sb-stats');if(_esbstats)_esbstats.textContent=activos.length+' animales activos';
   applyFilters();
 }
 
@@ -497,7 +500,7 @@ function renderTabla(){
   var tbody=document.getElementById('tbody');
   var empty=document.getElementById('empty');
   var total=allAnimales.filter(function(a){return a.activo!==false;}).length;
-  document.getElementById('ph-sub').textContent=filtered.length+' animales mostrados · '+total+' activos en total';
+  var _ephsub=document.getElementById('ph-sub');if(_ephsub)_ephsub.textContent=filtered.length+' animales mostrados · '+total+' activos en total';
   document.getElementById('filter-count').textContent=filtered.length+' resultados';
   if(!filtered.length){tbody.innerHTML='';empty.style.display='block';return;}
   empty.style.display='none';
@@ -531,8 +534,7 @@ function verPerfil(id){
   var d=AppData.get();
   var pesajes=(d.pesajes||[]).filter(function(p){return p.animal_id===id;}).slice(0,5);
   var trts=(d.tratamientos||[]).filter(function(t){return String(t.animales_ids||'').includes(id);}).slice(0,5);
-  document.getElementById('perfil-body').innerHTML=
-    '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">'
+  document.getElementById('perfil-body').innerHTML='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:16px">'
     +'<div style="width:54px;height:54px;border-radius:50%;background:var(--teal-bg);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">'+(a.sexo==='H'?'🐑':'🐏')+'</div>'
     +'<div style="flex:1"><div style="font-family:Sigmar,cursive;font-size:18px;color:var(--text)">'+(a.nombre||'Sin nombre')+'</div>'
     +'<div style="font-size:11px;color:var(--teal);font-weight:600;margin-top:2px">#'+a.id+' · '+(a.raza||'')+'</div>'
@@ -673,15 +675,13 @@ function showPreview(valid,errors){
   document.getElementById('step1').className='step done';
   document.getElementById('step2').className='step active';
 
-  document.getElementById('import-summary').innerHTML=
-    '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">'
+  document.getElementById('import-summary').innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px">'
     +'<div style="background:var(--green-bg);border:1px solid rgba(46,199,122,.2);border-radius:var(--r);padding:10px 16px;text-align:center"><div style="font-size:22px;font-weight:700;color:var(--green)">'+valid.length+'</div><div style="font-size:11px;color:var(--text3)">filas válidas</div></div>'
     +(errors.length?'<div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-radius:var(--r);padding:10px 16px;text-align:center"><div style="font-size:22px;font-weight:700;color:var(--red)">'+errors.length+'</div><div style="font-size:11px;color:var(--text3)">con error (no se importarán)</div></div>':'')
     +'</div>';
 
   if(errors.length){
-    document.getElementById('import-errors').innerHTML=
-      '<div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.15);border-radius:var(--r);padding:10px;max-height:80px;overflow-y:auto;margin-bottom:8px">'
+    document.getElementById('import-errors').innerHTML='<div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.15);border-radius:var(--r);padding:10px;max-height:80px;overflow-y:auto;margin-bottom:8px">'
       +errors.slice(0,8).map(function(e){return '<div style="font-size:11px;color:var(--red)">Fila '+e.fila+': '+e.errores.join(' · ')+'</div>';}).join('')
       +(errors.length>8?'<div style="font-size:11px;color:var(--text3)">...y '+(errors.length-8)+' más</div>':'')
       +'</div>';
@@ -690,8 +690,7 @@ function showPreview(valid,errors){
   }
 
   var fields=['id','nombre','sexo','categoria','raza','lote','estado','fecha_nacimiento'];
-  document.getElementById('preview-table').innerHTML=
-    '<thead><tr>'+fields.map(function(f){return '<th>'+f+'</th>';}).join('')+'</tr></thead>'
+  document.getElementById('preview-table').innerHTML='<thead><tr>'+fields.map(function(f){return '<th>'+f+'</th>';}).join('')+'</tr></thead>'
     +'<tbody>'+valid.slice(0,15).map(function(r){return '<tr>'+fields.map(function(f){return '<td>'+(r[f]||'—')+'</td>';}).join('')+'</tr>';}).join('')
     +(valid.length>15?'<tr><td colspan="'+fields.length+'" style="text-align:center;color:var(--text3);font-size:11px">...y '+(valid.length-15)+' más</td></tr>':'')
     +'</tbody>';
