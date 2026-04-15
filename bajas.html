@@ -816,21 +816,42 @@ function calcVenta(){
 }
 
 function saveBaja(){
-  const tipo=document.getElementById('tipo-baja').value;
-  MUERTES.unshift({fecha:new Date().toLocaleDateString('es-CO'),id:'OV-XXXX',cat:'Adulto',causa:tipo==='muerte'?'Neumonía':'Venta',edad:'2 años',peso:38,lote:'Lote A',perdida:tipo==='muerte'?650000:0,colab:'Juan García',necropsia:'No'});
+  const animalId=document.getElementById('baja-animal')?.value?.trim()||document.querySelectorAll('#modal-baja input.fi')[0]?.value?.trim()||'OV-XXXX';
+  const tipo=document.getElementById('tipo-baja')?.value||'muerte';
+  const fecha=document.getElementById('baja-fecha')?.value||new Date().toISOString().slice(0,10);
+  const causa=document.getElementById('baja-causa')?.value||'—';
+  const peso=parseFloat(document.getElementById('baja-peso')?.value)||0;
+  const sels=document.querySelectorAll('#modal-baja select');
+  const colab=sels[sels.length-1]?.value||'Juan García';
+  const obs=document.querySelector('#modal-baja textarea')?.value||'';
+  if(typeof AppData!=='undefined'){
+    AppData.registrarBaja({animal_id:animalId,tipo_baja:tipo,fecha,peso_kg:peso,causa,colaborador:colab,observaciones:obs,hubo_tratamiento:'No',necropsia:'No'});
+  }
+  MUERTES.unshift({fecha:fecha.split('-').reverse().join('/'),id:animalId,cat:'Animal',causa,edad:'—',peso,lote:'—',perdida:tipo==='muerte'?peso*15000:0,colab,necropsia:'No'});
   renderMuertes(MUERTES);
   closeModal('modal-baja');
-  toast('Baja registrada · Animal removido del inventario activo · Dashboard actualizado');
+  toast('Baja registrada · Animal #'+animalId+' removido del inventario activo');
 }
 
 function saveVenta(){
-  const peso=parseFloat(document.getElementById('v-peso').value)||0;
-  const precio=parseFloat(document.getElementById('v-precio').value)||0;
+  const peso=parseFloat(document.getElementById('v-peso')?.value)||0;
+  const precio=parseFloat(document.getElementById('v-precio')?.value)||0;
+  const animales=document.querySelectorAll('#modal-venta input.fi')[0]?.value||'—';
+  const tipo=document.querySelectorAll('#modal-venta select')[0]?.value||'Sacrificio';
+  const comprador=document.querySelectorAll('#modal-venta input.fi')[2]?.value||'—';
+  const fecha=document.getElementById('v-fecha')?.value||new Date().toISOString().slice(0,10);
+  const sels=document.querySelectorAll('#modal-venta select');
+  const colab=sels[sels.length-1]?.value||'Juan García';
   if(!peso||!precio){toast('Completa peso y precio','err');return;}
-  VENTAS.unshift({fecha:new Date().toLocaleDateString('es-CO'),animales:'Nueva venta',tipo:'Sacrificio',peso,precio,total:peso*precio,comprador:'—',canal:'—',retiro:'✓',colab:'Juan García'});
+  const total=peso*precio;
+  if(typeof AppData!=='undefined'){
+    AppData.registrarBaja({animal_id:animales,tipo_baja:'venta',fecha,peso_kg:peso,valor_venta:total,comprador,colaborador:colab});
+    AppData.add('ingresos',{tipo:'Venta '+tipo,animales_ids:animales,peso_total_kg:peso,precio_por_kg:precio,total_cop:total,comprador,canal_venta:'Directo',fecha,colaborador:colab});
+  }
+  VENTAS.unshift({fecha:fecha.split('-').reverse().join('/'),animales,tipo,peso,precio,total,comprador,canal:'Directo',retiro:'✓',colab});
   renderVentas(VENTAS);
   closeModal('modal-venta');
-  toast('Venta registrada · $'+Math.round(peso*precio/1000)+'K sumados a Finanzas · Animal removido del inventario');
+  toast('Venta registrada · $'+Math.round(total/1000)+'K sumados a Finanzas · Animal removido del inventario');
 }
 
 // ═══ EXPORTS ═══
