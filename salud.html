@@ -6,6 +6,7 @@
 <title>LAAAMBAPP · Salud & Tratamientos</title>
 <script>(function(){var t=localStorage.getItem("laaamb-theme")||"dark";document.documentElement.setAttribute("data-theme",t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="AppData.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -295,7 +296,7 @@ textarea.fi{resize:vertical;min-height:68px}
     <div class="sb-logo-text">LAAAMB</div>
     <div class="sb-logo-sub">Corderos · App</div>
     <div class="farm-pill">
-      <span style="font-size:18px">🏔️</span>
+      <span style="color:var(--teal);line-height:1"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg></span>
       <div><div class="farm-name">La Marinilla</div><div class="farm-sub">76.2 ha · 470 animales</div></div>
     </div>
   </div>
@@ -334,19 +335,19 @@ textarea.fi{resize:vertical;min-height:68px}
     </div>
     <div class="ph-actions">
       <button class="btn btn-ghost btn-sm" onclick="exportSalud()">↓ Excel</button>
-      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-trat-grupal')">👥 Tratamiento grupal</button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-trat-grupal')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><circle cx="7" cy="7" r="3"/><path d="M1 17c0-2.8 2.2-5 5-5"/><circle cx="14" cy="7" r="3"/><path d="M10 17c0-2.8 2.2-5 5-5"/></svg> Tratamiento grupal</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('modal-trat-individual')">+ Tratamiento individual</button>
     </div>
   </div>
 
   <div class="tab-nav">
-    <div class="tn active" onclick="switchTab(this,'t-resumen')">📊 Resumen</div>
-    <div class="tn" onclick="switchTab(this,'t-activos')">💉 Activos</div>
-    <div class="tn" onclick="switchTab(this,'t-historial')">📋 Historial</div>
+    <div class="tn active" onclick="switchTab(this,'t-resumen')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="3" y="11" width="3" height="6"/><rect x="8" y="7" width="3" height="10"/><rect x="13" y="3" width="3" height="14"/></svg>Resumen</div>
+    <div class="tn" onclick="switchTab(this,'t-activos')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M13 3l4 4-9 9-5 1 1-5 9-9z"/></svg>Activos</div>
+    <div class="tn" onclick="switchTab(this,'t-historial')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M4 4h12v12H4z" rx="1"/><path d="M7 8h6M7 11h4M7 14h2"/></svg>Historial</div>
     <div class="tn" onclick="switchTab(this,'t-retiro')">⏱ Retiro</div>
-    <div class="tn" onclick="switchTab(this,'t-medicamentos')">💊 Medicamentos</div>
-    <div class="tn" onclick="switchTab(this,'t-calculadora')">🧮 Calculadora</div>
-    <div class="tn" onclick="switchTab(this,'t-calendario')">📅 Calendario</div>
+    <div class="tn" onclick="switchTab(this,'t-medicamentos')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>Medicamentos</div>
+    <div class="tn" onclick="switchTab(this,'t-calculadora')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 7h6M7 10h2M11 10h2M7 13h2M11 13h2"/></svg>Calculadora</div>
+    <div class="tn" onclick="switchTab(this,'t-calendario')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 9h14M7 3v3M13 3v3"/></svg>Calendario</div>
   </div>
 
   <div class="content">
@@ -367,10 +368,10 @@ textarea.fi{resize:vertical;min-height:68px}
       <div class="g2">
         <!-- Alertas sanitarias -->
         <div>
-          <div class="alert-box red"><div class="alert-ico">🔴</div><div><div class="alert-title" style="color:var(--red)">Closantel Lote #CL-1102 — vence en 3 días</div><div class="alert-text">Usar o desechar. 62 mL restantes · Contactar proveedor para reposición.</div></div></div>
+          <div class="alert-box red"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="10" cy="10" r="7"/><path d="M10 6v5M10 14h.01"/></svg></div><div><div class="alert-title" style="color:var(--red)">Closantel Lote #CL-1102 — vence en 3 días</div><div class="alert-text">Usar o desechar. 62 mL restantes · Contactar proveedor para reposición.</div></div></div>
           <div class="alert-box amber"><div class="alert-ico">⚠️</div><div><div class="alert-title" style="color:var(--amber)">Oxitetraciclina — 8 días para vencer</div><div class="alert-text">Lote #OX-A2341 · 180 mL restantes · Revisar si hay tratamientos pendientes.</div></div></div>
           <div class="alert-box amber"><div class="alert-ico">⏱</div><div><div class="alert-title" style="color:var(--amber)">Lote D en período de retiro — 11 días</div><div class="alert-text">193 animales no aptos para sacrificio. Post-Ivermectina grupal.</div></div></div>
-          <div class="alert-box sky"><div class="alert-ico">📅</div><div><div class="alert-title" style="color:var(--sky)">Desparasitación Lote B programada en 12 días</div><div class="alert-text">132 animales · Oxfendazol 10% · Confirmar stock disponible.</div></div></div>
+          <div class="alert-box sky"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 9h14M7 3v3M13 3v3"/></svg></div><div><div class="alert-title" style="color:var(--sky)">Desparasitación Lote B programada en 12 días</div><div class="alert-text">132 animales · Oxfendazol 10% · Confirmar stock disponible.</div></div></div>
         </div>
         <!-- Acciones rápidas -->
         <div class="card">
@@ -378,9 +379,9 @@ textarea.fi{resize:vertical;min-height:68px}
           <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
             <button class="btn btn-primary" onclick="openModal('modal-trat-individual')" style="width:100%;justify-content:center">💉 Nuevo tratamiento individual</button>
             <button class="btn btn-ghost" onclick="openModal('modal-trat-grupal')" style="width:100%;justify-content:center">👥 Nuevo tratamiento grupal</button>
-            <button class="btn btn-ghost" onclick="openModal('modal-add-med')" style="width:100%;justify-content:center">💊 Agregar medicamento</button>
-            <button class="btn btn-ghost" onclick="switchTabByName('t-calculadora')" style="width:100%;justify-content:center">🧮 Calculadora de dosis</button>
-            <button class="btn btn-ghost" onclick="switchTabByName('t-calendario')" style="width:100%;justify-content:center">📅 Ver calendario sanitario</button>
+            <button class="btn btn-ghost" onclick="openModal('modal-add-med')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="vertical-align:middle;margin-right:4px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>Agregar medicamento</button>
+            <button class="btn btn-ghost" onclick="switchTabByName('t-calculadora')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:4px"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 7h6M7 10h2M11 10h2M7 13h2M11 13h2"/></svg>Calculadora de dosis</button>
+            <button class="btn btn-ghost" onclick="switchTabByName('t-calendario')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 9h14M7 3v3M13 3v3"/></svg> Ver calendario sanitario</button>
             <button class="btn btn-ghost" onclick="downloadTemplate('tratamientos')" style="width:100%;justify-content:center">↓ Plantilla tratamientos</button>
           </div>
         </div>
@@ -391,7 +392,7 @@ textarea.fi{resize:vertical;min-height:68px}
     <div id="t-activos" class="tab-pane" style="display:none">
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px">
         <button class="btn btn-ghost btn-sm" onclick="exportActivos()">↓ Excel activos</button>
-        <button class="btn btn-ghost btn-sm" onclick="openModal('modal-trat-grupal')">👥 Grupal</button>
+        <button class="btn btn-ghost btn-sm" onclick="openModal('modal-trat-grupal')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><circle cx="7" cy="7" r="3"/><path d="M1 17c0-2.8 2.2-5 5-5"/><circle cx="14" cy="7" r="3"/><path d="M10 17c0-2.8 2.2-5 5-5"/></svg> Grupal</button>
         <button class="btn btn-primary btn-sm" onclick="openModal('modal-trat-individual')">+ Individual</button>
       </div>
       <div class="card">
@@ -430,7 +431,7 @@ textarea.fi{resize:vertical;min-height:68px}
     <!-- ══ RETIRO ══ -->
     <div id="t-retiro" class="tab-pane" style="display:none">
       <div class="alert-box red" style="margin-bottom:16px">
-        <div class="alert-ico">🚫</div>
+        <div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="10" cy="10" r="7"/><path d="M5.5 5.5l9 9"/></svg></div>
         <div><div class="alert-title" style="color:var(--red)">196 animales NO APTOS para sacrificio</div>
         <div class="alert-text">Estos animales tienen residuos de medicamentos en tejidos. Respetar el período de retiro es obligatorio por ley y protege al consumidor final.</div></div>
       </div>
@@ -457,7 +458,7 @@ textarea.fi{resize:vertical;min-height:68px}
     <div id="t-calculadora" class="tab-pane" style="display:none">
       <div class="g2">
         <div class="card">
-          <div class="card-h"><div class="card-title">🧮 Calculadora de dosis</div><div class="card-sub">Por peso del animal</div></div>
+          <div class="card-h"><div class="card-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:4px"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 7h6M7 10h2M11 10h2M7 13h2M11 13h2"/></svg>Calculadora de dosis</div><div class="card-sub">Por peso del animal</div></div>
           <div class="card-body">
             <div class="form-grid">
               <div class="fg">
@@ -505,7 +506,7 @@ textarea.fi{resize:vertical;min-height:68px}
 
         <!-- Calculadora inversa y por peso estimado -->
         <div class="card">
-          <div class="card-h"><div class="card-title">📊 Dosis por rango de peso</div><div class="card-sub">Tabla para tratamiento grupal</div></div>
+          <div class="card-h"><div class="card-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:4px"><rect x="3" y="11" width="3" height="6"/><rect x="8" y="7" width="3" height="10"/><rect x="13" y="3" width="3" height="14"/></svg>Dosis por rango de peso</div><div class="card-sub">Tabla para tratamiento grupal</div></div>
           <div class="card-body">
             <div class="form-grid" style="margin-bottom:14px">
               <div class="fg"><label class="fl">Medicamento</label>
@@ -568,7 +569,7 @@ textarea.fi{resize:vertical;min-height:68px}
 <!-- ══ MODAL TRATAMIENTO INDIVIDUAL ══ -->
 <div class="overlay" id="modal-trat-individual" onclick="if(event.target===this)closeModal('modal-trat-individual')">
 <div class="modal modal-md">
-  <div class="modal-head"><div class="modal-title">💉 Tratamiento individual</div><button class="modal-close" onclick="closeModal('modal-trat-individual')">✕</button></div>
+  <div class="modal-head"><div class="modal-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="vertical-align:middle;margin-right:4px"><path d="M13 3l4 4-9 9-5 1 1-5 9-9z"/><path d="M15 5l-2 2"/></svg>Tratamiento individual</div><button class="modal-close" onclick="closeModal('modal-trat-individual')">✕</button></div>
   <div class="modal-body">
     <div class="form-section">Animal</div>
     <div class="form-grid">
@@ -603,7 +604,7 @@ textarea.fi{resize:vertical;min-height:68px}
     </div>
     <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" placeholder="Notas del tratamiento, evolución…"></textarea></div>
     <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2);margin-top:8px">
-      💡 Al guardar: el estado del animal cambia a "En tratamiento", se registra en su historial médico y se activa el contador de retiro sanitario automáticamente.
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:3px"><path d="M10 2a6 6 0 00-3 11.2V15h6v-1.8A6 6 0 0010 2z"/><path d="M8 15h4M9 18h2"/></svg> Al guardar: el estado del animal cambia a "En tratamiento", se registra en su historial médico y se activa el contador de retiro sanitario automáticamente.
     </div>
   </div>
   <div class="modal-foot">
@@ -616,7 +617,7 @@ textarea.fi{resize:vertical;min-height:68px}
 <!-- ══ MODAL TRATAMIENTO GRUPAL ══ -->
 <div class="overlay" id="modal-trat-grupal" onclick="if(event.target===this)closeModal('modal-trat-grupal')">
 <div class="modal modal-md">
-  <div class="modal-head"><div class="modal-title">👥 Tratamiento grupal</div><button class="modal-close" onclick="closeModal('modal-trat-grupal')">✕</button></div>
+  <div class="modal-head"><div class="modal-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><circle cx="7" cy="7" r="3"/><path d="M1 17c0-2.8 2.2-5 5-5"/><circle cx="14" cy="7" r="3"/><path d="M10 17c0-2.8 2.2-5 5-5"/></svg> Tratamiento grupal</div><button class="modal-close" onclick="closeModal('modal-trat-grupal')">✕</button></div>
   <div class="modal-body">
     <div class="form-section">Grupo</div>
     <div class="form-grid">
@@ -660,7 +661,7 @@ textarea.fi{resize:vertical;min-height:68px}
     </div>
     <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" placeholder="Protocolo seguido, condiciones del día…"></textarea></div>
     <div style="background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2);margin-top:8px">
-      ⚠ Al guardar: todos los animales del grupo quedan en retiro sanitario por <strong id="tg-retiro-label" style="color:var(--amber)">—</strong> días. El stock del medicamento se descuenta del inventario automáticamente.
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Al guardar: todos los animales del grupo quedan en retiro sanitario por <strong id="tg-retiro-label" style="color:var(--amber)">—</strong> días. El stock del medicamento se descuenta del inventario automáticamente.
     </div>
   </div>
   <div class="modal-foot">
@@ -673,7 +674,7 @@ textarea.fi{resize:vertical;min-height:68px}
 <!-- ══ MODAL AGREGAR MEDICAMENTO ══ -->
 <div class="overlay" id="modal-add-med" onclick="if(event.target===this)closeModal('modal-add-med')">
 <div class="modal modal-md">
-  <div class="modal-head"><div class="modal-title">💊 Agregar medicamento</div><button class="modal-close" onclick="closeModal('modal-add-med')">✕</button></div>
+  <div class="modal-head"><div class="modal-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="vertical-align:middle;margin-right:4px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>Agregar medicamento</div><button class="modal-close" onclick="closeModal('modal-add-med')">✕</button></div>
   <div class="modal-body">
     <div class="form-grid">
       <div class="fg"><label class="fl">Nombre comercial *</label><input class="fi" placeholder="Ivermectina 1%"></div>
@@ -713,12 +714,12 @@ const TRATAMIENTOS = [
 const MEDICAMENTOS = [
   {nombre:'Ivermectina 1%',principio:'Ivermectina',cat:'Antiparasitario',lote:'IV-2024-341',pres:'Inyectable',stock:340,stockMax:500,dosis:'0.2 mL/10kg SC',retiro:14,venc:'2026-08-12',costo:85000,ico:'💉'},
   {nombre:'Oxitetraciclina 20%',principio:'Oxitetraciclina',cat:'Antibiótico',lote:'OX-A2341',pres:'Inyectable',stock:180,stockMax:250,dosis:'5 mL/10kg IM',retiro:28,venc:'2025-04-18',costo:42000,ico:'💉'},
-  {nombre:'Closantel 10%',principio:'Closantel',cat:'Antiparasitario',lote:'CL-1102',pres:'Oral',stock:62,stockMax:100,dosis:'5 mg/kg VO',retiro:42,venc:'2025-04-13',costo:28000,ico:'💊'},
+  {nombre:'Closantel 10%',principio:'Closantel',cat:'Antiparasitario',lote:'CL-1102',pres:'Oral',stock:62,stockMax:100,dosis:'5 mg/kg VO',retiro:42,venc:'2025-04-13',costo:28000,ico:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>'},
   {nombre:'Florfenicol 30%',principio:'Florfenicol',cat:'Antibiótico',lote:'FL-0887',pres:'Inyectable',stock:420,stockMax:500,dosis:'0.67 mL/10kg SC',retiro:0,venc:'2027-01-20',costo:65000,ico:'💉'},
-  {nombre:'Vitamina ADE',principio:'Vit. A/D/E',cat:'Vitamina',lote:'VIT-B0921',pres:'Inyectable',stock:195,stockMax:250,dosis:'0.05 mL/kg IM',retiro:0,venc:'2025-04-24',costo:18000,ico:'💊'},
-  {nombre:'Oxfendazol 10%',principio:'Oxfendazol',cat:'Antiparasitario',lote:'OXF-4421',pres:'Oral',stock:850,stockMax:1000,dosis:'5 mg/kg VO',retiro:7,venc:'2026-11-30',costo:32000,ico:'💊'},
+  {nombre:'Vitamina ADE',principio:'Vit. A/D/E',cat:'Vitamina',lote:'VIT-B0921',pres:'Inyectable',stock:195,stockMax:250,dosis:'0.05 mL/kg IM',retiro:0,venc:'2025-04-24',costo:18000,ico:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>'},
+  {nombre:'Oxfendazol 10%',principio:'Oxfendazol',cat:'Antiparasitario',lote:'OXF-4421',pres:'Oral',stock:850,stockMax:1000,dosis:'5 mg/kg VO',retiro:7,venc:'2026-11-30',costo:32000,ico:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>'},
   {nombre:'Meloxicam 5%',principio:'Meloxicam',cat:'Antiinflamatorio',lote:'MEL-2201',pres:'Inyectable',stock:280,stockMax:500,dosis:'0.5 mg/kg SC',retiro:0,venc:'2026-06-15',costo:55000,ico:'💉'},
-  {nombre:'Vitamina B12',principio:'Cianocobalamina',cat:'Vitamina',lote:'B12-0341',pres:'Inyectable',stock:340,stockMax:500,dosis:'0.2 mL/10kg IM',retiro:0,venc:'2027-03-10',costo:12000,ico:'💊'},
+  {nombre:'Vitamina B12',principio:'Cianocobalamina',cat:'Vitamina',lote:'B12-0341',pres:'Inyectable',stock:340,stockMax:500,dosis:'0.2 mL/10kg IM',retiro:0,venc:'2027-03-10',costo:12000,ico:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>'},
 ];
 
 const RETIRO_ACTIVOS = [
@@ -807,7 +808,7 @@ function renderRetiro(){
   const sorted=[...RETIRO_ACTIVOS].sort((a,b)=>a.diasRestantes-b.diasRestantes);
   c.innerHTML=sorted.map(r=>`
     <div class="retiro-card ${r.critico?'critico':''}">
-      <div style="font-size:28px">🐑</div>
+      <div style="color:var(--text3)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="28" height="28"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/><path d="M7 15l-1 2M10 15v2M13 15l1 2"/></svg></div>
       <div class="retiro-info">
         <div class="retiro-animal">${r.animal}</div>
         <div class="retiro-med">Medicamento: <strong>${r.med}</strong></div>
@@ -819,7 +820,7 @@ function renderRetiro(){
       <div class="retiro-days">
         <div class="retiro-num" style="color:${r.critico?'var(--red)':'var(--amber)'}">${r.diasRestantes}</div>
         <div class="retiro-label">días restantes</div>
-        ${r.critico?'<div style="margin-top:4px"><span class="badge b-red">⚠ URGENTE</span></div>':''}
+        ${r.critico?'<div style="margin-top:4px"><span class="badge b-red"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> URGENTE</span></div>':''}
       </div>
     </div>`).join('');
 }
