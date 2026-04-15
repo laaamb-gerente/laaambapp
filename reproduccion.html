@@ -750,29 +750,166 @@ function autoFillMadre(val){
   // In production: lookup animal data and auto-fill N° parto
 }
 function saveParto(){
-  const madre = document.getElementById('p-madre').value;
-  const fecha = document.getElementById('p-fecha').value;
-  const vivas = document.getElementById('p-vivas').value;
-  if(!madre||!fecha){toast('Completa los campos requeridos','err');return;}
-  // Simulate: create cría records, update madre status
-  PARTOS.unshift({fecha:fecha.split('-').reverse().join('/'),madre,nro:parseInt(document.getElementById('p-nro').value)||1,padre:document.getElementById('p-padre').value,vivas:parseInt(vivas)||0,muertas:parseInt(document.getElementById('p-muertas').value)||0,pesos:'—',tipo:document.getElementById('p-tipo').value,ids:'Auto-generado',colaborador:'Juan García'});
-  renderPartos(PARTOS);
+  const madreId = document.getElementById('p-madre')?.value?.trim();
+  const fecha   = document.getElementById('p-fecha')?.value;
+  const vivas   = parseInt(document.getElementById('p-vivas')?.value)||0;
+  const muertas = parseInt(document.getElementById('p-muertas')?.value)||0;
+  const padreId = document.getElementById('p-padre')?.value?.trim()||'';
+  const tipo    = document.getElementById('p-tipo')?.value||'Normal';
+  const nroParto= parseInt(document.getElementById('p-nro')?.value)||1;
+  const lote    = document.querySelector('#modal-parto select[onchange*="lote"], #modal-parto .fi:nth-of-type(5)')?.value||'Lote A';
+  const obs     = document.querySelector('#modal-parto textarea')?.value||'';
+  const colabs  = document.querySelectorAll('#modal-parto select');
+  const colab   = colabs[colabs.length-1]?.value||'Juan García';
+
+  if(!madreId||!fecha){toast('Madre y fecha son requeridos','err');return;}
+
+  // Recolectar datos de crías del formulario dinámico
+  const criasFormGrids = document.getElementById('crias-form')?.querySelectorAll('.form-grid');
+  const crias = [];
+  criasFormGrids?.forEach(grid=>{
+    const sexoEl = grid.querySelector('select');
+    const pesoEl = grid.querySelector('input[type="number"]');
+    if(sexoEl&&pesoEl) crias.push({
+      sexo: sexoEl.value==='Hembra'?'H':'M',
+      peso_kg: parseFloat(pesoEl.value)||0
+    });
+  });
+
+  const partoData = {
+    madre_id:madreId, padre_id:padreId, fecha, nro_parto:nroParto,
+    tipo_parto:tipo, crias_vivas:vivas, crias_muertas:muertas,
+    lote, colaborador:colab, observaciones:obs
+  };
+
+  if(typeof AppData!=='undefined'){
+    const result = AppData.registrarParto(partoData, crias);
+    // Actualizar PARTOS local para render inmediato
+    PARTOS.unshift({fecha:fecha.split('-').reverse().join('/'),madre:madreId,nro:nroParto,padre:padreId,vivas,muertas,pesos:crias.map(c=>c.peso_kg).join(', ')||'—',tipo,ids:result.criasCreadas.join(', '),colaborador:colab});
+    loadReproFromAppData();
+  } else {
+    PARTOS.unshift({fecha:fecha.split('-').reverse().join('/'),madre:madreId,nro:nroParto,padre:padreId,vivas,muertas,pesos:'—',tipo,ids:'Auto-generado',colaborador:colab});
+    renderPartos(PARTOS);
+  }
   closeModal('modal-parto');
-  toast('Parto registrado · '+vivas+' crías creadas automáticamente');
+  toast('Parto registrado · '+vivas+' crías creadas · Estado madre actualizado');
 }
+
 function saveMonta(){
-  const fecha = document.getElementById('m-fecha').value;
+  const hembraId= document.getElementById('m-hembra')?.value?.trim()||document.querySelectorAll('#modal-monta input.fi')[0]?.value?.trim()||'';
+  const machoId = document.getElementById('m-macho')?.value?.trim()||document.querySelectorAll('#modal-monta input.fi')[1]?.value?.trim()||'';
+  const fecha   = document.getElementById('m-fecha')?.value;
   if(!fecha){toast('Selecciona la fecha de monta','err');return;}
-  // Auto-set ecografía 30 días después
   const ecoDate = new Date(fecha);
   ecoDate.setDate(ecoDate.getDate()+30);
-  document.getElementById('m-eco').value = ecoDate.toISOString().slice(0,10);
-  MONTAS.unshift({fecha:fecha.split('-').reverse().join('/'),oveja:'Nueva',raza:'Dorper',reproductor:'RE-003 Príncipe',lote:'Lote A',ciclo:1,tipo:'Natural',resultado:'Pendiente',eco:ecoDate.toLocaleDateString('es-CO'),colaborador:'Juan García'});
+  const ecoDateStr = ecoDate.toISOString().slice(0,10);
+  document.getElementById('m-eco').value = ecoDateStr;
+  const sels   = document.querySelectorAll('#modal-monta select');
+  const ciclo  = parseInt(sels[0]?.value)||1;
+  const tipo   = sels[1]?.value||'Natural';
+  const lote   = sels[2]?.value||'Lote A';
+  const colab  = sels[sels.length-1]?.value||'Juan García';
+  const obs    = document.querySelector('#modal-monta textarea')?.value||'';
+  const cc     = parseFloat(document.querySelector('#modal-monta input[type="number"]')?.value)||0;
+
+  const montaData = {
+    hembra_id:hembraId, macho_id:machoId, fecha,
+    ciclo_nro:ciclo, tipo, lote,
+    condicion_corporal:cc,
+    resultado:'Pendiente',
+    fecha_eco_programada:ecoDateStr,
+    colaborador:colab, observaciones:obs
+  };
+
+  if(typeof AppData!=='undefined'){
+    AppData.add('montas', montaData);
+    // Actualizar estado hembra a 'Montada'
+    const d=AppData.get();
+    const idx=d.animales.findIndex(a=>a.id===hembraId);
+    if(idx!==-1){d.animales[idx].estado='Montada';AppData.save(d);}
+    loadReproFromAppData();
+  }
+  MONTAS.unshift({fecha:fecha.split('-').reverse().join('/'),oveja:hembraId||'—',raza:'Dorper',reproductor:machoId||'—',lote,ciclo,tipo,resultado:'Pendiente',eco:ecoDate.toLocaleDateString('es-CO'),colaborador:colab});
   renderMontas(MONTAS);
   closeModal('modal-monta');
   toast('Monta registrada · Ecografía programada para '+ecoDate.toLocaleDateString('es-CO'));
 }
-function saveEco(){toast('Ecografía registrada · Estado de la oveja actualizado');}
+
+function saveEco(){
+  const animalId = document.querySelectorAll('#modal-ecografia input.fi')[0]?.value?.trim()||'';
+  const fecha    = document.querySelectorAll('#modal-ecografia input.fi')[1]?.value||new Date().toISOString().slice(0,10);
+  const resultado= document.querySelector('#modal-ecografia select')?.value||'Gestante';
+  const dias     = parseInt(document.querySelectorAll('#modal-ecografia input.fi')[2]?.value)||0;
+  const nFetos   = parseInt(document.querySelectorAll('#modal-ecografia input.fi')[3]?.value)||1;
+  const vet      = document.querySelectorAll('#modal-ecografia input.fi')[4]?.value||'';
+  const obs      = document.querySelector('#modal-ecografia textarea')?.value||'';
+  if(!animalId){toast('ID de animal requerido','err');return;}
+  const ecoData  = {animal_id:animalId,fecha,resultado,dias_gestacion:dias,nro_fetos:nFetos,veterinario:vet,observaciones:obs};
+  if(typeof AppData!=='undefined'){
+    AppData.add('ecografias',ecoData);
+    // Actualizar estado del animal
+    const d=AppData.get();
+    const idx=d.animales.findIndex(a=>a.id===animalId);
+    if(idx!==-1){
+      d.animales[idx].estado=resultado==='Gestante'?'Gestante':resultado==='Vacía'?'Vacía':'Activa';
+      AppData.save(d);
+    }
+    loadReproFromAppData();
+  }
+  closeModal('modal-ecografia');
+  toast('Ecografía registrada · Estado de #'+animalId+' → '+resultado);
+}
+
+// ═══ CARGAR DESDE APPDATA ═══
+function loadReproFromAppData(){
+  if(typeof AppData==='undefined') return;
+  const d = AppData.get();
+
+  // Partos
+  if(d.partos&&d.partos.length){
+    PARTOS.length=0;
+    d.partos.forEach(p=>{
+      const crias=(d.crias_parto||[]).filter(c=>c.parto_id===p.id);
+      PARTOS.push({
+        fecha:(p.fecha||'').split('-').reverse().join('/'),
+        madre:p.madre_id,nro:p.nro_parto||1,padre:p.padre_id||'—',
+        vivas:p.crias_vivas||0,muertas:p.crias_muertas||0,
+        pesos:crias.map(c=>c.peso_nacimiento).filter(Boolean).join(', ')||'—',
+        tipo:p.tipo_parto||'Normal',
+        ids:crias.map(c=>c.animal_id_generado).join(', ')||'—',
+        colaborador:p.colaborador||'—'
+      });
+    });
+  }
+
+  // Montas
+  if(d.montas&&d.montas.length){
+    MONTAS.length=0;
+    d.montas.forEach(m=>{
+      const hembra=d.animales.find(a=>a.id===m.hembra_id);
+      const macho=d.animales.find(a=>a.id===m.macho_id);
+      MONTAS.push({
+        fecha:(m.fecha||'').split('-').reverse().join('/'),
+        oveja:m.hembra_id,raza:hembra?.raza||'—',
+        reproductor:(m.macho_id||'')+(macho?.nombre?' '+macho.nombre:''),
+        lote:m.lote||'—',ciclo:m.ciclo_nro||1,tipo:m.tipo||'Natural',
+        resultado:m.resultado||'Pendiente',
+        eco:m.fecha_eco_programada?new Date(m.fecha_eco_programada).toLocaleDateString('es-CO'):'—',
+        colaborador:m.colaborador||'—'
+      });
+    });
+  }
+
+  // Actualizar KPIs resumen
+  const gestantes=d.animales.filter(a=>a.activo&&a.estado==='Gestante').length;
+  const kpis=document.querySelectorAll('.kpi-val');
+  if(kpis[0]) kpis[0].textContent=gestantes;
+  if(kpis[1]) kpis[1].textContent=d.montas.filter(m=>m.resultado==='Pendiente').length;
+  if(kpis[2]) kpis[2].textContent=d.partos.length;
+  if(kpis[3]) kpis[3].textContent=d.animales.filter(a=>a.activo&&a.estado==='Vacía').length;
+
+  renderPartos(PARTOS); renderMontas(MONTAS);
+}
 
 // ═══ ECO MASIVA ═══
 function previewEcoMasiva(input){
@@ -880,7 +1017,9 @@ const pm=document.getElementById('partos-mes');if(pm)pm.value=today.slice(0,7);
 const mf=document.getElementById('m-fecha');if(mf)mf.value=today;
 const pf=document.getElementById('p-fecha');if(pf)pf.value=today;
 const ph=document.getElementById('p-hora');if(ph)ph.value=new Date().toTimeString().slice(0,5);
-renderAll();
+// Cargar desde AppData si disponible
+if(typeof AppData!=='undefined') loadReproFromAppData();
+else renderAll();
 </script>
 <script>
 
