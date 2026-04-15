@@ -7,6 +7,7 @@
 <script>(function(){var t=localStorage.getItem("laaamb-theme")||"dark";document.documentElement.setAttribute("data-theme",t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="AppData.js"></script>
+<script src="farm-selector.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -241,6 +242,64 @@ textarea.fi{resize:vertical;min-height:68px}
 /* Campos requeridos marcados */
 label.fl[for] + .fi:required,
 label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
+
+/* ── FARM SELECTOR ──────────────────────────────────────── */
+.farm-selector{margin-top:12px;position:relative}
+.farm-btn{width:100%;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:border-color var(--anim),background var(--anim);text-align:left}
+.farm-btn:hover{border-color:var(--border3);background:var(--teal-bg)}
+.farm-btn.open{border-color:var(--teal);border-bottom-left-radius:0;border-bottom-right-radius:0}
+.farm-ico{font-size:18px;flex-shrink:0;line-height:1;color:var(--teal)}
+.farm-name{font-size:12px;font-weight:600;color:var(--text);flex:1}
+.farm-sub{font-size:10px;color:var(--text3);margin-top:1px;font-weight:400;letter-spacing:.3px}
+.farm-chevron{color:var(--text3);flex-shrink:0;transition:transform .2s ease}
+.farm-btn.open .farm-chevron{transform:rotate(180deg)}
+.farm-dropdown{display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--teal);border-top:none;border-bottom-left-radius:var(--r);border-bottom-right-radius:var(--r);z-index:500;box-shadow:0 8px 24px rgba(0,0,0,.4);overflow:hidden}
+.farm-dropdown.open{display:block}
+.farm-option{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;font-size:12px;font-family:'Changa',sans-serif;color:var(--text2);border-bottom:1px solid var(--border);transition:background var(--anim),color var(--anim)}
+.farm-option:last-child{border-bottom:none}
+.farm-option:hover{background:var(--surface);color:var(--text)}
+.farm-option.active{color:var(--teal);font-weight:600}
+.farm-option.active .farm-opt-check{opacity:1}
+.farm-opt-check{opacity:0;color:var(--teal);flex-shrink:0}
+.farm-option.all-farms{color:var(--text3);border-bottom:1px solid var(--border2);font-style:italic}
+.farm-option.all-farms:hover{color:var(--text);background:var(--surface)}
+.farm-option.all-farms.active{color:var(--teal);font-style:normal}
+.farm-opt-ico{color:var(--teal);flex-shrink:0}
+.farm-opt-info{flex:1}
+.farm-opt-name{font-weight:600;font-size:12px}
+.farm-opt-sub{font-size:10px;color:var(--text3);margin-top:1px}
+
+
+/* ── SPECIES FILTER ──────────────────────────────────────── */
+.species-filter-wrap{margin-top:6px;position:relative}
+.species-pill{
+  width:100%;background:var(--surface);border:1px solid var(--border2);
+  border-radius:var(--r);padding:7px 12px;
+  display:flex;align-items:center;gap:8px;
+  cursor:pointer;font-size:11px;color:var(--text2);
+  font-family:'Changa',sans-serif;font-weight:500;
+  transition:border-color var(--anim),color var(--anim),background var(--anim);
+  text-align:left;
+}
+.species-pill:hover{background:var(--surface2);color:var(--text);border-color:var(--border3)}
+.species-dropdown{
+  display:none;position:absolute;top:100%;left:0;right:0;
+  background:var(--bg2);border:1px solid var(--border2);border-top:none;
+  border-bottom-left-radius:var(--r);border-bottom-right-radius:var(--r);
+  z-index:499;box-shadow:0 6px 20px rgba(0,0,0,.35);overflow:hidden;
+}
+.species-dropdown.open{display:block}
+.species-option{
+  display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;
+  font-size:12px;font-family:'Changa',sans-serif;color:var(--text2);
+  border-bottom:1px solid var(--border);
+  transition:background var(--anim),color var(--anim);
+}
+.species-option:last-child{border-bottom:none}
+.species-option:hover{background:var(--surface);color:var(--text)}
+.species-option.active{color:var(--teal);font-weight:600}
+.species-check{color:var(--teal);flex-shrink:0;width:14px}
+
 </style>
 </head>
 <body>
@@ -253,9 +312,17 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="sb-head">
     <div class="sb-logo-text">LAAAMB</div>
     <div class="sb-logo-sub">Corderos · App</div>
-    <div class="farm-pill">
-      <span style="color:var(--teal);line-height:1"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg></span>
-      <div><div class="farm-name">La Marinilla</div><div class="farm-sub">76.2 ha · 470 animales</div></div>
+        <div class="farm-selector" id="farm-selector">
+      <button class="farm-btn" id="farm-btn" onclick="FarmSelector.toggle()" aria-haspopup="true">
+        <span class="farm-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg></span>
+        <div style="flex:1;min-width:0">
+          <div class="farm-name" id="sb-farm-name">La Marinilla</div>
+          <div class="farm-sub" id="sb-farm-sub">76.2 ha · cargando…</div>
+        </div>
+        <span class="farm-chevron"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M5 8l5 5 5-5"/></svg></span>
+      </button>
+      <div class="farm-dropdown" id="farm-dropdown"></div>
+    </div>
     </div>
   </div>
   <nav class="nav-scroll">
