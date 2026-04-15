@@ -974,9 +974,10 @@ function buscarUbicacion(q){
         var partes = item.display_name.split(',');
         var nombre = partes.slice(0,2).join(',').trim();
         var sub = partes.slice(2,4).join(',').trim();
+        var nomEsc = nombre.replace(/'/g, "&#39;");
         return '<div class="map-search-result" tabindex="0"'
-          + ' onclick="irAResultado(' + item.lat + ',' + item.lon + ','' + nombre.replace(/'/g, "\'") + '')"'
-          + ' onkeydown="if(event.key==='Enter')irAResultado(' + item.lat + ',' + item.lon + ','' + nombre.replace(/'/g, "\'") + '')">'
+          + ' onclick="irAResultado(' + item.lat + ',' + item.lon + ',\'' + nomEsc + '\')"'
+          + ' onkeydown="if(event.key===\'Enter\')irAResultado(' + item.lat + ',' + item.lon + ',\'' + nomEsc + '\')">'
           + '<div class="res-name">' + nombre + '</div>'
           + (sub ? '<div class="res-sub">' + sub + '</div>' : '')
           + '</div>';
