@@ -323,7 +323,116 @@ function filterMeds(val, field){
     if(activeFilters.pres && m.pres !== activeFilters.pres) return false;
     return true;
   });
+  // Cargar desde AppData si disponible
+function loadMedsFromAppData(){
+  if(typeof AppData==='undefined'){renderMeds();return;}
+  const d=AppData.get();
+  if(!d.medicamentos||!d.medicamentos.length){renderMeds();return;}
+  // Reemplazar MEDS con datos reales de AppData
+  MEDS.length=0;
+  const PRES_ICON={Inyectable:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><path d="M13 3l4 4-9 9-5 1 1-5 9-9z"/><path d="M15 5l-2 2"/></svg>',Oral:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>',Vacuna:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><path d="M4 16l3-3m5-9l4 4-8 8-4-4 4-4m1-1l4 4"/></svg>',default:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>'};
+  d.medicamentos.filter(m=>m.activo!==false).forEach(m=>{
+    MEDS.push({
+      _id: m.id,
+      nombre: m.nombre||'Sin nombre',
+      principio: m.principio_activo||'—',
+      cat: m.categoria||'Medicamento veterinario',
+      pres: m.presentacion||'Inyectable',
+      lote: m.nro_lote||'—',
+      stock: parseFloat(m.stock_actual)||0,
+      stockMax: parseFloat(m.stock_maximo)||parseFloat(m.stock_actual)*2||100,
+      dosis: m.dosis_estandar||'Según indicación',
+      retiro: parseInt(m.dias_retiro)||0,
+      venc: m.fecha_vencimiento||'2099-01-01',
+      costo: parseFloat(m.costo_por_unidad)||0,
+      proveedor: m.proveedor||'—',
+      ico: PRES_ICON[m.presentacion]||PRES_ICON.default
+    });
+  });
+  // Actualizar badge sidebar
+  const sbMeds=document.getElementById('sb-meds');
+  if(sbMeds) sbMeds.textContent=MEDS.length;
   renderMeds();
+  // Alertas de vencimiento
+  const hoy=new Date();
+  const urgentes=MEDS.filter(m=>Math.round((new Date(m.venc)-hoy)/86400000)<=7&&m.stock>0);
+  const prontos=MEDS.filter(m=>{const d=Math.round((new Date(m.venc)-hoy)/86400000);return d>7&&d<=30&&m.stock>0;});
+  const alertBox=document.getElementById('alert-venc');
+  if(alertBox){
+    let html='';
+    if(urgentes.length) html+=`<div style="font-size:11px;color:var(--red);font-weight:700;margin-bottom:4px"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="vertical-align:middle;margin-right:2px"><circle cx="10" cy="10" r="7"/><path d="M10 6v5M10 14h.01"/></svg> ${urgentes.length} medicamento(s) vence(n) en ≤7 días: ${urgentes.map(m=>m.nombre+'('+m.stock+'mL)').join(', ')}</div>`;
+    if(prontos.length) html+=`<div style="font-size:11px;color:var(--amber);font-weight:600"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> ${prontos.length} vence(n) en ≤30 días: ${prontos.map(m=>m.nombre).join(', ')}</div>`;
+    if(html) alertBox.innerHTML=html;
+  }
+}
+
+// Conectar saveMed a AppData
+const _saveMedOrig=window.saveMed||function(){};
+function saveMed(){
+  const inputs=document.querySelectorAll('#modal-add-med .fi');
+  const nombre=inputs[0]?.value?.trim();
+  const principio=inputs[1]?.value?.trim()||'';
+  const sel=document.querySelectorAll('#modal-add-med select');
+  const cat=sel[0]?.value||'Antiparasitario';
+  const pres=sel[1]?.value||'Inyectable';
+  const lote=inputs[2]?.value?.trim()||'';
+  const stock=parseFloat(inputs[3]?.value)||0;
+  const stockMax=parseFloat(inputs[4]?.value)||stock*2;
+  const dosis=inputs[5]?.value||'';
+  const retiro=parseInt(inputs[6]?.value)||0;
+  const venc=inputs[7]?.value||'';
+  const costo=parseFloat(inputs[8]?.value)||0;
+  const obs=document.querySelector('#modal-add-med textarea')?.value||'';
+  if(!nombre){toast('Nombre del medicamento requerido','err');return;}
+  if(typeof AppData!=='undefined'){
+    AppData.add('medicamentos',{
+      id:AppData.uid('MED'),nombre,principio_activo:principio,categoria:cat,
+      presentacion:pres,nro_lote:lote,stock_actual:stock,stock_maximo:stockMax,
+      dosis_estandar:dosis,dias_retiro:retiro,fecha_vencimiento:venc,
+      costo_por_unidad:costo,observaciones:obs,activo:true
+    });
+    // Limpiar form
+    inputs.forEach(i=>{if(i.tagName==='INPUT')i.value='';});
+    closeModal('modal-add-med');
+    toast(nombre+' agregado al inventario');
+    loadMedsFromAppData();
+  } else {
+    closeModal('modal-add-med');
+    toast(nombre+' agregado al inventario');
+    renderMeds();
+  }
+}
+
+// Conectar importar medicamentos a AppData
+const _importMedsOrig=window.importMeds||function(){};
+function importMeds(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+      const headers=rows[0]||[];
+      const dataRows=rows.slice(1).filter(r=>r.some(c=>c));
+      if(typeof AppData!=='undefined'){
+        const {valid,errors}=AppData.validateImport('medicamentos',dataRows,headers);
+        if(valid.length){
+          AppData.confirmImport('medicamentos',valid,false);
+          loadMedsFromAppData();
+          toast('✓ '+valid.length+' medicamentos importados'+(errors.length?' · '+errors.length+' errores':''));
+        } else {
+          toast('Sin registros válidos'+(errors.length?' · '+errors.length+' errores':''),'err');
+        }
+      } else {
+        toast('✓ '+dataRows.length+' medicamentos leídos (AppData no disponible)');
+      }
+      input.value='';
+    }catch(err){toast('Error leyendo archivo: '+err.message,'err');}
+  };reader.readAsBinaryString(file);
+}
+
+loadMedsFromAppData();
 }
 
 function saveMed(){
@@ -387,6 +496,24 @@ function toast(msg,type='ok'){
 document.getElementById('m-venc').value = new Date(Date.now()+365*86400000).toISOString().slice(0,10);
 filteredMeds = [...MEDS];
 renderMeds();
+</script>
+<script>
+// ── Badges dinámicos sidebar ──────────────────────────────────────────────────
+(function updateSidebarBadges(){
+  if(typeof AppData==='undefined') return;
+  try{
+    const s=AppData.stats();
+    const d=AppData.get();
+    document.querySelectorAll('.nav-badge').forEach(function(b){
+      const link=b.closest('a');
+      if(link&&link.href&&link.href.includes('animales')) b.textContent=s.total;
+      if(link&&link.href&&link.href.includes('medicamentos')) b.textContent=d.medicamentos.filter(function(m){return m.activo!==false;}).length;
+    });
+    const farmSub=document.querySelector('.farm-sub');
+    const finca=d.finca||{};
+    if(farmSub) farmSub.textContent=(finca.area_ha||76.2)+' ha · '+s.total+' animales';
+  }catch(e){}
+})();
 </script>
 </body>
 </html>
