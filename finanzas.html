@@ -730,18 +730,43 @@ function setPeriodo(el,p){
 
 // ═══ SAVES ═══
 function saveGasto(){
-  const val=document.getElementById('g-valor').value;
-  const cat=document.getElementById('g-cat').value;
+  const val=parseFloat(document.getElementById('g-valor')?.value)||0;
+  const cat=document.getElementById('g-cat')?.value||'Otros';
+  const desc=document.querySelectorAll('#modal-gasto input.fi')[1]?.value||'Gasto registrado';
+  const animalId=document.querySelectorAll('#modal-gasto input.fi')[2]?.value||'';
+  const lote=document.querySelectorAll('#modal-gasto select')[1]?.value||'';
+  const pago=document.querySelectorAll('#modal-gasto select')[2]?.value||'Efectivo';
+  const fecha=document.getElementById('g-fecha')?.value||new Date().toISOString().slice(0,10);
+  const sels=document.querySelectorAll('#modal-gasto select');
+  const colab=sels[sels.length-1]?.value||'Juan García';
+  const obs=document.querySelector('#modal-gasto textarea')?.value||'';
   if(!val){toast('Ingresa el valor del gasto','err');return;}
-  COSTOS_DATA.unshift({fecha:new Date().toLocaleDateString('es-CO'),cat,desc:'Gasto registrado',animal:'General',valor:parseInt(val),pago:'Efectivo',colab:'Juan García'});
+  if(typeof AppData!=='undefined'){
+    AppData.add('costos',{categoria:cat,descripcion:desc,animal_id:animalId,lote,valor_cop:val,metodo_pago:pago,fecha,colaborador:colab,observaciones:obs});
+  }
+  COSTOS_DATA.unshift({fecha:fecha.split('-').reverse().join('/'),cat,desc,animal:animalId||lote||'General',valor:val,pago,colab});
   renderCostos();
   closeModal('modal-gasto');
-  toast('Gasto registrado · Costo acumulado del animal actualizado');
+  toast('Gasto registrado · $'+Math.round(val/1000)+'K sumado a costos');
 }
 
 function saveIngreso(){
-  toast('Ingreso registrado · Balance actualizado');
+  const tipo=document.querySelectorAll('#modal-ingreso select')[0]?.value||'Venta sacrificio';
+  const animales=document.querySelectorAll('#modal-ingreso input.fi')[0]?.value||'—';
+  const peso=parseFloat(document.querySelectorAll('#modal-ingreso input.fi')[1]?.value)||0;
+  const precio=parseFloat(document.getElementById('i-precio')?.value)||0;
+  const comprador=document.querySelectorAll('#modal-ingreso input.fi')[3]?.value||'—';
+  const fecha=document.getElementById('i-fecha')?.value||new Date().toISOString().slice(0,10);
+  const sels=document.querySelectorAll('#modal-ingreso select');
+  const colab=sels[sels.length-1]?.value||'Juan García';
+  const total=peso*precio;
+  if(typeof AppData!=='undefined'){
+    AppData.add('ingresos',{tipo,animales_ids:animales,peso_total_kg:peso,precio_por_kg:precio,total_cop:total,comprador,canal_venta:'Directo',fecha,colaborador:colab});
+  }
+  INGRESOS_DATA.unshift({fecha:fecha.split('-').reverse().join('/'),tipo,animales,peso,precio,total,comprador,canal:'Directo',colab});
+  renderIngresos&&renderIngresos();
   closeModal('modal-ingreso');
+  toast('Ingreso registrado · $'+Math.round(total/1000)+'K · Balance actualizado');
 }
 
 function calcIngreso(){
