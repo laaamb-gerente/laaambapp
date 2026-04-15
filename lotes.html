@@ -156,9 +156,23 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .map-coord-row input:focus{border-color:var(--teal)}
 .map-coord-row button{padding:6px 10px;border-radius:var(--r);background:var(--teal-bg);border:1px solid var(--border2);color:var(--teal);cursor:pointer;font-size:11px;font-family:Changa,sans-serif;font-weight:600;white-space:nowrap;transition:all var(--anim);flex-shrink:0}
 .map-coord-row button:hover{background:var(--teal);color:#080f10}
-.map-finca-btn{padding:6px 14px;border-radius:var(--r);background:var(--bg2);border:1px solid var(--border2);color:var(--text2);cursor:pointer;font-family:'Changa',sans-serif;font-size:12px;font-weight:600;transition:all var(--anim);box-shadow:0 2px 8px rgba(0,0,0,.4)}
-.map-finca-btn:hover{background:var(--surface);color:var(--text)}
-.map-finca-btn.active{background:var(--teal-bg);color:var(--teal);border-color:var(--teal)}
+.map-finca-selector{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:400;display:flex;flex-direction:column;align-items:center;gap:0}
+.map-finca-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.5);margin-bottom:4px;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+.map-finca-btns{display:flex;gap:4px}
+.map-finca-btn{padding:7px 18px;border-radius:var(--r);background:rgba(12,21,23,.85);border:1px solid rgba(0,175,182,.25);color:rgba(255,255,255,.6);cursor:pointer;font-family:'Changa',sans-serif;font-size:12px;font-weight:600;transition:all var(--anim);box-shadow:0 2px 12px rgba(0,0,0,.5);backdrop-filter:blur(4px)}
+.map-finca-btn:hover{background:rgba(23,38,40,.95);color:var(--text);border-color:rgba(0,175,182,.5)}
+.map-finca-btn.active{background:var(--teal);color:#080f10;border-color:var(--teal);box-shadow:0 2px 16px rgba(0,175,182,.4)}
+.map-finca-btn.active::before{content:'✎ editando';display:block;font-size:8px;font-weight:400;letter-spacing:.5px;margin-bottom:1px;opacity:.7}
+
+/* Tooltip en toolbar */
+.map-tool-btn{position:relative}
+.map-tool-btn::after{content:attr(data-tip);position:absolute;right:calc(100% + 8px);top:50%;transform:translateY(-50%);background:rgba(12,21,23,.95);color:var(--text);font-size:11px;font-family:'Changa',sans-serif;font-weight:500;white-space:nowrap;padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);pointer-events:none;opacity:0;transition:opacity .15s;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.map-tool-btn:hover::after{opacity:1}
+
+/* Botón deshacer punto */
+.map-undo-btn{display:none;width:38px;height:38px;border-radius:var(--r);background:rgba(232,160,48,.15);border:1px solid rgba(232,160,48,.4);color:var(--amber);cursor:pointer;align-items:center;justify-content:center;font-size:16px;transition:all var(--anim);box-shadow:0 2px 8px rgba(0,0,0,.4)}
+.map-undo-btn:hover{background:rgba(232,160,48,.25);color:#fff}
+.map-undo-btn.visible{display:flex}
 
 /* ── LOTES LIST TAB ── */
 .lotes-scroll{flex:1;overflow-y:auto;padding:20px 24px 48px}
@@ -297,19 +311,25 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
   <div class="tab-content active" id="t-mapa" style="position:relative">
     <div id="map"></div>
     <!-- Selector de finca en el mapa -->
-    <div class="map-finca-selector" id="map-finca-selector"></div>
+    <div class="map-finca-selector" id="map-finca-selector-wrap">
+      <div class="map-finca-label">Finca activa para dibujo</div>
+      <div class="map-finca-btns" id="map-finca-selector"></div>
+    </div>
     <!-- Toolbar -->
     <div class="map-toolbar">
-      <button class="map-tool-btn" id="btn-draw-finca" onclick="startDrawFinca()" title="Dibujar perímetro de finca">
+      <button class="map-tool-btn" id="btn-draw-finca" onclick="startDrawFinca()" data-tip="Dibujar perímetro de finca">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg>
       </button>
-      <button class="map-tool-btn" id="btn-draw-lote" onclick="startDrawLote()" title="Dibujar nuevo lote">
+      <button class="map-tool-btn" id="btn-draw-lote" onclick="startDrawLote()" data-tip="Dibujar nuevo lote (requiere perímetro)">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><rect x="3" y="3" width="14" height="14" rx="2"/><path d="M3 10h14M10 3v14"/></svg>
       </button>
-      <button class="map-tool-btn" id="btn-edit-mode" onclick="toggleEditMode()" title="Editar polígonos (arrastrar puntos)">
+      <button class="map-undo-btn" id="btn-undo-point" onclick="deshacerUltimoPunto()" data-tip="Deshacer último punto">
+        ↩
+      </button>
+      <button class="map-tool-btn" id="btn-edit-mode" onclick="toggleEditMode()" data-tip="Editar vértices — arrastra los puntos azules" style="margin-top:8px">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M13 3l4 4-9 9-5 1 1-5 9-9z"/></svg>
       </button>
-      <button class="map-tool-btn" id="btn-satellite" onclick="toggleSatellite()" title="Alternar satélite/mapa" style="margin-top:8px">
+      <button class="map-tool-btn" id="btn-satellite" onclick="toggleSatellite()" data-tip="Alternar satélite / mapa">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><circle cx="10" cy="10" r="7"/><path d="M3 10a7 7 0 0114 0"/><path d="M10 3v14"/></svg>
       </button>
     </div>
@@ -550,6 +570,7 @@ var activeFincaMap='default';
 var currentPoints=[]; // puntos del polígono en dibujo
 var tempMarkers=[]; // marcadores temporales durante dibujo
 var tempPolyline=null; // línea preview
+var tempPolylineClose=null; // línea de cierre preview
 var fincaLayers={}; // {fincaId: L.polygon}
 var loteLayers={}; // {loteId: L.polygon}
 var editableLayers={}; // polígonos en modo edición
@@ -626,7 +647,7 @@ function startDrawFinca(){
   currentPoints=[];
   MAP.getContainer().style.cursor='crosshair';
   document.getElementById('btn-draw-finca').classList.add('active');
-  showMapStatus('🖊 Dibujando perímetro de <strong>'+getFincaById(activeFincaMap).nombre+'</strong> — clic para agregar puntos · Doble clic para cerrar');
+  showMapStatus('🖊 Dibujando perímetro de <strong>'+getFincaById(activeFincaMap).nombre+'</strong> — haz clic en el mapa para agregar el primer punto · Arrastra los puntos para corregirlos');
 }
 
 function startDrawLote(){
@@ -642,23 +663,74 @@ function startDrawLote(){
   currentPoints=[];
   MAP.getContainer().style.cursor='crosshair';
   document.getElementById('btn-draw-lote').classList.add('active');
-  showMapStatus('🖊 Dibujando nuevo lote — clic para agregar puntos · Doble clic para cerrar · El área se calcula automáticamente');
+  showMapStatus('🖊 Dibujando nuevo lote en <strong>'+getFincaById(activeFincaMap).nombre+'</strong> — haz clic para agregar puntos · Arrastra los puntos azules para corregirlos');
 }
 
 function addDrawPoint(latlng){
+  var idx = currentPoints.length;
   currentPoints.push(latlng);
-  // Marcador en el punto
-  var m=L.circleMarker(latlng,{radius:5,color:'#00AFB6',fillColor:'#00AFB6',fillOpacity:1,weight:2}).addTo(MAP);
+
+  // Marcador DRAGGABLE — se puede reposicionar antes de cerrar
+  var m = L.marker(latlng, {
+    draggable: true,
+    icon: L.divIcon({
+      html: '<div style="width:14px;height:14px;border-radius:50%;background:#00AFB6;border:2.5px solid white;box-shadow:0 1px 6px rgba(0,0,0,.6);cursor:grab"></div>',
+      className: '', iconAnchor: [7, 7]
+    })
+  }).addTo(MAP);
+
+  // Al arrastrar: actualizar currentPoints y redibujar preview
+  m.on('drag', function(e){
+    currentPoints[idx] = e.target.getLatLng();
+    updateTempPolyline();
+    updateDrawStatus();
+  });
+
   tempMarkers.push(m);
-  // Actualizar línea preview
+  updateTempPolyline();
+  updateDrawStatus();
+
+  // Mostrar botón deshacer
+  document.getElementById('btn-undo-point').classList.add('visible');
+}
+
+function updateTempPolyline(){
   if(tempPolyline) MAP.removeLayer(tempPolyline);
-  var pts=[...currentPoints];
-  if(pts.length>=2){
-    tempPolyline=L.polyline(pts,{color:'#00AFB6',weight:2,dashArray:'6,4'}).addTo(MAP);
+  if(currentPoints.length >= 2){
+    tempPolyline = L.polyline([...currentPoints], {color:'#00AFB6', weight:2, dashArray:'6,4'}).addTo(MAP);
   }
-  if(currentPoints.length>=3){
-    showMapStatus('🖊 '+(drawMode==='finca'?'Perímetro':'Lote')+' · '+currentPoints.length+' puntos — Doble clic para cerrar · <a href="#" onclick="finalizarDibujo();return false;" style="color:var(--teal)">Finalizar</a>');
+  // Preview de cierre si hay 3+ puntos
+  if(tempPolylineClose) MAP.removeLayer(tempPolylineClose);
+  if(currentPoints.length >= 3){
+    tempPolylineClose = L.polyline([currentPoints[currentPoints.length-1], currentPoints[0]], {color:'#00AFB6', weight:1.5, dashArray:'3,6', opacity:0.5}).addTo(MAP);
   }
+}
+
+function updateDrawStatus(){
+  var n = currentPoints.length;
+  var tipo = drawMode==='finca' ? 'Perímetro' : 'Lote';
+  var faltан = 3 - n;
+  if(n < 3){
+    showMapStatus('🖊 ' + tipo + ' · ' + n + ' punto' + (n!==1?'s':'') + ' — faltan ' + faltан + ' para poder cerrar. Arrastra los puntos para corregirlos.');
+  } else {
+    var area = calcAreaHa(currentPoints);
+    showMapStatus('🖊 ' + tipo + ' · ' + n + ' puntos · ~' + area.toFixed(2) + ' ha'
+      + ' — <a href="#" onclick="finalizarDibujo();return false;" style="color:var(--teal);font-weight:700">✓ Cerrar y guardar</a>'
+      + ' &nbsp; <a href="#" onclick="deshacerUltimoPunto();return false;" style="color:var(--amber)">↩ Deshacer</a>');
+  }
+}
+
+function deshacerUltimoPunto(){
+  if(!currentPoints.length) return;
+  currentPoints.pop();
+  var last = tempMarkers.pop();
+  if(last) MAP.removeLayer(last);
+  if(!currentPoints.length){
+    document.getElementById('btn-undo-point').classList.remove('visible');
+  }
+  updateTempPolyline();
+  if(currentPoints.length > 0) updateDrawStatus();
+  else showMapStatus('🖊 Dibujando ' + (drawMode==='finca'?'perímetro':'lote') + ' — haz clic en el mapa para agregar el primer punto');
 }
 
 function finalizarDibujo(){
@@ -674,6 +746,7 @@ function finalizarDibujo(){
 
   if(drawMode==='finca'){
     guardarPerimetroFinca(activeFincaMap, geojson, areaHa);
+    toast('Perímetro guardado · ' + areaHa.toFixed(2) + ' ha calculadas y grabadas en Ajustes');
   } else if(drawMode==='lote'){
     // Pedir nombre del lote
     var nombre=prompt('Nombre del lote (ej: Lote E):');
@@ -701,7 +774,9 @@ function clearTempDraw(){
   tempMarkers.forEach(function(m){MAP.removeLayer(m);});
   tempMarkers=[];
   if(tempPolyline){MAP.removeLayer(tempPolyline);tempPolyline=null;}
+  if(tempPolylineClose){MAP.removeLayer(tempPolylineClose);tempPolylineClose=null;}
   currentPoints=[];
+  document.getElementById('btn-undo-point').classList.remove('visible');
 }
 
 // ── GUARDAR GEOMETRÍAS ──────────────────────────────
