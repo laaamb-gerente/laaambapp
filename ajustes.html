@@ -149,6 +149,16 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
   .theme-grid{grid-template-columns:1fr 1fr}
   .form-grid{grid-template-columns:1fr}
 }
+
+/* ── Validación de formularios ──────────────────────────────── */
+.fi.field-error{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(224,82,82,0.15)!important}
+.fi.field-ok{border-color:var(--teal)!important}
+.fi:invalid{border-color:var(--amber)}
+.field-hint{font-size:10px;color:var(--red);margin-top:3px;display:none}
+.field-hint.visible{display:block}
+/* Campos requeridos marcados */
+label.fl[for] + .fi:required,
+label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 </style>
 </head>
 <body>
@@ -442,10 +452,23 @@ function deleteColab(i){
 
 // ═══ FINCA ═══
 function saveFinca(){
-  const nombre = document.getElementById('finca-nombre').value;
+  const nombre=document.getElementById('finca-nombre')?.value?.trim();
+  const empresa=document.getElementById('finca-empresa')?.value?.trim()||'LAAAMB';
+  const municipio=document.getElementById('finca-municipio')?.value?.trim()||'La Marinilla';
+  const depto=document.getElementById('finca-depto')?.value?.trim()||'Antioquia';
+  const area=parseFloat(document.getElementById('finca-area')?.value)||76.2;
+  if(!nombre){toast('Nombre de la finca requerido','err');return;}
   localStorage.setItem('laaamb-finca-nombre', nombre);
-  document.getElementById('sb-finca').textContent = nombre;
-  toast('Datos de la finca guardados');
+  const sbFinca=document.getElementById('sb-finca');
+  if(sbFinca) sbFinca.textContent=nombre;
+  const farmName=document.querySelector('.farm-name');
+  if(farmName) farmName.textContent=nombre;
+  if(typeof AppData!=='undefined'){
+    const d=AppData.get();
+    d.finca={nombre,empresa,municipio,departamento:depto,area_ha:area};
+    AppData.save(d);
+  }
+  toast('Datos de la finca guardados en todos los módulos');
 }
 
 // ═══ EXPORT/IMPORT ═══
