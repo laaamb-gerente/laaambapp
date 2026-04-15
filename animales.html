@@ -200,6 +200,17 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 .species-option.active{color:var(--teal);font-weight:600}
 .species-check{color:var(--teal);flex-shrink:0;width:14px}
 
+
+/* ── Species tabs en page-header ──────────────────── */
+.species-tabs{display:flex;gap:4px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.sp-tab{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;
+  font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);
+  background:transparent;color:var(--text3);font-family:'Changa',sans-serif;
+  transition:all .2s;white-space:nowrap}
+.sp-tab:hover{border-color:var(--border3);color:var(--text)}
+.sp-tab.active{background:var(--teal);border-color:var(--teal);color:#080f10}
+.sp-tab.active-bo{background:var(--amber);border-color:var(--amber);color:#080f10}
+
 </style>
 </head>
 <body>
@@ -267,7 +278,13 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <button class="btn btn-ghost" onclick="exportarCSV()">↓ CSV</button>
       <button class="btn btn-primary" onclick="abrirNuevo()">+ Registrar animal</button>
     </div>
-  </div>
+  
+      <div class="species-tabs" id="species-tabs">
+        <button class="sp-tab" id="sp-todas" onclick="setEspecie('todas')">Todas</button>
+        <button class="sp-tab" id="sp-ovino" onclick="setEspecie('ovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/></svg> Ovinos</button>
+        <button class="sp-tab" id="sp-bovino" onclick="setEspecie('bovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="12" rx="6" ry="4"/><circle cx="14" cy="8" r="2.5"/></svg> Bovinos</button>
+      </div>
+    </div>
 
   <div class="filters-bar">
     <div class="search-box">
@@ -330,7 +347,15 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div class="fgrid">
       <div class="fg"><label class="fl">ID / Arete *</label><input class="fi" id="n-id" placeholder="OV-0471"></div>
       <div class="fg"><label class="fl">Nombre</label><input class="fi" id="n-nombre" placeholder="Opcional"></div>
-      <div class="fg"><label class="fl">Sexo *</label><select class="fi" id="n-sexo"><option value="H">Hembra</option><option value="M">Macho</option></select></div>
+      <div class="fg"><div class="fg">
+            <label class="fl">Especie *</label>
+            <select class="fi" id="n-especie" onchange="updateCategoriaModal()">
+              <option value="ovino">Ovino</option>
+              <option value="bovino">Bovino</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="fl">Sexo *</label><select class="fi" id="n-sexo"><option value="H">Hembra</option><option value="M">Macho</option></select></div>
       <div class="fg"><label class="fl">Categoría *</label><select class="fi" id="n-cat"><option>Cría</option><option>Levante</option><option>Reproductora</option><option>Reproductor</option><option>Engorde</option></select></div>
       <div class="fg"><label class="fl">Raza *</label><select class="fi" id="n-raza"><option>Dorper</option><option>Katahdin</option><option>Hampshire</option><option>Pelibuey</option><option>Cruce</option><option>Otra</option></select></div>
       <div class="fg"><label class="fl">Origen</label><select class="fi" id="n-origen"><option>Nacido en finca</option><option>Comprado</option></select></div>
@@ -444,6 +469,7 @@ function cargarDatos(){
 
 function applyFilters(){
   var q=(document.getElementById('q').value||'').toLowerCase();
+  var especie=document.getElementById('f-especie')?document.getElementById('f-especie').value:'';
   var sexo=document.getElementById('f-sexo').value;
   var estado=document.getElementById('f-estado').value;
   var lote=document.getElementById('f-lote').value;
@@ -452,6 +478,7 @@ function applyFilters(){
   filtered=allAnimales.filter(function(a){
     if(soloActivos&&a.activo===false) return false;
     if(q&&!String(a.id||'').toLowerCase().includes(q)&&!String(a.nombre||'').toLowerCase().includes(q)&&!String(a.raza||'').toLowerCase().includes(q)) return false;
+      if(especie&&(a.especie||'ovino')!==especie) return false;
     if(sexo&&a.sexo!==sexo) return false;
     if(estado&&a.estado!==estado) return false;
     if(lote&&a.lote!==lote) return false;
@@ -508,6 +535,7 @@ function renderTabla(){
     var op=a.activo===false?'opacity:.4;':'';
     return '<tr onclick="verPerfil(\''+a.id+'\')" style="'+op+'">'
       +'<td class="td-id">#'+a.id+'</td>'
+      +'<td style="font-size:11px;color:var(--text3)">'+(a.especie==='bovino'?'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><ellipse cx="10" cy="12" rx="6" ry="4"/><circle cx="14" cy="8" r="2.5"/></svg> Bovino':'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/></svg> Ovino')+'</td>'
       +'<td><div class="td-animal"><div class="a-ico '+(a.sexo||'H')+'">'+(a.sexo==='H'?'🐑':'🐏')+'</div>'
       +'<div><div style="font-weight:600">'+(a.nombre||'—')+'</div><div class="td-m">'+(a.categoria||'')+'</div></div></div></td>'
       +'<td class="td-m">'+(a.raza||'—')+'</td>'
@@ -1028,6 +1056,23 @@ document.addEventListener('input', function(e) {
   }
 }, true);
 
+</script>
+<script>
+// ── Selector especie en page-header ─────────────────────────────────────
+function setEspecie(esp){
+  localStorage.setItem('laaamb-active-especie', esp);
+  document.querySelectorAll('.sp-tab').forEach(function(t){
+    t.classList.remove('active','active-bo');
+  });
+  var tab = document.getElementById('sp-'+esp);
+  if(tab){ tab.classList.add('active'); if(esp==='bovino') tab.classList.add('active-bo'); }
+  window.dispatchEvent(new CustomEvent('especie-changed', {detail:{especie:esp}}));
+}
+function initEspecieTabs(){
+  var esp = localStorage.getItem('laaamb-active-especie')||'todas';
+  setEspecie(esp);
+}
+document.addEventListener('DOMContentLoaded', initEspecieTabs);
 </script>
 </body>
 </html>
