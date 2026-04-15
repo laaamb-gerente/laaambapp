@@ -134,6 +134,28 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .map-legend-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0}
 .map-status-bar{position:absolute;top:12px;left:12px;z-index:400;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:8px 14px;font-size:12px;color:var(--text2);box-shadow:0 2px 8px rgba(0,0,0,.4);max-width:340px}
 .map-finca-selector{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:400;display:flex;gap:4px}
+
+/* ── SEARCH BOX DEL MAPA ── */
+.map-search-wrap{position:absolute;bottom:12px;right:12px;z-index:400;width:290px}
+.map-search-box{display:flex;align-items:center;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);box-shadow:0 2px 12px rgba(0,0,0,.45);overflow:visible;transition:border-color var(--anim)}
+.map-search-box:focus-within{border-color:var(--teal)}
+.map-search-input{flex:1;background:transparent;border:none;outline:none;color:var(--text);font-family:Changa,sans-serif;font-size:12px;padding:9px 12px;border-radius:var(--r) 0 0 var(--r)}
+.map-search-input::placeholder{color:var(--text3)}
+.map-search-btn{background:var(--teal);border:none;color:#080f10;padding:0 12px;cursor:pointer;height:38px;display:flex;align-items:center;font-size:15px;border-radius:0 var(--r) var(--r) 0;transition:background var(--anim);flex-shrink:0}
+.map-search-btn:hover{background:#1cc8d0}
+.map-search-results{position:absolute;bottom:100%;left:0;right:0;margin-bottom:4px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);max-height:200px;overflow-y:auto;display:none;box-shadow:0 -4px 16px rgba(0,0,0,.4);z-index:500}
+.map-search-results.open{display:block}
+.map-search-result{padding:9px 12px;cursor:pointer;font-size:12px;color:var(--text2);border-bottom:1px solid var(--border);transition:background var(--anim)}
+.map-search-result:last-child{border-bottom:none}
+.map-search-result:hover,.map-search-result:focus{background:var(--surface);color:var(--text);outline:none}
+.map-search-result .res-name{font-weight:600;color:var(--text);margin-bottom:1px}
+.map-search-result .res-sub{font-size:10px;color:var(--text3)}
+.map-search-tip{padding:10px 12px;font-size:11px;color:var(--text3);text-align:center}
+.map-coord-row{display:flex;gap:6px;margin-top:6px}
+.map-coord-row input{flex:1;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:6px 8px;color:var(--text);font-family:Changa,sans-serif;font-size:11px;outline:none;min-width:0}
+.map-coord-row input:focus{border-color:var(--teal)}
+.map-coord-row button{padding:6px 10px;border-radius:var(--r);background:var(--teal-bg);border:1px solid var(--border2);color:var(--teal);cursor:pointer;font-size:11px;font-family:Changa,sans-serif;font-weight:600;white-space:nowrap;transition:all var(--anim);flex-shrink:0}
+.map-coord-row button:hover{background:var(--teal);color:#080f10}
 .map-finca-btn{padding:6px 14px;border-radius:var(--r);background:var(--bg2);border:1px solid var(--border2);color:var(--text2);cursor:pointer;font-family:'Changa',sans-serif;font-size:12px;font-weight:600;transition:all var(--anim);box-shadow:0 2px 8px rgba(0,0,0,.4)}
 .map-finca-btn:hover{background:var(--surface);color:var(--text)}
 .map-finca-btn.active{background:var(--teal-bg);color:var(--teal);border-color:var(--teal)}
@@ -300,6 +322,23 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
       <div class="map-legend-item"><div class="map-legend-swatch" style="background:#e8a030"></div> Atención (70-90%)</div>
       <div class="map-legend-item"><div class="map-legend-swatch" style="background:#e05252"></div> Crítico (&gt;90%)</div>
       <div class="map-legend-item"><div class="map-legend-swatch" style="background:rgba(0,175,182,.3)"></div> Perímetro finca</div>
+    </div>
+    <!-- Buscador de ubicación -->
+    <div class="map-search-wrap" id="map-search-wrap">
+      <div style="position:relative">
+        <div class="map-search-results" id="map-search-results"></div>
+        <div class="map-search-box">
+          <input class="map-search-input" id="map-search-input" placeholder="Buscar municipio, vereda o lugar…" autocomplete="off" onkeydown="onSearchKey(event)" oninput="onSearchInput(this.value)">
+          <button class="map-search-btn" onclick="buscarUbicacion()" title="Buscar">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="9" cy="9" r="6"/><path d="M15 15l-3.5-3.5"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="map-coord-row">
+        <input id="coord-lat" placeholder="Latitud (ej: 6.177)" type="number" step="0.0001">
+        <input id="coord-lng" placeholder="Longitud (ej: -75.501)" type="number" step="0.0001">
+        <button onclick="irACoordenadas()">Ir</button>
+      </div>
     </div>
   </div>
 
@@ -893,6 +932,118 @@ function showMapStatus(msg){
   bar.style.display='block';
 }
 function hideMapStatus(){document.getElementById('map-status').style.display='none';}
+
+
+// ══════════════════════════════════════════════════════
+// BUSCADOR DE UBICACIÓN EN MAPA
+// Usa Nominatim (OpenStreetMap) — sin API key, gratuito
+// Soporta: nombre de municipio, vereda, lugar + coordenadas GPS
+// ══════════════════════════════════════════════════════
+var _searchDebounce = null;
+var _searchMarker = null;
+
+function onSearchInput(val){
+  clearTimeout(_searchDebounce);
+  var res = document.getElementById('map-search-results');
+  if(!val || val.length < 2){ res.classList.remove('open'); res.innerHTML = ''; return; }
+  _searchDebounce = setTimeout(function(){ buscarUbicacion(val); }, 420);
+}
+
+function onSearchKey(e){
+  if(e.key === 'Enter'){ e.preventDefault(); buscarUbicacion(); }
+  if(e.key === 'Escape'){ cerrarSearchResults(); }
+}
+
+function buscarUbicacion(q){
+  var input = document.getElementById('map-search-input');
+  q = q || input.value.trim();
+  if(!q) return;
+  var res = document.getElementById('map-search-results');
+  res.innerHTML = '<div class="map-search-tip">Buscando…</div>';
+  res.classList.add('open');
+  // Nominatim biased to Colombia and surrounding countries
+  var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=6&accept-language=es&countrycodes=co,ec,ve,pa,pe&q=' + encodeURIComponent(q);
+  fetch(url, { headers: { 'Accept-Language': 'es' } })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      if(!data || !data.length){
+        res.innerHTML = '<div class="map-search-tip">Sin resultados para &ldquo;' + q + '&rdquo;.<br>Intenta con las coordenadas GPS abajo.</div>';
+        return;
+      }
+      res.innerHTML = data.map(function(item){
+        var partes = item.display_name.split(',');
+        var nombre = partes.slice(0,2).join(',').trim();
+        var sub = partes.slice(2,4).join(',').trim();
+        return '<div class="map-search-result" tabindex="0"'
+          + ' onclick="irAResultado(' + item.lat + ',' + item.lon + ','' + nombre.replace(/'/g, "\'") + '')"'
+          + ' onkeydown="if(event.key==='Enter')irAResultado(' + item.lat + ',' + item.lon + ','' + nombre.replace(/'/g, "\'") + '')">'
+          + '<div class="res-name">' + nombre + '</div>'
+          + (sub ? '<div class="res-sub">' + sub + '</div>' : '')
+          + '</div>';
+      }).join('');
+    })
+    .catch(function(){
+      res.innerHTML = '<div class="map-search-tip">Error de conexión. Usa las coordenadas GPS.</div>';
+    });
+}
+
+function irAResultado(lat, lng, nombre){
+  cerrarSearchResults();
+  document.getElementById('map-search-input').value = nombre;
+  var ll = [parseFloat(lat), parseFloat(lng)];
+  MAP.flyTo(ll, 16, { duration: 1.2 });
+  if(_searchMarker) MAP.removeLayer(_searchMarker);
+  _searchMarker = L.marker(ll, {
+    icon: L.divIcon({
+      html: '<div style="width:16px;height:16px;border-radius:50%;background:#00AFB6;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.5)"></div>',
+      className: '', iconAnchor: [8, 8]
+    })
+  }).addTo(MAP);
+  _searchMarker.bindPopup(
+    '<div style="font-family:Changa,sans-serif;font-size:12px;color:#d8edef">'
+    + '📍 ' + nombre
+    + '<br><span style="font-size:10px;color:#7eadb2">' + parseFloat(lat).toFixed(5) + ', ' + parseFloat(lng).toFixed(5) + '</span>'
+    + '</div>'
+  ).openPopup();
+  // Pre-fill coords inputs
+  document.getElementById('coord-lat').value = parseFloat(lat).toFixed(6);
+  document.getElementById('coord-lng').value = parseFloat(lng).toFixed(6);
+  toast('📍 ' + nombre, 'info');
+}
+
+function irACoordenadas(){
+  var lat = parseFloat(document.getElementById('coord-lat').value);
+  var lng = parseFloat(document.getElementById('coord-lng').value);
+  if(isNaN(lat) || isNaN(lng)){ toast('Coordenadas inválidas — escribe números', 'err'); return; }
+  if(lat < -90 || lat > 90 || lng < -180 || lng > 180){ toast('Coordenadas fuera de rango válido', 'err'); return; }
+  MAP.flyTo([lat, lng], 17, { duration: 1.2 });
+  if(_searchMarker) MAP.removeLayer(_searchMarker);
+  _searchMarker = L.marker([lat, lng], {
+    icon: L.divIcon({
+      html: '<div style="width:16px;height:16px;border-radius:50%;background:#e8a030;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,.5)"></div>',
+      className: '', iconAnchor: [8, 8]
+    })
+  }).addTo(MAP);
+  _searchMarker.bindPopup(
+    '<div style="font-family:Changa,sans-serif;font-size:12px;color:#d8edef">'
+    + '📍 ' + lat.toFixed(5) + ', ' + lng.toFixed(5)
+    + '</div>'
+  ).openPopup();
+  toast('Navegando a ' + lat.toFixed(4) + ', ' + lng.toFixed(4));
+}
+
+function cerrarSearchResults(){
+  var res = document.getElementById('map-search-results');
+  if(res) res.classList.remove('open');
+}
+
+// Cerrar resultados al hacer clic fuera del buscador
+document.addEventListener('click', function(e){
+  var wrap = document.getElementById('map-search-wrap');
+  if(wrap && !wrap.contains(e.target)) cerrarSearchResults();
+});
+
+
 
 // ── HELPER: abrir modal mover desde mapa ────────────
 function abrirMoverDesde(loteId){
