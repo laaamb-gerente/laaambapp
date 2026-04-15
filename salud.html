@@ -979,71 +979,323 @@ function generarTabla(){
   container.innerHTML=html+'</tbody></table>';
 }
 
-// ═══════ SAVES ═══════
+// ═══════ APPDATA — cargar datos reales ═══════
+function loadFromAppData(){
+  if(typeof AppData==='undefined') return;
+  const d=AppData.get();
+
+  // ── Medicamentos desde AppData ──────────────────────────────────────────────
+  if(d.medicamentos && d.medicamentos.length){
+    // Reemplazar MEDICAMENTOS con datos reales
+    MEDICAMENTOS.length=0;
+    d.medicamentos.filter(m=>m.activo!==false).forEach(m=>{
+      MEDICAMENTOS.push({
+        id: m.id,
+        nombre: m.nombre||'Sin nombre',
+        principio: m.principio_activo||'',
+        cat: m.categoria||'Medicamento veterinario',
+        lote: m.nro_lote||'—',
+        pres: m.presentacion||'Inyectable',
+        dosis: m.dosis_estandar||'Según indicación',
+        retiro: m.dias_retiro||0,
+        venc: m.fecha_vencimiento||'2099-01-01',
+        stock: parseFloat(m.stock_actual)||0,
+        stockMax: parseFloat(m.stock_maximo)||parseFloat(m.stock_actual)*2||100,
+        costo: parseFloat(m.costo_por_unidad)||0,
+        ico: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>'
+      });
+    });
+    // Actualizar badge sidebar
+    const sbMeds=document.getElementById('sb-meds');
+    if(sbMeds) sbMeds.textContent=MEDICAMENTOS.length;
+  }
+
+  // ── Tratamientos desde AppData ──────────────────────────────────────────────
+  if(d.tratamientos && d.tratamientos.length){
+    TRATAMIENTOS.length=0;
+    d.tratamientos.forEach(t=>{
+      const inicio=new Date(t.fecha_inicio||t.created_at||Date.now());
+      const hoy=new Date();
+      const diaActual=Math.max(1,Math.round((hoy-inicio)/86400000)+1);
+      const totalDias=parseInt(t.duracion_dias)||1;
+      TRATAMIENTOS.push({
+        id: t.id,
+        fecha: inicio.toLocaleDateString('es-CO'),
+        tipo: t.tipo||'Individual',
+        animales: t.animales_ids||t.lote||'—',
+        dx: t.diagnostico||'—',
+        med: t.medicamento_nombre||'—',
+        dosis: t.dosis_aplicada||'—',
+        via: t.via||'IM',
+        dur: totalDias+' días',
+        dia: Math.min(diaActual,totalDias),
+        totalDias,
+        retiro: parseInt(t.dias_retiro)||0,
+        costo: parseFloat(t.costo_total)||0,
+        colaborador: t.colaborador||'—',
+        estado: t.estado||'En curso',
+        _appId: t.id
+      });
+    });
+  }
+
+  // ── Retiro desde tratamientos activos ──────────────────────────────────────
+  RETIRO_ACTIVOS.length=0;
+  d.tratamientos.filter(t=>t.estado==='En curso'||t.estado==='En retiro').forEach(t=>{
+    const inicio=new Date(t.fecha_inicio||t.created_at||Date.now());
+    const retiroDias=parseInt(t.dias_retiro)||0;
+    if(retiroDias<=0) return;
+    const fechaFin=new Date(inicio.getTime()+(retiroDias*86400000));
+    const hoy=new Date();
+    const diasRestantes=Math.max(0,Math.round((fechaFin-hoy)/86400000));
+    if(diasRestantes<=0) return;
+    RETIRO_ACTIVOS.push({
+      animal: t.animales_ids||t.lote||'Grupo',
+      med: t.medicamento_nombre||'—',
+      fechaFin,
+      diasRestantes,
+      colaborador: t.colaborador||'—',
+      critico: diasRestantes<=3
+    });
+  });
+
+  // ── Actualizar selector de medicamentos en los modales ─────────────────────
+  ['ti-med','tg-med'].forEach(selId=>{
+    const sel=document.getElementById(selId);
+    if(!sel||!MEDICAMENTOS.length) return;
+    // Si AppData tiene medicamentos, reemplazar opciones
+    const primero=sel.querySelector('option');
+    if(primero&&!primero.value.includes('AppData')) {
+      sel.innerHTML=MEDICAMENTOS.map(m=>
+        `<option value="${m.stock}|mL|${m.retiro}|IM|${m.id}|${m.nombre}">${m.nombre} — ret. ${m.retiro}d (stock: ${m.stock}mL)</option>`
+      ).join('');
+    }
+  });
+
+  // ── Actualizar selectores de lote ──────────────────────────────────────────
+  const lotes=d.lotes||[];
+  if(lotes.length){
+    const selLote=document.getElementById('tg-lote');
+    if(selLote){
+      const animalesD=d.animales||[];
+      selLote.innerHTML=lotes.filter(l=>l.activo!==false).map(l=>{
+        const n=animalesD.filter(a=>a.activo&&a.lote===l.nombre).length;
+        return `<option value="${l.nombre}|${n}">${l.nombre} — ${n} animales</option>`;
+      }).join('');
+      selLote.innerHTML+=`<option value="Hato|${animalesD.filter(a=>a.activo).length}">Todo el hato — ${animalesD.filter(a=>a.activo).length} animales</option>`;
+    }
+  }
+
+  // ── Actualizar KPIs de resumen ─────────────────────────────────────────────
+  const s=AppData.stats();
+  const kpiEls=document.querySelectorAll('.kpi-val');
+  if(kpiEls[0]) kpiEls[0].textContent=d.tratamientos.filter(t=>t.estado==='En curso').length;
+  if(kpiEls[1]) kpiEls[1].textContent=RETIRO_ACTIVOS.length;
+  if(kpiEls[2]) kpiEls[2].textContent=d.tratamientos.length;
+
+  renderActivos(); renderHistorial(); renderRetiro();
+}
+
+// ═══════ SAVES — conectados a AppData ═══════
 function saveTratamiento(tipo){
+  if(typeof AppData==='undefined'){toast('AppData no disponible','err');return;}
+  const d=AppData.get();
+
   if(tipo==='individual'){
-    const animal=document.getElementById('ti-animal')?.value;
-    const dx=document.getElementById('ti-dx')?.value;
-    if(!animal||!dx){toast('Completa los campos requeridos','err');return;}
-    TRATAMIENTOS.unshift({id:'T00'+(TRATAMIENTOS.length+1),fecha:new Date().toLocaleDateString('es-CO'),tipo:'Individual',animales:'#'+animal,dx,med:'Oxitetraciclina 20%',dosis:document.getElementById('ti-dosis')?.value||'—',via:'IM',dur:document.getElementById('ti-dur')?.value||'—',dia:1,totalDias:5,retiro:28,costo:18500,colaborador:'Juan García',estado:'En curso'});
+    const animalId=document.getElementById('ti-animal')?.value?.trim();
+    const dx=document.getElementById('ti-dx')?.value?.trim();
+    const dosis=document.getElementById('ti-dosis')?.value?.trim();
+    const dur=document.getElementById('ti-dur')?.value?.trim();
+    const fecha=document.getElementById('ti-fecha')?.value;
+    const colabEl=document.querySelectorAll('#modal-trat-individual select')[1];
+    const colab=colabEl?.value||'Juan García';
+    const loteEl=document.querySelectorAll('#modal-trat-individual select')[0];
+    const lote=loteEl?.value||'';
+
+    if(!animalId||!dx){toast('Animal ID y diagnóstico son requeridos','err');return;}
+
+    // Leer medicamento seleccionado
+    const medSel=document.getElementById('ti-med')?.value||'';
+    const medParts=medSel.split('|');
+    const retiroDias=parseInt(medParts[2])||0;
+    const medId=medParts[4]||'';
+    const medNombre=medParts[5]||document.getElementById('ti-med')?.options[document.getElementById('ti-med')?.selectedIndex]?.text||'—';
+    const dosisNum=parseFloat(document.getElementById('ti-dosis')?.value)||0;
+
+    const tratData={
+      tipo:'Individual',
+      animales_ids: animalId,
+      lote,
+      diagnostico: dx,
+      medicamento_nombre: medNombre,
+      medicamento_id: medId,
+      dosis_aplicada: dosis,
+      via: document.querySelectorAll('#modal-trat-individual select')[2]?.value||'IM',
+      duracion_dias: parseInt(dur)||1,
+      dia_actual: 1,
+      fecha_inicio: fecha||new Date().toISOString().slice(0,10),
+      dias_retiro: retiroDias,
+      costo_total: 0,
+      colaborador: colab,
+      estado:'En curso',
+      observaciones: document.querySelector('#modal-trat-individual textarea')?.value||''
+    };
+
+    AppData.registrarTratamiento(tratData, medId, dosisNum);
     closeModal('modal-trat-individual');
-    renderActivos();renderHistorial();
-    toast('Tratamiento registrado · Estado de #'+animal+' actualizado a "En tratamiento"');
+    toast(`Tratamiento registrado · #${animalId} en tratamiento · Retiro: ${retiroDias}d`);
+    loadFromAppData();
+
   } else {
-    const lote=document.getElementById('tg-lote')?.value.split('|')[0];
-    TRATAMIENTOS.unshift({id:'T00'+(TRATAMIENTOS.length+1),fecha:new Date().toLocaleDateString('es-CO'),tipo:'Grupal',animales:'Lote '+lote,dx:'Tratamiento grupal',med:'Ivermectina',dosis:'0.2mL/10kg',via:'SC',dur:'1 dosis',dia:1,totalDias:1,retiro:14,costo:285000,colaborador:'Juan García',estado:'En retiro'});
+    const loteVal=document.getElementById('tg-lote')?.value||'';
+    const loteParts=loteVal.split('|');
+    const loteNombre=loteParts[0]||'Lote A';
+    const nAnimales=parseInt(loteParts[1])||0;
+    const fecha=document.getElementById('tg-fecha')?.value;
+    const colabEl=document.querySelectorAll('#modal-trat-grupal select')[1];
+    const colab=colabEl?.value||'Juan García';
+    const motivo=document.querySelector('#modal-trat-grupal input.fi')?.value||'Tratamiento grupal';
+
+    const medSel=document.getElementById('tg-med')?.value||'';
+    const medParts=medSel.split('|');
+    const retiroDias=parseInt(medParts[2])||0;
+    const medId=medParts[4]||'';
+    const medNombre=medParts[5]||document.getElementById('tg-med')?.options[document.getElementById('tg-med')?.selectedIndex]?.text||'—';
+    const dosisTotal=parseFloat(document.getElementById('tg-dosis-total')?.value)||0;
+
+    const tratData={
+      tipo:'Grupal',
+      animales_ids: loteNombre+' ('+nAnimales+' animales)',
+      lote: loteNombre,
+      diagnostico: motivo,
+      medicamento_nombre: medNombre,
+      medicamento_id: medId,
+      dosis_aplicada: document.getElementById('tg-dosis-total')?.value||'—',
+      via:'SC',
+      duracion_dias:1,
+      dia_actual:1,
+      fecha_inicio: fecha||new Date().toISOString().slice(0,10),
+      dias_retiro: retiroDias,
+      costo_total:0,
+      colaborador: colab,
+      estado:'En retiro',
+      observaciones: document.querySelector('#modal-trat-grupal textarea')?.value||''
+    };
+
+    AppData.registrarTratamiento(tratData, medId, dosisTotal);
     closeModal('modal-trat-grupal');
-    renderActivos();renderHistorial();
-    toast('Tratamiento grupal registrado · Stock descontado del inventario · Retiro activo 14 días');
+    toast(`Tratamiento grupal registrado · ${loteNombre} · Retiro: ${retiroDias}d · Stock descontado`);
+    loadFromAppData();
   }
 }
 
 function saveMed(){
-  toast('Medicamento agregado al inventario');
+  if(typeof AppData==='undefined'){toast('AppData no disponible','err');return;}
+  const inputs=document.querySelectorAll('#modal-add-med .fi');
+  const nombre=inputs[0]?.value?.trim();
+  const principio=inputs[1]?.value?.trim();
+  const cat=inputs[2]?.value||'Medicamento veterinario';
+  const pres=inputs[3]?.value||'Inyectable';
+  const lote=inputs[4]?.value?.trim();
+  const stock=parseFloat(inputs[5]?.value)||0;
+  const stockMax=parseFloat(inputs[6]?.value)||stock*2;
+  const dosis=inputs[7]?.value?.trim();
+  const retiro=parseInt(inputs[8]?.value)||0;
+  const venc=inputs[9]?.value||'';
+  const costo=parseFloat(inputs[10]?.value)||0;
+  if(!nombre){toast('Nombre requerido','err');return;}
+  const med={
+    id: AppData.uid('MED'),
+    nombre,principio_activo:principio,categoria:cat,presentacion:pres,
+    nro_lote:lote,stock_actual:stock,stock_maximo:stockMax,
+    dosis_estandar:dosis,dias_retiro:retiro,fecha_vencimiento:venc,
+    costo_por_unidad:costo,activo:true
+  };
+  AppData.add('medicamentos',med);
   closeModal('modal-add-med');
-  document.getElementById('sb-meds').textContent=MEDICAMENTOS.length+1;
+  // Limpiar campos
+  document.querySelectorAll('#modal-add-med .fi').forEach(i=>{if(i.tagName==='INPUT')i.value='';});
+  toast(`${nombre} agregado al inventario`);
+  loadFromAppData();
 }
+
 function saveEvento(){toast('Evento sanitario programado · Se mostrará en alertas del dashboard');}
 
 // ═══════ EXPORT ═══════
 function exportSalud(){
   const wb=XLSX.utils.book_new();
+  const d=typeof AppData!=='undefined'?AppData.get():{tratamientos:[],medicamentos:[]};
+  const trats=d.tratamientos.length?d.tratamientos:TRATAMIENTOS;
   const data=[['ID','Fecha','Tipo','Animales','Diagnóstico','Medicamento','Dosis','Vía','Duración','Retiro días','Costo COP','Colaborador','Estado'],
-    ...TRATAMIENTOS.map(t=>[t.id,t.fecha,t.tipo,t.animales,t.dx,t.med,t.dosis,t.via,t.dur,t.retiro,t.costo,t.colaborador,t.estado])];
+    ...trats.map(t=>[t.id,t.fecha_inicio||t.fecha,t.tipo,t.animales_ids||t.animales,t.diagnostico||t.dx,t.medicamento_nombre||t.med,t.dosis_aplicada||t.dosis,t.via,t.duracion_dias||t.dur,t.dias_retiro||t.retiro,t.costo_total||t.costo,t.colaborador,t.estado])];
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'Tratamientos');
-  const meds=[['Nombre','Principio activo','Categoría','Lote','Stock mL','Dosis','Retiro días','Vencimiento','Costo COP'],
-    ...MEDICAMENTOS.map(m=>[m.nombre,m.principio,m.cat,m.lote,m.stock,m.dosis,m.retiro,m.venc,m.costo])];
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(meds),'Medicamentos');
+  const meds=d.medicamentos.length?d.medicamentos:MEDICAMENTOS;
+  const medsData=[['Nombre','Principio activo','Categoría','Lote','Stock mL','Dosis','Retiro días','Vencimiento','Costo COP'],
+    ...meds.map(m=>[m.nombre,m.principio_activo||m.principio,m.categoria||m.cat,m.nro_lote||m.lote,m.stock_actual||m.stock,m.dosis_estandar||m.dosis,m.dias_retiro||m.retiro,m.fecha_vencimiento||m.venc,m.costo_por_unidad||m.costo])];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(medsData),'Medicamentos');
   XLSX.writeFile(wb,'laaamb-salud.xlsx');toast('Excel salud exportado');
 }
-function exportActivos(){toast('Exportando tratamientos activos…');setTimeout(()=>exportSalud(),300);}
-function exportHistorial(){toast('Exportando historial…');setTimeout(()=>exportSalud(),300);}
+function exportActivos(){exportSalud();}
+function exportHistorial(){exportSalud();}
 function exportMeds(){
   const wb=XLSX.utils.book_new();
+  const d=typeof AppData!=='undefined'?AppData.get():{medicamentos:[]};
+  const meds=d.medicamentos.length?d.medicamentos:MEDICAMENTOS;
   const data=[['Nombre','Principio activo','Categoría','Lote','Presentación','Stock mL','Stock máx','Dosis','Retiro días','Vencimiento','Costo COP'],
-    ...MEDICAMENTOS.map(m=>[m.nombre,m.principio,m.cat,m.lote,m.pres,m.stock,m.stockMax,m.dosis,m.retiro,m.venc,m.costo])];
+    ...meds.map(m=>[m.nombre,m.principio_activo||m.principio,m.categoria||m.cat,m.nro_lote||m.lote,m.presentacion||m.pres,m.stock_actual||m.stock,m.stock_maximo||m.stockMax,m.dosis_estandar||m.dosis,m.dias_retiro||m.retiro,m.fecha_vencimiento||m.venc,m.costo_por_unidad||m.costo])];
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(data),'Medicamentos');
   XLSX.writeFile(wb,'laaamb-medicamentos.xlsx');toast('Excel medicamentos exportado');
 }
 
 function downloadTemplate(tipo){
+  const rows=typeof AppData!=='undefined'?AppData.getTemplate(tipo||'tratamientos'):[['Sin plantilla']];
   const wb=XLSX.utils.book_new();
-  const T={tratamientos:[['Animal ID*','Diagnóstico*','Medicamento*','Dosis aplicada','Vía (IM/SC/IV/VO)','Duración','Fecha inicio (YYYY-MM-DD)*','Colaborador','Observaciones'],['OV-2341','Neumonía bacteriana','Oxitetraciclina 20%','21 mL','IM','5 días','2025-04-08','Juan García','']]};
-  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(T[tipo]||[['Sin plantilla']]),tipo);
-  XLSX.writeFile(wb,'plantilla-'+tipo+'.xlsx');toast('Plantilla descargada');
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),tipo||'plantilla');
+  XLSX.writeFile(wb,'plantilla-'+(tipo||'datos')+'.xlsx');toast('Plantilla descargada');
 }
+
 function importTrats(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=function(e){
-    try{const wb=XLSX.read(e.target.result,{type:'binary'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1});const data=rows.slice(1).filter(r=>r.some(c=>c));toast('✓ '+data.length+' tratamientos importados');input.value='';}catch(err){toast('Error leyendo archivo','err');}
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+      const headers=rows[0]||[];
+      const dataRows=rows.slice(1).filter(r=>r.some(c=>c));
+      if(typeof AppData!=='undefined'){
+        const {valid,errors}=AppData.validateImport('tratamientos',dataRows,headers);
+        if(errors.length) toast(errors.length+' errores en el archivo','err');
+        if(valid.length){AppData.confirmImport('tratamientos',valid,false);loadFromAppData();}
+        toast('✓ '+valid.length+' tratamientos importados'+(errors.length?' · '+errors.length+' errores':''));
+      } else {
+        toast('✓ '+dataRows.length+' tratamientos leídos');
+      }
+      input.value='';
+    }catch(err){toast('Error leyendo archivo: '+err.message,'err');}
   };reader.readAsBinaryString(file);
 }
+
 function importMeds(input){
   const file=input.files[0];if(!file)return;
   const reader=new FileReader();
   reader.onload=function(e){
-    try{const wb=XLSX.read(e.target.result,{type:'binary'});const ws=wb.Sheets[wb.SheetNames[0]];const rows=XLSX.utils.sheet_to_json(ws,{header:1});const data=rows.slice(1).filter(r=>r.some(c=>c));toast('✓ '+data.length+' medicamentos importados al inventario');input.value='';}catch(err){toast('Error leyendo archivo','err');}
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1});
+      const headers=rows[0]||[];
+      const dataRows=rows.slice(1).filter(r=>r.some(c=>c));
+      if(typeof AppData!=='undefined'){
+        const {valid,errors}=AppData.validateImport('medicamentos',dataRows,headers);
+        if(valid.length){AppData.confirmImport('medicamentos',valid,false);loadFromAppData();}
+        toast('✓ '+valid.length+' medicamentos importados al inventario');
+      } else {
+        toast('✓ '+dataRows.length+' medicamentos leídos');
+      }
+      input.value='';
+    }catch(err){toast('Error leyendo archivo: '+err.message,'err');}
   };reader.readAsBinaryString(file);
 }
 
@@ -1059,7 +1311,12 @@ function toast(msg,type='ok'){
 // ═══════ INIT ═══════
 document.getElementById('ti-fecha').value=new Date().toISOString().slice(0,10);
 document.getElementById('tg-fecha').value=new Date().toISOString().slice(0,10);
-renderActivos();renderHistorial();renderRetiro();
+// Cargar desde AppData si disponible, si no usar datos hardcoded
+if(typeof AppData!=='undefined'){
+  loadFromAppData();
+} else {
+  renderActivos();renderHistorial();renderRetiro();
+}
 </script>
 <script>
 (function(){
