@@ -99,8 +99,13 @@ const AppData = (function() {
       labelPlural: 'Ovinos',
       icon: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/><path d="M7 15l-1 2M10 15v2M13 15l1 2"/></svg>',
       categorias: {
-        H: ['Reproductora', 'Cordera', 'Levante', 'Cría'],
-        M: ['Reproductor', 'Cordero', 'Levante', 'Cría'],
+        H: ['Oveja', 'Cordera', 'Cría'],
+        M: ['Ovejo', 'Cordero', 'Cría'],
+      },
+      // Cordera → Oveja a los 10 meses, Cordero → Ovejo a los 12 meses
+      edad_categoria: {
+        H: [{meses:0, cat:'Cría'}, {meses:3, cat:'Cordera'}, {meses:10, cat:'Oveja'}],
+        M: [{meses:0, cat:'Cría'}, {meses:3, cat:'Cordero'}, {meses:12, cat:'Ovejo'}],
       },
       razas: ['Dorper', 'White Dorper', 'Katahdin', 'Kerry Hill', 'Pelibuey', 'Hampshire', 'Merino', 'Rambouillet', 'Suffolk', 'Criollo'],
       metas: {
@@ -127,8 +132,14 @@ const AppData = (function() {
       labelPlural: 'Bovinos',
       icon: '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><ellipse cx="10" cy="12" rx="6" ry="4"/><circle cx="14" cy="8" r="2.5"/><path d="M7 9c-1-2-2-3-4-2M13 9c1-2 2-3 4-2"/><path d="M7 16l-1 2.5M10 16v2.5M13 16l1 2.5"/></svg>',
       categorias: {
-        H: ['Vaca', 'Vaquilla', 'Levante', 'Ternera'],
-        M: ['Toro', 'Novillo', 'Levante', 'Ternero'],
+        H: ['Vaca', 'Vaquilla', 'Ternera'],
+        M: ['Toro', 'Novillo', 'Ternero'],
+      },
+      // Ternera → Vaquilla a los 8 meses → Vaca a los 18 meses
+      // Ternero → Novillo a los 8 meses → Toro a los 24 meses
+      edad_categoria: {
+        H: [{meses:0, cat:'Ternera'}, {meses:8, cat:'Vaquilla'}, {meses:18, cat:'Vaca'}],
+        M: [{meses:0, cat:'Ternero'}, {meses:8, cat:'Novillo'}, {meses:24, cat:'Toro'}],
       },
       razas: ['Brahman', 'Angus', 'Hereford', 'Simmental', 'Gyr', 'Holstein', 'Normando', 'Cebú', 'Brangus', 'Romosinuano', 'Blanco Orejinegro', 'Criollo'],
       metas: {
@@ -689,6 +700,38 @@ const AppData = (function() {
     save(d);
   }
 
+
+  // ── Categoría según edad ──────────────────────────────────────────────────
+  function getCategoriaEdad(especie, sexo, fechaNacimiento) {
+    const esp = ESPECIES[especie] || ESPECIES.ovino;
+    if (!esp.edad_categoria) return esp.categorias[sexo]?.[0] || 'Cría';
+    const nacimiento = new Date(fechaNacimiento);
+    if (isNaN(nacimiento)) return esp.categorias[sexo]?.[0] || 'Cría';
+    const meses = Math.floor((Date.now() - nacimiento) / (1000 * 60 * 60 * 24 * 30.44));
+    const reglas = esp.edad_categoria[sexo] || esp.edad_categoria['H'];
+    let cat = reglas[0].cat;
+    for (const regla of reglas) {
+      if (meses >= regla.meses) cat = regla.cat;
+    }
+    return cat;
+  }
+
+  // Actualizar categorías de todos los animales según edad
+  function actualizarCategoriasPorEdad() {
+    const d = get();
+    let updated = 0;
+    d.animales.forEach(a => {
+      if (!a.activo || !a.fecha_nacimiento) return;
+      const newCat = getCategoriaEdad(a.especie || 'ovino', a.sexo || 'H', a.fecha_nacimiento);
+      if (newCat !== a.categoria) {
+        a.categoria = newCat;
+        updated++;
+      }
+    });
+    if (updated > 0) save(d);
+    return updated;
+  }
+
   // ── API pública ───────────────────────────────────────────────────────────────
   return {
     // Core
@@ -718,6 +761,8 @@ const AppData = (function() {
     registrarTratamiento,
     // Utils
     uid,
+    getCategoriaEdad,
+    actualizarCategoriasPorEdad,
     reset,
     resetField,
     SCHEMAS,
