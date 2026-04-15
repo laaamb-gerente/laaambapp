@@ -231,6 +231,16 @@ textarea.fi{resize:vertical;min-height:68px}
     background:var(--bg2);
   }
 }
+
+/* ── Validación de formularios ──────────────────────────────── */
+.fi.field-error{border-color:var(--red)!important;box-shadow:0 0 0 2px rgba(224,82,82,0.15)!important}
+.fi.field-ok{border-color:var(--teal)!important}
+.fi:invalid{border-color:var(--amber)}
+.field-hint{font-size:10px;color:var(--red);margin-top:3px;display:none}
+.field-hint.visible{display:block}
+/* Campos requeridos marcados */
+label.fl[for] + .fi:required,
+label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 </style>
 </head>
 <body>
@@ -740,6 +750,9 @@ function saveGasto(){
   const sels=document.querySelectorAll('#modal-gasto select');
   const colab=sels[sels.length-1]?.value||'Juan García';
   const obs=document.querySelector('#modal-gasto textarea')?.value||'';
+  if(typeof validateForm!=='undefined'){
+    validateForm([{el:'g-valor',label:'Valor del gasto',required:true,type:'number',min:1}]);
+  }
   if(!val){toast('Ingresa el valor del gasto','err');return;}
   if(typeof AppData!=='undefined'){
     AppData.add('costos',{categoria:cat,descripcion:desc,animal_id:animalId,lote,valor_cop:val,metodo_pago:pago,fecha,colaborador:colab,observaciones:obs});
@@ -751,6 +764,9 @@ function saveGasto(){
 }
 
 function saveIngreso(){
+  const peso=parseFloat(document.querySelectorAll("#modal-ingreso .fi")[1]?.value)||0;
+  const precio2=parseFloat(document.getElementById("i-precio")?.value)||0;
+  if(!peso||!precio2){toast("Completa peso y precio por kg","err");return;}
   const tipo=document.querySelectorAll('#modal-ingreso select')[0]?.value||'Venta sacrificio';
   const animales=document.querySelectorAll('#modal-ingreso input.fi')[0]?.value||'—';
   const peso=parseFloat(document.querySelectorAll('#modal-ingreso input.fi')[1]?.value)||0;
@@ -845,6 +861,43 @@ document.getElementById('costos-mes').value=new Date().toISOString().slice(0,7);
     if(farmSub) farmSub.textContent=(finca.area_ha||76.2)+' ha · '+s.total+' animales';
   }catch(e){}
 })();
+
+// ═══ Utilidad de validación UI ═══
+function validateForm(fields) {
+  // fields = [{el: element, label: 'Nombre', required: true, type: 'number'}]
+  var errors = [];
+  fields.forEach(function(f) {
+    var el = typeof f.el === 'string' ? document.getElementById(f.el) : f.el;
+    if (!el) return;
+    var val = el.value ? el.value.trim() : '';
+    el.style.borderColor = ''; // reset
+    if (f.required && !val) {
+      el.style.borderColor = 'var(--red)';
+      el.style.boxShadow = '0 0 0 2px rgba(224,82,82,0.2)';
+      errors.push((f.label || 'Campo') + ' es requerido');
+      el.focus && errors.length === 1 && el.focus();
+    } else if (f.type === 'number' && val && isNaN(parseFloat(val))) {
+      el.style.borderColor = 'var(--red)';
+      errors.push((f.label || 'Campo') + ' debe ser un número');
+    } else if (f.min !== undefined && parseFloat(val) < f.min) {
+      el.style.borderColor = 'var(--amber)';
+      errors.push((f.label || 'Campo') + ' debe ser mayor a ' + f.min);
+    } else if (val) {
+      el.style.borderColor = 'var(--teal)';
+      setTimeout(function() { if(el) el.style.borderColor = ''; el.style.boxShadow = ''; }, 2000);
+    }
+  });
+  return errors;
+}
+
+// Limpiar highlights al escribir
+document.addEventListener('input', function(e) {
+  if (e.target.classList.contains('fi')) {
+    e.target.style.borderColor = '';
+    e.target.style.boxShadow = '';
+  }
+}, true);
+
 (function(){
   var open=false;
   var BARS='<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
