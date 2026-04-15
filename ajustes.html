@@ -159,7 +159,35 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
 /* Campos requeridos marcados */
 label.fl[for] + .fi:required,
 label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
+
+/* ── FARM SELECTOR ──────────────────────────────────────── */
+.farm-selector{margin-top:12px;position:relative}
+.farm-btn{width:100%;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;display:flex;align-items:center;gap:8px;cursor:pointer;transition:border-color var(--anim),background var(--anim);text-align:left}
+.farm-btn:hover{border-color:var(--border3);background:var(--teal-bg)}
+.farm-btn.open{border-color:var(--teal);border-bottom-left-radius:0;border-bottom-right-radius:0}
+.farm-ico{font-size:18px;flex-shrink:0;line-height:1;color:var(--teal)}
+.farm-name{font-size:12px;font-weight:600;color:var(--text);flex:1}
+.farm-sub{font-size:10px;color:var(--text3);margin-top:1px;font-weight:400;letter-spacing:.3px}
+.farm-chevron{color:var(--text3);flex-shrink:0;transition:transform .2s ease}
+.farm-btn.open .farm-chevron{transform:rotate(180deg)}
+.farm-dropdown{display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--teal);border-top:none;border-bottom-left-radius:var(--r);border-bottom-right-radius:var(--r);z-index:500;box-shadow:0 8px 24px rgba(0,0,0,.4);overflow:hidden}
+.farm-dropdown.open{display:block}
+.farm-option{display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;font-size:12px;font-family:'Changa',sans-serif;color:var(--text2);border-bottom:1px solid var(--border);transition:background var(--anim),color var(--anim)}
+.farm-option:last-child{border-bottom:none}
+.farm-option:hover{background:var(--surface);color:var(--text)}
+.farm-option.active{color:var(--teal);font-weight:600}
+.farm-option.active .farm-opt-check{opacity:1}
+.farm-opt-check{opacity:0;color:var(--teal);flex-shrink:0}
+.farm-option.all-farms{color:var(--text3);border-bottom:1px solid var(--border2);font-style:italic}
+.farm-option.all-farms:hover{color:var(--text);background:var(--surface)}
+.farm-option.all-farms.active{color:var(--teal);font-style:normal}
+.farm-opt-ico{color:var(--teal);flex-shrink:0}
+.farm-opt-info{flex:1}
+.farm-opt-name{font-weight:600;font-size:12px}
+.farm-opt-sub{font-size:10px;color:var(--text3);margin-top:1px}
+
 </style>
+<script src="farm-selector.js"></script>
 </head>
 <body>
 <div class="app">
@@ -173,9 +201,26 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="sb-head">
     <div class="sb-logo-text">LAAAMB</div>
     <div class="sb-logo-sub">Corderos · App</div>
-    <div class="farm-pill">
-      <span style="color:var(--teal);line-height:1"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg></span>
-      <div><div class="farm-name" id="sb-finca">La Marinilla</div><div class="farm-sub">76.2 ha · 470 animales</div></div>
+        <div class="farm-selector" id="farm-selector">
+      <button class="farm-btn" id="farm-btn" onclick="FarmSelector.toggle()" aria-haspopup="true">
+        <span class="farm-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg></span>
+        <div style="flex:1;min-width:0">
+          <div class="farm-name" id="sb-farm-name">La Marinilla</div>
+          <div class="farm-sub" id="sb-farm-sub">76.2 ha · cargando…</div>
+        </div>
+        <span class="farm-chevron"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M5 8l5 5 5-5"/></svg></span>
+      </button>
+      <div class="farm-dropdown" id="farm-dropdown"></div>
+    </div>
+    <!-- FILTRO DE ESPECIE -->
+    <div class="species-filter-wrap" id="species-filter-wrap">
+      <button class="species-pill" id="species-filter-pill" onclick="SpeciesFilter.toggle()">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="flex-shrink:0;color:var(--teal)"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/><path d="M7 15l-1 2M10 15v2M13 15l1 2"/></svg>
+        <span id="species-btn-label" style="flex:1">Todas las especies</span>
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="10" height="10" style="flex-shrink:0;color:var(--text3)"><path d="M5 8l5 5 5-5"/></svg>
+      </button>
+      <div class="species-dropdown" id="species-dropdown"></div>
+    </div>
     </div>
   </div>
   <nav class="nav-scroll">
@@ -304,22 +349,44 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     </div>
 
     <!-- DATOS DE LA FINCA -->
-    <div class="section-label">🏔️ Datos de la finca</div>
-    <div class="card">
-      <div class="card-h"><div class="card-title">La Marinilla</div><div class="card-sub">Información básica · Se muestra en el sidebar y reportes</div></div>
+    <div class="section-label" id="fincas">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:5px"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg>
+      Mis fincas
+    </div>
+
+    <!-- LISTA DE FINCAS -->
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-h">
+        <div><div class="card-title">Fincas registradas</div><div class="card-sub">Selecciona una finca activa en el sidebar de cualquier página</div></div>
+        <button class="btn btn-primary btn-sm" onclick="openAddFinca()">+ Nueva finca</button>
+      </div>
+      <div id="fincas-list" style="padding:0">
+        <!-- Poblado por renderFincas() -->
+      </div>
+    </div>
+
+    <!-- FORM NUEVA FINCA (oculto) -->
+    <div class="card" id="add-finca-form" style="display:none;margin-bottom:12px;border:1px solid var(--teal)">
+      <div class="card-h">
+        <div class="card-title" id="finca-form-title">Nueva finca</div>
+        <button class="btn btn-ghost btn-sm" onclick="closeAddFinca()">Cancelar</button>
+      </div>
       <div class="card-body">
         <div class="form-grid">
-          <div class="fg"><label class="fl">Nombre de la finca</label><input class="fi" id="finca-nombre" value="La Marinilla"></div>
-          <div class="fg"><label class="fl">Empresa</label><input class="fi" value="LAAAMB — Corderos de Especialidad Cárnica"></div>
-          <div class="fg"><label class="fl">Municipio</label><input class="fi" value="La Marinilla"></div>
-          <div class="fg"><label class="fl">Departamento</label><input class="fi" value="Antioquia"></div>
-          <div class="fg"><label class="fl">Área total (ha)</label><input class="fi" type="number" value="76.2" step="0.1"></div>
-          <div class="fg"><label class="fl">N° PREDIO (ICA)</label><input class="fi" placeholder="Registro ICA de la finca"></div>
-          <div class="fg"><label class="fl">Propietario</label><input class="fi" value="Juan García"></div>
-          <div class="fg"><label class="fl">Teléfono</label><input class="fi" placeholder="+57 300 000 0000"></div>
+          <div class="fg"><label class="fl">Nombre *</label><input class="fi" id="nf-nombre" placeholder="Finca El Paraíso"></div>
+          <div class="fg"><label class="fl">Empresa</label><input class="fi" id="nf-empresa" placeholder="LAAAMB"></div>
+          <div class="fg"><label class="fl">Municipio</label><input class="fi" id="nf-municipio" placeholder="La Marinilla"></div>
+          <div class="fg"><label class="fl">Departamento</label><input class="fi" id="nf-depto" placeholder="Antioquia"></div>
+          <div class="fg"><label class="fl">Área total (ha)</label><input class="fi" type="number" id="nf-area" placeholder="76.2" step="0.1"></div>
+          <div class="fg"><label class="fl">N° PREDIO (ICA)</label><input class="fi" id="nf-ica" placeholder="Registro ICA"></div>
+          <div class="fg"><label class="fl">Propietario</label><input class="fi" id="nf-propietario" placeholder="Juan García"></div>
+          <div class="fg"><label class="fl">Teléfono</label><input class="fi" id="nf-tel" placeholder="+57 300 000 0000"></div>
         </div>
-        <div class="fg"><label class="fl">Dirección / Descripción</label><input class="fi" placeholder="Vereda, coordenadas GPS, descripción de acceso…"></div>
-        <button class="btn btn-primary btn-sm" onclick="saveFinca()">Guardar datos de finca</button>
+        <div class="fg"><label class="fl">Dirección / Descripción</label><input class="fi" id="nf-dir" placeholder="Vereda, coordenadas GPS, acceso…"></div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn btn-primary btn-sm" onclick="saveFinca()" style="flex:1;justify-content:center">Guardar finca</button>
+          <button class="btn btn-ghost btn-sm" onclick="closeAddFinca()">Cancelar</button>
+        </div>
       </div>
     </div>
 
@@ -437,6 +504,7 @@ function saveColab(){
   COLABS.push({nombre:n,rol:r,tel:t,estado:'Activo'});
   localStorage.setItem('laaamb-colabs',JSON.stringify(COLABS));
   renderColabs();
+if(typeof renderFincas!=="undefined") renderFincas();
   closeAddColab();
   toast('Colaborador '+n+' agregado');
 }
@@ -451,24 +519,165 @@ function deleteColab(i){
 }
 
 // ═══ FINCA ═══
-function saveFinca(){
-  const nombre=document.getElementById('finca-nombre')?.value?.trim();
-  const empresa=document.getElementById('finca-empresa')?.value?.trim()||'LAAAMB';
-  const municipio=document.getElementById('finca-municipio')?.value?.trim()||'La Marinilla';
-  const depto=document.getElementById('finca-depto')?.value?.trim()||'Antioquia';
-  const area=parseFloat(document.getElementById('finca-area')?.value)||76.2;
-  if(!nombre){toast('Nombre de la finca requerido','err');return;}
-  localStorage.setItem('laaamb-finca-nombre', nombre);
-  const sbFinca=document.getElementById('sb-finca');
-  if(sbFinca) sbFinca.textContent=nombre;
-  const farmName=document.querySelector('.farm-name');
-  if(farmName) farmName.textContent=nombre;
-  if(typeof AppData!=='undefined'){
-    const d=AppData.get();
-    d.finca={nombre,empresa,municipio,departamento:depto,area_ha:area};
-    AppData.save(d);
+// ═══ GESTIÓN DE FINCAS ═══════════════════════════════════════════════════════
+var _editingFincaId = null;
+
+function renderFincas(){
+  if(typeof AppData==='undefined') return;
+  const d=AppData.get();
+  const fincas=d.fincas||[];
+  // Siempre incluir la finca legacy si existe y no hay fincas
+  const activeFincaId=localStorage.getItem('laaamb-active-finca')||'default';
+  const container=document.getElementById('fincas-list');
+  if(!container) return;
+
+  if(!fincas.length){
+    // Mostrar la finca actual (legacy)
+    const f=d.finca||{nombre:'La Marinilla',area_ha:76.2};
+    const animales=d.animales.filter(a=>a.activo).length;
+    container.innerHTML=`<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18" style="color:var(--teal);flex-shrink:0"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:700;color:var(--teal)">${f.nombre||'La Marinilla'} <span style="font-size:10px;font-weight:400;background:var(--teal-bg);color:var(--teal);padding:1px 7px;border-radius:10px;margin-left:6px">Activa</span></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px">${f.area_ha||76.2} ha · ${animales} animales · ${f.municipio||'La Marinilla'}, ${f.departamento||'Antioquia'}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="editFinca('default')">Editar</button>
+    </div>
+    <div style="padding:12px 18px;font-size:11px;color:var(--text3)">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="11" height="11" style="vertical-align:middle;margin-right:4px"><path d="M10 2a6 6 0 00-3 11.2V15h6v-1.8A6 6 0 0010 2z"/><path d="M8 15h4M9 18h2"/></svg>
+      Haz clic en <strong>+ Nueva finca</strong> para registrar una segunda finca.
+    </div>`;
+  } else {
+    container.innerHTML=fincas.map(function(f){
+      const isActive=f.id===activeFincaId||(activeFincaId==='default'&&f.id===fincas[0]?.id);
+      const animales=d.animales.filter(function(a){return a.activo&&(a.finca_id===f.id||!a.finca_id);}).length;
+      return `<div style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border)">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18" style="color:${isActive?'var(--teal)':'var(--text3)'};flex-shrink:0"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg>
+        <div style="flex:1">
+          <div style="font-size:13px;font-weight:700;color:${isActive?'var(--teal)':'var(--text)'}">
+            ${f.nombre}
+            ${isActive?'<span style="font-size:10px;font-weight:400;background:var(--teal-bg);color:var(--teal);padding:1px 7px;border-radius:10px;margin-left:6px">Activa</span>':''}
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">${f.area_ha||'—'} ha · ${animales} animales · ${f.municipio||'—'}, ${f.departamento||'—'}</div>
+        </div>
+        <div style="display:flex;gap:6px">
+          ${!isActive?`<button class="btn btn-ghost btn-sm" onclick="selectFinca('${f.id}')">Seleccionar</button>`:''}
+          <button class="btn btn-ghost btn-sm" onclick="editFinca('${f.id}')">Editar</button>
+          ${fincas.length>1?`<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="deleteFinca('${f.id}')">Eliminar</button>`:''}
+        </div>
+      </div>`;
+    }).join('');
   }
-  toast('Datos de la finca guardados en todos los módulos');
+}
+
+function openAddFinca(){
+  _editingFincaId=null;
+  document.getElementById('finca-form-title').textContent='Nueva finca';
+  // Limpiar campos
+  ['nf-nombre','nf-empresa','nf-municipio','nf-depto','nf-area','nf-ica','nf-propietario','nf-tel','nf-dir'].forEach(function(id){
+    const el=document.getElementById(id);
+    if(el) el.value='';
+  });
+  document.getElementById('add-finca-form').style.display='block';
+  document.getElementById('nf-nombre').focus();
+}
+
+function closeAddFinca(){
+  document.getElementById('add-finca-form').style.display='none';
+  _editingFincaId=null;
+}
+
+function editFinca(id){
+  if(typeof AppData==='undefined') return;
+  _editingFincaId=id;
+  const d=AppData.get();
+  const f=id==='default'?(d.finca||{}):(d.fincas||[]).find(function(x){return x.id===id;})||{};
+  document.getElementById('finca-form-title').textContent='Editar finca';
+  document.getElementById('nf-nombre').value=f.nombre||'';
+  document.getElementById('nf-empresa').value=f.empresa||'';
+  document.getElementById('nf-municipio').value=f.municipio||'';
+  document.getElementById('nf-depto').value=f.departamento||'';
+  document.getElementById('nf-area').value=f.area_ha||'';
+  document.getElementById('nf-ica').value=f.ica||'';
+  document.getElementById('nf-propietario').value=f.propietario||'';
+  document.getElementById('nf-tel').value=f.telefono||'';
+  document.getElementById('nf-dir').value=f.descripcion||'';
+  document.getElementById('add-finca-form').style.display='block';
+  document.getElementById('nf-nombre').focus();
+}
+
+function saveFinca(){
+  const nombre=document.getElementById('nf-nombre')?.value?.trim();
+  if(!nombre){toast('Nombre de la finca es requerido','err');document.getElementById('nf-nombre').style.borderColor='var(--red)';return;}
+  const fincaData={
+    nombre,
+    empresa:document.getElementById('nf-empresa')?.value?.trim()||'LAAAMB',
+    municipio:document.getElementById('nf-municipio')?.value?.trim()||'',
+    departamento:document.getElementById('nf-depto')?.value?.trim()||'Antioquia',
+    area_ha:parseFloat(document.getElementById('nf-area')?.value)||0,
+    ica:document.getElementById('nf-ica')?.value?.trim()||'',
+    propietario:document.getElementById('nf-propietario')?.value?.trim()||'',
+    telefono:document.getElementById('nf-tel')?.value?.trim()||'',
+    descripcion:document.getElementById('nf-dir')?.value?.trim()||'',
+  };
+  if(typeof AppData==='undefined'){toast('AppData no disponible','err');return;}
+  const d=AppData.get();
+
+  if(_editingFincaId==='default'||(!_editingFincaId&&(!d.fincas||!d.fincas.length))){
+    // Editar finca legacy
+    d.finca={...d.finca,...fincaData};
+    AppData.save(d);
+    // Actualizar selector en sidebar
+    if(typeof FarmSelector!=='undefined') FarmSelector.updateBtn();
+    localStorage.setItem('laaamb-finca-nombre',nombre);
+  } else if(_editingFincaId){
+    // Editar finca existente
+    d.fincas=d.fincas||[];
+    const idx=d.fincas.findIndex(function(f){return f.id===_editingFincaId;});
+    if(idx!==-1) d.fincas[idx]={...d.fincas[idx],...fincaData};
+    AppData.save(d);
+  } else {
+    // Nueva finca
+    d.fincas=d.fincas||[];
+    // Si es la primera finca adicional, migrar la legacy
+    if(!d.fincas.length&&d.finca){
+      d.fincas.push({id:'default',...d.finca});
+    }
+    const newId='finca-'+Date.now().toString(36);
+    d.fincas.push({id:newId,...fincaData});
+    AppData.save(d);
+    // Activar la nueva finca
+    localStorage.setItem('laaamb-active-finca',newId);
+    if(typeof FarmSelector!=='undefined') FarmSelector.updateBtn();
+  }
+
+  closeAddFinca();
+  renderFincas();
+  if(typeof FarmSelector!=='undefined') FarmSelector.updateBtn();
+  toast('"'+nombre+'" guardada correctamente');
+}
+
+function selectFinca(id){
+  localStorage.setItem('laaamb-active-finca',id);
+  if(typeof FarmSelector!=='undefined') FarmSelector.updateBtn();
+  renderFincas();
+  toast('Finca activa cambiada');
+}
+
+function deleteFinca(id){
+  if(!confirm('¿Eliminar esta finca? Los animales y datos asociados no se eliminan.')) return;
+  if(typeof AppData==='undefined') return;
+  const d=AppData.get();
+  d.fincas=(d.fincas||[]).filter(function(f){return f.id!==id;});
+  AppData.save(d);
+  // Si era la activa, seleccionar la primera disponible
+  if(localStorage.getItem('laaamb-active-finca')===id){
+    const primera=d.fincas[0];
+    localStorage.setItem('laaamb-active-finca',primera?primera.id:'default');
+    if(typeof FarmSelector!=='undefined') FarmSelector.updateBtn();
+  }
+  renderFincas();
+  toast('Finca eliminada');
 }
 
 // ═══ EXPORT/IMPORT ═══
