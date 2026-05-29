@@ -17,6 +17,7 @@
 </script>
 <script src="js/db.js"></script>
 <script src="js/app-state.js"></script>
+<script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
 <style>
@@ -745,7 +746,7 @@ function abrirEditar(id){
   openModal('m-nuevo');
 }
 
-function guardarAnimal(){
+async function guardarAnimal(){
   var id=document.getElementById('n-id').value.trim().toUpperCase();
   if(!id){toast('El ID es requerido','err');return;}
   var record={
@@ -772,6 +773,34 @@ function guardarAnimal(){
     if(AppData.list('animales').find(function(a){return a.id===id;})){toast('ID #'+id+' ya existe','err');return;}
     AppData.add('animales',record);
     toast('Animal #'+id+' registrado');
+
+    // ── PARTE 1A — Registrar animal nuevo en Supabase ──
+    if(window.DB && window.AppState && typeof window.DB.saveAnimal==='function'){
+      var loteNombre=document.getElementById('n-lote').value;
+      var loteObj=(window.AppState.lotes||[]).find(function(l){return l.nombre===loteNombre;});
+      var sexoVal=document.getElementById('n-sexo').value==='M'?'macho':'hembra';
+      try{
+        var res=await window.DB.saveAnimal({
+          finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+          codigo:id,
+          nombre:document.getElementById('n-nombre').value.trim()||null,
+          especie:document.getElementById('n-especie').value||'ovino',
+          sexo:sexoVal,
+          raza:document.getElementById('n-raza').value,
+          fecha_nacimiento:document.getElementById('n-fecha').value||null,
+          lote_actual_id:loteObj?loteObj.id:null,
+          estado:'activo',
+          notas:document.getElementById('n-obs').value.trim()||null
+        });
+        if(!res.error && res.data){
+          // Agregar al AppState local para que aparezca sin recargar
+          window.AppState.animales.push(res.data);
+          window.AppState._loaded=false; // forzar recarga en próxima vista
+        } else if(res.error){
+          console.warn('[Animales] saveAnimal Supabase:',res.error.message);
+        }
+      }catch(err){console.warn('[Animales] saveAnimal:',err&&err.message);}
+    }
   }
   document.getElementById('n-id').disabled=false;
   closeModal('m-nuevo');cargarDatos();
@@ -912,6 +941,23 @@ function savePesaje(){
   var gdpStr=document.getElementById('w-gdp').value||'';
   var gdp=parseFloat(gdpStr)||null;
   AppData.add('pesajes',{id:AppData.uid('PES'),animal_id:animalId,fecha,peso_kg:peso,gdp_calculado:gdp,colaborador:colab,observaciones:obs});
+
+  // ── PARTE 1B — Registrar pesaje en Supabase ──
+  if(window.DB && window.AppState && typeof window.DB.savePesaje==='function'){
+    var _cod=String(animalId).replace(/^#/,'').trim();
+    var _a=(window.AppState.animales||[]).find(function(x){return x.codigo===_cod||x.id===_cod;});
+    if(_a){
+      window.DB.savePesaje({
+        finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+        animal_id:_a.id,
+        peso:peso,
+        fecha:fecha,
+        tipo:'rutina',
+        registrado_por:'Juan Arbelaez'
+      }).catch(function(err){console.warn('[Animales] savePesaje Supabase:',err&&err.message);});
+    }
+  }
+
   toast('Pesaje registrado · #'+animalId+' → '+peso+' kg'+(gdp?' · GDP: '+gdpStr:''));
   closeModal('modal-pesaje');
   cargarDatos();
@@ -1073,6 +1119,13 @@ document.addEventListener('appstate:ready', function(e){
     selectLote.innerHTML = '<option value="">Lote</option>' +
       lotesNombres.map(function(n){return '<option value="'+n+'">'+n+'</option>';}).join('');
     selectLote.value = loteActual;
+
+    // PARTE 1A — Poblar también el dropdown del modal (n-lote) con lotes reales,
+    // para que lote_actual_id se resuelva correctamente al registrar un animal.
+    var nLote = document.getElementById('n-lote');
+    if (nLote && lotesNombres.length) {
+      nLote.innerHTML = lotesNombres.map(function(n){return '<option value="'+n+'">'+n+'</option>';}).join('');
+    }
   }
 
   // Badge del sidebar con el conteo real

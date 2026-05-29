@@ -35,6 +35,11 @@ window.AppState = {
         detail: { source: 'supabase' }
       }));
 
+      // Marcar AppData para que use AppState como fuente
+      if (window.AppData) {
+        window.AppData._useSupabase = true;
+      }
+
       // Actualizar badge sidebar y pill finca con el conteo real
       this._updateSidebar();
     } catch(e) {

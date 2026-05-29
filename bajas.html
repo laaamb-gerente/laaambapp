@@ -16,6 +16,7 @@
 </script>
 <script src="js/db.js"></script>
 <script src="js/app-state.js"></script>
+<script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -864,6 +865,10 @@ const CAUSA_BADGE={
 const TIPO_BADGE={'Sacrificio':'b-green','Pie de cría':'b-teal','Reproductor':'b-sky'};
 
 function renderMuertes(data){
+  if(!data||!data.length){
+    document.getElementById('muertes-tbody').innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text2);padding:24px">Sin bajas registradas — usa los botones para registrar</td></tr>';
+    return;
+  }
   document.getElementById('muertes-tbody').innerHTML=data.map(m=>`
     <tr><td class="td-muted">${m.fecha}</td>
     <td class="td-mono">#${m.id}</td>
@@ -879,6 +884,10 @@ function renderMuertes(data){
 }
 
 function renderVentas(data){
+  if(!data||!data.length){
+    document.getElementById('ventas-tbody').innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text2);padding:24px">Sin ventas registradas — usa los botones para registrar</td></tr>';
+    return;
+  }
   document.getElementById('ventas-tbody').innerHTML=data.map(v=>`
     <tr><td class="td-muted">${v.fecha}</td>
     <td class="td-mono" style="font-size:11px">${v.animales}</td>
@@ -936,6 +945,32 @@ function saveBaja(){
   if(typeof AppData!=='undefined'){
     AppData.registrarBaja({animal_id:animalId,tipo_baja:tipo,fecha,peso_kg:peso,causa,colaborador:colab,observaciones:obs,hubo_tratamiento:'No',necropsia:'No'});
   }
+
+  // ── PARTE 2C — Registrar baja en Supabase + actualizar estado del animal ──
+  if(window.DB && window.AppState){
+    const _cod=String(animalId).replace(/^#/,'').trim();
+    const _a=(window.AppState.animales||[]).find(x=>x.codigo===_cod||x.id===_cod);
+    const _tipoMap={muerte:'muerte',venta:'venta',pie:'venta',reproductor:'venta',robo:'robo',donacion:'otro'};
+    const _tipoSb=_tipoMap[tipo]||'otro';
+    if(_a){
+      window.DB.saveBaja({
+        finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+        animal_id:_a.id,
+        tipo:_tipoSb,
+        fecha:fecha,
+        causa:causa,
+        peso_salida:peso||null,
+        notas:obs||null,
+        registrado_por:colab
+      }).catch(err=>console.warn('[Bajas] saveBaja Supabase:',err&&err.message));
+      const _estado=_tipoSb==='muerte'?'muerto':_tipoSb==='venta'?'vendido':'descartado';
+      window.DB.saveAnimal({id:_a.id,estado:_estado}).catch(err=>console.warn('[Bajas] saveAnimal estado:',err&&err.message));
+      // Quitarlo del inventario activo local
+      window.AppState.animales=(window.AppState.animales||[]).filter(x=>x.id!==_a.id);
+      window.AppState._loaded=false;
+    }
+  }
+
   MUERTES.unshift({fecha:fecha.split('-').reverse().join('/'),id:animalId,cat:'Animal',causa,edad:'—',peso,lote:'—',perdida:tipo==='muerte'?peso*15000:0,colab,necropsia:'No'});
   renderMuertes(MUERTES);
   closeModal('modal-baja');
@@ -957,6 +992,29 @@ function saveVenta(){
     AppData.registrarBaja({animal_id:animales,tipo_baja:'venta',fecha,peso_kg:peso,valor_venta:total,comprador,colaborador:colab});
     AppData.add('ingresos',{tipo:'Venta '+tipo,animales_ids:animales,peso_total_kg:peso,precio_por_kg:precio,total_cop:total,comprador,canal_venta:'Directo',fecha,colaborador:colab});
   }
+
+  // ── PARTE 2C — Registrar venta en Supabase + actualizar estado del animal ──
+  if(window.DB && window.AppState){
+    const _cod=String(animales).replace(/^#/,'').trim().split(/[\s,]/)[0];
+    const _a=(window.AppState.animales||[]).find(x=>x.codigo===_cod||x.id===_cod);
+    window.DB.saveBaja({
+      finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+      animal_id:_a?_a.id:null,
+      tipo:'venta',
+      fecha:fecha,
+      peso_salida:peso||null,
+      precio_venta:total||null,
+      comprador:comprador,
+      destino:tipo,
+      registrado_por:colab
+    }).catch(err=>console.warn('[Bajas] saveVenta Supabase:',err&&err.message));
+    if(_a){
+      window.DB.saveAnimal({id:_a.id,estado:'vendido'}).catch(err=>console.warn('[Bajas] saveAnimal venta:',err&&err.message));
+      window.AppState.animales=(window.AppState.animales||[]).filter(x=>x.id!==_a.id);
+      window.AppState._loaded=false;
+    }
+  }
+
   VENTAS.unshift({fecha:fecha.split('-').reverse().join('/'),animales,tipo,peso,precio,total,comprador,canal:'Directo',retiro:'✓',colab});
   renderVentas(VENTAS);
   closeModal('modal-venta');
@@ -1002,6 +1060,63 @@ document.getElementById('muertes-mes').value=new Date().toISOString().slice(0,7)
 document.getElementById('ventas-mes').value=new Date().toISOString().slice(0,7);
 renderMuertes(MUERTES);
 renderVentas(VENTAS);
+
+// ═══════ SUPABASE — Bajas & Ventas en vivo ═══════
+const FINCA_ID_BAJAS='a1b2c3d4-0000-0000-0000-000000000001';
+async function loadBajasFromSupabase(){
+  if(!window.DB || typeof window.DB.getBajas!=='function') return;
+  try{
+    const res=await window.DB.getBajas(FINCA_ID_BAJAS);
+    const bajas=(res&&res.data)||[];
+
+    // Limpiar datos de ejemplo (OV-1892, OV-2901, etc.)
+    MUERTES.length=0;
+    VENTAS.length=0;
+
+    bajas.forEach(b=>{
+      const a=b.animales||{};
+      const cod=a.codigo||b.animal_id||'—';
+      const fechaTxt=b.fecha?b.fecha.split('-').reverse().join('/'):'—';
+      if(b.tipo==='venta'){
+        const peso=parseFloat(b.peso_salida)||0;
+        const total=parseFloat(b.precio_venta)||0;
+        const precio=(peso>0&&total>0)?Math.round(total/peso):0;
+        VENTAS.push({
+          fecha:fechaTxt, animales:'#'+cod, tipo:b.destino||'Sacrificio',
+          peso:peso, precio:precio, total:total,
+          comprador:b.comprador||'—', canal:b.destino||'Directo',
+          retiro:'✓', colab:b.registrado_por||'—'
+        });
+      } else {
+        MUERTES.push({
+          fecha:fechaTxt, id:cod, cat:a.especie||'Animal',
+          causa:b.causa||(b.tipo==='robo'?'Robo / Extravío':b.tipo==='descarte'?'Descarte':'—'),
+          edad:'—', peso:parseFloat(b.peso_salida)||0, lote:'—',
+          perdida:0, colab:b.registrado_por||'—', necropsia:'No'
+        });
+      }
+    });
+
+    // ── KPIs reales (orden: 0 muertes mes · 2 ventas mes · 3 ingresos) ──
+    const hoy=new Date();
+    const enMes=(f)=>{ if(!f) return false; const d=new Date(f); return d.getMonth()===hoy.getMonth()&&d.getFullYear()===hoy.getFullYear(); };
+    const muertesMes=bajas.filter(b=>b.tipo!=='venta'&&enMes(b.fecha)).length;
+    const ventasMes=bajas.filter(b=>b.tipo==='venta'&&enMes(b.fecha)).length;
+    const ingresos=bajas.filter(b=>b.tipo==='venta'&&enMes(b.fecha)).reduce((s,b)=>s+(parseFloat(b.precio_venta)||0),0);
+    const kpiEls=document.querySelectorAll('.kpi-val');
+    if(kpiEls[0]) kpiEls[0].textContent=muertesMes;
+    if(kpiEls[2]) kpiEls[2].textContent=ventasMes;
+    if(kpiEls[3]) kpiEls[3].innerHTML=(ingresos>=1e6?('$'+(ingresos/1e6).toFixed(1)+'<span class="kpi-unit">M</span>'):('$'+Math.round(ingresos/1000)+'<span class="kpi-unit">K</span>'));
+
+    renderMuertes(MUERTES);
+    renderVentas(VENTAS);
+    console.log('[Bajas] Supabase —',bajas.length,'bajas (',MUERTES.length,'muertes,',VENTAS.length,'ventas)');
+  }catch(err){
+    console.warn('[Bajas] Supabase no disponible, se mantienen datos locales:',err&&err.message);
+  }
+}
+document.addEventListener('appstate:ready', loadBajasFromSupabase);
+if(window.AppState && window.AppState._loaded) loadBajasFromSupabase();
 </script>
 
 

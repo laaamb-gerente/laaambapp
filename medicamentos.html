@@ -181,6 +181,7 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 </script>
 <script src="js/db.js"></script>
 <script src="js/app-state.js"></script>
+<script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
 </head>
@@ -503,6 +504,29 @@ function saveMed(){
     filteredMeds = [...MEDS];
     renderMeds();
   }
+
+  // ── PARTE 1D — Agregar medicamento en Supabase ──
+  if(window.DB && typeof window.DB.saveMedicamento==='function'){
+    window.DB.saveMedicamento({
+      finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+      nombre:med.nombre,
+      tipo:med.cat,
+      unidad:med.pres,
+      stock_actual:med.stock,
+      stock_minimo:Math.round(med.max*0.2)||null,
+      dias_retiro:med.retiro,
+      precio_unitario:med.costo,
+      notas:document.getElementById('m-obs').value||null
+    }).then(function(res){
+      if(res && !res.error && res.data && window.AppState && Array.isArray(window.AppState.medicamentos)){
+        window.AppState.medicamentos.push(res.data);
+        window.AppState._loaded=false;
+      } else if(res && res.error){
+        console.warn('[Medicamentos] saveMedicamento Supabase:',res.error.message);
+      }
+    }).catch(function(err){console.warn('[Medicamentos] saveMedicamento:',err&&err.message);});
+  }
+
   closeModal('modal-add');
   toast(nombre + ' agregado al inventario');
 }

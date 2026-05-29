@@ -16,6 +16,7 @@
 </script>
 <script src="js/db.js"></script>
 <script src="js/app-state.js"></script>
+<script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1261,6 +1262,31 @@ function saveTratamiento(tipo){
     };
 
     AppData.registrarTratamiento(tratData, medId, dosisNum);
+
+    // ── PARTE 1C — Registrar tratamiento en Supabase ──
+    if(window.DB && window.AppState && typeof window.DB.saveTratamiento==='function'){
+      const _cod=String(animalId).replace(/^#/,'').trim();
+      const _a=(window.AppState.animales||[]).find(x=>x.codigo===_cod||x.id===_cod);
+      const _med=(window.AppState.medicamentos||[]).find(m=>m.nombre===medNombre);
+      const _fi=fecha||new Date().toISOString().slice(0,10);
+      let _ffr=_fi;
+      if(retiroDias>0){const _dd=new Date(_fi);_dd.setDate(_dd.getDate()+retiroDias);_ffr=_dd.toISOString().slice(0,10);}
+      if(_a){
+        window.DB.saveTratamiento({
+          finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+          animal_id:_a.id,
+          medicamento_id:_med?_med.id:null,
+          fecha_inicio:_fi,
+          dosis:dosisNum,
+          unidad:medParts[1]||'ml',
+          dias_retiro:retiroDias,
+          fecha_fin_retiro:_ffr,
+          registrado_por:'Juan Arbelaez',
+          notas:dx
+        }).catch(err=>console.warn('[Salud] saveTratamiento Supabase:',err&&err.message));
+      }
+    }
+
     closeModal('modal-trat-individual');
     toast(`Tratamiento registrado · #${animalId} en tratamiento · Retiro: ${retiroDias}d`);
     loadFromAppData();

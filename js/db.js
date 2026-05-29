@@ -131,6 +131,19 @@ window.DB = {
       .eq('id', animal_id);
   },
 
+  // ── BAJAS & VENTAS ───────────────────────────────────
+  async getBajas(finca_id, limit = 200) {
+    return await window._sb.from('bajas')
+      .select('*, animales(codigo, nombre, raza, especie)')
+      .eq('finca_id', finca_id)
+      .order('fecha', { ascending: false })
+      .limit(limit);
+  },
+  async saveBaja(baja) {
+    return await window._sb.from('bajas')
+      .insert(baja).select().single();
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();
