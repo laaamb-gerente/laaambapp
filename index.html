@@ -17,6 +17,7 @@
   window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 </script>
 <script src="js/db.js"></script>
+<script src="js/app-state.js"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
 <style>
@@ -553,6 +554,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
   renderDashboard();
   window.addEventListener('finca-changed', renderDashboard);
+});
+
+// ═══ DASHBOARD — datos live desde Supabase (AppState) ═══
+document.addEventListener('appstate:ready', function(e) {
+  const activos = window.AppState.getAnimalesActivos();
+  const total = activos.length;
+  const hembras = activos.filter(a => a.sexo === 'hembra').length;
+  const machos = activos.filter(a => a.sexo === 'macho').length;
+
+  // Actualizar el KPI de total animales (id real en el markup: kpi-total)
+  const elTotal = document.getElementById('kpi-total');
+  if (elTotal) elTotal.textContent = total;
+
+  // Actualizar subtítulo con nombre de finca (id real: kpi-total-delta)
+  const finca = window.AppState.finca;
+  if (finca) {
+    const elSub = document.getElementById('kpi-total-delta');
+    if (elSub) elSub.textContent = 'activos en ' + finca.nombre;
+  }
+
+  console.log('[Dashboard] Actualizado desde', e.detail.source,
+    '— Total:', total, 'H:', hembras, 'M:', machos);
 });
 </script>
 </body>

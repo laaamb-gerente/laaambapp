@@ -9,6 +9,16 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- LAAAMBAPP: cliente y capa de datos -->
+<script src="js/supabase-client.js"></script>
+<script>
+  // Inicializar cliente Supabase global (window._sb para no colisionar con window.supabase del SDK)
+  window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+</script>
+<script src="js/db.js"></script>
+<script src="js/app-state.js"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
 <style>
