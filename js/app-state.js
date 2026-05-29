@@ -29,6 +29,9 @@ window.AppState = {
       document.dispatchEvent(new CustomEvent('appstate:ready', {
         detail: { source: 'supabase' }
       }));
+
+      // Actualizar badge sidebar y pill finca con el conteo real
+      this._updateSidebar();
     } catch(e) {
       console.warn('[AppState] Fallback a localStorage:', e.message);
       this._loadFromLocalStorage();
@@ -46,9 +49,34 @@ window.AppState = {
       document.dispatchEvent(new CustomEvent('appstate:ready', {
         detail: { source: 'localStorage' }
       }));
+      this._updateSidebar();
     } catch(e) {
       console.error('[AppState] Error en fallback:', e);
     }
+  },
+
+  // Actualiza el badge del sidebar (link Animales) y el pill de finca.
+  // Selectores REALES verificados en el markup:
+  //  - badge: <span class="nav-badge"> dentro de <a href="animales.html"> (en algunas páginas con id="sb-count")
+  //  - pill finca: #sb-farm-name (nombre) y #sb-farm-sub (formato "X ha · N animales")
+  _updateSidebar() {
+    const total = this.getAnimalesActivos().length;
+
+    // Badge del link de Animales (universal en todas las páginas)
+    document.querySelectorAll('a[href="animales.html"] .nav-badge')
+      .forEach(el => { el.textContent = total; });
+
+    // Pill de finca: reemplaza solo el conteo de animales preservando el resto ("X ha · ")
+    const sub = document.getElementById('sb-farm-sub');
+    if (sub) {
+      sub.textContent = /\d+\s*animales/.test(sub.textContent)
+        ? sub.textContent.replace(/\d+\s*animales/, total + ' animales')
+        : total + ' animales';
+    }
+
+    // Nombre de finca en el pill
+    const nameEl = document.getElementById('sb-farm-name');
+    if (nameEl && this.finca && this.finca.nombre) nameEl.textContent = this.finca.nombre;
   },
 
   // Helpers de conteo para el dashboard
