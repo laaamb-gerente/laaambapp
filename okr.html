@@ -491,11 +491,8 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
         <div class="card">
           <div class="card-h"><div><div class="card-title">GDP por lote</div><div class="card-sub">Ganancia diaria de peso promedio</div></div></div>
           <div class="card-body">
-            <div class="bar-row"><div class="bar-lbl">Lote A (47 ovejas)</div><div class="bar-track"><div class="bar-fill" style="width:88%;background:var(--teal)"></div></div><div class="bar-val">195g</div></div>
-            <div class="bar-row"><div class="bar-lbl">Lote B (132 ovejas)</div><div class="bar-track"><div class="bar-fill" style="width:82%;background:var(--teal)"></div></div><div class="bar-val">182g</div></div>
-            <div class="bar-row"><div class="bar-lbl">Lote C (98 ovejas)</div><div class="bar-track"><div class="bar-fill" style="width:75%;background:var(--amber)"></div></div><div class="bar-val">168g</div></div>
-            <div class="bar-row"><div class="bar-lbl">Lote D (193 ovejas)</div><div class="bar-track"><div class="bar-fill" style="width:60%;background:var(--red)"></div></div><div class="bar-val">134g</div></div>
-            <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Lote D tiene GDP crítico — sobrecarga de 13.8 ov/ha afecta directamente la ganancia de peso</div>
+            <!-- GDP por lote: renderizado desde Supabase (AppState.lotes + animales) -->
+            <div id="gdp-lote-list"></div>
           </div>
         </div>
         <div class="card">
@@ -1141,6 +1138,53 @@ document.getElementById('d-to').value = today;
     lotes:d.lotes.map(l=>l.nombre).join(', ')
   };
 })();
+
+// ═══════ SUPABASE — OKRs con datos reales ═══════
+function _okrEdadDias(fn){ if(!fn) return null; const d=(Date.now()-new Date(fn))/86400000; return d>0?d:null; }
+function _okrGdp(a){ const ed=_okrEdadDias(a.fecha_nacimiento); if(!ed || a.peso_actual==null) return null; const g=(parseFloat(a.peso_actual)/ed)*1000; return isFinite(g)?g:null; }
+function loadOKRFromSupabase(){
+  if(!window.AppState || !window.AppState._loaded) return;
+  const AS=window.AppState;
+  const activos=(AS.animales||[]).filter(a=>a.estado==='activo');
+  const conPeso=activos.filter(a=>a.peso_actual!=null);
+
+  // 1. GDP media diaria — promedio de (peso_actual / edad_dias) * 1000
+  const gdps=activos.map(_okrGdp).filter(g=>g!=null);
+  const gdpMedia=gdps.length?Math.round(gdps.reduce((s,g)=>s+g,0)/gdps.length):0;
+
+  // 2. Peso promedio hato — promedio peso_actual de activos con peso
+  const pesoProm=conPeso.length?Math.round(conPeso.reduce((s,a)=>s+(parseFloat(a.peso_actual)||0),0)/conPeso.length):0;
+
+  // 3. Crías en levante — fecha_nacimiento en los últimos 6 meses
+  const seisMeses=new Date(); seisMeses.setMonth(seisMeses.getMonth()-6);
+  const levante=activos.filter(a=>a.fecha_nacimiento && new Date(a.fecha_nacimiento)>=seisMeses).length;
+
+  const kpiVals=document.querySelectorAll('#t-produccion .kpi-val');
+  if(kpiVals[0]) kpiVals[0].innerHTML=gdpMedia+'<span class="kpi-unit">g/d</span>';
+  if(kpiVals[1]) kpiVals[1].innerHTML=pesoProm+'<span class="kpi-unit">kg</span>';
+  if(kpiVals[2]) kpiVals[2].textContent=levante;
+
+  // 4. GDP por lote — agrupar por lote_actual_id, promedio GDP por grupo
+  const cont=document.getElementById('gdp-lote-list');
+  if(cont){
+    const lotes=AS.lotes||[];
+    const rows=lotes.map(function(l){
+      const enLote=activos.filter(a=>a.lote_actual_id===l.id);
+      const lg=enLote.map(_okrGdp).filter(g=>g!=null);
+      const prom=lg.length?Math.round(lg.reduce((s,g)=>s+g,0)/lg.length):null;
+      const pct=prom?Math.min(100,Math.round(prom/200*100)):0;
+      const color=prom==null?'var(--text3)':prom>=180?'var(--teal)':prom>=150?'var(--amber)':'var(--red)';
+      return '<div class="bar-row"><div class="bar-lbl">'+l.nombre+' ('+enLote.length+')</div>'
+        +'<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div>'
+        +'<div class="bar-val">'+(prom!=null?prom+'g':'—')+'</div></div>';
+    }).join('');
+    cont.innerHTML=rows || '<div style="color:var(--text2);font-size:12px;padding:8px">Sin lotes registrados</div>';
+  }
+
+  console.log('[OKR] Supabase — GDP media',gdpMedia,'g/d · peso prom',pesoProm,'kg · levante',levante);
+}
+document.addEventListener('appstate:ready', loadOKRFromSupabase);
+if(window.AppState && window.AppState._loaded) loadOKRFromSupabase();
 </script>
 
 

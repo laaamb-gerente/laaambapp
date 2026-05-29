@@ -849,6 +849,29 @@ function saveGasto(){
   if(typeof AppData!=='undefined'){
     AppData.add('costos',{categoria:cat,descripcion:desc,animal_id:animalId,lote,valor_cop:val,metodo_pago:pago,fecha,colaborador:colab,observaciones:obs});
   }
+
+  // ── PARTE 4 — Registrar gasto en Supabase ──
+  if(window.DB && typeof window.DB.saveCosto==='function'){
+    window.DB.saveCosto({
+      finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+      categoria:CAT_GASTO_SB[cat]||'otro',
+      descripcion:desc,
+      valor:val,
+      fecha:fecha,
+      proveedor:(animalId||lote||null),
+      especie:'ovino',
+      fuente:'manual',
+      notas:obs||null
+    }).then(function(res){
+      if(res && !res.error && res.data && window.AppState && Array.isArray(window.AppState.costos)){
+        window.AppState.costos.push(res.data);
+        window.AppState._loaded=false;
+      } else if(res && res.error){
+        console.warn('[Finanzas] saveCosto Supabase:',res.error.message);
+      }
+    }).catch(function(err){console.warn('[Finanzas] saveCosto:',err&&err.message);});
+  }
+
   COSTOS_DATA.unshift({fecha:fecha.split('-').reverse().join('/'),cat,desc,animal:animalId||lote||'General',valor:val,pago,colab});
   renderCostos();
   closeModal('modal-gasto');
@@ -924,6 +947,92 @@ function toast(msg,type='ok'){
   const ic={ok:'<span style="color:var(--teal)">✓</span>',err:'<span style="color:var(--red)">✕</span>',info:'<span style="color:var(--amber)">ℹ</span>'};
   t.innerHTML=(ic[type]||ic.ok)+' '+msg;c.appendChild(t);setTimeout(()=>t.remove(),3500);
 }
+
+// ═══════ SUPABASE — Costos & Finanzas en vivo ═══════
+// Mapa categoría (texto del formulario) → enum del schema costos
+const CAT_GASTO_SB={
+  'Alimentación / Pasto':'alimentacion',
+  'Sanidad / Medicamentos':'sanidad',
+  'Mano de obra':'mano_obra',
+  'Infraestructura':'infraestructura',
+  'Compra de animales':'genetica',
+  'Transporte':'transporte',
+  'Servicios (agua/luz)':'administrativo',
+  'Otro':'otro'
+};
+// Mapa inverso enum → etiqueta legible (para renderizar)
+const CAT_GASTO_LBL={
+  alimentacion:'Alimentación / Pasto', sanidad:'Sanidad / Medicamentos',
+  mano_obra:'Mano de obra', infraestructura:'Infraestructura',
+  transporte:'Transporte', genetica:'Compra de animales',
+  administrativo:'Servicios (agua/luz)', otro:'Otro'
+};
+const TIPO_ING_LBL={
+  venta_animal:'Venta sacrificio', venta_lana:'Venta lana', venta_leche:'Venta leche',
+  subsidio:'Subsidio', aparceria:'Aparcería', otro:'Otro'
+};
+function _fmtMoney(v){
+  v=v||0;
+  if(Math.abs(v)>=1e6) return '$'+(v/1e6).toFixed(1)+'M';
+  if(Math.abs(v)>=1000) return '$'+Math.round(v/1000)+'K';
+  return '$'+Math.round(v);
+}
+function loadFinanzasFromSupabase(){
+  if(!window.AppState || !window.AppState._loaded) return;
+  const AS=window.AppState;
+  const costos=AS.costos||[];
+  const ingresos=AS.ingresos||[];
+
+  // 1. Totales reales del mes
+  const costosMes=AS.getTotalCostosMes();
+  const ingresosMes=AS.getTotalIngresosMes();
+  const balance=ingresosMes-costosMes;
+  const margen=ingresosMes>0?Math.round((balance/ingresosMes)*100):0;
+
+  // 2. Tarjetas de balance reales (#t-resumen .balance-val: 0 ingresos · 1 egresos · 2 balance)
+  const balCards=document.querySelectorAll('#t-resumen .balance-val');
+  if(balCards[0]) balCards[0].textContent=_fmtMoney(ingresosMes);
+  if(balCards[1]) balCards[1].textContent=_fmtMoney(costosMes);
+  if(balCards[2]) balCards[2].textContent=(balance>=0?'+':'')+_fmtMoney(balance);
+  const balSub=document.querySelectorAll('#t-resumen .balance-card')[2];
+  if(balSub){ const sub=balSub.querySelector('.balance-sub'); if(sub) sub.textContent='Margen: '+margen+'%'; }
+  const balLabel=document.getElementById('balance-label');
+  if(balLabel) balLabel.textContent=(balance>=0?'+':'')+_fmtMoney(balance)+' COP';
+
+  // 3. Reemplazar datos de ejemplo en las tablas con datos reales (o estado vacío)
+  COSTOS_DATA.length=0;
+  costos.forEach(c=>COSTOS_DATA.push({
+    fecha:(c.fecha||'').split('-').reverse().join('/'),
+    cat:CAT_GASTO_LBL[c.categoria]||c.categoria||'Otro',
+    desc:c.descripcion||'—',
+    animal:c.proveedor||'General',
+    valor:parseFloat(c.valor)||0,
+    pago:'—', colab:'—'
+  }));
+  INGRESOS_DATA.length=0;
+  ingresos.forEach(i=>INGRESOS_DATA.push({
+    fecha:(i.fecha||'').split('-').reverse().join('/'),
+    tipo:TIPO_ING_LBL[i.tipo]||i.tipo||'Otro',
+    animales:i.descripcion||'—',
+    peso:0, precio:0,
+    total:parseFloat(i.valor)||0,
+    comprador:i.cliente||'—', canal:'—', colab:'—'
+  }));
+
+  const vacioMsg='Sin registros financieros — registra tu primer gasto o conecta Siigo (disponible próximamente)';
+  if(!costos.length){
+    const tb=document.getElementById('costos-tbody');
+    if(tb) tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">'+vacioMsg+'</td></tr>';
+  } else { renderCostos(); }
+  if(!ingresos.length){
+    const tb=document.getElementById('ingresos-tbody');
+    if(tb) tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--text2);padding:24px">'+vacioMsg+'</td></tr>';
+  } else { renderIngresos(); }
+
+  console.log('[Finanzas] Supabase —',costos.length,'costos,',ingresos.length,'ingresos · balance',_fmtMoney(balance));
+}
+document.addEventListener('appstate:ready', loadFinanzasFromSupabase);
+if(window.AppState && window.AppState._loaded) loadFinanzasFromSupabase();
 
 // ═══ INIT ═══
 document.getElementById('g-fecha').value=new Date().toISOString().slice(0,10);

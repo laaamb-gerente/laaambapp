@@ -6,14 +6,16 @@ window.AppState = {
     if (this._loaded) return;
     try {
       // Cargar en paralelo
-      const [fincaRes, animalesRes, lotesRes, medRes, gestantesRes, eventosRepRes] =
+      const [fincaRes, animalesRes, lotesRes, medRes, gestantesRes, eventosRepRes, costosRes, ingresosRes] =
         await Promise.all([
           window.DB.getFincas(),
           window.DB.getAnimales(this._finca_id),
           window.DB.getLotes(this._finca_id),
           window.DB.getMedicamentos(this._finca_id),
           window.DB.getGestantes(this._finca_id),
-          window.DB.getEventosReproductivos(this._finca_id, 100)
+          window.DB.getEventosReproductivos(this._finca_id, 100),
+          window.DB.getCostos(this._finca_id),
+          window.DB.getIngresos(this._finca_id)
         ]);
 
       if (!fincaRes.error) window.AppState.finca = fincaRes.data?.[0] || null;
@@ -22,6 +24,8 @@ window.AppState = {
       if (!medRes.error) window.AppState.medicamentos = medRes.data || [];
       if (!gestantesRes.error) window.AppState.gestantes = gestantesRes.data || [];
       if (!eventosRepRes.error) window.AppState.eventosReproductivos = eventosRepRes.data || [];
+      if (!costosRes.error) window.AppState.costos = costosRes.data || [];
+      if (!ingresosRes.error) window.AppState.ingresos = ingresosRes.data || [];
 
       this._loaded = true;
       console.log('[AppState] Supabase cargado:', {
@@ -57,6 +61,8 @@ window.AppState = {
       this.medicamentos = d.medicamentos || [];
       this.gestantes = d.gestantes || [];
       this.eventosReproductivos = d.eventosReproductivos || [];
+      this.costos = d.costos || [];
+      this.ingresos = d.ingresos || [];
       this._loaded = true;
       document.dispatchEvent(new CustomEvent('appstate:ready', {
         detail: { source: 'localStorage' }
@@ -109,6 +115,25 @@ window.AppState = {
   },
   getGestantes() {
     return this.gestantes || [];
+  },
+  // Helpers de finanzas
+  getCostosMes() {
+    const hoy = new Date();
+    const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+      .toISOString().split('T')[0];
+    return (this.costos || []).filter(c => c.fecha >= inicio);
+  },
+  getIngresosMes() {
+    const hoy = new Date();
+    const inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+      .toISOString().split('T')[0];
+    return (this.ingresos || []).filter(i => i.fecha >= inicio);
+  },
+  getTotalCostosMes() {
+    return this.getCostosMes().reduce((s, c) => s + (c.valor||0), 0);
+  },
+  getTotalIngresosMes() {
+    return this.getIngresosMes().reduce((s, i) => s + (i.valor||0), 0);
   }
 };
 

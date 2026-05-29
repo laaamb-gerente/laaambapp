@@ -144,6 +144,33 @@ window.DB = {
       .insert(baja).select().single();
   },
 
+  // ── COSTOS & INGRESOS ────────────────────────────────
+  async getCostos(finca_id, limit = 500) {
+    return await window._sb.from('costos')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .order('fecha', { ascending: false })
+      .limit(limit);
+  },
+
+  async saveCosto(costo) {
+    return await window._sb.from('costos')
+      .insert(costo).select().single();
+  },
+
+  async getIngresos(finca_id, limit = 500) {
+    return await window._sb.from('ingresos')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .order('fecha', { ascending: false })
+      .limit(limit);
+  },
+
+  async saveIngreso(ingreso) {
+    return await window._sb.from('ingresos')
+      .insert(ingreso).select().single();
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();

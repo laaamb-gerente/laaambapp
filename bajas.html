@@ -437,30 +437,8 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
             <button class="btn btn-ghost btn-sm" onclick="document.querySelectorAll('.tn')[1].click()">Ver todas →</button>
           </div>
           <div class="card-body">
-            <div class="muerte-card">
-              <div class="muerte-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><rect x="5" y="3" width="10" height="11" rx="5"/><path d="M8 10v3M12 10v3"/><path d="M7 14l-1 3M13 14l1 3"/></svg></div>
-              <div class="muerte-info">
-                <div class="muerte-id">#OV-1892</div>
-                <div class="muerte-causa">Neumonía bacteriana</div>
-                <div class="muerte-meta">10/04/2025 · Levante · Lote D · Juan García</div>
-              </div>
-              <div class="muerte-right">
-                <div class="muerte-edad">2.4 meses</div>
-                <div class="muerte-peso">12 kg</div>
-              </div>
-            </div>
-            <div class="muerte-card">
-              <div class="muerte-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><rect x="5" y="3" width="10" height="11" rx="5"/><path d="M8 10v3M12 10v3"/><path d="M7 14l-1 3M13 14l1 3"/></svg></div>
-              <div class="muerte-info">
-                <div class="muerte-id">#OV-2901</div>
-                <div class="muerte-causa">Diarrea neonatal</div>
-                <div class="muerte-meta">02/04/2025 · Neonato · Lote A · María López</div>
-              </div>
-              <div class="muerte-right">
-                <div class="muerte-edad">4 días</div>
-                <div class="muerte-peso">4 kg</div>
-              </div>
-            </div>
+            <!-- Últimas muertes: renderizado desde Supabase -->
+            <div id="ultimas-muertes"></div>
             <button class="btn btn-danger btn-sm" style="width:100%;justify-content:center;margin-top:12px" onclick="openModal('modal-baja')">+ Registrar nueva baja</button>
           </div>
         </div>
@@ -472,39 +450,8 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
             <button class="btn btn-ghost btn-sm" onclick="document.querySelectorAll('.tn')[2].click()">Ver todas →</button>
           </div>
           <div class="card-body">
-            <div class="venta-row">
-              <div class="venta-id">#OV-1341</div>
-              <div class="venta-info">
-                <div class="venta-desc">Sacrificio · 38 kg</div>
-                <div class="venta-meta">09/04 · Carnes El Llano · Juan García</div>
-              </div>
-              <div>
-                <div class="venta-total">$551K</div>
-                <div class="venta-precio">$14,500/kg</div>
-              </div>
-            </div>
-            <div class="venta-row">
-              <div class="venta-id">#OV-0823</div>
-              <div class="venta-info">
-                <div class="venta-desc">Pie de cría · 31 kg</div>
-                <div class="venta-meta">07/04 · Finca El Porvenir · Carlos Ríos</div>
-              </div>
-              <div>
-                <div class="venta-total">$372K</div>
-                <div class="venta-precio">$12,000/kg</div>
-              </div>
-            </div>
-            <div class="venta-row">
-              <div class="venta-id">5 animales</div>
-              <div class="venta-info">
-                <div class="venta-desc">Sacrificio grupal · 210 kg</div>
-                <div class="venta-meta">02/04 · Frigorífico Antioquia · Juan García</div>
-              </div>
-              <div>
-                <div class="venta-total">$3.0M</div>
-                <div class="venta-precio">$14,500/kg</div>
-              </div>
-            </div>
+            <!-- Últimas ventas: renderizado desde Supabase -->
+            <div id="ultimas-ventas"></div>
             <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:12px" onclick="openModal('modal-venta')">+ Registrar nueva venta</button>
           </div>
         </div>
@@ -1110,9 +1057,40 @@ async function loadBajasFromSupabase(){
 
     renderMuertes(MUERTES);
     renderVentas(VENTAS);
+    renderDashboardBajas();
     console.log('[Bajas] Supabase —',bajas.length,'bajas (',MUERTES.length,'muertes,',VENTAS.length,'ventas)');
   }catch(err){
     console.warn('[Bajas] Supabase no disponible, se mantienen datos locales:',err&&err.message);
+  }
+}
+function _fmtMoneyBajas(v){
+  v=parseFloat(v)||0;
+  return v>=1e6 ? '$'+(v/1e6).toFixed(1)+'M' : v>=1000 ? '$'+Math.round(v/1000)+'K' : '$'+Math.round(v);
+}
+function renderDashboardBajas(){
+  // Últimas 3 muertes en la tarjeta del dashboard
+  const cm=document.getElementById('ultimas-muertes');
+  if(cm){
+    const ult=MUERTES.slice(0,3);
+    cm.innerHTML = ult.length ? ult.map(function(m){
+      return '<div class="muerte-card">'
+        +'<div class="muerte-ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 3 2 4 2 6h10c0-2 2-3 2-6a7 7 0 0 0-7-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg></div>'
+        +'<div class="muerte-info"><div class="muerte-id">#'+m.id+'</div><div class="muerte-causa">'+m.causa+'</div><div class="muerte-meta">'+m.fecha+' · '+m.colab+'</div></div>'
+        +'<div class="muerte-right"><div class="muerte-edad">'+m.cat+'</div><div class="muerte-peso">'+(m.peso?m.peso+' kg':'—')+'</div></div>'
+        +'</div>';
+    }).join('') : '<div style="text-align:center;color:var(--text2);font-size:13px;padding:18px 0">Sin muertes registradas</div>';
+  }
+  // Últimas 3 ventas en la tarjeta del dashboard
+  const cv=document.getElementById('ultimas-ventas');
+  if(cv){
+    const ult=VENTAS.slice(0,3);
+    cv.innerHTML = ult.length ? ult.map(function(v){
+      return '<div class="venta-row">'
+        +'<div class="venta-id">'+v.animales+'</div>'
+        +'<div class="venta-info"><div class="venta-desc">'+v.tipo+(v.peso?' · '+v.peso+' kg':'')+'</div><div class="venta-meta">'+v.fecha+' · '+v.comprador+' · '+v.colab+'</div></div>'
+        +'<div><div class="venta-total">'+_fmtMoneyBajas(v.total)+'</div><div class="venta-precio">'+(v.precio?'$'+v.precio.toLocaleString('es-CO')+'/kg':'—')+'</div></div>'
+        +'</div>';
+    }).join('') : '<div style="text-align:center;color:var(--text2);font-size:13px;padding:18px 0">Sin ventas registradas</div>';
   }
 }
 document.addEventListener('appstate:ready', loadBajasFromSupabase);
