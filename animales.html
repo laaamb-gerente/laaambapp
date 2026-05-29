@@ -1016,7 +1016,12 @@ document.addEventListener('appstate:ready', function(e){
       especie: a.especie,
       // Categoría: reproductores machos adultos → "Reproductor", resto vacío
       categoria: esReproductor(a) ? 'Reproductor' : '',
-      lote: '',
+      // MEJORA 1 — nombre del lote real resuelto desde AppState.lotes por uuid
+      lote: (function(){
+        if (!a.lote_actual_id) return '';
+        var l = (window.AppState.lotes || []).find(function(l){ return l.id === a.lote_actual_id; });
+        return l ? l.nombre : '';
+      })(),
       observaciones: a.notas || '',
       madre_id: a.madre_id || '',
       padre_id: a.padre_id || '',
@@ -1055,6 +1060,19 @@ document.addEventListener('appstate:ready', function(e){
     selectRaza.innerHTML = '<option value="">Raza</option>' +
       razas.map(function(r){return '<option value="'+r+'">'+r+'</option>';}).join('');
     selectRaza.value = valorActual;
+  }
+
+  // MEJORA 1 — Poblar el dropdown de Lotes con los nombres reales de AppState.lotes
+  var selectLote = document.getElementById('f-lote');
+  if (selectLote) {
+    var lotesNombres = (window.AppState.lotes || [])
+      .map(function(l){ return l.nombre; })
+      .filter(Boolean)
+      .sort();
+    var loteActual = selectLote.value;
+    selectLote.innerHTML = '<option value="">Lote</option>' +
+      lotesNombres.map(function(n){return '<option value="'+n+'">'+n+'</option>';}).join('');
+    selectLote.value = loteActual;
   }
 
   // Badge del sidebar con el conteo real

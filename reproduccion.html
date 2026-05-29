@@ -537,14 +537,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
         <div style="overflow-x:auto">
           <table>
             <thead><tr><th>Fecha</th><th>Animal</th><th>Días post-monta</th><th>Resultado</th><th>Días gestación</th><th>Parto estimado</th><th>Veterinario</th><th>Obs.</th></tr></thead>
-            <tbody>
-              <tr><td>08/04/2025</td><td class="td-mono">#OV-1234</td><td>45</td><td><span class="badge b-sky">Gestante</span></td><td>45</td><td>11/05/2025</td><td>Dr. Martínez</td><td>2 fetos visibles</td></tr>
-              <tr><td>08/04/2025</td><td class="td-mono">#OV-0892</td><td>42</td><td><span class="badge b-sky">Gestante</span></td><td>42</td><td>14/05/2025</td><td>Dr. Martínez</td><td>1 feto</td></tr>
-              <tr><td>08/04/2025</td><td class="td-mono">#OV-2210</td><td>38</td><td><span class="badge b-sky">Gestante</span></td><td>38</td><td>18/05/2025</td><td>Dr. Martínez</td><td>Posible mellizos</td></tr>
-              <tr><td>08/04/2025</td><td class="td-mono">#OV-0441</td><td>35</td><td><span class="badge b-red">Vacía</span></td><td>—</td><td>—</td><td>Dr. Martínez</td><td>3er ciclo vacía — evaluar</td></tr>
-              <tr><td>08/04/2025</td><td class="td-mono">#OV-1109</td><td>32</td><td><span class="badge b-red">Vacía</span></td><td>—</td><td>—</td><td>Dr. Martínez</td><td>2do ciclo vacía</td></tr>
-              <tr><td>08/04/2025</td><td class="td-mono">#OV-0788</td><td>30</td><td><span class="badge b-sky">Gestante</span></td><td>30</td><td>26/05/2025</td><td>Dr. Martínez</td><td>2 fetos</td></tr>
-            </tbody>
+            <tbody id="eco-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -751,6 +744,11 @@ function renderAll(){
 function renderGestaciones(){
   const c = document.getElementById('gest-list');
   if(!c) return;
+  // MEJORA 5 — estado vacío limpio cuando no hay gestantes registradas
+  if(!GESTACIONES.length){
+    c.innerHTML = '<div style="text-align:center;color:var(--text2);padding:32px;font-size:13px">Sin gestantes registradas actualmente.</div>';
+    return;
+  }
   const sorted = [...GESTACIONES].sort((a,b)=>a.diasGest-b.diasGest);
   c.innerHTML = sorted.map(g=>{
     const diasRestantes = g.totalDias - g.diasGest;
@@ -1014,12 +1012,39 @@ function saveEco(){
     }
     loadReproFromAppData();
   }
+
+  // ── Supabase: registrar ecografía + actualizar estado reproductivo ──
+  if(window.DB && window.AppState && Array.isArray(window.AppState.animales)){
+    const _cod = String(animalId||'').replace(/^#/,'').trim();
+    const _a = window.AppState.animales.find(x=>x.codigo===_cod||x.id===_cod);
+    // Normalizar resultado del modal (Gestante/Vacía/No apta) a los valores del schema
+    const _res = resultado==='Gestante' ? 'gestante'
+               : resultado==='Vacía'    ? 'vacia'
+               : 'dudosa';
+    if(_a){
+      window.DB.saveEventoReproductivo({
+        finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+        hembra_id:_a.id, tipo:'ecografia', fecha:fecha,
+        resultado:_res, notas:obs, registrado_por:vet
+      }).then(function(){
+        if(_res==='gestante'){
+          const _pe = new Date(fecha); _pe.setDate(_pe.getDate()+147); // ovinos: 147 días
+          return window.DB.updateEstadoReproductivo(_a.id,'gestante',null,_pe.toISOString().slice(0,10));
+        }
+        if(_res==='vacia'){
+          return window.DB.updateEstadoReproductivo(_a.id,'vacia',null,null);
+        }
+      }).catch(err=>console.warn('[Repro] ecografía Supabase:',err&&err.message));
+    }
+  }
+
   closeModal('modal-ecografia');
   toast('Ecografía registrada · Estado de #'+animalId+' → '+resultado);
 }
 
 // ═══ CARGAR DESDE APPDATA ═══
 function loadReproFromAppData(){
+  if(window.AppState && window.AppState._loaded) return; // AppState (Supabase) ya tomó control
   if(typeof AppData==='undefined') return;
   const d = AppData.get();
 
@@ -1258,6 +1283,44 @@ function loadReproFromSupabase(){
   if(hembraInput){ hembraInput.setAttribute('list','hembras-datalist'); if(!hembraInput.id) hembraInput.id='m-hembra'; }
   const madreInput = document.getElementById('p-madre');
   if(madreInput) madreInput.setAttribute('list','hembras-datalist');
+  // MEJORA 3.1 — input de la ecografía individual también usa el datalist de hembras
+  const ecoInput = document.querySelector('#modal-ecografia input.fi');
+  if(ecoInput){ ecoInput.setAttribute('list','hembras-datalist'); if(!ecoInput.id) ecoInput.id='e-animal'; }
+
+  // ── MEJORA 4 — Tab Ecografías: render de resultados reales desde Supabase ──
+  const ecoTbody = document.getElementById('eco-tbody');
+  if(ecoTbody){
+    const ecoEv = (eventos||[]).filter(e=>e.tipo==='ecografia');
+    if(ecoEv.length){
+      ecoTbody.innerHTML = ecoEv.map(function(e){
+        const h = e.hembra || {};
+        const cod = h.codigo || e.hembra_id || '—';
+        const nom = h.nombre ? ' · '+h.nombre : '';
+        const resTxt = e.resultado==='gestante' ? 'Gestante' : e.resultado==='vacia' ? 'Vacía' : (e.resultado||'—');
+        const resClr = e.resultado==='gestante' ? 'var(--teal)' : e.resultado==='vacia' ? 'var(--red)' : 'var(--amber)';
+        // Parto estimado: ecografías gestantes → fecha + 147 días (ovinos)
+        let partoEst = '—', diasGest = '—';
+        if(e.resultado==='gestante' && e.fecha){
+          const pe = new Date(e.fecha); pe.setDate(pe.getDate()+147);
+          partoEst = pe.toLocaleDateString('es-CO');
+          diasGest = Math.max(0, Math.round((hoy - new Date(e.fecha))/86400000));
+        }
+        const fechaTxt = e.fecha ? new Date(e.fecha).toLocaleDateString('es-CO') : '—';
+        return '<tr>'
+          + '<td>'+fechaTxt+'</td>'
+          + '<td>#'+cod+nom+'</td>'
+          + '<td>—</td>'
+          + '<td><span style="color:'+resClr+';font-weight:600">'+resTxt+'</span></td>'
+          + '<td>'+diasGest+'</td>'
+          + '<td>'+partoEst+'</td>'
+          + '<td>'+(e.registrado_por||'—')+'</td>'
+          + '<td>'+(e.notas||'—')+'</td>'
+          + '</tr>';
+      }).join('');
+    } else {
+      ecoTbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">Sin ecografías registradas — usa el botón para registrar los resultados cuando estén listos.</td></tr>';
+    }
+  }
 
   // ── Alertas: reemplazar datos de ejemplo por partos próximos reales (o vacío) ──
   const alertsBox = document.getElementById('repro-alerts');
