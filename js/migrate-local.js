@@ -1,29 +1,45 @@
+// ── Helpers de mapeo (estructura real de AppData.js → schema Supabase) ──────────
+
+// 'H' → 'hembra', 'M' → 'macho', cualquier otro → null
+function mapSexo(sexo) {
+  if (sexo === 'H') return 'hembra';
+  if (sexo === 'M') return 'macho';
+  return null;
+}
+
+// Mapea los estados libres de AppData a los 4 estados permitidos por el CHECK.
+// 'Vendido'/'Baja' → 'vendido'; 'Muerto'/'Muerte' → 'muerto';
+// cualquier otro (Gestante, Activa, Reproductor, En tratamiento, Vacía, ...) → 'activo'.
+function mapEstado(estado) {
+  const e = (estado || '').toString().trim().toLowerCase();
+  if (e === 'vendido' || e === 'baja') return 'vendido';
+  if (e === 'muerto' || e === 'muerte') return 'muerto';
+  return 'activo';
+}
+
 window.migrarASupabase = async function() {
   console.log('🐑 Iniciando migración LAAAMBAPP localStorage → Supabase...');
   const resultados = {};
 
   try {
-    // Lee AppData del localStorage
-    const raw = localStorage.getItem('laaambAppData');
-    if (!raw) { console.error('❌ No se encontró laaambAppData en localStorage'); return; }
+    // Lee AppData del localStorage (clave real definida en AppData.js)
+    const raw = localStorage.getItem('laaamb_data');
+    if (!raw) { console.error('❌ No se encontró laaamb_data en localStorage'); return; }
     const appData = JSON.parse(raw);
     console.log('📦 AppData encontrado:', Object.keys(appData));
 
-    // 1. Migrar fincas
-    if (appData.fincas?.length) {
-      let ok = 0;
-      for (const f of appData.fincas) {
-        const { error } = await window.DB.saveFinca({
-          nombre: f.nombre || f.name || 'Finca sin nombre',
-          ubicacion: f.ubicacion || f.location || '',
-          hectareas: parseFloat(f.hectareas || f.ha || 0) || null,
-          propietario: f.propietario || f.owner || ''
-        });
-        if (!error) ok++;
-        else console.warn('Finca error:', error.message, f);
-      }
-      resultados.fincas = ok;
-      console.log(`✅ Fincas: ${ok}/${appData.fincas.length}`);
+    // 1. Migrar finca (objeto único, NO array)
+    const f = appData.finca;
+    if (f && (f.nombre || f.empresa)) {
+      const ubicacionPartes = [f.municipio, f.departamento].filter(Boolean);
+      const { error } = await window.DB.saveFinca({
+        nombre: f.nombre || f.empresa || 'Finca sin nombre',
+        ubicacion: ubicacionPartes.join(', '),
+        hectareas: parseFloat(f.area_ha || 0) || null,
+        propietario: f.empresa || ''
+      });
+      if (!error) { resultados.fincas = 1; console.log('✅ Finca: 1/1'); }
+      else console.warn('Finca error:', error.message, f);
     }
 
     // Obtener finca_id para usar en el resto
@@ -32,19 +48,21 @@ window.migrarASupabase = async function() {
     if (!finca_id) { console.error('❌ No hay finca en Supabase para continuar'); return; }
     console.log('🏡 Usando finca_id:', finca_id);
 
-    // 2. Migrar lotes
+    // 2. Migrar lotes (campos reales: area_ha, capacidad_max, tipo_pasto)
     if (appData.lotes?.length) {
       let ok = 0;
       for (const l of appData.lotes) {
+        const notas = [l.descripcion, l.fuente_agua ? `Agua: ${l.fuente_agua}` : null]
+          .filter(Boolean).join(' · ');
         const { error } = await window.DB.saveLote({
           finca_id,
-          nombre: l.nombre || l.name || 'Lote sin nombre',
-          hectareas: parseFloat(l.hectareas || l.ha || 0) || null,
-          tipo_pastura: l.tipoPastura || l.tipo_pastura || l.pastura || '',
-          capacidad_animal: parseInt(l.capacidadAnimal || l.capacidad || 0) || null,
-          dias_descanso_objetivo: parseInt(l.diasDescanso || 21),
-          dias_pastoreo_objetivo: parseInt(l.diasPastoreo || 7),
-          notas: l.notas || ''
+          nombre: l.nombre || 'Lote sin nombre',
+          hectareas: parseFloat(l.area_ha || 0) || null,
+          tipo_pastura: l.tipo_pasto || '',
+          capacidad_animal: parseInt(l.capacidad_max || 0) || null,
+          dias_descanso_objetivo: 21,
+          dias_pastoreo_objetivo: 7,
+          notas
         });
         if (!error) ok++;
         else console.warn('Lote error:', error.message, l);
@@ -53,22 +71,22 @@ window.migrarASupabase = async function() {
       console.log(`✅ Lotes: ${ok}/${appData.lotes.length}`);
     }
 
-    // 3. Migrar animales
+    // 3. Migrar animales (sexo H/M → hembra/macho; estado libre → CHECK válido)
     if (appData.animales?.length) {
       let ok = 0;
       for (const a of appData.animales) {
         const { error } = await window.DB.saveAnimal({
           finca_id,
-          codigo: a.codigo || a.id || a.arete || '',
-          nombre: a.nombre || a.name || '',
+          codigo: a.id || a.codigo || a.arete || '',
+          nombre: a.nombre || '',
           especie: a.especie || 'ovino',
-          sexo: a.sexo || a.genero || '',
+          sexo: mapSexo(a.sexo),
           raza: a.raza || '',
-          fecha_nacimiento: a.fechaNacimiento || a.fecha_nacimiento || null,
-          estado: a.estado || 'activo',
-          peso_actual: parseFloat(a.pesoActual || a.peso || 0) || null,
-          condicion_corporal: parseFloat(a.condicionCorporal || a.cc || 0) || null,
-          notas: a.notas || ''
+          fecha_nacimiento: a.fecha_nacimiento || null,
+          estado: mapEstado(a.estado),
+          peso_actual: parseFloat(a.peso_inicial || a.peso || 0) || null,
+          condicion_corporal: parseFloat(a.condicion_corporal || a.cc || 0) || null,
+          notas: a.observaciones || ''
         });
         if (!error) ok++;
         else console.warn('Animal error:', error.message, a);
@@ -77,19 +95,25 @@ window.migrarASupabase = async function() {
       console.log(`✅ Animales: ${ok}/${appData.animales.length}`);
     }
 
-    // 4. Migrar medicamentos
+    // 4. Migrar medicamentos (campos reales: stock_maximo, costo_por_unidad, principio_activo)
     if (appData.medicamentos?.length) {
       let ok = 0;
       for (const m of appData.medicamentos) {
+        const notas = [
+          m.principio_activo ? `Principio activo: ${m.principio_activo}` : null,
+          m.stock_maximo ? `Stock máx: ${m.stock_maximo}` : null,
+          m.observaciones || null
+        ].filter(Boolean).join(' · ');
         const { error } = await window.DB.saveMedicamento({
           finca_id,
-          nombre: m.nombre || m.name || '',
-          tipo: m.tipo || '',
-          unidad: m.unidad || '',
-          stock_actual: parseFloat(m.stockActual || m.stock || 0) || 0,
-          stock_minimo: parseFloat(m.stockMinimo || m.minimo || 0) || 0,
-          dias_retiro: parseInt(m.diasRetiro || m.retiro || 0) || 0,
-          precio_unitario: parseFloat(m.precio || m.precioUnitario || 0) || 0
+          nombre: m.nombre || '',
+          tipo: m.categoria || m.tipo || '',
+          unidad: m.presentacion || m.unidad || '',
+          stock_actual: parseFloat(m.stock_actual || 0) || 0,
+          stock_minimo: parseFloat(m.stock_minimo || 0) || 0,
+          dias_retiro: parseInt(m.dias_retiro || 0) || 0,
+          precio_unitario: parseFloat(m.costo_por_unidad || 0) || 0,
+          notas
         });
         if (!error) ok++;
         else console.warn('Medicamento error:', error.message, m);
