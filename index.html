@@ -8,6 +8,15 @@
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- LAAAMBAPP: cliente y capa de datos -->
+<script src="js/supabase-client.js"></script>
+<script>
+  // Inicializar cliente Supabase global
+  const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+</script>
+<script src="js/db.js"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
 <style>
