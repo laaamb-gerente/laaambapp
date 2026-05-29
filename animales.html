@@ -576,7 +576,7 @@ function sortBy(f){if(sortField===f)sortAsc=!sortAsc;else{sortField=f;sortAsc=tr
 function sortAndRender(){
   filtered.sort(function(a,b){
     var va,vb;
-    if(sortField==='peso'){va=AppData.pesoActual(a.id)||0;vb=AppData.pesoActual(b.id)||0;}
+    if(sortField==='peso'){va=Number(a.pesoParaTabla)||0;vb=Number(b.pesoParaTabla)||0;}
     else if(sortField==='costo'){va=AppData.costoAnimal(a.id)||0;vb=AppData.costoAnimal(b.id)||0;}
     else{va=a[sortField]||'';vb=b[sortField]||'';}
     if(typeof va==='number') return sortAsc?va-vb:vb-va;
@@ -608,7 +608,8 @@ function renderTabla(){
   var startIdx=(currentPage-1)*PER_PAGE;
   var pageItems=filtered.slice(startIdx,startIdx+PER_PAGE);
   tbody.innerHTML=pageItems.map(function(a){
-    var peso=AppData.pesoActual(a.id);
+    // MEJORA 2 — usa el peso real de Supabase (pesoParaTabla); '—' si no existe
+    var peso=(a.pesoParaTabla!=null && a.pesoParaTabla!=='') ? Number(a.pesoParaTabla).toFixed(1)+' kg' : '—';
     var costo=AppData.costoAnimal(a.id);
     var op=a.activo===false?'opacity:.4;':'';
     return '<tr onclick="verPerfil(\''+a.id+'\')" style="'+op+'">'
@@ -618,7 +619,7 @@ function renderTabla(){
       +'<div><div style="font-weight:600">'+(a.nombre||'—')+'</div><div class="td-m">'+(a.categoria||'')+'</div></div></div></td>'
       +'<td class="td-m">'+(a.raza||'—')+'</td>'
       +'<td class="td-m">'+calcEdad(a.fecha_nacimiento)+'</td>'
-      +'<td class="td-m">'+(peso?peso+' kg':'—')+'</td>'
+      +'<td class="td-m">'+peso+'</td>'
       +'<td><span class="badge '+(STATUS_BADGE[a.estado]||'b-gray')+'">'+(a.estado||'—')+'</span></td>'
       +'<td class="td-m">'+(a.lote||'—')+'</td>'
       +'<td class="td-m">'+fmtCOP(costo)+'</td>'
@@ -1009,6 +1010,8 @@ document.addEventListener('appstate:ready', function(e){
       raza: a.raza,
       fecha_nacimiento: a.fecha_nacimiento,
       peso_actual: a.peso_actual,
+      // MEJORA 2 — peso real de Supabase para la columna de la tabla
+      pesoParaTabla: a.peso_actual,
       estado: a.estado,
       especie: a.especie,
       // Categoría: reproductores machos adultos → "Reproductor", resto vacío

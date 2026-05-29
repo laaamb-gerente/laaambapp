@@ -1623,6 +1623,8 @@ function renderLotesTab(){
           area_ha: l.hectareas, capacidad_max: l.capacidad_animal,
           tipo_pasto: l.tipo_pastura, condicion_pasto: '—', fuente_agua: '—',
           dias_descanso_obj: l.dias_descanso_objetivo, dias_pastoreo_obj: l.dias_pastoreo_objetivo,
+          // MEJORA 5 — nombre de finca real desde Supabase (fallback "La Marinilla")
+          finca: (window.AppState.finca && window.AppState.finca.nombre) || 'La Marinilla',
           activo: true
         };
       })
@@ -1646,9 +1648,9 @@ function renderLotesTab(){
     var status=pct>90?'crit':pct>70?'warn':'ok';
     var color=pct>90?'var(--red)':pct>70?'var(--amber)':'var(--teal)';
     var finca=getFincaById(l.finca_id||'default');
-    return '<div class="lote-card '+status+'" onclick="abrirEditarLote(AppData.get().lotes.find(x=>x.id===\''+l.id+'\'))">'
+    return '<div class="lote-card '+status+'" onclick="abrirEditarLotePorId(\''+l.id+'\')">'
       +'<div class="lc-header">'
-        +'<div><div class="lc-name">'+l.nombre+'</div><div class="lc-finca">'+finca.nombre+'</div></div>'
+        +'<div><div class="lc-name">'+l.nombre+'</div><div class="lc-finca">'+(l.finca||finca.nombre)+'</div></div>'
         +'<span class="badge '+(status==='crit'?'b-red':status==='warn'?'b-amber':'b-teal')+'">'+pct+'%</span>'
       +'</div>'
       +'<div class="lc-stats">'
@@ -1659,7 +1661,7 @@ function renderLotesTab(){
       +'<div style="font-size:11px;color:var(--text3);margin-bottom:8px">'+l.tipo_pasto+' · '+l.condicion_pasto+'% · '+l.fuente_agua+'</div>'
       +'<div class="lc-actions">'
         +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirMoverDesde(\''+l.id+'\')">↔ Mover</button>'
-        +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirEditarLote(AppData.get().lotes.find(x=>x.id===\''+l.id+'\'))">Editar</button>'
+        +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirEditarLotePorId(\''+l.id+'\')">Editar</button>'
       +'</div>'
       +'</div>';
   }).join('');
@@ -1667,6 +1669,24 @@ function renderLotesTab(){
 
 // ── Guardar lote (modal nuevo/editar) ──────────────
 var _editingLoteId=null;
+// MEJORA 4 — Resuelve el lote por id: primero localStorage (AppData), si no, AppState (Supabase).
+// Solo cambia la FUENTE del objeto lote; el modal (abrirEditarLote) queda intacto.
+function abrirEditarLotePorId(id){
+  var lote=(AppData.get().lotes||[]).find(function(x){return x.id===id;});
+  if(!lote && window.AppState && Array.isArray(window.AppState.lotes)){
+    var al=window.AppState.lotes.find(function(x){return x.id===id || x.nombre===id;});
+    if(al){
+      lote={
+        id:al.id, nombre:al.nombre, finca_id:al.finca_id,
+        area_ha:al.hectareas, capacidad_max:al.capacidad_animal,
+        tipo_pasto:al.tipo_pastura,
+        dias_descanso_obj:al.dias_descanso_objetivo, dias_pastoreo_obj:al.dias_pastoreo_objetivo,
+        activo:true
+      };
+    }
+  }
+  abrirEditarLote(lote);
+}
 function abrirEditarLote(lote){
   if(!lote) return;
   _editingLoteId=lote.id;
