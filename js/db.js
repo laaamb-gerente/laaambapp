@@ -31,6 +31,14 @@ window.DB = {
   async deleteAnimal(id) {
     return await window._sb.from('animales').update({ estado: 'descartado', updated_at: new Date() }).eq('id', id);
   },
+  // Solo los animales activos que tienen peso_actual real (para enriquecer la tabla)
+  async getAnimalesConPeso(finca_id) {
+    return await window._sb.from('animales')
+      .select('id, codigo, peso_actual')
+      .eq('finca_id', finca_id)
+      .not('peso_actual', 'is', null)
+      .eq('estado', 'activo');
+  },
 
   // ── LOTES ────────────────────────────────────────────
   async getLotes(finca_id) {

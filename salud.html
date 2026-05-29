@@ -1451,6 +1451,104 @@ if(typeof AppData!=='undefined'){
 } else {
   renderActivos();renderHistorial();renderRetiro();
 }
+
+// ═══════ SUPABASE — Salud & Tratamientos en vivo ═══════
+const FINCA_ID_SALUD='a1b2c3d4-0000-0000-0000-000000000001';
+async function loadFromSupabase(){
+  if(!window.DB) return;
+  try{
+    const [tRes,mRes]=await Promise.all([
+      window.DB.getTratamientos(FINCA_ID_SALUD,false),
+      window.DB.getMedicamentos(FINCA_ID_SALUD)
+    ]);
+    const trats=(tRes&&tRes.data)||[];
+    const meds=(mRes&&mRes.data)||[];
+
+    // ── Medicamentos reales ──
+    if(meds.length){
+      MEDICAMENTOS.length=0;
+      meds.forEach(m=>{
+        const stock=parseFloat(m.stock_actual)||0;
+        MEDICAMENTOS.push({
+          id:m.id,
+          nombre:m.nombre||'Sin nombre',
+          principio:m.notas||'',
+          cat:m.tipo||'Medicamento veterinario',
+          lote:'—',
+          pres:m.unidad||'Inyectable',
+          dosis:'Según indicación',
+          retiro:parseInt(m.dias_retiro)||0,
+          venc:'2099-01-01',
+          stock:stock,
+          stockMax:(parseFloat(m.stock_minimo)*2)||stock*2||100,
+          costo:parseFloat(m.precio_unitario)||0,
+          ico:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>'
+        });
+      });
+      const sbMeds=document.getElementById('sb-meds');
+      if(sbMeds) sbMeds.textContent=MEDICAMENTOS.length;
+    }
+
+    // ── Tratamientos reales ──
+    const hoy=new Date();
+    if(trats.length){
+      TRATAMIENTOS.length=0;
+      trats.forEach(t=>{
+        const inicio=new Date(t.fecha_inicio||t.created_at||Date.now());
+        const finRetiro=t.fecha_fin_retiro?new Date(t.fecha_fin_retiro):null;
+        const enRetiro=finRetiro&&finRetiro>=hoy;
+        const animalLbl=t.animales?('#'+(t.animales.codigo||t.animales.nombre||'')):'—';
+        TRATAMIENTOS.push({
+          id:t.id,
+          fecha:inicio.toLocaleDateString('es-CO'),
+          tipo:'Individual',
+          animales:animalLbl,
+          dx:t.notas||'—',
+          med:(t.medicamentos&&t.medicamentos.nombre)||'—',
+          dosis:(t.dosis!=null?t.dosis+(t.unidad?' '+t.unidad:''):'—'),
+          via:t.unidad||'IM',
+          dur:'—',
+          dia:1,totalDias:1,
+          retiro:parseInt(t.dias_retiro)||0,
+          costo:0,
+          colaborador:t.registrado_por||'—',
+          estado:enRetiro?'En retiro':'Completado'
+        });
+      });
+    }
+
+    // ── Retiro activo desde tratamientos con fecha_fin_retiro futura ──
+    RETIRO_ACTIVOS.length=0;
+    trats.forEach(t=>{
+      if(!t.fecha_fin_retiro) return;
+      const finRetiro=new Date(t.fecha_fin_retiro);
+      const diasRestantes=Math.round((finRetiro-hoy)/86400000);
+      if(diasRestantes<=0) return;
+      RETIRO_ACTIVOS.push({
+        animal:t.animales?('#'+(t.animales.codigo||t.animales.nombre||'')):'Grupo',
+        med:(t.medicamentos&&t.medicamentos.nombre)||'—',
+        fechaFin:finRetiro,
+        diasRestantes,
+        colaborador:t.registrado_por||'—',
+        critico:diasRestantes<=3
+      });
+    });
+
+    // ── KPIs de resumen (orden real: 0 activos · 1 en retiro · 3 medicamentos stock) ──
+    const kpiEls=document.querySelectorAll('.kpi-val');
+    const activos=TRATAMIENTOS.filter(t=>t.estado==='En retiro'||t.estado==='En curso').length;
+    if(kpiEls[0]) kpiEls[0].textContent=activos;
+    if(kpiEls[1]) kpiEls[1].textContent=RETIRO_ACTIVOS.length;
+    if(kpiEls[3]) kpiEls[3].textContent=MEDICAMENTOS.length;
+
+    renderActivos(); renderHistorial(); renderRetiro();
+    if(document.getElementById('meds-list')) renderMeds(MEDICAMENTOS);
+    console.log('[Salud] Supabase —',trats.length,'tratamientos,',meds.length,'medicamentos');
+  }catch(err){
+    console.warn('[Salud] Supabase no disponible, se mantiene AppData:',err&&err.message);
+  }
+}
+document.addEventListener('appstate:ready', loadFromSupabase);
 </script>
 <script>
 

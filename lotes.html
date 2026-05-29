@@ -1700,6 +1700,11 @@ function abrirEditarLote(lote){
   document.getElementById('lf-condicion').value=lote.condicion_pasto||75;
   document.getElementById('lf-agua').value=lote.fuente_agua||'Bebedero';
   document.getElementById('lf-desc').value=lote.descripcion||'';
+  // MEJORA 3 — poblar días de descanso/pastoreo (disponibles para el save futuro a Supabase)
+  var dd=document.getElementById('lf-dias-descanso');
+  if(dd) dd.value=(lote.dias_descanso_obj!=null?lote.dias_descanso_obj:30);
+  var dp=document.getElementById('lf-dias-pastoreo');
+  if(dp) dp.value=(lote.dias_pastoreo_obj!=null?lote.dias_pastoreo_obj:7);
   openModal('modal-nuevo-lote');
 }
 function guardarLote(){

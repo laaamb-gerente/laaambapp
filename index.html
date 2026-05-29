@@ -574,8 +574,49 @@ document.addEventListener('appstate:ready', function(e) {
     if (elSub) elSub.textContent = 'activos en ' + finca.nombre;
   }
 
+  // ── MEJORA 5 — KPIs adicionales del dashboard ──
+  const MS_MES = 30.44 * 24 * 3600 * 1000;
+  const ahora = Date.now();
+
+  // Gestantes: no hay campo dedicado en el esquema; se detecta en estado/categoria/notas
+  const gestantes = activos.filter(function(a){
+    const txt = ((a.estado||'') + ' ' + (a.categoria||'') + ' ' + (a.notas||'')).toLowerCase();
+    return txt.indexOf('gestante') !== -1 || txt.indexOf('preñada') !== -1;
+  }).length;
+  const elGest = document.getElementById('kpi-gestantes');
+  if (elGest) elGest.textContent = gestantes;
+
+  // En levante: crías de 0–6 meses (por fecha_nacimiento)
+  const levante = activos.filter(function(a){
+    if (!a.fecha_nacimiento) return false;
+    const meses = (ahora - new Date(a.fecha_nacimiento).getTime()) / MS_MES;
+    return meses >= 0 && meses < 6;
+  }).length;
+  const elLev = document.getElementById('kpi-levante');
+  if (elLev) elLev.textContent = levante;
+
+  // GDP promedio (g/día): peso_actual convertido a gramos sobre la edad en días
+  const conPeso = activos.filter(function(a){
+    return a.peso_actual != null && a.peso_actual !== '' && a.fecha_nacimiento;
+  });
+  if (conPeso.length) {
+    let suma = 0, n = 0;
+    conPeso.forEach(function(a){
+      const dias = (ahora - new Date(a.fecha_nacimiento).getTime()) / (24*3600*1000);
+      if (dias > 0) { suma += (Number(a.peso_actual) * 1000) / dias; n++; }
+    });
+    if (n) {
+      const gdp = Math.round(suma / n);
+      const elGdp = document.getElementById('kpi-gdp');
+      if (elGdp) elGdp.innerHTML = gdp + '<span class="kpi-unit"> g/d</span>';
+      const elGdpD = document.getElementById('kpi-gdp-delta');
+      if (elGdpD) elGdpD.textContent = 'Promedio de ' + n + ' con peso';
+    }
+  }
+
   console.log('[Dashboard] Actualizado desde', e.detail.source,
-    '— Total:', total, 'H:', hembras, 'M:', machos);
+    '— Total:', total, 'H:', hembras, 'M:', machos,
+    'Gestantes:', gestantes, 'Levante:', levante);
 });
 </script>
 </body>

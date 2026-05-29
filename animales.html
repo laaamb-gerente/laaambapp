@@ -1028,6 +1028,23 @@ document.addEventListener('appstate:ready', function(e){
   currentPage = 1;
   applyFilters();
 
+  // MEJORA 1 — Enriquecer con pesos reales desde Supabase (solo los que tienen peso_actual).
+  // AppState carga una sola vez; este fetch directo trae los pesos actualizados.
+  if (window.DB && typeof window.DB.getAnimalesConPeso === 'function') {
+    window.DB.getAnimalesConPeso('a1b2c3d4-0000-0000-0000-000000000001')
+      .then(function(res){
+        var data = res && res.data;
+        if (!data || !data.length) return;
+        var pesoMap = {};
+        data.forEach(function(p){ pesoMap[p.id] = p.peso_actual; });
+        allAnimales.forEach(function(a){
+          if (pesoMap[a._uuid] != null) a.pesoParaTabla = pesoMap[a._uuid];
+        });
+        renderTabla(); // re-render con pesos reales
+      })
+      .catch(function(err){ console.warn('[Animales] getAnimalesConPeso:', err && err.message); });
+  }
+
   // MEJORA 2 — Poblar el dropdown de Razas con los valores reales de Supabase
   var selectRaza = document.getElementById('f-raza');
   if (selectRaza) {
