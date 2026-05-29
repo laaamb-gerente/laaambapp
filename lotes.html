@@ -1613,16 +1613,34 @@ function loteEstadoBadge(lote){
 
 function renderLotesTab(){
   var d=AppData.get();
-  var lotes=(d.lotes||[]).filter(function(l){return l.activo;});
+  // Fuente de datos: Supabase (AppState) si está cargado, si no localStorage.
+  // Solo se cambia la FUENTE; el HTML de las tarjetas queda intacto.
+  var useAS = window.AppState && window.AppState._loaded && Array.isArray(window.AppState.lotes) && window.AppState.lotes.length;
+  var lotes = useAS
+    ? window.AppState.lotes.map(function(l){
+        return {
+          id: l.id, nombre: l.nombre, finca_id: l.finca_id,
+          area_ha: l.hectareas, capacidad_max: l.capacidad_animal,
+          tipo_pasto: l.tipo_pastura, condicion_pasto: '—', fuente_agua: '—',
+          dias_descanso_obj: l.dias_descanso_objetivo, dias_pastoreo_obj: l.dias_pastoreo_objetivo,
+          activo: true
+        };
+      })
+    : (d.lotes||[]).filter(function(l){return l.activo;});
   var grid=document.getElementById('lote-grid');
   if(!lotes.length){
     grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text3)"><div style="font-size:36px;margin-bottom:12px;opacity:.4">🗺️</div><div>Sin lotes registrados — dibuja el primero en el Mapa satelital</div></div>';
     return;
   }
-  var totalAnimales=d.animales?d.animales.filter(function(a){return a.activo;}).length:0;
+  var totalAnimales = useAS
+    ? window.AppState.getAnimalesActivos().length
+    : (d.animales?d.animales.filter(function(a){return a.activo;}).length:0);
   setEl('ph-sub', lotes.length+' lotes · '+totalAnimales+' animales activos');
   grid.innerHTML=lotes.map(function(l){
-    var animales=getAnimalesForLote(l.nombre, l.finca_id||'default');
+    // Conteo por lote: Supabase usa lote_actual_id===lote.id; localStorage usa nombre
+    var animales = useAS
+      ? window.AppState.getAnimalesActivos().filter(function(a){return a.lote_actual_id===l.id;})
+      : getAnimalesForLote(l.nombre, l.finca_id||'default');
     var cap=l.capacidad_max||1;
     var pct=Math.round((animales.length/cap)*100);
     var status=pct>90?'crit':pct>70?'warn':'ok';
@@ -2047,6 +2065,22 @@ document.addEventListener('DOMContentLoaded', function(){
   document.getElementById('map').addEventListener('dblclick',function(e){
     if(drawMode) e.stopPropagation();
   },true);
+});
+
+// ── Datos en vivo desde Supabase (AppState) ─────────────────────────────────────
+// renderLotesTab() ya es consciente de la fuente: al estar AppState cargado,
+// toma los 5 lotes de Supabase y cuenta animales por lote_actual_id.
+document.addEventListener('appstate:ready', function(e){
+  if(!window.AppState || !Array.isArray(window.AppState.lotes)) return;
+  renderLotesTab();
+  // Badge + pill del sidebar con el conteo real
+  var total = window.AppState.getAnimalesActivos().length;
+  setEl('sb-count', total);
+  var sub = document.getElementById('sb-farm-sub');
+  if (sub && /\d+\s*animales/.test(sub.textContent)) {
+    sub.textContent = sub.textContent.replace(/\d+\s*animales/, total + ' animales');
+  }
+  console.log('[Lotes] Render desde', e.detail.source, '—', window.AppState.lotes.length, 'lotes ·', total, 'animales');
 });
 </script>
 </body>

@@ -653,7 +653,19 @@ function verPerfil(id){
   var a=allAnimales.find(function(x){return x.id===id;});
   if(!a) return;
   setEl('perfil-title', '#'+a.id+(a.nombre?' — '+a.nombre:''));
-  var peso=AppData.pesoActual(id);
+  // Resolver madre/padre (uuid → código humano) con los datos de Supabase (AppState)
+  function _label(uuid){
+    if(!uuid) return '—';
+    if(window.AppState && Array.isArray(window.AppState.animales)){
+      var m=window.AppState.animales.find(function(x){return x.id===uuid;});
+      if(m) return '#'+(m.codigo||m.id)+(m.nombre?' — '+m.nombre:'');
+    }
+    return '—';
+  }
+  var madreLabel=_label(a.madre_id);
+  var padreLabel=_label(a.padre_id);
+  // Peso desde Supabase si está disponible; si no, fallback a pesajes de localStorage
+  var peso=(a.peso_actual!=null && a.peso_actual!=='') ? a.peso_actual : AppData.pesoActual(id);
   var costo=AppData.costoAnimal(id);
   var d=AppData.get();
   var pesajes=(d.pesajes||[]).filter(function(p){return p.animal_id===id;}).slice(0,5);
@@ -675,7 +687,7 @@ function verPerfil(id){
     +'<div class="ic-row">'
     +ic('Raza',a.raza)+ic('Categoría',a.categoria)+ic('Edad',calcEdad(a.fecha_nacimiento))
     +ic('Lote',a.lote)+ic('Fecha nac.',a.fecha_nacimiento||'—')+ic('Origen',a.origen||'—')
-    +ic('Padre ID',a.padre_id||'—')+ic('Madre ID',a.madre_id||'—')+ic('Costo adq.',fmtCOP(a.costo_adquisicion))
+    +ic('Padre',padreLabel)+ic('Madre',madreLabel)+ic('Costo adq.',fmtCOP(a.costo_adquisicion))
     +'</div>'
     +(a.observaciones?'<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px;font-size:12px;color:var(--text2);margin-bottom:14px">📝 '+a.observaciones+'</div>':'')
     +(pesajes.length?'<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text4);margin-bottom:6px">Últimos pesajes</div>'
@@ -975,6 +987,16 @@ document.addEventListener('appstate:ready', function(e){
   if(!window.AppState || !Array.isArray(window.AppState.animales)) return;
   var activos = window.AppState.getAnimalesActivos();
 
+  // Reproductor: macho adulto (>18 meses, o fecha_nacimiento null/anterior a 2024)
+  function esReproductor(a){
+    if(a.sexo!=='macho') return false;
+    var fn=a.fecha_nacimiento;
+    if(!fn) return true;
+    if(new Date(fn) < new Date('2024-01-01')) return true;
+    var meses=Math.floor((Date.now()-new Date(fn))/(30.44*24*3600*1000));
+    return meses>18;
+  }
+
   allAnimales = activos.map(function(a){
     return {
       // La tabla usa 'id' para mostrar (#id), verPerfil() y ordenar.
@@ -989,6 +1011,12 @@ document.addEventListener('appstate:ready', function(e){
       peso_actual: a.peso_actual,
       estado: a.estado,
       especie: a.especie,
+      // Categoría: reproductores machos adultos → "Reproductor", resto vacío
+      categoria: esReproductor(a) ? 'Reproductor' : '',
+      lote: '',
+      observaciones: a.notas || '',
+      madre_id: a.madre_id || '',
+      padre_id: a.padre_id || '',
       activo: true
     };
   });
@@ -996,6 +1024,18 @@ document.addEventListener('appstate:ready', function(e){
   // Re-renderiza usando la cadena existente (filtros → orden → tabla paginada)
   currentPage = 1;
   applyFilters();
+
+  // MEJORA 2 — Poblar el dropdown de Razas con los valores reales de Supabase
+  var selectRaza = document.getElementById('f-raza');
+  if (selectRaza) {
+    var razas = [...new Set(
+      window.AppState.animales.map(function(a){return a.raza;}).filter(Boolean)
+    )].sort();
+    var valorActual = selectRaza.value;
+    selectRaza.innerHTML = '<option value="">Raza</option>' +
+      razas.map(function(r){return '<option value="'+r+'">'+r+'</option>';}).join('');
+    selectRaza.value = valorActual;
+  }
 
   // Badge del sidebar con el conteo real
   setEl('sb-count', activos.length);
