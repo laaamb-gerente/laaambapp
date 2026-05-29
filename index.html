@@ -13,8 +13,8 @@
 <!-- LAAAMBAPP: cliente y capa de datos -->
 <script src="js/supabase-client.js"></script>
 <script>
-  // Inicializar cliente Supabase global
-  const supabase = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  // Inicializar cliente Supabase global (window._sb para no colisionar con window.supabase del SDK)
+  window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 </script>
 <script src="js/db.js"></script>
 <script src="AppData.js"></script>
