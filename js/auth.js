@@ -9,10 +9,10 @@ window.Auth = {
   _perfil: null,
 
   // Base de la app según el host:
-  //  - GitHub Pages: la app vive en /laaambapp/ → base '/laaambapp'
-  //  - Vercel / raíz: base '' (login en la raíz del dominio)
+  //  - GitHub Pages: la app vive en /laaambapp/ → base '/laaambapp/'
+  //  - Vercel / raíz: base '/' (login en la raíz del dominio)
   _base() {
-    return window.location.pathname.includes('/laaambapp/') ? '/laaambapp' : '';
+    return window.location.pathname.includes('/laaambapp/') ? '/laaambapp/' : '/';
   },
 
   async init() {
@@ -21,7 +21,7 @@ window.Auth = {
 
     if (!session) {
       // No hay sesión — redirigir a login
-      window.location.href = window.location.origin + this._base() + '/login.html';
+      window.location.href = this._base() + 'login.html';
       return false;
     }
 
@@ -36,7 +36,7 @@ window.Auth = {
     if (!perfil) {
       // Usuario sin perfil — redirigir a login con mensaje
       await window._sb.auth.signOut();
-      window.location.href = window.location.origin + this._base() + '/login.html?error=sin_acceso';
+      window.location.href = this._base() + 'login.html?error=sin_acceso';
       return false;
     }
 
@@ -108,7 +108,7 @@ window.Auth = {
 
   async signOut() {
     await window._sb.auth.signOut();
-    window.location.href = window.location.origin + this._base() + '/login.html';
+    window.location.href = this._base() + 'login.html';
   },
 
   getRol() { return this._perfil?.rol; },
