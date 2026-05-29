@@ -176,6 +176,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
   // Inicializar cliente Supabase global (window._sb para no colisionar con window.supabase del SDK)
   window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 </script>
+<script src="js/auth.js"></script>
 <script src="js/db.js"></script>
 <script src="js/app-state.js"></script>
 <script src="AppData.js"></script>
@@ -227,6 +228,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
       <div class="avatar">JG</div>
       <div><div class="user-name">Juan García</div><div class="user-role">Administrador</div></div>
     </div>
+    <button onclick="Auth.signOut()" style="width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;background:transparent;border:1px solid var(--border);border-radius:var(--r,8px);color:var(--text3);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:border-color .15s,color .15s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M13 14l3-4-3-4M16 10H7M9 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h4"/></svg>Cerrar sesión</button>
   </div>
 </aside>
 

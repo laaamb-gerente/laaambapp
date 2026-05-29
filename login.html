@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAAAMB · Acceso</title>
+<link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script>
+  // Cliente Supabase global (página pública — NO incluye auth.js)
+  window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+</script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);
+  --wine:#9C3F66;--orange:#F18F22;
+  --bg:#0d1117;--card:#161b22;
+  --border:rgba(0,175,182,.16);--border2:rgba(0,175,182,.30);
+  --text:#e6edf3;--text2:#9aa7b2;--text3:#6b7681;
+  --red:#e05252;--green:#2ec77a;
+}
+html,body{height:100%}
+body{
+  font-family:'Changa',system-ui,sans-serif;background:var(--bg);color:var(--text);
+  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;
+  background-image:radial-gradient(circle at 20% 20%,rgba(0,175,182,.07),transparent 45%),
+    radial-gradient(circle at 80% 80%,rgba(156,63,102,.06),transparent 45%);
+}
+.login-card{
+  width:100%;max-width:400px;background:var(--card);border:1px solid var(--border);
+  border-radius:18px;padding:38px 32px;box-shadow:0 24px 60px rgba(0,0,0,.45);
+}
+.logo{text-align:center;margin-bottom:6px}
+.logo-text{font-family:'Sigmar',cursive;font-size:34px;letter-spacing:1px;color:var(--teal);line-height:1}
+.logo-sub{font-size:10px;font-weight:700;color:var(--teal-d);letter-spacing:2px;text-transform:uppercase;margin-top:6px}
+.title{text-align:center;font-size:14px;font-weight:600;color:var(--text);margin-top:22px}
+.subtitle{text-align:center;font-size:12px;color:var(--text2);margin-top:4px;margin-bottom:26px}
+label{display:block;font-size:11px;font-weight:600;color:var(--text2);letter-spacing:.4px;text-transform:uppercase;margin-bottom:7px}
+input[type=email]{
+  width:100%;background:var(--bg);border:1px solid var(--border);border-radius:10px;
+  padding:13px 14px;font-family:inherit;font-size:14px;color:var(--text);transition:border-color .15s,box-shadow .15s;
+}
+input[type=email]:focus{outline:none;border-color:var(--border2);box-shadow:0 0 0 3px var(--teal-bg)}
+input[type=email]::placeholder{color:var(--text3)}
+.btn{
+  width:100%;margin-top:16px;background:var(--teal);color:#04181a;border:none;border-radius:10px;
+  padding:13px;font-family:inherit;font-size:14px;font-weight:700;letter-spacing:.3px;cursor:pointer;
+  transition:filter .15s,transform .05s;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn:hover{filter:brightness(1.08)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.6;cursor:not-allowed;filter:none}
+.msg{margin-top:18px;font-size:12.5px;line-height:1.5;padding:12px 14px;border-radius:10px;display:none}
+.msg.ok{display:block;background:rgba(46,199,122,.08);border:1px solid rgba(46,199,122,.3);color:var(--green)}
+.msg.err{display:block;background:rgba(224,82,82,.08);border:1px solid rgba(224,82,82,.3);color:var(--red)}
+.foot{text-align:center;margin-top:24px;font-size:10px;color:var(--text3);letter-spacing:.5px}
+.spinner{width:15px;height:15px;border:2px solid rgba(4,24,26,.3);border-top-color:#04181a;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+  <div class="login-card">
+    <div class="logo">
+      <div class="logo-text">LAAAMB</div>
+      <div class="logo-sub">Corderos de Especialidad Cárnica</div>
+    </div>
+    <div class="title">Plataforma de gestión operacional</div>
+    <div class="subtitle">Ingresa con tu correo — sin contraseñas</div>
+
+    <form id="login-form" autocomplete="on">
+      <label for="email">Correo electrónico</label>
+      <input type="email" id="email" name="email" placeholder="tu@correo.com" required autofocus>
+      <button type="submit" class="btn" id="submit-btn">
+        <span id="btn-label">Enviar magic link</span>
+      </button>
+    </form>
+
+    <div class="msg" id="msg"></div>
+
+    <div class="foot">LAAAMBAPP · La Marinilla · Antioquia</div>
+  </div>
+
+<script>
+(function(){
+  var form = document.getElementById('login-form');
+  var emailEl = document.getElementById('email');
+  var btn = document.getElementById('submit-btn');
+  var btnLabel = document.getElementById('btn-label');
+  var msg = document.getElementById('msg');
+
+  function showMsg(text, type){
+    msg.textContent = text;
+    msg.className = 'msg ' + type;
+  }
+
+  // Mostrar mensaje de error si el redirect trae ?error=sin_acceso
+  var params = new URLSearchParams(window.location.search);
+  if(params.get('error') === 'sin_acceso'){
+    showMsg('Tu cuenta no tiene acceso a esta plataforma. Contacta al administrador.', 'err');
+  }
+
+  // Si ya hay sesión activa, ir directo al dashboard
+  window._sb.auth.getSession().then(function(res){
+    if(res && res.data && res.data.session){
+      window.location.href = window.location.origin + '/index.html';
+    }
+  });
+
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    var email = emailEl.value.trim();
+    if(!email){ showMsg('Escribe tu correo electrónico.', 'err'); return; }
+
+    btn.disabled = true;
+    btnLabel.textContent = 'Enviando…';
+    btn.insertAdjacentHTML('afterbegin', '<span class="spinner" id="btn-spin"></span>');
+
+    try {
+      var { error } = await window._sb.auth.signInWithOtp({
+        email: email,
+        options: {
+          emailRedirectTo: window.location.origin + '/index.html'
+        }
+      });
+      var spin = document.getElementById('btn-spin');
+      if(spin) spin.remove();
+
+      if(error){
+        showMsg('No se pudo enviar el enlace: ' + error.message, 'err');
+        btn.disabled = false;
+        btnLabel.textContent = 'Enviar magic link';
+        return;
+      }
+
+      showMsg('Revisa tu correo — te enviamos un enlace de acceso a ' + email, 'ok');
+      btnLabel.textContent = 'Enlace enviado ✓';
+    } catch(err){
+      var sp = document.getElementById('btn-spin');
+      if(sp) sp.remove();
+      showMsg('Error de conexión. Intenta de nuevo.', 'err');
+      btn.disabled = false;
+      btnLabel.textContent = 'Enviar magic link';
+    }
+  });
+})();
+</script>
+</body>
+</html>
