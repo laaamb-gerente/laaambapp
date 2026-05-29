@@ -101,6 +101,36 @@ window.DB = {
     return { data, error };
   },
 
+  // ── REPRODUCCIÓN ─────────────────────────────────────
+  async getEventosReproductivos(finca_id, limit = 200) {
+    return await window._sb.from('eventos_reproductivos')
+      .select('*, hembra:hembra_id(codigo, nombre), macho:macho_id(codigo, nombre)')
+      .eq('finca_id', finca_id)
+      .order('fecha', { ascending: false })
+      .limit(limit);
+  },
+  async saveEventoReproductivo(evento) {
+    return await window._sb.from('eventos_reproductivos')
+      .insert(evento).select().single();
+  },
+  async getGestantes(finca_id) {
+    return await window._sb.from('animales')
+      .select('id, codigo, nombre, fecha_ultima_monta, fecha_parto_esperado, lotes(nombre)')
+      .eq('finca_id', finca_id)
+      .eq('estado_reproductivo', 'gestante')
+      .eq('estado', 'activo');
+  },
+  async updateEstadoReproductivo(animal_id, estado_rep, fecha_monta, fecha_parto_esperado) {
+    return await window._sb.from('animales')
+      .update({
+        estado_reproductivo: estado_rep,
+        fecha_ultima_monta: fecha_monta || null,
+        fecha_parto_esperado: fecha_parto_esperado || null,
+        updated_at: new Date()
+      })
+      .eq('id', animal_id);
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();

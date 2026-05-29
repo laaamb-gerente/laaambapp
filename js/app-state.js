@@ -6,17 +6,22 @@ window.AppState = {
     if (this._loaded) return;
     try {
       // Cargar en paralelo
-      const [fincaRes, animalesRes, lotesRes, medRes] = await Promise.all([
-        window.DB.getFincas(),
-        window.DB.getAnimales(this._finca_id),
-        window.DB.getLotes(this._finca_id),
-        window.DB.getMedicamentos(this._finca_id)
-      ]);
+      const [fincaRes, animalesRes, lotesRes, medRes, gestantesRes, eventosRepRes] =
+        await Promise.all([
+          window.DB.getFincas(),
+          window.DB.getAnimales(this._finca_id),
+          window.DB.getLotes(this._finca_id),
+          window.DB.getMedicamentos(this._finca_id),
+          window.DB.getGestantes(this._finca_id),
+          window.DB.getEventosReproductivos(this._finca_id, 100)
+        ]);
 
       if (!fincaRes.error) window.AppState.finca = fincaRes.data?.[0] || null;
       if (!animalesRes.error) window.AppState.animales = animalesRes.data || [];
       if (!lotesRes.error) window.AppState.lotes = lotesRes.data || [];
       if (!medRes.error) window.AppState.medicamentos = medRes.data || [];
+      if (!gestantesRes.error) window.AppState.gestantes = gestantesRes.data || [];
+      if (!eventosRepRes.error) window.AppState.eventosReproductivos = eventosRepRes.data || [];
 
       this._loaded = true;
       console.log('[AppState] Supabase cargado:', {
@@ -45,6 +50,8 @@ window.AppState = {
       this.animales = d.animales || [];
       this.lotes = d.lotes || [];
       this.medicamentos = d.medicamentos || [];
+      this.gestantes = d.gestantes || [];
+      this.eventosReproductivos = d.eventosReproductivos || [];
       this._loaded = true;
       document.dispatchEvent(new CustomEvent('appstate:ready', {
         detail: { source: 'localStorage' }
@@ -94,6 +101,9 @@ window.AppState = {
   },
   getTotalAnimales() {
     return this.getAnimalesActivos().length;
+  },
+  getGestantes() {
+    return this.gestantes || [];
   }
 };
 

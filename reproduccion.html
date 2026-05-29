@@ -445,7 +445,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 
       <!-- Alertas reproductivas -->
       <div class="g2">
-        <div>
+        <div id="repro-alerts">
           <div class="alert-box red"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="10" cy="10" r="7"/><path d="M10 6v5M10 14h.01"/></svg></div><div><div class="alert-title" style="color:var(--red)">Parto inminente — hoy o mañana</div><div class="alert-text">#OV-1234 · Lote B · 3er parto · Fecha estimada: 11/04/2025</div></div></div>
           <div class="alert-box amber"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg></div><div><div class="alert-title" style="color:var(--amber)">Partos próximos 7 días</div><div class="alert-text">#OV-2210 (6 días) · #OV-0788 (7 días) · Preparar manga y asistencia</div></div></div>
           <div class="alert-box sky"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 10h2l1.5-3 2 6 1.5-3H16"/></svg></div><div><div class="alert-title" style="color:var(--sky)">Ecografía pendiente — 28 días post-monta</div><div class="alert-text">12 ovejas montadas hace 25-32 días sin resultado de ecografía</div></div></div>
@@ -897,6 +897,26 @@ function saveParto(){
     PARTOS.unshift({fecha:fecha.split('-').reverse().join('/'),madre:madreId,nro:nroParto,padre:padreId,vivas,muertas,pesos:'—',tipo,ids:'Auto-generado',colaborador:colab});
     renderPartos(PARTOS);
   }
+
+  // ── Supabase: registrar evento reproductivo (parto) + estado de la madre ──
+  if(window.DB && window.AppState && Array.isArray(window.AppState.animales)){
+    const _mCod=String(madreId||'').replace(/^#/,'').trim();
+    const _pCod=String(padreId||'').replace(/^#/,'').trim();
+    const _mo=window.AppState.animales.find(a=>a.codigo===_mCod||a.id===_mCod);
+    const _pa=window.AppState.animales.find(a=>a.codigo===_pCod||a.id===_pCod);
+    if(_mo){
+      const _pesoCria=crias.length?(crias.reduce((s,c)=>s+(c.peso_kg||0),0)/crias.length):null;
+      window.DB.saveEventoReproductivo({
+        finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+        hembra_id:_mo.id, macho_id:_pa?_pa.id:null,
+        tipo:'parto', fecha:fecha, resultado:tipo,
+        crias_vivas:vivas, crias_muertas:muertas, peso_cria:_pesoCria,
+        notas:obs, registrado_por:colab
+      }).then(()=>window.DB.updateEstadoReproductivo(_mo.id,'lactante',null,null))
+        .catch(err=>console.warn('[Repro] parto Supabase:',err&&err.message));
+    }
+  }
+
   closeModal('modal-parto');
   toast('Parto registrado · '+vivas+' crías creadas · Estado madre actualizado');
 }
@@ -913,7 +933,6 @@ function saveMonta(){
   const especieMonta = (function(){
     if(typeof AppData==='undefined') return 'ovino';
     const d=AppData.get();
-    const hembraId=hembraId||'';
     const hembra=d.animales.find(a=>a.id===hembraId);
     return hembra?(hembra.especie||'ovino'):'ovino';
   })();
@@ -949,6 +968,27 @@ function saveMonta(){
   }
   MONTAS.unshift({fecha:fecha.split('-').reverse().join('/'),oveja:hembraId||'—',raza:'Dorper',reproductor:machoId||'—',lote,ciclo,tipo,resultado:'Pendiente',eco:ecoDate.toLocaleDateString('es-CO'),colaborador:colab});
   renderMontas(MONTAS);
+
+  // ── Supabase: registrar evento reproductivo (monta) + estado de la hembra ──
+  if(window.DB && window.AppState && Array.isArray(window.AppState.animales)){
+    const _hCod=String(document.getElementById('m-hembra')?.value||hembraId||'').replace(/^#/,'').trim();
+    const _mCod=String(document.querySelector('#modal-monta select')?.value||machoId||'').replace(/^#/,'').trim();
+    const _h=window.AppState.animales.find(a=>a.codigo===_hCod||a.id===_hCod);
+    const _m=window.AppState.animales.find(a=>a.codigo===_mCod||a.id===_mCod);
+    if(_h){
+      const _diasGest=especieMonta==='bovino'?283:147;
+      const _pe=new Date(fecha); _pe.setDate(_pe.getDate()+_diasGest);
+      const _peStr=_pe.toISOString().slice(0,10);
+      window.DB.saveEventoReproductivo({
+        finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+        hembra_id:_h.id, macho_id:_m?_m.id:null,
+        tipo:'monta', fecha:fecha, resultado:'Pendiente',
+        crias_vivas:0, notas:obs, registrado_por:colab
+      }).then(()=>window.DB.updateEstadoReproductivo(_h.id,'en_monta',fecha,_peStr))
+        .catch(err=>console.warn('[Repro] monta Supabase:',err&&err.message));
+    }
+  }
+
   closeModal('modal-monta');
   toast('Monta registrada · Ecografía programada para '+ecoDate.toLocaleDateString('es-CO'));
 }
@@ -1138,6 +1178,119 @@ const ph=document.getElementById('p-hora');if(ph)ph.value=new Date().toTimeStrin
 // Cargar desde AppData si disponible
 if(typeof AppData!=='undefined') loadReproFromAppData();
 else renderAll();
+
+// ═══ CARGAR DESDE SUPABASE (AppState) ═══
+function loadReproFromSupabase(){
+  if(!window.AppState || !window.AppState._loaded) return;
+  const AS = window.AppState;
+  const hoy = new Date();
+  const gestantes = AS.getGestantes();
+  const eventos = AS.eventosReproductivos || [];
+
+  // ── Gestaciones (tarjetas) desde animales con estado_reproductivo='gestante' ──
+  GESTACIONES.length = 0;
+  gestantes.forEach(g=>{
+    const fm = g.fecha_ultima_monta || null;
+    const diasGest = fm ? Math.max(0, Math.round((hoy - new Date(fm))/86400000)) : 0;
+    let totalDias = 147;
+    if(g.fecha_parto_esperado && fm){
+      totalDias = Math.max(1, Math.round((new Date(g.fecha_parto_esperado) - new Date(fm))/86400000));
+    }
+    GESTACIONES.push({
+      id: g.codigo || g.id, name: g.nombre || '', raza: '—',
+      lote: (g.lotes && g.lotes.nombre) || '—', padre: '—',
+      fechaMonta: fm || '—', diasGest, totalDias, partosN: '—'
+    });
+  });
+
+  // ── Montas y partos desde eventos_reproductivos ──
+  const montasEv = eventos.filter(e=>e.tipo==='monta');
+  const partosEv = eventos.filter(e=>e.tipo==='parto');
+
+  MONTAS.length = 0;
+  montasEv.forEach(e=>{
+    MONTAS.push({
+      fecha: (e.fecha||'').split('-').reverse().join('/'),
+      oveja: (e.hembra && (e.hembra.codigo||e.hembra.nombre)) || '—',
+      raza: '—',
+      reproductor: (e.macho && (e.macho.codigo||e.macho.nombre)) || '—',
+      lote: '—', ciclo: 1, tipo: 'Natural',
+      resultado: e.resultado || 'Pendiente',
+      eco: '—', colaborador: e.registrado_por || '—'
+    });
+  });
+
+  PARTOS.length = 0;
+  partosEv.forEach(e=>{
+    PARTOS.push({
+      fecha: (e.fecha||'').split('-').reverse().join('/'),
+      madre: (e.hembra && (e.hembra.codigo||e.hembra.nombre)) || '—',
+      nro: '—', padre: (e.macho && (e.macho.codigo||e.macho.nombre)) || '—',
+      vivas: e.crias_vivas || 0, muertas: e.crias_muertas || 0,
+      pesos: (e.peso_cria!=null ? String(e.peso_cria) : '—'),
+      tipo: e.resultado || 'Normal', ids: '—', colaborador: e.registrado_por || '—'
+    });
+  });
+
+  // ── KPIs reales (orden real: 0 gestantes · 1 partos mes · 7 montas mes) ──
+  const enMes = (f)=>{ const d=new Date(f); return d.getMonth()===hoy.getMonth() && d.getFullYear()===hoy.getFullYear(); };
+  const kpis = document.querySelectorAll('.kpi-val');
+  if(kpis[0]) kpis[0].textContent = gestantes.length;
+  if(kpis[1]) kpis[1].textContent = partosEv.filter(e=>enMes(e.fecha)).length;
+  if(kpis[7]) kpis[7].textContent = montasEv.filter(e=>enMes(e.fecha)).length;
+
+  // ── Selectores de reproductores (machos activos) en modales monta/parto ──
+  const machos = (AS.animales||[]).filter(a=>a.sexo==='macho' && a.estado==='activo');
+  if(machos.length){
+    const opts = machos.map(m=>`<option value="${m.codigo||m.id}">${m.codigo||''}${m.nombre?' — '+m.nombre:''}${m.raza?' ('+m.raza+')':''}</option>`).join('');
+    const montaRepro = document.querySelector('#modal-monta select');   // 1er select = reproductor
+    if(montaRepro) montaRepro.innerHTML = opts;
+    const partoPadre = document.getElementById('p-padre');
+    if(partoPadre) partoPadre.innerHTML = opts + '<option value="desconocido">Desconocido</option>';
+  }
+
+  // ── Datalist de hembras activas para los inputs de ID ──
+  const hembras = (AS.animales||[]).filter(a=>a.sexo==='hembra' && a.estado==='activo');
+  let dl = document.getElementById('hembras-datalist');
+  if(!dl){ dl = document.createElement('datalist'); dl.id = 'hembras-datalist'; document.body.appendChild(dl); }
+  dl.innerHTML = hembras.map(h=>`<option value="${h.codigo||h.id}">${h.nombre||''}</option>`).join('');
+  const hembraInput = document.querySelector('#modal-monta input.fi');
+  if(hembraInput){ hembraInput.setAttribute('list','hembras-datalist'); if(!hembraInput.id) hembraInput.id='m-hembra'; }
+  const madreInput = document.getElementById('p-madre');
+  if(madreInput) madreInput.setAttribute('list','hembras-datalist');
+
+  // ── Alertas: reemplazar datos de ejemplo por partos próximos reales (o vacío) ──
+  const alertsBox = document.getElementById('repro-alerts');
+  if(alertsBox){
+    const prox = gestantes.filter(g=>{
+      if(!g.fecha_parto_esperado) return false;
+      const dias = Math.round((new Date(g.fecha_parto_esperado) - hoy)/86400000);
+      return dias>=0 && dias<=7;
+    }).map(g=>({ ...g, dias: Math.round((new Date(g.fecha_parto_esperado) - hoy)/86400000) }))
+      .sort((a,b)=>a.dias-b.dias);
+    if(prox.length){
+      alertsBox.innerHTML = prox.map(g=>`
+        <div class="alert-box ${g.dias<=1?'red':'amber'}">
+          <div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="10" cy="10" r="7"/><path d="M10 6v5M10 14h.01"/></svg></div>
+          <div><div class="alert-title" style="color:var(--${g.dias<=1?'red':'amber'})">Parto próximo — ${g.dias} día${g.dias===1?'':'s'}</div>
+          <div class="alert-text">#${g.codigo||g.id}${g.nombre?' · '+g.nombre:''} · Estimado: ${new Date(g.fecha_parto_esperado).toLocaleDateString('es-CO')}</div></div>
+        </div>`).join('');
+    } else {
+      alertsBox.innerHTML = `
+        <div class="alert-box sky">
+          <div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="10" cy="10" r="7"/><path d="M7 10l2 2 4-4"/></svg></div>
+          <div><div class="alert-title" style="color:var(--sky)">Sin alertas reproductivas</div>
+          <div class="alert-text">No hay partos próximos registrados en Supabase.</div></div>
+        </div>`;
+    }
+  }
+
+  renderGestaciones(); renderMontas(MONTAS); renderPartos(PARTOS);
+  console.log('[Reproducción] Supabase —', gestantes.length, 'gestantes,', montasEv.length, 'montas,', partosEv.length, 'partos');
+}
+document.addEventListener('appstate:ready', loadReproFromSupabase);
+// Si AppState ya terminó de cargar antes de registrar el listener, ejecutar ya
+if(window.AppState && window.AppState._loaded) loadReproFromSupabase();
 </script>
 
 

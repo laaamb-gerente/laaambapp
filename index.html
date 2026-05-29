@@ -578,11 +578,8 @@ document.addEventListener('appstate:ready', function(e) {
   const MS_MES = 30.44 * 24 * 3600 * 1000;
   const ahora = Date.now();
 
-  // Gestantes: no hay campo dedicado en el esquema; se detecta en estado/categoria/notas
-  const gestantes = activos.filter(function(a){
-    const txt = ((a.estado||'') + ' ' + (a.categoria||'') + ' ' + (a.notas||'')).toLowerCase();
-    return txt.indexOf('gestante') !== -1 || txt.indexOf('preñada') !== -1;
-  }).length;
+  // Gestantes: campo dedicado estado_reproductivo='gestante' (vía AppState.getGestantes)
+  const gestantes = window.AppState.getGestantes().length;
   const elGest = document.getElementById('kpi-gestantes');
   if (elGest) elGest.textContent = gestantes;
 
