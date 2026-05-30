@@ -199,6 +199,111 @@ window.DB = {
       .insert(ingreso).select().single();
   },
 
+  // ── FLUJO DE CAJA · PRESUPUESTO & APARCERÍA ──────────
+  async getPresupuesto(finca_id, año, mes) {
+    return await window._sb.from('presupuesto')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .eq('año', año)
+      .eq('mes', mes);
+  },
+
+  async savePresupuesto(p) {
+    return await window._sb.from('presupuesto')
+      .upsert(p, { onConflict: 'finca_id,año,mes,categoria,tipo' })
+      .select().single();
+  },
+
+  async getAparceria(finca_id) {
+    return await window._sb.from('aparceria')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .eq('activo', true);
+  },
+
+  async saveAparceria(a) {
+    return await window._sb.from('aparceria')
+      .insert(a).select().single();
+  },
+
+  async getPagosAparceria(finca_id, año, mes) {
+    return await window._sb.from('pagos_aparceria')
+      .select('*, aparceria(socio, tipo)')
+      .eq('finca_id', finca_id)
+      .eq('año', año)
+      .eq('mes', mes);
+  },
+
+  async savePagoAparceria(p) {
+    return await window._sb.from('pagos_aparceria')
+      .insert(p).select().single();
+  },
+
+  // ── NÓMINA · EMPLEADOS, ASISTENCIA, LIQUIDACIONES ────
+  async getEmpleados(finca_id) {
+    return await window._sb.from('empleados')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .eq('activo', true)
+      .order('nombre');
+  },
+
+  async saveEmpleado(e) {
+    if (e.id) {
+      return await window._sb.from('empleados')
+        .update({...e, updated_at: new Date()})
+        .eq('id', e.id).select().single();
+    }
+    return await window._sb.from('empleados')
+      .insert(e).select().single();
+  },
+
+  async getAsistencia(finca_id, año, mes) {
+    const inicio = `${año}-${String(mes).padStart(2,'0')}-01`;
+    const fin = new Date(año, mes, 0).toISOString().split('T')[0];
+    return await window._sb.from('asistencia')
+      .select('*, empleados(nombre, cargo)')
+      .eq('finca_id', finca_id)
+      .gte('fecha', inicio)
+      .lte('fecha', fin)
+      .order('fecha');
+  },
+
+  async saveAsistencia(a) {
+    return await window._sb.from('asistencia')
+      .upsert(a, { onConflict: 'empleado_id,fecha' })
+      .select().single();
+  },
+
+  async getLiquidacion(finca_id, año, mes, quincena) {
+    return await window._sb.from('liquidaciones')
+      .select('*, empleados(nombre, cargo, salario_base)')
+      .eq('finca_id', finca_id)
+      .eq('año', año)
+      .eq('mes', mes)
+      .eq('quincena', quincena);
+  },
+
+  async saveLiquidacion(l) {
+    return await window._sb.from('liquidaciones')
+      .upsert(l, { onConflict: 'empleado_id,quincena,mes,año' })
+      .select().single();
+  },
+
+  // ── ICA / SIGMA · MOVILIZACIONES ─────────────────────
+  async getMovilizaciones(finca_id, limit = 100) {
+    return await window._sb.from('movilizaciones')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .order('fecha', { ascending: false })
+      .limit(limit);
+  },
+
+  async saveMovilizacion(m) {
+    return await window._sb.from('movilizaciones')
+      .insert(m).select().single();
+  },
+
   // ── BENEFICIO & TRAZABILIDAD ─────────────────────────
   async saveBeneficio(b) {
     return await window._sb.from('beneficios').insert(b).select().single();

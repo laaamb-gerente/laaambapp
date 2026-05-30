@@ -223,6 +223,8 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
     <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
     <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
     <a class="nav-link" href="beneficio.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>Beneficio &amp; QR</a>
+    <a class="nav-link" href="nomina.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="6" r="3"/><path d="M2 17c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M14 8h4M14 11h4M14 14h2"/></svg>Nómina &amp; Asistencia</a>
+    <a class="nav-link" href="ica.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-3 7 3v6l-7 3-7-3z"/><path d="M3 7l7 3 7-3M10 10v6"/></svg>ICA &amp; Movilización</a>
     <div class="nav-group">Sistema</div>
     <a class="nav-link active" href="ajustes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.9 4.9l1.4 1.4M13.7 13.7l1.4 1.4M4.9 15.1l1.4-1.4M13.7 6.3l1.4-1.4"/></svg>Ajustes</a>
   </nav>
@@ -411,6 +413,46 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
         </div>
         <div style="background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-radius:var(--r);padding:12px;font-size:12px;color:var(--text2)">
           ⚠ La importación reemplaza todos los datos actuales. Haz un backup primero.
+        </div>
+      </div>
+    </div>
+
+    <div class="section-label" id="siigo">🔗 Integración Siigo</div>
+    <div class="card">
+      <div class="card-h">
+        <div><div class="card-title">Contabilidad Siigo</div><div class="card-sub">Sincroniza facturas de venta y comprobantes de egreso con tus costos e ingresos</div></div>
+        <span class="badge b-amber" id="siigo-estado">Sin conectar</span>
+      </div>
+      <div class="card-body">
+        <!-- Conexión -->
+        <div id="siigo-conexion">
+          <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div class="fg"><label class="fl">Usuario Siigo (email)</label><input class="fi" id="siigo-user" type="email" placeholder="contabilidad@laaamb.com"></div>
+            <div class="fg"><label class="fl">Access Key</label><input class="fi" id="siigo-key" type="password" placeholder="••••••••••••"></div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="siigo-btn-conectar" onclick="siigoConectar()">Conectar con Siigo</button>
+        </div>
+
+        <!-- Estado conectado (oculto hasta conectar) -->
+        <div id="siigo-conectado" style="display:none">
+          <div style="background:var(--green-bg);border:1px solid rgba(46,199,122,.2);border-radius:var(--r);padding:12px;font-size:12px;color:var(--text2);margin-bottom:14px">
+            ✓ Conectado a Siigo · Último sync: <strong id="siigo-ultimo">—</strong>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+            <div><label class="fl">Desde</label><input class="fi" type="date" id="siigo-desde" style="width:160px"></div>
+            <div><label class="fl">Hasta</label><input class="fi" type="date" id="siigo-hasta" style="width:160px"></div>
+            <button class="btn btn-primary btn-sm" onclick="siigoSync(false)">Sincronizar ahora</button>
+            <button class="btn btn-ghost btn-sm" onclick="siigoSync(true)">Sync histórico (período)</button>
+          </div>
+        </div>
+
+        <!-- Mapeo de cuentas -->
+        <div class="section-label" style="margin-top:20px">Mapeo de cuentas Siigo → categorías LAAAMB</div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Cuenta</th><th>Nombre Siigo</th><th>Tipo</th><th>Categoría LAAAMB</th><th></th></tr></thead>
+            <tbody id="siigo-mapeo-tbody"><tr><td colspan="5" class="td-muted" style="text-align:center;padding:18px">Conecta o ejecuta la migración 0014 para ver el mapeo</td></tr></tbody>
+          </table>
         </div>
       </div>
     </div>
@@ -762,12 +804,153 @@ function updateSidebarBadgesLocal(){
   }catch(e){}
 }
 
+// ── INTEGRACIÓN SIIGO ────────────────────────────────────────────────────────
+var FINCA_ID_AJ = 'a1b2c3d4-0000-0000-0000-000000000001';
+var SIIGO_CFG = null;
+var SIIGO_MAPEO = [];
+var CATEGORIAS_LAAAMB = ['alimentacion','sanidad','mano_obra','infraestructura','transporte','genetica','administrativo','venta_animal','venta_lana','venta_leche','subsidio','aparceria','otro'];
+
+async function siigoInit(){
+  if(!window._sb) return;
+  // Cargar configuración existente
+  try{
+    var cfg = await window._sb.from('siigo_config').select('*').eq('finca_id',FINCA_ID_AJ).eq('activo',true).maybeSingle();
+    if(cfg && cfg.data){
+      SIIGO_CFG = cfg.data;
+      document.getElementById('siigo-estado').textContent = 'Conectado';
+      document.getElementById('siigo-estado').className = 'badge b-green';
+      document.getElementById('siigo-conexion').style.display = 'none';
+      document.getElementById('siigo-conectado').style.display = 'block';
+      document.getElementById('siigo-ultimo').textContent = SIIGO_CFG.ultimo_sync ? fmtConexion(SIIGO_CFG.ultimo_sync) : 'nunca';
+      if(SIIGO_CFG.username) document.getElementById('siigo-user').value = SIIGO_CFG.username;
+    }
+  }catch(e){ console.warn('[Siigo] config', e && e.message); }
+  // Cargar mapeo de cuentas
+  try{
+    var mp = await window._sb.from('siigo_mapeo').select('*').eq('finca_id',FINCA_ID_AJ).eq('activo',true);
+    if(mp && mp.data){ SIIGO_MAPEO = mp.data; renderSiigoMapeo(); }
+  }catch(e){ console.warn('[Siigo] mapeo', e && e.message); }
+  // Defaults de fechas (mes actual)
+  var hoy = new Date();
+  var ini = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0,10);
+  var d1 = document.getElementById('siigo-desde'), d2 = document.getElementById('siigo-hasta');
+  if(d1) d1.value = ini; if(d2) d2.value = hoy.toISOString().slice(0,10);
+}
+function renderSiigoMapeo(){
+  var tb = document.getElementById('siigo-mapeo-tbody');
+  if(!SIIGO_MAPEO.length){ tb.innerHTML = '<tr><td colspan="5" class="td-muted" style="text-align:center;padding:18px">Sin mapeos — ejecuta la migración 0014</td></tr>'; return; }
+  tb.innerHTML = SIIGO_MAPEO.map(function(m){
+    var opts = CATEGORIAS_LAAAMB.map(function(c){ return '<option value="'+c+'"'+(c===m.categoria_laaamb?' selected':'')+'>'+c+'</option>'; }).join('');
+    return '<tr><td class="td-mono">'+escq(m.cuenta_siigo)+'</td>'+
+      '<td>'+escq(m.nombre_siigo||'—')+'</td>'+
+      '<td><span class="badge '+(m.tipo==='ingreso'?'b-green':'b-red')+'">'+escq(m.tipo)+'</span></td>'+
+      '<td><select class="fi" id="sm-'+m.id+'" style="padding:6px 8px">'+opts+'</select></td>'+
+      '<td><button class="btn btn-ghost btn-sm" onclick="guardarMapeoSiigo(\''+m.id+'\')">Guardar</button></td></tr>';
+  }).join('');
+}
+async function guardarMapeoSiigo(id){
+  var sel = document.getElementById('sm-'+id); if(!sel) return;
+  var cat = sel.value;
+  try{
+    var r = await window._sb.from('siigo_mapeo').update({categoria_laaamb:cat}).eq('id',id);
+    if(r.error) throw r.error;
+    toast('Mapeo de cuenta actualizado');
+  }catch(e){ toast('Error: '+e.message,'err'); }
+}
+async function siigoConectar(){
+  var username = document.getElementById('siigo-user').value.trim();
+  var access_key = document.getElementById('siigo-key').value.trim();
+  if(!username || !access_key){ toast('Ingresa usuario y access key','err'); return; }
+  var btn = document.getElementById('siigo-btn-conectar');
+  btn.textContent = 'Conectando…'; btn.disabled = true;
+  try{
+    var resp = await fetch(apiBase()+'/api/siigo-sync', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ accion:'auth', username:username, access_key:access_key })
+    });
+    var data = await resp.json();
+    if(!resp.ok || !data.access_token){ throw new Error(data.error || data.message || 'No se obtuvo token'); }
+    // Guardar token en siigo_config (NUNCA el access_key)
+    var expira = data.expires_in ? new Date(Date.now()+data.expires_in*1000).toISOString() : null;
+    var up = await window._sb.from('siigo_config').upsert(
+      { finca_id:FINCA_ID_AJ, username:username, access_token:data.access_token, token_expires_at:expira, activo:true },
+      { onConflict:'finca_id' }
+    ).select().maybeSingle();
+    if(up.error) console.warn('[Siigo] guardar config', up.error.message);
+    SIIGO_CFG = up.data || { username:username, access_token:data.access_token };
+    document.getElementById('siigo-key').value = '';
+    toast('Conectado a Siigo correctamente');
+    siigoInit();
+  }catch(e){
+    toast('Error conectando: '+e.message,'err');
+  }finally{
+    btn.textContent = 'Conectar con Siigo'; btn.disabled = false;
+  }
+}
+async function siigoSync(historico){
+  if(!SIIGO_CFG || !SIIGO_CFG.access_token){ toast('Conecta con Siigo primero','err'); return; }
+  var hoy = new Date();
+  var desde, hasta;
+  if(historico){
+    desde = document.getElementById('siigo-desde').value;
+    hasta = document.getElementById('siigo-hasta').value;
+    if(!desde || !hasta){ toast('Selecciona el período','err'); return; }
+  }else{
+    desde = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().slice(0,10);
+    hasta = hoy.toISOString().slice(0,10);
+  }
+  toast('Sincronizando con Siigo…','info');
+  // Mapa cuenta → {categoria,tipo}
+  var mapa = {};
+  SIIGO_MAPEO.forEach(function(m){ mapa[m.cuenta_siigo] = { cat:m.categoria_laaamb, tipo:m.tipo }; });
+  var nIng=0, nCost=0;
+  try{
+    // Facturas (ingresos)
+    var rf = await fetch(apiBase()+'/api/siigo-sync', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ accion:'facturas', access_token:SIIGO_CFG.access_token, fecha_desde:desde, fecha_hasta:hasta }) });
+    var df = await rf.json();
+    var facturas = (df && df.results) || [];
+    for(var i=0;i<facturas.length;i++){
+      var f = facturas[i];
+      var total = f.total || (f.payments && f.payments[0] && f.payments[0].value) || 0;
+      if(!total) continue;
+      if(window.DB && window.DB.saveIngreso){
+        await window.DB.saveIngreso({ finca_id:FINCA_ID_AJ, tipo:'venta_animal', descripcion:'Siigo factura '+(f.name||f.number||f.id||''), valor:total, fecha:(f.date||desde).slice(0,10), cliente:(f.customer&&(f.customer.identification||f.customer.name))||'Siigo', fuente:'siigo' });
+        nIng++;
+      }
+    }
+    // Comprobantes de egreso (gastos)
+    var rg = await fetch(apiBase()+'/api/siigo-sync', { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ accion:'gastos', access_token:SIIGO_CFG.access_token, fecha_desde:desde, fecha_hasta:hasta }) });
+    var dg = await rg.json();
+    var gastos = (dg && dg.results) || [];
+    for(var j=0;j<gastos.length;j++){
+      var g = gastos[j];
+      var gtotal = g.total || g.value || 0; if(!gtotal) continue;
+      var cuenta = (g.items && g.items[0] && g.items[0].account) || g.account || '';
+      var m = mapa[cuenta] || { cat:'otro', tipo:'costo' };
+      if(window.DB && window.DB.saveCosto){
+        await window.DB.saveCosto({ finca_id:FINCA_ID_AJ, categoria:m.cat, descripcion:'Siigo egreso '+(g.name||g.number||g.id||''), valor:gtotal, fecha:(g.date||desde).slice(0,10), especie:'ovino', fuente:'siigo' });
+        nCost++;
+      }
+    }
+    // Actualizar ultimo_sync
+    await window._sb.from('siigo_config').update({ ultimo_sync:new Date().toISOString() }).eq('finca_id',FINCA_ID_AJ);
+    document.getElementById('siigo-ultimo').textContent = fmtConexion(new Date().toISOString());
+    toast('Sync Siigo: '+nIng+' ingresos, '+nCost+' costos importados');
+  }catch(e){
+    toast('Error en sync: '+e.message,'err');
+  }
+}
+
 // ── INIT ─────────────────────────────────────────────────────────────────────
 (function init(){
   initTheme();
   // Cargar equipo desde Supabase (perfiles)
   cargarEquipo();
   document.addEventListener('appstate:ready', cargarEquipo);
+  // Integración Siigo
+  if(window._sb) siigoInit(); else document.addEventListener('appstate:ready', siigoInit);
   // FIX: renderizar fincas al cargar la página
   if(typeof AppData !== 'undefined'){
     renderFincas();

@@ -362,6 +362,8 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <a class="nav-link active" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
     <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
     <a class="nav-link" href="beneficio.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>Beneficio &amp; QR</a>
+    <a class="nav-link" href="nomina.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="6" r="3"/><path d="M2 17c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M14 8h4M14 11h4M14 14h2"/></svg>Nómina &amp; Asistencia</a>
+    <a class="nav-link" href="ica.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-3 7 3v6l-7 3-7-3z"/><path d="M3 7l7 3 7-3M10 10v6"/></svg>ICA &amp; Movilización</a>
     <div class="nav-group">Sistema</div>
     <a class="nav-link" href="ajustes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2"/></svg>Ajustes</a>
   </nav>
@@ -405,6 +407,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div class="tn" onclick="switchTab(this,'t-ingresos')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><polyline points="2 15 7 9 11 12 18 4"/></svg>Ingresos</div>
     <div class="tn" onclick="switchTab(this,'t-por-animal')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/></svg>Por animal</div>
     <div class="tn" onclick="switchTab(this,'t-proyeccion')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><polyline points="2 14 6 10 10 12 14 6"/><path d="M14 6h4v4"/></svg>Proyección</div>
+    <div class="tn" onclick="switchTab(this,'t-flujo')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M3 3v14h14"/><path d="M7 13l3-4 3 2 3-5"/></svg>Flujo de Caja</div>
   </div>
 
   <div class="content">
@@ -491,6 +494,26 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
           </table>
         </div>
       </div>
+
+      <!-- ── APARCERÍA ── -->
+      <div class="card" style="margin-top:18px">
+        <div class="card-h">
+          <div>
+            <div class="card-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:4px"><path d="M7 8a3 3 0 100-6 3 3 0 000 6zM13 8a3 3 0 100-6 3 3 0 000 6z"/><path d="M2 18v-1a4 4 0 014-4M18 18v-1a4 4 0 00-4-4"/></svg>Aparcería</div>
+            <div class="card-sub">Socios activos · gasto financiero (cuenta 5305) · provisión mensual (cuenta 2610)</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="openModal('modal-aparceria')">+ Socio</button>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-pago-aparceria')">+ Registrar pago</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Socio</th><th>Modalidad</th><th>Valor / %</th><th>Provisión mes (2610)</th><th>Pagado mes (5305)</th><th>Estado</th></tr></thead>
+            <tbody id="aparceria-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">Sin socios de aparcería registrados</td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- ══ INGRESOS ══ -->
@@ -501,6 +524,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
           <input type="month" class="fi" style="width:150px">
         </div>
         <div style="display:flex;gap:8px">
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar extracto<input type="file" class="import-hidden" accept=".csv" onchange="importarExtracto(this)"></label>
           <button class="btn btn-ghost btn-sm" onclick="exportIngresos()">↓ Excel</button>
           <button class="btn btn-primary btn-sm" onclick="openModal('modal-ingreso')">+ Registrar ingreso</button>
         </div>
@@ -510,6 +534,22 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
           <table>
             <thead><tr><th>Fecha</th><th>Tipo</th><th>Animal(es)</th><th>Peso kg</th><th>Precio/kg COP</th><th>Total COP</th><th>Comprador</th><th>Canal</th><th>Colaborador</th></tr></thead>
             <tbody id="ingresos-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Conciliación bancaria: transacciones sin clasificar -->
+      <div class="card" id="extracto-card" style="margin-top:18px;display:none">
+        <div class="card-h">
+          <div>
+            <div class="card-title">Conciliación de extracto bancario</div>
+            <div class="card-sub" id="extracto-sub">Transacciones detectadas en el extracto</div>
+          </div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Fecha</th><th>Descripción</th><th>Valor COP</th><th>Sugerencia</th><th>Clasificar como</th></tr></thead>
+            <tbody id="extracto-tbody"></tbody>
           </table>
         </div>
       </div>
@@ -635,6 +675,30 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       </div>
     </div>
 
+    <!-- ══ FLUJO DE CAJA ══ -->
+    <div id="t-flujo" class="tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;align-items:center">
+        <div>
+          <div style="font-size:15px;font-weight:700;color:var(--text)">Flujo de caja mensual</div>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">Últimos 6 meses + mes actual · datos reales de Supabase</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="exportFlujoCaja()">↓ Exportar Excel</button>
+      </div>
+      <div style="display:flex;gap:14px;font-size:10px;color:var(--text3);margin-bottom:12px;flex-wrap:wrap">
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--green);vertical-align:middle;margin-right:4px"></span>Ingresos / saldo positivo</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--red);vertical-align:middle;margin-right:4px"></span>Egresos / saldo negativo</span>
+        <span><span style="display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--sky);vertical-align:middle;margin-right:4px"></span>Entrada manual (presupuesto)</span>
+      </div>
+      <div class="card">
+        <div style="overflow-x:auto">
+          <table id="flujo-table">
+            <thead><tr id="flujo-head"></tr></thead>
+            <tbody id="flujo-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /app -->
@@ -709,6 +773,51 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 </div>
 </div>
 
+<!-- MODAL APARCERÍA — SOCIO -->
+<div class="overlay" id="modal-aparceria" onclick="if(event.target===this)closeModal('modal-aparceria')">
+<div class="modal modal-sm">
+  <div class="modal-head"><div class="modal-title">Nuevo socio de aparcería</div><button class="modal-close" onclick="closeModal('modal-aparceria')">✕</button></div>
+  <div class="modal-body">
+    <div class="fg"><label class="fl">Socio *</label><input class="fi" id="ap-socio" placeholder="Nombre del socio"></div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Modalidad *</label>
+        <select class="fi" id="ap-tipo" onchange="apToggleTipo()">
+          <option value="fijo">Valor fijo mensual</option>
+          <option value="variable">Valor variable</option>
+          <option value="porcentaje">Porcentaje utilidad</option>
+        </select>
+      </div>
+      <div class="fg"><label class="fl" id="ap-valor-lbl">Valor (COP)</label><input class="fi" type="number" id="ap-valor" placeholder="500000"></div>
+    </div>
+    <div class="fg"><label class="fl">Notas</label><textarea class="fi" rows="2" id="ap-notas" placeholder="Detalles del acuerdo…"></textarea></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-aparceria')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" onclick="saveAparceriaSocio()">Guardar socio</button>
+  </div>
+</div>
+</div>
+
+<!-- MODAL APARCERÍA — PAGO -->
+<div class="overlay" id="modal-pago-aparceria" onclick="if(event.target===this)closeModal('modal-pago-aparceria')">
+<div class="modal modal-sm">
+  <div class="modal-head"><div class="modal-title">Registrar pago aparcería</div><button class="modal-close" onclick="closeModal('modal-pago-aparceria')">✕</button></div>
+  <div class="modal-body">
+    <div class="fg"><label class="fl">Socio *</label><select class="fi" id="pa-socio"><option value="">Selecciona socio…</option></select></div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Mes *</label><input class="fi" type="number" id="pa-mes" min="1" max="12"></div>
+      <div class="fg"><label class="fl">Año *</label><input class="fi" type="number" id="pa-anio"></div>
+    </div>
+    <div class="fg"><label class="fl">Valor pagado (COP) *</label><input class="fi" type="number" id="pa-valor" placeholder="500000"></div>
+    <div style="background:var(--amber-bg);border:1px solid var(--border2);border-radius:var(--r);padding:10px;font-size:11px;color:var(--text2)">Se registra como gasto financiero (cuenta 5305) en costos con categoría <strong>otro</strong> y fuente <strong>aparceria</strong>.</div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-pago-aparceria')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" onclick="savePagoAparceria()">Registrar pago</button>
+  </div>
+</div>
+</div>
+
 <div class="toasts" id="toasts"></div>
 
 <script>
@@ -748,9 +857,10 @@ function switchTab(el,id){
   el.classList.add('active');
   document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
   document.getElementById(id).style.display='block';
-  if(id==='t-costos') renderCostos();
+  if(id==='t-costos'){ renderCostos(); renderAparceria(); }
   if(id==='t-ingresos') renderIngresos();
   if(id==='t-por-animal') renderPorAnimal(ANIMALES_COSTO);
+  if(id==='t-flujo') renderFlujoCaja();
 }
 
 // ═══ RENDER ═══
@@ -1039,10 +1149,263 @@ function loadFinanzasFromSupabase(){
 document.addEventListener('appstate:ready', loadFinanzasFromSupabase);
 if(window.AppState && window.AppState._loaded) loadFinanzasFromSupabase();
 
+// ═══════ FLUJO DE CAJA ═══════
+const FINCA_ID_FIN='a1b2c3d4-0000-0000-0000-000000000001';
+const MESES_ES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+function _ultimosMeses(n){
+  const arr=[]; const hoy=new Date();
+  for(let i=n-1;i>=0;i--){
+    const d=new Date(hoy.getFullYear(),hoy.getMonth()-i,1);
+    arr.push({año:d.getFullYear(),mes:d.getMonth()+1,label:MESES_ES[d.getMonth()]+' '+String(d.getFullYear()).slice(2)});
+  }
+  return arr;
+}
+function _mesDe(fechaStr){ // 'YYYY-MM-DD' -> {año,mes}
+  if(!fechaStr) return null;
+  const p=String(fechaStr).slice(0,10).split('-');
+  return {año:parseInt(p[0]),mes:parseInt(p[1])};
+}
+function renderFlujoCaja(){
+  const cols=_ultimosMeses(7);
+  const AS=window.AppState||{};
+  const costos=AS.costos||[];
+  const ingresos=AS.ingresos||[];
+  // Agregar por mes
+  const ingMat={}, costMat={}; // {colIdx: total}
+  const ingCats={}, costCats={}; // {cat: {colIdx: total}}
+  cols.forEach((c,ci)=>{ ingMat[ci]=0; costMat[ci]=0; });
+  function colIdx(fecha){
+    const m=_mesDe(fecha); if(!m) return -1;
+    return cols.findIndex(c=>c.año===m.año&&c.mes===m.mes);
+  }
+  ingresos.forEach(i=>{
+    const ci=colIdx(i.fecha); if(ci<0) return;
+    const cat=TIPO_ING_LBL[i.tipo]||i.tipo||'Otro';
+    ingCats[cat]=ingCats[cat]||{}; ingCats[cat][ci]=(ingCats[cat][ci]||0)+(parseFloat(i.valor)||0);
+    ingMat[ci]+=(parseFloat(i.valor)||0);
+  });
+  costos.forEach(c=>{
+    const ci=colIdx(c.fecha); if(ci<0) return;
+    const cat=CAT_GASTO_LBL[c.categoria]||c.categoria||'Otro';
+    costCats[cat]=costCats[cat]||{}; costCats[cat][ci]=(costCats[cat][ci]||0)+(parseFloat(c.valor)||0);
+    costMat[ci]+=(parseFloat(c.valor)||0);
+  });
+  // Head
+  document.getElementById('flujo-head').innerHTML='<th>Categoría</th>'+cols.map(c=>'<th style="text-align:right">'+c.label+'</th>').join('');
+  // Body
+  let html='';
+  html+='<tr style="background:var(--green-bg)"><td colspan="'+(cols.length+1)+'" style="font-weight:700;color:var(--green);font-size:11px">INGRESOS</td></tr>';
+  const ingKeys=Object.keys(ingCats);
+  if(!ingKeys.length){ html+='<tr><td class="td-muted" colspan="'+(cols.length+1)+'" style="text-align:center;color:var(--text3)">Sin ingresos en el período</td></tr>'; }
+  ingKeys.forEach(cat=>{
+    html+='<tr><td style="font-size:12px">'+cat+'</td>'+cols.map((c,ci)=>{
+      const v=ingCats[cat][ci]||0;
+      return '<td style="text-align:right;color:'+(v?'var(--green)':'var(--text4)')+'">'+(v?_fmtMoney(v):'·')+'</td>';
+    }).join('')+'</tr>';
+  });
+  html+='<tr style="border-top:1px solid var(--border2)"><td style="font-weight:700">Total ingresos</td>'+cols.map((c,ci)=>'<td style="text-align:right;font-weight:700;color:var(--green)">'+_fmtMoney(ingMat[ci])+'</td>').join('')+'</tr>';
+  html+='<tr style="background:var(--red-bg)"><td colspan="'+(cols.length+1)+'" style="font-weight:700;color:var(--red);font-size:11px">EGRESOS</td></tr>';
+  const costKeys=Object.keys(costCats);
+  if(!costKeys.length){ html+='<tr><td class="td-muted" colspan="'+(cols.length+1)+'" style="text-align:center;color:var(--text3)">Sin egresos en el período</td></tr>'; }
+  costKeys.forEach(cat=>{
+    html+='<tr><td style="font-size:12px">'+cat+'</td>'+cols.map((c,ci)=>{
+      const v=costCats[cat][ci]||0;
+      return '<td style="text-align:right;color:'+(v?'var(--red)':'var(--text4)')+'">'+(v?_fmtMoney(v):'·')+'</td>';
+    }).join('')+'</tr>';
+  });
+  html+='<tr style="border-top:1px solid var(--border2)"><td style="font-weight:700">Total egresos</td>'+cols.map((c,ci)=>'<td style="text-align:right;font-weight:700;color:var(--red)">'+_fmtMoney(costMat[ci])+'</td>').join('')+'</tr>';
+  // Balance
+  html+='<tr style="border-top:2px solid var(--border3);background:var(--bg3)"><td style="font-weight:700;color:var(--teal)">BALANCE</td>'+cols.map((c,ci)=>{
+    const bal=(ingMat[ci]||0)-(costMat[ci]||0);
+    return '<td style="text-align:right;font-weight:700;color:'+(bal>=0?'var(--green)':'var(--red)')+'">'+(bal>=0?'+':'')+_fmtMoney(bal)+'</td>';
+  }).join('')+'</tr>';
+  document.getElementById('flujo-tbody').innerHTML=html;
+  window._flujoCols=cols; window._flujoIng=ingMat; window._flujoCost=costMat; window._flujoIngCats=ingCats; window._flujoCostCats=costCats;
+}
+function exportFlujoCaja(){
+  const cols=window._flujoCols||_ultimosMeses(7);
+  if(!window._flujoCols) renderFlujoCaja();
+  const wb=XLSX.utils.book_new();
+  const head=['Categoría',...(window._flujoCols||cols).map(c=>c.label)];
+  const rows=[head];
+  rows.push(['INGRESOS']);
+  Object.keys(window._flujoIngCats||{}).forEach(cat=>rows.push([cat,...(window._flujoCols).map((c,ci)=>(window._flujoIngCats[cat][ci]||0))]));
+  rows.push(['Total ingresos',...(window._flujoCols).map((c,ci)=>window._flujoIng[ci]||0)]);
+  rows.push(['EGRESOS']);
+  Object.keys(window._flujoCostCats||{}).forEach(cat=>rows.push([cat,...(window._flujoCols).map((c,ci)=>(window._flujoCostCats[cat][ci]||0))]));
+  rows.push(['Total egresos',...(window._flujoCols).map((c,ci)=>window._flujoCost[ci]||0)]);
+  rows.push(['BALANCE',...(window._flujoCols).map((c,ci)=>(window._flujoIng[ci]||0)-(window._flujoCost[ci]||0))]);
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Flujo de Caja');
+  XLSX.writeFile(wb,'laaamb-flujo-caja.xlsx');
+  toast('Flujo de caja exportado');
+}
+
+// ═══════ APARCERÍA ═══════
+let APARCERIA_CACHE=[];
+const AP_TIPO_LBL={fijo:'Valor fijo',variable:'Variable',porcentaje:'% Utilidad'};
+function apToggleTipo(){
+  const t=document.getElementById('ap-tipo').value;
+  document.getElementById('ap-valor-lbl').textContent=t==='porcentaje'?'Porcentaje (%)':'Valor (COP)';
+}
+async function renderAparceria(){
+  if(!(window.DB&&window.DB.getAparceria)) return;
+  try{
+    const {data,error}=await window.DB.getAparceria(FINCA_ID_FIN);
+    if(error){ console.warn('[Aparcería]',error.message); return; }
+    APARCERIA_CACHE=data||[];
+    const tb=document.getElementById('aparceria-tbody');
+    const sel=document.getElementById('pa-socio');
+    if(sel) sel.innerHTML='<option value="">Selecciona socio…</option>'+APARCERIA_CACHE.map(a=>'<option value="'+a.id+'">'+(a.socio||'—')+'</option>').join('');
+    if(!APARCERIA_CACHE.length){ if(tb) tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:20px">Sin socios de aparcería registrados</td></tr>'; return; }
+    if(tb) tb.innerHTML=APARCERIA_CACHE.map(a=>{
+      const prov=a.tipo==='fijo'?(parseFloat(a.valor)||0):0;
+      const valLbl=a.tipo==='porcentaje'?((a.valor||0)+'%'):_fmtMoney(a.valor||0);
+      return '<tr><td style="font-weight:600">'+(a.socio||'—')+'</td>'+
+        '<td><span class="badge b-wine">'+(AP_TIPO_LBL[a.tipo]||a.tipo)+'</span></td>'+
+        '<td>'+valLbl+'</td>'+
+        '<td class="td-muted">'+(prov?_fmtMoney(prov):'—')+'</td>'+
+        '<td class="td-muted" id="ap-pago-'+a.id+'">—</td>'+
+        '<td><span class="badge b-green">Activo</span></td></tr>';
+    }).join('');
+  }catch(e){ console.warn('[Aparcería]',e&&e.message); }
+}
+async function saveAparceriaSocio(){
+  const socio=document.getElementById('ap-socio').value.trim();
+  const tipo=document.getElementById('ap-tipo').value;
+  const valor=parseFloat(document.getElementById('ap-valor').value)||0;
+  const notas=document.getElementById('ap-notas').value.trim();
+  if(!socio){ toast('Ingresa el nombre del socio','err'); return; }
+  if(!(window.DB&&window.DB.saveAparceria)){ toast('DB no disponible','err'); return; }
+  const {error}=await window.DB.saveAparceria({finca_id:FINCA_ID_FIN,socio,tipo,valor,notas:notas||null,activo:true});
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  closeModal('modal-aparceria');
+  document.getElementById('ap-socio').value=''; document.getElementById('ap-valor').value=''; document.getElementById('ap-notas').value='';
+  toast('Socio de aparcería guardado');
+  renderAparceria();
+}
+async function savePagoAparceria(){
+  const aparceria_id=document.getElementById('pa-socio').value;
+  const mes=parseInt(document.getElementById('pa-mes').value)||0;
+  const año=parseInt(document.getElementById('pa-anio').value)||0;
+  const valor=parseFloat(document.getElementById('pa-valor').value)||0;
+  if(!aparceria_id||!mes||!año||!valor){ toast('Completa todos los campos','err'); return; }
+  if(!(window.DB&&window.DB.savePagoAparceria)){ toast('DB no disponible','err'); return; }
+  const socio=(APARCERIA_CACHE.find(a=>a.id===aparceria_id)||{}).socio||'Aparcería';
+  const {error}=await window.DB.savePagoAparceria({finca_id:FINCA_ID_FIN,aparceria_id,mes,año,valor,pagado:true});
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  // Registrar como gasto financiero cuenta 5305
+  if(window.DB.saveCosto){
+    await window.DB.saveCosto({finca_id:FINCA_ID_FIN,categoria:'otro',descripcion:'Pago aparcería '+socio+' ('+mes+'/'+año+') · cuenta 5305',valor,fecha:año+'-'+String(mes).padStart(2,'0')+'-01',especie:'ovino',fuente:'aparceria',notas:'Gasto financiero aparcería'});
+  }
+  closeModal('modal-pago-aparceria');
+  document.getElementById('pa-valor').value='';
+  toast('Pago registrado · $'+Math.round(valor/1000)+'K (cuenta 5305)');
+  renderAparceria();
+}
+
+// ═══════ CONCILIACIÓN BANCARIA — Importar extracto CSV ═══════
+const EXTRACTO_REGLAS=[
+  {re:/conce|aliment|forraje|pasto|sal miner/i,cat:'alimentacion',tipo:'costo',lbl:'Alimentación'},
+  {re:/veterin|medicam|ivermec|vacuna|sanidad|droga/i,cat:'sanidad',tipo:'costo',lbl:'Sanidad'},
+  {re:/nomina|jornal|salario|sueldo|mano de obra/i,cat:'mano_obra',tipo:'costo',lbl:'Mano de obra'},
+  {re:/transport|flete|combustible|gasolina|acpm/i,cat:'transporte',tipo:'costo',lbl:'Transporte'},
+  {re:/energia|acueduc|agua|luz|epm|servicio/i,cat:'administrativo',tipo:'costo',lbl:'Servicios'},
+  {re:/frigorif|carnes|sacrific|venta|consignaci|abono/i,cat:'venta_animal',tipo:'ingreso',lbl:'Venta animal'}
+];
+function _parseCSV(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  const sep=(lines[0].match(/;/g)||[]).length>(lines[0].match(/,/g)||[]).length?';':',';
+  return lines.map(l=>l.split(sep).map(c=>c.replace(/^"|"$/g,'').trim()));
+}
+function _detectCols(rows){
+  // Heurística Bancolombia/Davivienda: busca encabezado con fecha/descripcion/valor
+  const head=(rows[0]||[]).map(h=>h.toLowerCase());
+  let fi=head.findIndex(h=>/fecha/.test(h));
+  let di=head.findIndex(h=>/descrip|detalle|concepto|referencia/.test(h));
+  let vi=head.findIndex(h=>/valor|monto|importe|debito|credito/.test(h));
+  // Si no hay encabezado reconocible, usar posiciones por defecto
+  const hasHeader=fi>=0||di>=0||vi>=0;
+  if(fi<0) fi=0; if(di<0) di=1; if(vi<0) vi=2;
+  return {fi,di,vi,start:hasHeader?1:0};
+}
+function importarExtracto(input){
+  const f=input.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=function(e){
+    try{
+      const rows=_parseCSV(e.target.result);
+      if(rows.length<2){ toast('Extracto vacío o ilegible','err'); return; }
+      const {fi,di,vi,start}=_detectCols(rows);
+      const txs=[];
+      for(let k=start;k<rows.length;k++){
+        const row=rows[k]; if(!row||!row.length) continue;
+        const fecha=row[fi]||''; const desc=row[di]||'';
+        const valRaw=(row[vi]||'').replace(/[^0-9,.-]/g,'').replace(/\.(?=\d{3})/g,'').replace(',','.');
+        const valor=Math.abs(parseFloat(valRaw)||0);
+        if(!valor||!desc) continue;
+        const regla=EXTRACTO_REGLAS.find(rg=>rg.re.test(desc));
+        txs.push({fecha,desc,valor,sug:regla});
+      }
+      renderExtracto(txs);
+      toast('✓ '+txs.length+' transacciones leídas del extracto');
+    }catch(err){ toast('Error leyendo extracto','err'); console.warn(err); }
+    input.value='';
+  };
+  r.readAsText(f,'ISO-8859-1');
+}
+function renderExtracto(txs){
+  const card=document.getElementById('extracto-card');
+  const tb=document.getElementById('extracto-tbody');
+  document.getElementById('extracto-sub').textContent=txs.length+' transacciones · clasifica las no reconocidas y guárdalas';
+  const OPTS_COSTO=Object.keys(CAT_GASTO_LBL).map(k=>'<option value="costo:'+k+'">Costo · '+CAT_GASTO_LBL[k]+'</option>').join('');
+  const OPTS_ING=Object.keys(TIPO_ING_LBL).map(k=>'<option value="ingreso:'+k+'">Ingreso · '+TIPO_ING_LBL[k]+'</option>').join('');
+  window._extractoTxs=txs;
+  tb.innerHTML=txs.map((t,idx)=>{
+    const sugVal=t.sug?(t.sug.tipo+':'+t.sug.cat):'';
+    const sugLbl=t.sug?('<span class="badge b-teal">'+t.sug.lbl+'</span>'):'<span class="badge b-amber">Sin clasificar</span>';
+    return '<tr><td class="td-muted">'+t.fecha+'</td><td style="font-size:12px">'+t.desc+'</td>'+
+      '<td style="font-weight:700">$'+t.valor.toLocaleString('es-CO')+'</td>'+
+      '<td>'+sugLbl+'</td>'+
+      '<td><div style="display:flex;gap:6px;align-items:center"><select class="fi" id="ex-sel-'+idx+'" style="width:170px;padding:5px 8px">'+
+      '<option value="">— Ignorar —</option>'+OPTS_COSTO+OPTS_ING+'</select>'+
+      '<button class="btn btn-green btn-sm" onclick="guardarTxExtracto('+idx+')">✓</button></div></td></tr>';
+  }).join('');
+  // Preseleccionar sugerencias
+  txs.forEach((t,idx)=>{ if(t.sug){ const s=document.getElementById('ex-sel-'+idx); if(s) s.value=t.sug.tipo+':'+t.sug.cat; } });
+  card.style.display='block';
+}
+async function guardarTxExtracto(idx){
+  const t=(window._extractoTxs||[])[idx]; if(!t) return;
+  const sel=document.getElementById('ex-sel-'+idx); const v=sel?sel.value:'';
+  if(!v){ toast('Selecciona una clasificación','err'); return; }
+  const [tipo,cat]=v.split(':');
+  const fechaISO=_fechaExtractoISO(t.fecha);
+  if(!(window.DB)){ toast('DB no disponible','err'); return; }
+  let res;
+  if(tipo==='ingreso'){
+    res=await window.DB.saveIngreso({finca_id:FINCA_ID_FIN,tipo:cat,descripcion:t.desc,valor:t.valor,fecha:fechaISO,cliente:'Extracto bancario',fuente:'extracto'});
+  } else {
+    res=await window.DB.saveCosto({finca_id:FINCA_ID_FIN,categoria:cat,descripcion:t.desc,valor:t.valor,fecha:fechaISO,especie:'ovino',fuente:'extracto'});
+  }
+  if(res&&res.error){ toast('Error: '+res.error.message,'err'); return; }
+  if(sel){ sel.closest('tr').style.opacity='0.4'; sel.disabled=true; }
+  toast('Transacción clasificada como '+tipo);
+}
+function _fechaExtractoISO(f){
+  if(!f) return new Date().toISOString().slice(0,10);
+  // Soporta DD/MM/YYYY, YYYY-MM-DD, DD-MM-YYYY
+  if(/^\d{4}-\d{2}-\d{2}/.test(f)) return f.slice(0,10);
+  const p=f.split(/[\/\-]/);
+  if(p.length>=3){ if(p[0].length===4) return p[0]+'-'+p[1].padStart(2,'0')+'-'+p[2].padStart(2,'0'); return p[2].slice(0,4).padStart(4,'20'+'00')+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0'); }
+  return new Date().toISOString().slice(0,10);
+}
+
 // ═══ INIT ═══
 document.getElementById('g-fecha').value=new Date().toISOString().slice(0,10);
 document.getElementById('i-fecha').value=new Date().toISOString().slice(0,10);
 document.getElementById('costos-mes').value=new Date().toISOString().slice(0,7);
+(function(){ const n=new Date(); const m=document.getElementById('pa-mes'), a=document.getElementById('pa-anio'); if(m) m.value=n.getMonth()+1; if(a) a.value=n.getFullYear(); })();
+document.addEventListener('appstate:ready', function(){ renderAparceria(); });
 </script>
 
 
