@@ -253,6 +253,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       <div class="kpi-label">Mortalidad MTD</div>
       <div class="kpi-val" id="kpi-mort">0</div>
       <div class="kpi-delta neu" id="kpi-mort-delta">Tasa —%</div>
+      <div class="kpi-delta neu" id="kpi-mort-causa" style="display:none"></div>
     </div>
     <div class="kpi-card c-green">
       <div class="kpi-label">Trat. activos</div>
@@ -801,6 +802,27 @@ document.addEventListener('appstate:ready', function(e) {
       const elGdpD = document.getElementById('kpi-gdp-delta');
       if (elGdpD) elGdpD.textContent = 'Promedio ' + n + ' animales en crecimiento';
     }
+  }
+
+  // ── MORTALIDAD MTD — conteo del mes + causa principal (datos_clinicos) ──
+  if (window.DB && typeof window.DB.getBajas === 'function') {
+    window.DB.getBajas('a1b2c3d4-0000-0000-0000-000000000001').then(function(res){
+      const bajas = (res && res.data) || [];
+      const hoy = new Date();
+      const enMes = function(f){ if(!f) return false; const d=new Date(f); return d.getMonth()===hoy.getMonth() && d.getFullYear()===hoy.getFullYear(); };
+      const muertesMes = bajas.filter(function(b){ return b.tipo==='muerte' && enMes((b.datos_clinicos&&b.datos_clinicos.fecha_real_muerte)||b.fecha); });
+      const elMort = document.getElementById('kpi-mort');
+      if (elMort) elMort.textContent = muertesMes.length;
+      // Causa principal del mes
+      const counts = {};
+      muertesMes.forEach(function(b){ const c=(b.datos_clinicos&&b.datos_clinicos.causa_muerte); if(c) counts[c]=(counts[c]||0)+1; });
+      const top = Object.entries(counts).sort(function(a,b){ return b[1]-a[1]; })[0];
+      const elCausa = document.getElementById('kpi-mort-causa');
+      if (elCausa) {
+        if (top) { elCausa.textContent = 'Principal: ' + top[0]; elCausa.style.display = ''; }
+        else { elCausa.style.display = 'none'; }
+      }
+    }).catch(function(err){ console.warn('[Dashboard] mortalidad:', err && err.message); });
   }
 
   console.log('[Dashboard] Actualizado desde', e.detail.source,

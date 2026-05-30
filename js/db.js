@@ -101,6 +101,9 @@ window.DB = {
   async saveTratamiento(t) {
     return await window._sb.from('tratamientos').insert(t).select().single();
   },
+  async updateTratamiento(id, patch) {
+    return await window._sb.from('tratamientos').update(patch).eq('id', id).select().single();
+  },
 
   // ── PESAJES ──────────────────────────────────────────
   async getPesajes(finca_id, animal_id = null) {
@@ -184,7 +187,7 @@ window.DB = {
   // ── BAJAS & VENTAS ───────────────────────────────────
   async getBajas(finca_id, limit = 200) {
     return await window._sb.from('bajas')
-      .select('*, animales(codigo, nombre, raza, especie)')
+      .select('*, animales(codigo, nombre, raza, especie, fecha_nacimiento, lote_id)')
       .eq('finca_id', finca_id)
       .order('fecha', { ascending: false })
       .limit(limit);
