@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="dark">
+<html lang="es" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -13,7 +13,7 @@
 <title>LAAAMBAPP · Ajustes</title>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
-(function(){ const t = localStorage.getItem('laaamb-theme') || 'dark'; document.documentElement.setAttribute('data-theme', t); })();
+(function(){ const t = (function(){var _t=localStorage.getItem('laaamb-theme');return _t==='dark'||_t==='light'?_t:'light';})(); document.documentElement.setAttribute('data-theme', t); })();
 </script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -31,9 +31,9 @@
   --text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;
   --r:8px;--r2:14px;--sidebar:236px;--anim:.16s cubic-bezier(.4,0,.2,1);
 }
-html[data-theme="light"]{--teal:#007a80;--teal-d:#005f64;--teal-bg:rgba(0,122,128,.10);--teal-bg2:rgba(0,122,128,.05);--wine:#7a2d4e;--wine-bg:rgba(122,45,78,.10);--orange:#c97010;--orange-bg:rgba(201,112,16,.10);--bg:#f0f4f5;--bg2:#ffffff;--bg3:#f7fafa;--bg4:#e8f0f1;--surface:#e8f0f1;--surface2:#d4e4e6;--border:rgba(0,100,110,.12);--border2:rgba(0,100,110,.22);--border3:rgba(0,100,110,.40);--green:#1a9455;--green-bg:rgba(26,148,85,.10);--red:#c0392b;--red-bg:rgba(192,57,43,.09);--amber:#b87400;--amber-bg:rgba(184,116,0,.10);--sky:#1a7fa0;--sky-bg:rgba(26,127,160,.10);--text:#0d2b2e;--text2:#2d5a60;--text3:#5a8a90;--text4:#a0c4c8;}
-html[data-theme="sepia"]{--teal:#5a7a3a;--teal-d:#3d5a28;--teal-bg:rgba(90,122,58,.12);--teal-bg2:rgba(90,122,58,.06);--wine:#8b4513;--wine-bg:rgba(139,69,19,.12);--orange:#b8601a;--orange-bg:rgba(184,96,26,.12);--bg:#1c1608;--bg2:#231c0a;--bg3:#2a220c;--bg4:#332a10;--surface:#2e2510;--surface2:#3d3218;--border:rgba(180,140,60,.12);--border2:rgba(180,140,60,.22);--border3:rgba(180,140,60,.38);--green:#6a9a3a;--green-bg:rgba(106,154,58,.12);--red:#c04a2a;--red-bg:rgba(192,74,42,.10);--amber:#c8900a;--amber-bg:rgba(200,144,10,.12);--sky:#4a7a6a;--sky-bg:rgba(74,122,106,.12);--text:#e8d8a0;--text2:#b8a060;--text3:#7a6830;--text4:#4a4018;}
-html[data-theme="contrast"]{--teal:#00ffff;--teal-d:#00cccc;--teal-bg:rgba(0,255,255,.15);--teal-bg2:rgba(0,255,255,.08);--wine:#ff69b4;--wine-bg:rgba(255,105,180,.15);--orange:#ffa500;--orange-bg:rgba(255,165,0,.15);--bg:#000000;--bg2:#0a0a0a;--bg3:#111111;--bg4:#1a1a1a;--surface:#1a1a1a;--surface2:#222222;--border:rgba(0,255,255,.20);--border2:rgba(0,255,255,.40);--border3:rgba(0,255,255,.60);--green:#00ff7f;--green-bg:rgba(0,255,127,.15);--red:#ff4444;--red-bg:rgba(255,68,68,.15);--amber:#ffdd00;--amber-bg:rgba(255,221,0,.15);--sky:#00bfff;--sky-bg:rgba(0,191,255,.15);--text:#ffffff;--text2:#e0e0e0;--text3:#aaaaaa;--text4:#555555;}
+html[data-theme="light"]{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.05);--wine:#9C3F66;--wine-bg:rgba(156,63,102,.10);--orange:#F18F22;--orange-bg:rgba(241,143,34,.10);--bg:#F8F9FA;--bg2:#FFFFFF;--bg3:#F3F4F6;--bg4:#FAFAFA;--surface:#FFFFFF;--surface2:#F3F4F6;--border:#E5E7EB;--border2:#D1D5DB;--border3:#9CA3AF;--green:#10B981;--green-bg:rgba(16,185,129,.10);--red:#EF4444;--red-bg:rgba(239,68,68,.10);--amber:#F59E0B;--amber-bg:rgba(245,158,11,.10);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.10);--text:#1A1A2E;--text2:#6B7280;--text3:#9CA3AF;--text4:#C4C9D4}
+html[data-theme="dark"]{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.12);--teal-bg2:rgba(0,175,182,.06);--wine:#9C3F66;--wine-bg:rgba(156,63,102,.15);--orange:#F18F22;--orange-bg:rgba(241,143,34,.15);--bg:#0F172A;--bg2:#1E293B;--bg3:#1E293B;--bg4:#162032;--surface:#1E293B;--surface2:#162032;--border:#334155;--border2:#3E4C61;--border3:#475569;--green:#10B981;--green-bg:rgba(16,185,129,.14);--red:#EF4444;--red-bg:rgba(239,68,68,.14);--amber:#F59E0B;--amber-bg:rgba(245,158,11,.14);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.14);--text:#F1F5F9;--text2:#94A3B8;--text3:#64748B;--text4:#475569}
+
 *,*::before,*::after{transition:background-color .25s,border-color .25s,color .15s}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
 ::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
@@ -43,6 +43,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0;transition:transform .3s ease}
 .sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:.5}
 .sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:4px}.sb-logo-img{height:40px;width:40px;border-radius:9px;flex-shrink:0}
 .sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
 .sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
 .nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
@@ -109,7 +110,7 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .b-green{background:var(--green-bg);color:var(--green)}.b-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}.b-red{background:var(--red-bg,rgba(224,82,82,.1));color:var(--red,#e05252)}
 
 /* THEME SELECTOR */
-.theme-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:4px}
+.theme-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:4px}
 .theme-card{border-radius:var(--r2);border:2px solid var(--border);cursor:pointer;overflow:hidden;transition:all .2s;position:relative}
 .theme-card:hover{border-color:var(--border3);transform:translateY(-2px)}
 .theme-card.active{border-color:var(--teal)}
@@ -201,8 +202,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <div class="sb-head">
-    <div class="sb-logo-text">LAAAMB</div>
-    <div class="sb-logo-sub">Corderos · App</div>
+    <a href="index.html" class="sb-logo"><img src="icons/icon.svg" alt="LAAAMB Corderos" class="sb-logo-img"><div><div class="sb-logo-text">LAAAMB</div><div class="sb-logo-sub">Corderos · App</div></div></a>
     <div class="farm-selector" id="farm-selector">
       <button class="farm-btn" id="farm-btn" onclick="FarmSelector.toggle()" aria-haspopup="true">
         <span class="farm-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg></span>
@@ -265,70 +265,36 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
       <div class="card-h"><div class="card-title">Apariencia visual</div><div class="card-sub">Se aplica a todas las páginas de LAAAMBAPP</div></div>
       <div class="card-body">
         <div class="theme-grid" id="theme-grid">
+          <div class="theme-card" data-theme="light" onclick="setTheme('light')">
+            <div class="theme-preview" style="background:#F8F9FA">
+              <div class="theme-preview-sidebar" style="background:#FFFFFF;border:1px solid #E5E7EB"></div>
+              <div class="theme-preview-main" style="background:#FFFFFF">
+                <div class="theme-preview-bar" style="background:#00AFB6;width:60%"></div>
+                <div class="theme-preview-bar" style="background:rgba(0,175,182,.25);width:40%"></div>
+                <div style="display:flex;gap:2px;flex:1">
+                  <div style="flex:1;border-radius:3px;background:#F3F4F6"></div>
+                  <div style="flex:1;border-radius:3px;background:#F3F4F6"></div>
+                </div>
+              </div>
+            </div>
+            <div class="theme-label" style="background:#F8F9FA;border-top:1px solid #E5E7EB">
+              <div class="theme-label-name" style="color:#1A1A2E">Claro</div>
+              <div class="theme-label-desc" style="color:#6B7280">Por defecto · Modo día</div>
+            </div>
+          </div>
           <div class="theme-card" data-theme="dark" onclick="setTheme('dark')">
-            <div class="theme-preview" style="background:#0c1517">
-              <div class="theme-preview-sidebar" style="background:#080f10"></div>
-              <div class="theme-preview-main" style="background:#101d1f">
+            <div class="theme-preview" style="background:#1E293B">
+              <div class="theme-preview-sidebar" style="background:#1E293B;border:1px solid #334155"></div>
+              <div class="theme-preview-main" style="background:#0F172A">
                 <div class="theme-preview-bar" style="background:#00AFB6;width:60%"></div>
                 <div class="theme-preview-bar" style="background:rgba(0,175,182,.3);width:40%"></div>
                 <div style="display:flex;gap:2px;flex:1">
-                  <div style="flex:1;border-radius:3px;background:#172628"></div>
-                  <div style="flex:1;border-radius:3px;background:#172628"></div>
+                  <div style="flex:1;border-radius:3px;background:#1E293B"></div>
+                  <div style="flex:1;border-radius:3px;background:#1E293B"></div>
                 </div>
               </div>
             </div>
-            <div class="theme-label"><div class="theme-label-name">Oscuro</div><div class="theme-label-desc">Por defecto · Modo noche</div></div>
-          </div>
-          <div class="theme-card" data-theme="light" onclick="setTheme('light')">
-            <div class="theme-preview" style="background:#f0f4f5">
-              <div class="theme-preview-sidebar" style="background:#e8f0f1"></div>
-              <div class="theme-preview-main" style="background:#ffffff">
-                <div class="theme-preview-bar" style="background:#007a80;width:60%"></div>
-                <div class="theme-preview-bar" style="background:rgba(0,122,128,.2);width:40%"></div>
-                <div style="display:flex;gap:2px;flex:1">
-                  <div style="flex:1;border-radius:3px;background:#e8f0f1"></div>
-                  <div style="flex:1;border-radius:3px;background:#e8f0f1"></div>
-                </div>
-              </div>
-            </div>
-            <div class="theme-label" style="background:#f0f4f5;border-top:1px solid rgba(0,100,110,.12)">
-              <div class="theme-label-name" style="color:#0d2b2e">Claro</div>
-              <div class="theme-label-desc" style="color:#5a8a90">Modo día · Fondo blanco</div>
-            </div>
-          </div>
-          <div class="theme-card" data-theme="sepia" onclick="setTheme('sepia')">
-            <div class="theme-preview" style="background:#231c0a">
-              <div class="theme-preview-sidebar" style="background:#1c1608"></div>
-              <div class="theme-preview-main" style="background:#2a220c">
-                <div class="theme-preview-bar" style="background:#5a7a3a;width:60%"></div>
-                <div class="theme-preview-bar" style="background:rgba(90,122,58,.3);width:40%"></div>
-                <div style="display:flex;gap:2px;flex:1">
-                  <div style="flex:1;border-radius:3px;background:#2e2510"></div>
-                  <div style="flex:1;border-radius:3px;background:#2e2510"></div>
-                </div>
-              </div>
-            </div>
-            <div class="theme-label" style="background:#231c0a;border-top:1px solid rgba(180,140,60,.15)">
-              <div class="theme-label-name" style="color:#e8d8a0">Sepia Campestre</div>
-              <div class="theme-label-desc" style="color:#7a6830">Tonos tierra · Ganadero</div>
-            </div>
-          </div>
-          <div class="theme-card" data-theme="contrast" onclick="setTheme('contrast')">
-            <div class="theme-preview" style="background:#0a0a0a">
-              <div class="theme-preview-sidebar" style="background:#000"></div>
-              <div class="theme-preview-main" style="background:#111">
-                <div class="theme-preview-bar" style="background:#00ffff;width:60%"></div>
-                <div class="theme-preview-bar" style="background:rgba(0,255,255,.2);width:40%"></div>
-                <div style="display:flex;gap:2px;flex:1">
-                  <div style="flex:1;border-radius:3px;background:#1a1a1a"></div>
-                  <div style="flex:1;border-radius:3px;background:#1a1a1a"></div>
-                </div>
-              </div>
-            </div>
-            <div class="theme-label" style="background:#0a0a0a;border-top:1px solid rgba(0,255,255,.15)">
-              <div class="theme-label-name" style="color:#fff">Alto Contraste</div>
-              <div class="theme-label-desc" style="color:#aaa">Máxima visibilidad</div>
-            </div>
+            <div class="theme-label"><div class="theme-label-name">Oscuro</div><div class="theme-label-desc">Modo noche</div></div>
           </div>
         </div>
         <div style="font-size:12px;color:var(--text3);margin-top:8px">El tema se guarda automáticamente y se aplica en todas las páginas al abrir LAAAMBAPP.</div>
@@ -457,6 +423,19 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
       </div>
     </div>
 
+    <div class="section-label" id="seguridad-datos">🛡 Seguridad de datos</div>
+    <div class="card">
+      <div class="card-h"><div class="card-title">Backup completo (JSON)</div><div class="card-sub">Copia íntegra de todas las tablas para resguardo externo</div></div>
+      <div class="card-body">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+          <button class="btn btn-primary btn-sm" id="btn-backup-json" onclick="exportarBackupJSON()">↓ Exportar backup completo (JSON)</button>
+        </div>
+        <div style="background:var(--teal-bg);border:1px solid var(--border2);border-radius:var(--r);padding:12px;font-size:12px;color:var(--text2)">
+          📅 Descarga semanal recomendada. Guárdalo en Google Drive.
+        </div>
+      </div>
+    </div>
+
     <div class="section-label" id="siigo">🔗 Integración Siigo</div>
     <div class="card">
       <div class="card-h">
@@ -513,7 +492,7 @@ function setEl(id, v) { var e = document.getElementById(id); if (e) e.textConten
 function setElHTML(id, v) { var e = document.getElementById(id); if (e) e.innerHTML = v; }
 
 // ── TEMA ────────────────────────────────────────────────────────────────────
-const TEMAS = {dark:'Oscuro',light:'Claro',sepia:'Sepia Campestre',contrast:'Alto Contraste'};
+const TEMAS = {light:'Claro',dark:'Oscuro'};
 function setTheme(t){
   document.documentElement.setAttribute('data-theme', t);
   localStorage.setItem('laaamb-theme', t);
@@ -523,7 +502,8 @@ function setTheme(t){
   toast('Tema aplicado: '+TEMAS[t]);
 }
 function initTheme(){
-  const t = localStorage.getItem('laaamb-theme') || 'dark';
+  let t = (function(){var _t=localStorage.getItem('laaamb-theme');return _t==='dark'||_t==='light'?_t:'light';})();
+  if(!TEMAS[t]){ t='light'; localStorage.setItem('laaamb-theme','light'); }
   document.documentElement.setAttribute('data-theme', t);
   document.querySelectorAll('.theme-card').forEach(function(c){
     c.classList.toggle('active', c.dataset.theme===t);
@@ -821,6 +801,41 @@ function importarBase(input){
     toast('Base importada correctamente');
   }
   input.value = '';
+}
+
+// ── BACKUP COMPLETO (JSON) desde Supabase ────────────────────────────────────
+async function exportarBackupJSON(){
+  if(typeof window._sb === 'undefined' || !window._sb){ toast('Supabase no disponible','err'); return; }
+  const btn = document.getElementById('btn-backup-json');
+  const fincaId = (window.AppState && window.AppState._finca_id) || 'a1b2c3d4-0000-0000-0000-000000000001';
+  const tablas = ['animales','eventos_reproductivos','pesajes','tratamientos','movilizaciones','lotes','fincas'];
+  if(btn){ btn.disabled = true; btn.textContent = 'Generando backup…'; }
+  try{
+    const backup = { generado_en: new Date().toISOString(), finca_id: fincaId, tablas: {} };
+    for(const t of tablas){
+      let res;
+      if(t === 'fincas'){
+        res = await window._sb.from(t).select('*');
+      }else{
+        res = await window._sb.from(t).select('*').eq('finca_id', fincaId);
+        if(res.error){ res = await window._sb.from(t).select('*'); } // tabla sin finca_id → traer todo
+      }
+      if(res.error) throw new Error(t + ': ' + res.error.message);
+      backup.tablas[t] = res.data || [];
+    }
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'backup_laaamb_' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    toast('Backup JSON descargado');
+  }catch(e){
+    toast('Error en backup: ' + e.message, 'err');
+  }finally{
+    if(btn){ btn.disabled = false; btn.textContent = '↓ Exportar backup completo (JSON)'; }
+  }
 }
 
 // ── TOAST ────────────────────────────────────────────────────────────────────

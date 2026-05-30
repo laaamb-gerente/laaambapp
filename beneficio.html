@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-theme="dark">
+<html lang="es" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="LAAAMB">
 <link rel="apple-touch-icon" href="icons/icon.svg">
 <title>LAAAMBAPP · Beneficio &amp; QR</title>
-<script>(function(){var t=localStorage.getItem('laaamb-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<script>(function(){var t=(function(){var _t=localStorage.getItem('laaamb-theme');return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute('data-theme',t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -38,13 +38,15 @@
   --amber:#e8a030;--amber-bg:rgba(232,160,48,.10);--sky:#38b0d8;--sky-bg:rgba(56,176,216,.10);
   --text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;
   --r:8px;--r2:14px;--sidebar:236px;--anim:.16s cubic-bezier(.4,0,.2,1)}
-html[data-theme="light"]{--teal:#007a80;--teal-d:#005f64;--teal-bg:rgba(0,122,128,.10);--teal-bg2:rgba(0,122,128,.05);--bg:#f0f4f5;--bg2:#ffffff;--bg3:#f7fafa;--bg4:#e8f0f1;--surface:#e8f0f1;--surface2:#d4e4e6;--border:rgba(0,100,110,.12);--border2:rgba(0,100,110,.22);--border3:rgba(0,100,110,.40);--green:#1a9455;--green-bg:rgba(26,148,85,.10);--red:#c0392b;--red-bg:rgba(192,57,43,.09);--amber:#b87400;--amber-bg:rgba(184,116,0,.10);--text:#0d2b2e;--text2:#2d5a60;--text3:#5a8a90;--text4:#a0c4c8}
+html[data-theme="light"]{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.05);--wine:#9C3F66;--wine-bg:rgba(156,63,102,.10);--orange:#F18F22;--orange-bg:rgba(241,143,34,.10);--bg:#F8F9FA;--bg2:#FFFFFF;--bg3:#F3F4F6;--bg4:#FAFAFA;--surface:#FFFFFF;--surface2:#F3F4F6;--border:#E5E7EB;--border2:#D1D5DB;--border3:#9CA3AF;--green:#10B981;--green-bg:rgba(16,185,129,.10);--red:#EF4444;--red-bg:rgba(239,68,68,.10);--amber:#F59E0B;--amber-bg:rgba(245,158,11,.10);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.10);--text:#1A1A2E;--text2:#6B7280;--text3:#9CA3AF;--text4:#C4C9D4}
+html[data-theme="dark"]{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.12);--teal-bg2:rgba(0,175,182,.06);--wine:#9C3F66;--wine-bg:rgba(156,63,102,.15);--orange:#F18F22;--orange-bg:rgba(241,143,34,.15);--bg:#0F172A;--bg2:#1E293B;--bg3:#1E293B;--bg4:#162032;--surface:#1E293B;--surface2:#162032;--border:#334155;--border2:#3E4C61;--border3:#475569;--green:#10B981;--green-bg:rgba(16,185,129,.14);--red:#EF4444;--red-bg:rgba(239,68,68,.14);--amber:#F59E0B;--amber-bg:rgba(245,158,11,.14);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.14);--text:#F1F5F9;--text2:#94A3B8;--text3:#64748B;--text4:#475569}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
 ::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
 .app{display:flex;height:100vh;width:100vw}
 .sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0}
 .sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:.5}
 .sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:4px}.sb-logo-img{height:40px;width:40px;border-radius:9px;flex-shrink:0}
 .sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
 .sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
 .nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
@@ -161,8 +163,7 @@ tr:last-child td{border-bottom:none}
 
 <aside class="sidebar" id="sidebar">
   <div class="sb-head">
-    <div class="sb-logo-text">LAAAMB</div>
-    <div class="sb-logo-sub">Corderos · App</div>
+    <a href="index.html" class="sb-logo"><img src="icons/icon.svg" alt="LAAAMB Corderos" class="sb-logo-img"><div><div class="sb-logo-text">LAAAMB</div><div class="sb-logo-sub">Corderos · App</div></div></a>
   </div>
   <nav class="nav-scroll">
     <div class="nav-group">Principal</div>
