@@ -127,7 +127,7 @@ export default async function handler(req, res) {
     if (!resp.ok) throw new Error(user.message || user.msg || 'Error creando usuario');
 
     // 5b. Crear el perfil asociado en la tabla perfiles
-    await fetch(`${supabaseUrl}/rest/v1/perfiles`, {
+    const perfilResp = await fetch(`${supabaseUrl}/rest/v1/perfiles`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -137,6 +137,15 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({ id: user.id, nombre, email, rol, activo: true })
     });
+    if (!perfilResp.ok) {
+      // revertir el auth user huérfano para no dejar basura
+      await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
+        method: 'DELETE',
+        headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` }
+      });
+      const err = await perfilResp.json().catch(() => ({}));
+      throw new Error(err.message || 'No se pudo crear el perfil; usuario revertido');
+    }
 
     // 5c. Confirmar email (asegura que pueda iniciar sesión de inmediato)
     await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
