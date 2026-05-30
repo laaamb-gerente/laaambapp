@@ -1,0 +1,19 @@
+{
+  "name": "LAAAMBAPP",
+  "short_name": "LAAAMB",
+  "description": "Gestión ganadera ovina · La Marinilla",
+  "start_url": "/laaambapp/index.html",
+  "scope": "/laaambapp/",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#00AFB6",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

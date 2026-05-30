@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/laaambapp/manifest.json">
+<meta name="theme-color" content="#00AFB6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LAAAMB">
+<link rel="apple-touch-icon" href="/laaambapp/icons/icon.svg">
+<title>LAAAMBAPP · Reportes</title>
+<script>(function(){var t=localStorage.getItem('laaamb-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script>
+  window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+</script>
+<script src="js/auth.js"></script>
+<script src="js/offline-db.js"></script>
+<script src="js/db.js"></script>
+<script src="js/app-state.js"></script>
+<script src="js/clear-demo-data.js"></script>
+<script src="AppData.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
+  --wine:#9C3F66;--wine-bg:rgba(156,63,102,.12);
+  --orange:#F18F22;--orange-bg:rgba(241,143,34,.12);
+  --bg:#080f10;--bg2:#0c1517;--bg3:#101d1f;--bg4:#152224;
+  --surface:#172628;--surface2:#1d3235;
+  --border:rgba(0,175,182,.10);--border2:rgba(0,175,182,.20);--border3:rgba(0,175,182,.35);
+  --green:#2ec77a;--green-bg:rgba(46,199,122,.10);
+  --red:#e05252;--red-bg:rgba(224,82,82,.10);
+  --amber:#e8a030;--amber-bg:rgba(232,160,48,.10);
+  --sky:#38b0d8;--sky-bg:rgba(56,176,216,.10);
+  --text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;
+  --r:8px;--r2:14px;--sidebar:236px;--anim:.16s cubic-bezier(.4,0,.2,1);
+}
+html[data-theme="light"]{--teal:#007a80;--teal-d:#005f64;--teal-bg:rgba(0,122,128,.10);--teal-bg2:rgba(0,122,128,.05);--wine:#7a2d4e;--wine-bg:rgba(122,45,78,.10);--orange:#c97010;--orange-bg:rgba(201,112,16,.10);--bg:#f0f4f5;--bg2:#ffffff;--bg3:#f7fafa;--bg4:#e8f0f1;--surface:#e8f0f1;--surface2:#d4e4e6;--border:rgba(0,100,110,.12);--border2:rgba(0,100,110,.22);--border3:rgba(0,100,110,.40);--green:#1a9455;--green-bg:rgba(26,148,85,.10);--red:#c0392b;--red-bg:rgba(192,57,43,.09);--amber:#b87400;--amber-bg:rgba(184,116,0,.10);--sky:#1a7fa0;--sky-bg:rgba(26,127,160,.10);--text:#0d2b2e;--text2:#2d5a60;--text3:#5a8a90;--text4:#a0c4c8;}
+html[data-theme="sepia"]{--teal:#5a7a3a;--teal-d:#3d5a28;--teal-bg:rgba(90,122,58,.12);--teal-bg2:rgba(90,122,58,.06);--wine:#8b4513;--wine-bg:rgba(139,69,19,.12);--orange:#b8601a;--orange-bg:rgba(184,96,26,.12);--bg:#1c1608;--bg2:#231c0a;--bg3:#2a220c;--bg4:#332a10;--surface:#2e2510;--surface2:#3d3218;--border:rgba(180,140,60,.12);--border2:rgba(180,140,60,.22);--border3:rgba(180,140,60,.38);--green:#6a9a3a;--green-bg:rgba(106,154,58,.12);--red:#c04a2a;--red-bg:rgba(192,74,42,.10);--amber:#c8900a;--amber-bg:rgba(200,144,10,.12);--sky:#4a7a6a;--sky-bg:rgba(74,122,106,.12);--text:#e8d8a0;--text2:#b8a060;--text3:#7a6830;--text4:#4a4018;}
+html[data-theme="contrast"]{--teal:#00ffff;--teal-d:#00cccc;--teal-bg:rgba(0,255,255,.15);--teal-bg2:rgba(0,255,255,.08);--wine:#ff69b4;--wine-bg:rgba(255,105,180,.15);--orange:#ffa500;--orange-bg:rgba(255,165,0,.15);--bg:#000000;--bg2:#0a0a0a;--bg3:#111111;--bg4:#1a1a1a;--surface:#1a1a1a;--surface2:#222222;--border:rgba(0,255,255,.20);--border2:rgba(0,255,255,.40);--border3:rgba(0,255,255,.60);--green:#00ff7f;--green-bg:rgba(0,255,127,.15);--red:#ff4444;--red-bg:rgba(255,68,68,.15);--amber:#ffdd00;--amber-bg:rgba(255,221,0,.15);--sky:#00bfff;--sky-bg:rgba(0,191,255,.15);--text:#ffffff;--text2:#e0e0e0;--text3:#aaaaaa;--text4:#555555;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+.app{display:flex;height:100vh;width:100vw}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0;transition:transform .3s ease}
+.sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:.5}
+.sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
+.sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.farm-pill{margin-top:12px;display:flex;align-items:center;gap:8px;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px}
+.farm-name{font-size:12px;font-weight:600;color:var(--text)}.farm-sub{font-size:10px;color:var(--text3);margin-top:1px}
+.nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
+.nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}
+.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;text-decoration:none;transition:all var(--anim);position:relative}
+.nav-link:hover{background:var(--surface);color:var(--text)}
+.nav-link.active{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
+.nav-link.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--teal);border-radius:2px}
+.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}
+.nav-link.active .nav-ico,.nav-link:hover .nav-ico{opacity:1}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:600;background:var(--surface2);color:var(--teal);padding:1px 7px;border-radius:10px;border:1px solid var(--border2)}
+.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border)}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
+.user-name{font-size:12px;font-weight:600;color:var(--text)}.user-role{font-size:10px;color:var(--text3)}
+
+/* HAMBURGER */
+#lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);width:46px;height:46px;align-items:center;justify-content:center;cursor:pointer;color:var(--text)}
+#lham svg{pointer-events:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;fill:none;width:20px;height:20px}
+#lov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9990;backdrop-filter:blur(2px)}
+#lov.on{display:block}
+@media(max-width:768px){
+  #lham{display:flex}
+  #sidebar{position:fixed!important;top:0!important;left:0!important;height:100vh!important;transform:translateX(-100%)!important;z-index:9995!important;transition:transform .28s ease!important;display:flex!important;overflow-y:auto!important;overflow-x:hidden!important;-webkit-overflow-scrolling:touch}
+  #sidebar.on{transform:translateX(0)!important}
+  .sb-foot{position:sticky;bottom:0;background:var(--bg2)}
+  .main{width:100vw!important}
+}
+
+/* MAIN */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.page-head{padding:18px 28px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:16px;background:var(--bg2)}
+.ph-eyebrow{font-size:10px;font-weight:600;color:var(--teal-d);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.ph-title{font-family:'Sigmar',cursive;font-size:24px;color:var(--text);letter-spacing:.3px}
+.ph-sub{font-size:12px;color:var(--text3);margin-top:2px}
+.content{flex:1;overflow-y:auto;padding:24px 28px 48px}
+
+/* COMPONENTS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;text-decoration:none;transition:all var(--anim);white-space:nowrap}
+.btn-primary{background:var(--teal);color:#080f10}.btn-primary:hover{background:#1cc8d0;transform:translateY(-1px)}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}.btn-ghost:hover{background:var(--surface);color:var(--teal);border-color:var(--border3)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);display:flex;align-items:center;gap:8px;margin:24px 0 14px}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.fl{display:block;font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.fi{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;color:var(--text);font-size:13px;font-family:'Changa',sans-serif;outline:none;transition:border-color var(--anim)}
+.fi:focus{border-color:var(--teal)}.fi::placeholder{color:var(--text3)}
+
+/* REPORT CARDS GRID */
+.rep-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.rep-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:20px;display:flex;flex-direction:column;gap:12px;transition:border-color var(--anim),transform var(--anim)}
+.rep-card:hover{border-color:var(--border3);transform:translateY(-2px)}
+.rep-ico{width:42px;height:42px;border-radius:var(--r);background:var(--teal-bg);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;color:var(--teal)}
+.rep-ico svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.7;fill:none}
+.rep-name{font-size:15px;font-weight:700;color:var(--text)}
+.rep-desc{font-size:12px;color:var(--text3);flex:1;line-height:1.45}
+.rep-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ANIMAL SEARCH */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:16px}
+.card-h{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.card-title{font-size:13px;font-weight:700;color:var(--text)}.card-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.card-body{padding:20px}
+.search-row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.search-row .fg{flex:1;min-width:200px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{background:var(--bg3);color:var(--text3);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;padding:9px 12px;text-align:left;border-bottom:1px solid var(--border)}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody td{padding:9px 12px;color:var(--text);vertical-align:middle}
+.td-muted{color:var(--text3);font-size:12px}
+
+/* PREVIEW BOX */
+.preview-box{margin-top:16px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:16px;font-size:12px;color:var(--text2)}
+.preview-box h4{color:var(--text);font-size:13px;margin-bottom:8px}
+.kv{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border)}
+.kv span:first-child{color:var(--text3)}
+
+/* TOAST */
+.toasts{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px}
+.toast{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,0,0,.5);max-width:340px}
+.toast.err{border-left:3px solid var(--red)}.toast.ok{border-left:3px solid var(--teal)}
+
+/* ── PRINT REPORT AREA ──────────────────────────────────── */
+#print-area{display:none}
+.rep-doc{font-family:'Changa',sans-serif;color:#0d2b2e;background:#fff;max-width:920px;margin:0 auto;padding:32px}
+.rep-doc-head{display:flex;align-items:center;gap:16px;border-bottom:3px solid #00AFB6;padding-bottom:16px;margin-bottom:20px}
+.rep-doc-logo{width:54px;height:54px;border-radius:10px;background:#00AFB6;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Sigmar',cursive;font-size:22px;flex-shrink:0}
+.rep-doc-title{font-family:'Sigmar',cursive;font-size:22px;color:#00AFB6}
+.rep-doc-meta{font-size:12px;color:#5a8a90;margin-top:2px}
+.rep-doc h2{font-size:15px;color:#9C3F66;margin:22px 0 10px;border-left:4px solid #F18F22;padding-left:10px}
+.rep-doc table{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}
+.rep-doc th{background:#e8f0f1;color:#2d5a60;text-align:left;padding:7px 10px;border:1px solid #c8dde0;font-size:11px;text-transform:uppercase;letter-spacing:.4px}
+.rep-doc td{padding:7px 10px;border:1px solid #d8e8ea;color:#0d2b2e}
+.rep-doc .kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:12px 0}
+.rep-doc .kpi{border:1px solid #c8dde0;border-radius:8px;padding:12px;background:#f7fafa}
+.rep-doc .kpi-v{font-size:24px;font-weight:700;color:#00AFB6}
+.rep-doc .kpi-l{font-size:11px;color:#5a8a90;text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.rep-doc .pos{color:#1a9455;font-weight:700}.rep-doc .neg{color:#c0392b;font-weight:700}
+.rep-doc-foot{margin-top:28px;border-top:1px solid #c8dde0;padding-top:12px;font-size:10px;color:#9ab;text-align:center}
+
+@media print{
+  html,body{overflow:visible!important;height:auto!important;background:#fff!important}
+  .app,#lham,#lov,.toasts{display:none!important}
+  #print-area{display:block!important}
+  @page{margin:14mm}
+}
+
+@media(max-width:768px){
+  .page-head{padding:14px 16px 12px;padding-left:60px}
+  .content{padding:16px 16px 48px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<button id="lham" aria-label="Menú"><svg id="lico" viewBox="0 0 22 22"><line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/></svg></button>
+<div id="lov"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sb-head">
+    <div class="sb-logo-text">LAAAMB</div>
+    <div class="sb-logo-sub">Corderos · App</div>
+    <div class="farm-pill">
+      <span style="color:var(--teal)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg></span>
+      <div><div class="farm-name" id="sb-farm-name">La Marinilla</div><div class="farm-sub" id="sb-farm-sub">Antioquia</div></div>
+    </div>
+  </div>
+  <nav class="nav-scroll">
+    <div class="nav-group">Principal</div>
+    <a class="nav-link" href="index.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a class="nav-link" href="hoy.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="14" height="14" rx="2"/><line x1="3" y1="8" x2="17" y2="8"/><line x1="7" y1="2" x2="7" y2="5"/><line x1="13" y1="2" x2="13" y2="5"/></svg>Hoy</a>
+    <a class="nav-link" href="okr.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>OKRs &amp; Análisis</a>
+    <div class="nav-group">Ganadería</div>
+    <a class="nav-link" href="animales.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Animales<span class="nav-badge">0</span></a>
+    <a class="nav-link" href="reproduccion.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 3"/></svg>Reproducción</a>
+    <a class="nav-link" href="lotes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>Lotes &amp; Potreros</a>
+    <div class="nav-group">Salud</div>
+    <a class="nav-link" href="salud.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>Salud &amp; Tratamientos</a>
+    <a class="nav-link" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos</a>
+    <div class="nav-group">Gestión</div>
+    <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
+    <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
+    <a class="nav-link" href="beneficio.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>Beneficio &amp; QR</a>
+    <a class="nav-link" href="nomina.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="6" r="3"/><path d="M2 17c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M14 8h4M14 11h4M14 14h2"/></svg>Nómina &amp; Asistencia</a>
+    <a class="nav-link" href="ica.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-3 7 3v6l-7 3-7-3z"/><path d="M3 7l7 3 7-3M10 10v6"/></svg>ICA &amp; Movilización</a>
+    <a class="nav-link active" href="reportes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h7l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M12 3v4h4M7 11h6M7 14h6"/></svg>Reportes</a>
+    <div class="nav-group">Sistema</div>
+    <a class="nav-link" href="ajustes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2"/></svg>Ajustes</a>
+  </nav>
+  <div class="sb-foot">
+    <div class="user-row">
+      <div class="avatar">JG</div>
+      <div><div class="user-name">Juan García</div><div class="user-role">Administrador</div></div>
+    </div>
+    <button onclick="Auth.signOut()" style="width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;background:transparent;border:1px solid var(--border);border-radius:var(--r,8px);color:var(--text3);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M13 14l3-4-3-4M16 10H7M9 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h4"/></svg>Cerrar sesión</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="page-head">
+    <div>
+      <div class="ph-eyebrow">La Marinilla · Gestión</div>
+      <div class="ph-title">Reportes ejecutivos</div>
+      <div class="ph-sub">Genera y descarga informes en PDF (imprimir) o Excel</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="section-label">📄 Tipos de reporte</div>
+    <div class="rep-grid">
+
+      <div class="rep-card">
+        <div class="rep-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
+        <div class="rep-name">Reporte semanal de producción</div>
+        <div class="rep-desc">KPIs de los últimos 7 días: animales activos, muertes, pesajes, tratamientos, eventos reproductivos y alertas.</div>
+        <div class="rep-actions">
+          <button class="btn btn-primary btn-sm" onclick="generarSemanal()">Generar y descargar</button>
+        </div>
+      </div>
+
+      <div class="rep-card">
+        <div class="rep-ico"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 14l3-4 3 3 4-6"/></svg></div>
+        <div class="rep-name">Reporte mensual ejecutivo</div>
+        <div class="rep-desc">Finanzas (ingresos, costos, balance, margen), producción (GDP, mortalidad, partos) y comparativo vs mes anterior.</div>
+        <div class="rep-actions">
+          <button class="btn btn-primary btn-sm" onclick="generarMensual()">Generar y descargar</button>
+        </div>
+      </div>
+
+      <div class="rep-card">
+        <div class="rep-ico"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg></div>
+        <div class="rep-name">Inventario animal</div>
+        <div class="rep-desc">Lista completa de animales activos con peso, lote, edad, estado reproductivo y valor estimado.</div>
+        <div class="rep-actions">
+          <button class="btn btn-primary btn-sm" onclick="generarInventario()">Generar PDF</button>
+          <button class="btn btn-ghost btn-sm" onclick="excelInventario()">Excel</button>
+        </div>
+      </div>
+
+      <div class="rep-card">
+        <div class="rep-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+        <div class="rep-name">Trazabilidad de animal</div>
+        <div class="rep-desc">Historia completa de un animal: eventos, pesajes, tratamientos y linaje. Busca por código abajo.</div>
+        <div class="rep-actions">
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('animal-search-card').scrollIntoView({behavior:'smooth'})">Buscar animal ↓</button>
+        </div>
+      </div>
+
+      <div class="rep-card">
+        <div class="rep-ico"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <div class="rep-name">Reporte ICA / RSPP</div>
+        <div class="rep-desc">Formato ICA para Registro Sanitario de Predio Pecuario: predio, inventario por especie y sanidad.</div>
+        <div class="rep-actions">
+          <button class="btn btn-primary btn-sm" onclick="generarICA()">Generar y descargar</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- BÚSQUEDA DE ANIMAL (trazabilidad) -->
+    <div class="section-label">🔍 Reporte de trazabilidad por animal</div>
+    <div class="card" id="animal-search-card">
+      <div class="card-h">
+        <div><div class="card-title">Buscar animal por código</div><div class="card-sub">Previsualiza antes de generar el PDF de trazabilidad</div></div>
+      </div>
+      <div class="card-body">
+        <div class="search-row">
+          <div class="fg" style="flex:1"><label class="fl">Código del animal</label><input class="fi" id="animal-codigo" placeholder="Ej: OV-001" onkeydown="if(event.key==='Enter')buscarAnimal()"></div>
+          <button class="btn btn-primary btn-sm" onclick="buscarAnimal()">Buscar y previsualizar</button>
+        </div>
+        <div id="animal-preview"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<!-- ÁREA DE IMPRESIÓN (oculta en pantalla, visible al imprimir) -->
+<div id="print-area"></div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+// ── Utilidades ────────────────────────────────────────────────────────────────
+var FINCA_ID_R = 'a1b2c3d4-0000-0000-0000-000000000001';
+function esc(s){ var d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
+function fmtCOP(n){ return '$'+(Math.round(n||0)).toLocaleString('es-CO'); }
+function fmtFecha(d){ if(!d) return '—'; try{ return new Date(d).toLocaleDateString('es-CO'); }catch(e){ return '—'; } }
+function hoyISO(){ return new Date().toISOString().slice(0,10); }
+function diasAtras(n){ return new Date(Date.now()-n*86400000).toISOString().slice(0,10); }
+function toast(msg,type){ var c=document.getElementById('toasts'); var t=document.createElement('div'); t.className='toast '+(type||'ok'); t.innerHTML='<span style="color:var(--teal)">✓</span> '+esc(msg); c.appendChild(t); setTimeout(function(){t.remove();},3000); }
+
+function fincaInfo(){
+  var f = (window.AppState && window.AppState.finca) || {};
+  return {
+    nombre: f.nombre || 'La Marinilla',
+    municipio: f.municipio || 'La Marinilla',
+    departamento: f.departamento || 'Antioquia',
+    area_ha: f.area_ha || 50,
+    ica: f.ica || f.registro_ica || '—',
+    propietario: f.propietario || 'Juan Manuel Arbeláez'
+  };
+}
+
+// Edad en meses a partir de fecha de nacimiento
+function edadMeses(fnac){
+  if(!fnac) return null;
+  var ms = Date.now() - new Date(fnac).getTime();
+  return Math.max(0, Math.round(ms/2629800000));
+}
+
+// Construye el encabezado del documento de reporte
+function repHead(titulo, subtitulo){
+  var f = fincaInfo();
+  return '<div class="rep-doc-head">'
+    +'<div class="rep-doc-logo">LA</div>'
+    +'<div style="flex:1">'
+      +'<div class="rep-doc-title">'+esc(titulo)+'</div>'
+      +'<div class="rep-doc-meta">'+esc(f.nombre)+' · '+esc(f.municipio)+', '+esc(f.departamento)
+        +' · Generado: '+new Date().toLocaleString('es-CO')+'</div>'
+      +(subtitulo?'<div class="rep-doc-meta">'+esc(subtitulo)+'</div>':'')
+    +'</div></div>';
+}
+function repFoot(){
+  return '<div class="rep-doc-foot">LAAAMBAPP · Reporte generado automáticamente · '+fincaInfo().nombre+' · La Marinilla, Antioquia</div>';
+}
+
+// Imprime un documento HTML (lo coloca en #print-area y dispara print)
+function imprimirReporte(html, registrarSemanal){
+  document.getElementById('print-area').innerHTML = '<div class="rep-doc">'+html+'</div>';
+  if(registrarSemanal){
+    try{ localStorage.setItem('laaamb_ultimo_reporte', new Date().toISOString()); }catch(e){}
+    if(window.AppState && window.AppState._checkWeeklyReport) window.AppState._checkWeeklyReport();
+  }
+  setTimeout(function(){ window.print(); }, 60);
+}
+
+// ── DATA helpers ──────────────────────────────────────────────────────────────
+function animalesActivos(){
+  var arr = (window.AppState && window.AppState.animales) || [];
+  return arr.filter(function(a){ return a.estado === 'activo'; });
+}
+
+// ── 1. REPORTE SEMANAL ────────────────────────────────────────────────────────
+async function generarSemanal(){
+  toast('Generando reporte semanal…');
+  var desde = diasAtras(7);
+  var activos = animalesActivos();
+  var muertes=[], pesajes=[], tratamientos=[], eventosRep=[];
+  try{ var b = await window.DB.getBajas(FINCA_ID_R); muertes = (b.data||[]).filter(function(x){ return x.fecha>=desde && (x.motivo==='muerte'||x.tipo==='muerte'||/muerte|mortalidad/i.test(x.motivo||x.tipo||'')); }); }catch(e){}
+  try{ var p = await window.DB.getPesajes(FINCA_ID_R); pesajes = (p.data||[]).filter(function(x){ return (x.fecha||'')>=desde; }); }catch(e){}
+  try{ var t = await window.DB.getTratamientos(FINCA_ID_R); tratamientos = (t.data||[]).filter(function(x){ return (x.fecha||x.fecha_inicio||'')>=desde; }); }catch(e){}
+  try{ var er = await window.DB.getEventosReproductivos(FINCA_ID_R, 200); eventosRep = (er.data||[]).filter(function(x){ return (x.fecha||'')>=desde; }); }catch(e){}
+
+  var alertas = [];
+  if(muertes.length>0) alertas.push(muertes.length+' muerte(s) registradas esta semana');
+  if(pesajes.length===0) alertas.push('Sin pesajes registrados en los últimos 7 días');
+  var gestantes = (window.AppState && window.AppState.gestantes) || [];
+  if(gestantes.length>0) alertas.push(gestantes.length+' hembra(s) gestante(s) en seguimiento');
+
+  var html = repHead('Reporte semanal de producción', 'Período: '+fmtFecha(desde)+' a '+fmtFecha(hoyISO()));
+  html += '<div class="kpi-grid">'
+    +kpi(activos.length,'Animales activos')
+    +kpi(muertes.length,'Muertes (7 días)')
+    +kpi(pesajes.length,'Pesajes (7 días)')
+    +kpi(tratamientos.length,'Tratamientos (7 días)')
+    +kpi(eventosRep.length,'Eventos reproductivos')
+    +kpi(gestantes.length,'Gestantes')
+    +'</div>';
+  html += '<h2>Alertas</h2>';
+  if(alertas.length){ html += '<ul style="margin:8px 0 8px 20px;font-size:12px">'+alertas.map(function(a){return '<li>'+esc(a)+'</li>';}).join('')+'</ul>'; }
+  else { html += '<p style="font-size:12px;color:#5a8a90">Sin alertas. Operación normal.</p>'; }
+
+  if(pesajes.length){
+    html += '<h2>Pesajes de la semana</h2><table><thead><tr><th>Fecha</th><th>Animal</th><th>Peso (kg)</th></tr></thead><tbody>'
+      +pesajes.slice(0,40).map(function(x){ return '<tr><td>'+fmtFecha(x.fecha)+'</td><td>'+esc((x.animales&&x.animales.codigo)||x.animal_id||'—')+'</td><td>'+esc(x.peso||x.peso_kg||'—')+'</td></tr>'; }).join('')
+      +'</tbody></table>';
+  }
+  html += repFoot();
+  imprimirReporte(html, true);
+}
+function kpi(v,l){ return '<div class="kpi"><div class="kpi-v">'+esc(v)+'</div><div class="kpi-l">'+esc(l)+'</div></div>'; }
+
+// ── 2. REPORTE MENSUAL EJECUTIVO ──────────────────────────────────────────────
+function rangoMes(offset){
+  var h=new Date(); var d=new Date(h.getFullYear(), h.getMonth()+offset, 1);
+  var ini=new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
+  var fin=new Date(d.getFullYear(), d.getMonth()+1, 0).toISOString().slice(0,10);
+  return {ini:ini, fin:fin, label:d.toLocaleDateString('es-CO',{month:'long',year:'numeric'})};
+}
+function sumaEntre(arr, ini, fin){ return (arr||[]).filter(function(x){ return x.fecha>=ini && x.fecha<=fin; }).reduce(function(s,x){ return s+(x.valor||0); },0); }
+
+async function generarMensual(){
+  toast('Generando reporte mensual…');
+  var costos = (window.AppState && window.AppState.costos) || [];
+  var ingresos = (window.AppState && window.AppState.ingresos) || [];
+  var mAct = rangoMes(0), mAnt = rangoMes(-1);
+
+  var ingAct=sumaEntre(ingresos,mAct.ini,mAct.fin), costAct=sumaEntre(costos,mAct.ini,mAct.fin);
+  var ingAnt=sumaEntre(ingresos,mAnt.ini,mAnt.fin), costAnt=sumaEntre(costos,mAnt.ini,mAnt.fin);
+  var balAct=ingAct-costAct, balAnt=ingAnt-costAnt;
+  var margenAct = ingAct>0 ? (balAct/ingAct*100) : 0;
+
+  // Producción
+  var activos = animalesActivos();
+  var muertes=0, partos=0;
+  try{ var b=await window.DB.getBajas(FINCA_ID_R); muertes=(b.data||[]).filter(function(x){ return x.fecha>=mAct.ini && x.fecha<=mAct.fin && /muerte|mortalidad/i.test((x.motivo||x.tipo||'')); }).length; }catch(e){}
+  try{ var er=await window.DB.getEventosReproductivos(FINCA_ID_R,300); partos=(er.data||[]).filter(function(x){ return (x.fecha||'')>=mAct.ini && (x.fecha||'')<=mAct.fin && /parto/i.test((x.tipo||x.evento||'')); }).length; }catch(e){}
+  var mortalidad = activos.length>0 ? (muertes/(activos.length+muertes)*100) : 0;
+
+  // GDP promedio (de pesajes con dos lecturas — aproximación simple)
+  var gdpProm = '—';
+  try{
+    var p=await window.DB.getPesajes(FINCA_ID_R); var ps=(p.data||[]);
+    var porAnimal={};
+    ps.forEach(function(x){ var id=x.animal_id; (porAnimal[id]=porAnimal[id]||[]).push(x); });
+    var gdps=[];
+    Object.values(porAnimal).forEach(function(list){
+      list.sort(function(a,b){ return new Date(a.fecha)-new Date(b.fecha); });
+      if(list.length>=2){
+        var a=list[0], z=list[list.length-1];
+        var dd=(new Date(z.fecha)-new Date(a.fecha))/86400000;
+        var pa=a.peso||a.peso_kg, pz=z.peso||z.peso_kg;
+        if(dd>0 && pa && pz) gdps.push((pz-pa)*1000/dd);
+      }
+    });
+    if(gdps.length) gdpProm = Math.round(gdps.reduce(function(s,g){return s+g;},0)/gdps.length)+' g/día';
+  }catch(e){}
+
+  function delta(act,ant){ if(ant===0) return act>0?'<span class="pos">▲ nuevo</span>':'—'; var d=(act-ant)/Math.abs(ant)*100; return d>=0?'<span class="pos">▲ '+d.toFixed(0)+'%</span>':'<span class="neg">▼ '+Math.abs(d).toFixed(0)+'%</span>'; }
+
+  var html = repHead('Reporte mensual ejecutivo', 'Mes: '+mAct.label);
+  html += '<h2>Resumen financiero</h2>';
+  html += '<table><thead><tr><th>Concepto</th><th>'+esc(mAct.label)+'</th><th>'+esc(mAnt.label)+'</th><th>Variación</th></tr></thead><tbody>'
+    +'<tr><td>Ingresos</td><td>'+fmtCOP(ingAct)+'</td><td>'+fmtCOP(ingAnt)+'</td><td>'+delta(ingAct,ingAnt)+'</td></tr>'
+    +'<tr><td>Costos</td><td>'+fmtCOP(costAct)+'</td><td>'+fmtCOP(costAnt)+'</td><td>'+delta(costAct,costAnt)+'</td></tr>'
+    +'<tr><td><b>Balance</b></td><td class="'+(balAct>=0?'pos':'neg')+'">'+fmtCOP(balAct)+'</td><td>'+fmtCOP(balAnt)+'</td><td>'+delta(balAct,balAnt)+'</td></tr>'
+    +'<tr><td>Margen</td><td>'+margenAct.toFixed(1)+'%</td><td>—</td><td></td></tr>'
+    +'</tbody></table>';
+  html += '<h2>Indicadores de producción</h2>';
+  html += '<div class="kpi-grid">'
+    +kpi(activos.length,'Animales activos')
+    +kpi(gdpProm,'GDP promedio')
+    +kpi(mortalidad.toFixed(1)+'%','Mortalidad mes')
+    +kpi(partos,'Partos del mes')
+    +kpi(muertes,'Muertes del mes')
+    +kpi((window.AppState.gestantes||[]).length,'Gestantes')
+    +'</div>';
+  html += repFoot();
+  imprimirReporte(html, true);
+}
+
+// ── 3. INVENTARIO ANIMAL ──────────────────────────────────────────────────────
+function precioObjetivo(){ return 15000; }
+function filasInventario(){
+  return animalesActivos().map(function(a){
+    var lote = (a.lotes && a.lotes.nombre) || a.lote || '—';
+    var peso = a.peso || a.peso_actual || a.peso_kg || 0;
+    var em = edadMeses(a.fecha_nacimiento || a.nacimiento);
+    var valor = peso ? Math.round(peso*precioObjetivo()) : 0;
+    return {
+      codigo:a.codigo||a.id, nombre:a.nombre||'', especie:a.especie||'', sexo:a.sexo||'',
+      raza:a.raza||'', lote:lote, peso:peso, edad: em!=null? em+' m':'—',
+      estadoRep:a.estado_reproductivo||a.estado_rep||'—', valor:valor
+    };
+  });
+}
+async function generarInventario(){
+  toast('Generando inventario…');
+  var filas = filasInventario();
+  var valorTotal = filas.reduce(function(s,f){ return s+f.valor; },0);
+  var pesoTotal = filas.reduce(function(s,f){ return s+(f.peso||0); },0);
+  var html = repHead('Inventario animal', filas.length+' animales activos');
+  html += '<div class="kpi-grid">'
+    +kpi(filas.length,'Total animales')
+    +kpi(Math.round(pesoTotal)+' kg','Peso total')
+    +kpi(fmtCOP(valorTotal),'Valor estimado')
+    +'</div>';
+  html += '<table><thead><tr><th>Código</th><th>Especie</th><th>Sexo</th><th>Raza</th><th>Lote</th><th>Peso</th><th>Edad</th><th>Estado rep.</th><th>Valor est.</th></tr></thead><tbody>'
+    +filas.map(function(f){ return '<tr><td>'+esc(f.codigo)+'</td><td>'+esc(f.especie)+'</td><td>'+esc(f.sexo)+'</td><td>'+esc(f.raza)+'</td><td>'+esc(f.lote)+'</td><td>'+esc(f.peso||'—')+'</td><td>'+esc(f.edad)+'</td><td>'+esc(f.estadoRep)+'</td><td>'+fmtCOP(f.valor)+'</td></tr>'; }).join('')
+    +'</tbody></table>';
+  html += repFoot();
+  imprimirReporte(html, false);
+}
+function excelInventario(){
+  if(typeof XLSX==='undefined'){ toast('Excel no disponible','err'); return; }
+  var filas = filasInventario();
+  var aoa = [['Código','Nombre','Especie','Sexo','Raza','Lote','Peso (kg)','Edad','Estado reproductivo','Valor estimado (COP)']];
+  filas.forEach(function(f){ aoa.push([f.codigo,f.nombre,f.especie,f.sexo,f.raza,f.lote,f.peso,f.edad,f.estadoRep,f.valor]); });
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Inventario');
+  XLSX.writeFile(wb, 'inventario-'+hoyISO()+'.xlsx');
+  toast('Inventario exportado a Excel');
+}
+
+// ── 4. TRAZABILIDAD DE ANIMAL ─────────────────────────────────────────────────
+var _animalSel = null;
+async function buscarAnimal(){
+  var cod = (document.getElementById('animal-codigo').value||'').trim();
+  var prev = document.getElementById('animal-preview');
+  if(!cod){ toast('Ingresa un código','err'); return; }
+  prev.innerHTML = '<div class="preview-box">Buscando…</div>';
+  var animal = (animalesActivos().concat(((window.AppState&&window.AppState.animales)||[])))
+    .find(function(a){ return (a.codigo||'').toLowerCase()===cod.toLowerCase() || String(a.id)===cod; });
+  if(!animal){
+    try{ var r = await window._sb.from('animales').select('*').eq('finca_id',FINCA_ID_R).ilike('codigo',cod).maybeSingle(); if(r.data) animal=r.data; }catch(e){}
+  }
+  if(!animal){ prev.innerHTML='<div class="preview-box" style="border-color:var(--red)">No se encontró un animal con código "'+esc(cod)+'".</div>'; _animalSel=null; return; }
+  _animalSel = animal;
+  var em = edadMeses(animal.fecha_nacimiento||animal.nacimiento);
+  prev.innerHTML = '<div class="preview-box"><h4>'+esc(animal.codigo||animal.id)+(animal.nombre?' · '+esc(animal.nombre):'')+'</h4>'
+    +'<div class="kv"><span>Especie</span><span>'+esc(animal.especie||'—')+'</span></div>'
+    +'<div class="kv"><span>Sexo</span><span>'+esc(animal.sexo||'—')+'</span></div>'
+    +'<div class="kv"><span>Raza</span><span>'+esc(animal.raza||'—')+'</span></div>'
+    +'<div class="kv"><span>Edad</span><span>'+(em!=null?em+' meses':'—')+'</span></div>'
+    +'<div class="kv"><span>Peso actual</span><span>'+esc(animal.peso||animal.peso_actual||'—')+' kg</span></div>'
+    +'<div class="kv"><span>Estado</span><span>'+esc(animal.estado||'—')+'</span></div>'
+    +'<div style="margin-top:12px"><button class="btn btn-primary btn-sm" onclick="generarTrazabilidad()">Generar PDF de trazabilidad</button></div>'
+    +'</div>';
+}
+async function generarTrazabilidad(){
+  if(!_animalSel){ toast('Busca un animal primero','err'); return; }
+  toast('Generando trazabilidad…');
+  var a = _animalSel;
+  var eventos=[], pesajes=[], tratamientos=[];
+  try{ var e=await window.DB.getEventosAnimal(a.id); eventos=e.data||[]; }catch(err){}
+  try{ var p=await window.DB.getPesajes(FINCA_ID_R, a.id); pesajes=p.data||[]; }catch(err){}
+  try{ var t=await window.DB.getTratamientos(FINCA_ID_R); tratamientos=(t.data||[]).filter(function(x){ return x.animal_id===a.id; }); }catch(err){}
+  var em = edadMeses(a.fecha_nacimiento||a.nacimiento);
+
+  var html = repHead('Reporte de trazabilidad', 'Animal: '+(a.codigo||a.id));
+  html += '<h2>Ficha del animal</h2><table><tbody>'
+    +'<tr><th>Código</th><td>'+esc(a.codigo||a.id)+'</td><th>Nombre</th><td>'+esc(a.nombre||'—')+'</td></tr>'
+    +'<tr><th>Especie</th><td>'+esc(a.especie||'—')+'</td><th>Raza</th><td>'+esc(a.raza||'—')+'</td></tr>'
+    +'<tr><th>Sexo</th><td>'+esc(a.sexo||'—')+'</td><th>Edad</th><td>'+(em!=null?em+' meses':'—')+'</td></tr>'
+    +'<tr><th>Nacimiento</th><td>'+fmtFecha(a.fecha_nacimiento||a.nacimiento)+'</td><th>Peso actual</th><td>'+esc(a.peso||a.peso_actual||'—')+' kg</td></tr>'
+    +'<tr><th>Madre</th><td>'+esc(a.madre_codigo||a.madre_id||'—')+'</td><th>Padre</th><td>'+esc(a.padre_codigo||a.padre_id||'—')+'</td></tr>'
+    +'</tbody></table>';
+  html += '<h2>Historial de eventos</h2>';
+  html += eventos.length ? '<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Detalle</th></tr></thead><tbody>'
+    +eventos.map(function(x){ return '<tr><td>'+fmtFecha(x.fecha)+'</td><td>'+esc(x.tipo||x.evento||'—')+'</td><td>'+esc(x.descripcion||x.detalle||'')+'</td></tr>'; }).join('')+'</tbody></table>'
+    : '<p style="font-size:12px;color:#5a8a90">Sin eventos registrados.</p>';
+  html += '<h2>Pesajes</h2>';
+  html += pesajes.length ? '<table><thead><tr><th>Fecha</th><th>Peso (kg)</th></tr></thead><tbody>'
+    +pesajes.map(function(x){ return '<tr><td>'+fmtFecha(x.fecha)+'</td><td>'+esc(x.peso||x.peso_kg||'—')+'</td></tr>'; }).join('')+'</tbody></table>'
+    : '<p style="font-size:12px;color:#5a8a90">Sin pesajes registrados.</p>';
+  html += '<h2>Tratamientos</h2>';
+  html += tratamientos.length ? '<table><thead><tr><th>Fecha</th><th>Medicamento</th><th>Observación</th></tr></thead><tbody>'
+    +tratamientos.map(function(x){ return '<tr><td>'+fmtFecha(x.fecha||x.fecha_inicio)+'</td><td>'+esc((x.medicamentos&&x.medicamentos.nombre)||x.medicamento||'—')+'</td><td>'+esc(x.observacion||x.descripcion||'')+'</td></tr>'; }).join('')+'</tbody></table>'
+    : '<p style="font-size:12px;color:#5a8a90">Sin tratamientos registrados.</p>';
+  html += repFoot();
+  imprimirReporte(html, false);
+}
+
+// ── 5. REPORTE ICA / RSPP ─────────────────────────────────────────────────────
+async function generarICA(){
+  toast('Generando reporte ICA…');
+  var f = fincaInfo();
+  var activos = animalesActivos();
+  var porEspecie = {};
+  activos.forEach(function(a){ var e=a.especie||'sin especie'; porEspecie[e]=(porEspecie[e]||0)+1; });
+  var porSexo = {};
+  activos.forEach(function(a){ var k=(a.especie||'')+' · '+(a.sexo||'—'); porSexo[k]=(porSexo[k]||0)+1; });
+
+  var html = repHead('Registro Sanitario de Predio Pecuario (RSPP)', 'Formato ICA · Inventario y sanidad');
+  html += '<h2>Datos del predio</h2><table><tbody>'
+    +'<tr><th>Nombre del predio</th><td>'+esc(f.nombre)+'</td><th>N° PREDIO (ICA)</th><td>'+esc(f.ica)+'</td></tr>'
+    +'<tr><th>Propietario</th><td>'+esc(f.propietario)+'</td><th>Área (ha)</th><td>'+esc(f.area_ha)+'</td></tr>'
+    +'<tr><th>Municipio</th><td>'+esc(f.municipio)+'</td><th>Departamento</th><td>'+esc(f.departamento)+'</td></tr>'
+    +'</tbody></table>';
+  html += '<h2>Inventario por especie</h2><table><thead><tr><th>Especie</th><th>Cantidad</th></tr></thead><tbody>'
+    +Object.keys(porEspecie).map(function(k){ return '<tr><td>'+esc(k)+'</td><td>'+porEspecie[k]+'</td></tr>'; }).join('')
+    +'<tr><td><b>Total</b></td><td><b>'+activos.length+'</b></td></tr>'
+    +'</tbody></table>';
+  html += '<h2>Distribución por especie y sexo</h2><table><thead><tr><th>Especie · Sexo</th><th>Cantidad</th></tr></thead><tbody>'
+    +Object.keys(porSexo).map(function(k){ return '<tr><td>'+esc(k)+'</td><td>'+porSexo[k]+'</td></tr>'; }).join('')
+    +'</tbody></table>';
+  html += '<h2>Declaración sanitaria</h2><p style="font-size:12px;color:#0d2b2e">El predio mantiene un programa sanitario activo con registro de tratamientos, vacunaciones y movilizaciones conforme a la normativa ICA. Los movimientos de animales se documentan mediante Guía Sanitaria de Movilización Interna (GSMI).</p>';
+  html += repFoot();
+  imprimirReporte(html, false);
+}
+</script>
+
+<script>
+// ── Hamburger ─────────────────────────────────────────────────────────────────
+(function(){
+  var open=false;
+  var BARS='<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
+  var CROSS='<line x1="4" y1="4" x2="18" y2="18"/><line x1="18" y1="4" x2="4" y2="18"/>';
+  function show(){ open=true; document.getElementById('sidebar').classList.add('on'); document.getElementById('lov').classList.add('on'); document.getElementById('lico').innerHTML=CROSS; }
+  function hide(){ open=false; document.getElementById('sidebar').classList.remove('on'); document.getElementById('lov').classList.remove('on'); document.getElementById('lico').innerHTML=BARS; }
+  document.addEventListener('DOMContentLoaded', function(){
+    document.getElementById('lham').onclick=function(){ open?hide():show(); };
+    document.getElementById('lov').onclick=hide;
+    document.querySelectorAll('#sidebar a.nav-link').forEach(function(a){
+      a.addEventListener('click', function(){ if(window.innerWidth<=768) hide(); });
+    });
+  });
+}());
+</script>
+
+</body>
+</html>

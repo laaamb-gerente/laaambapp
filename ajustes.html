@@ -3,6 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/laaambapp/manifest.json">
+<meta name="theme-color" content="#00AFB6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LAAAMB">
+<link rel="apple-touch-icon" href="/laaambapp/icons/icon.svg">
 <title>LAAAMBAPP · Ajustes</title>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
@@ -225,6 +232,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
     <a class="nav-link" href="beneficio.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>Beneficio &amp; QR</a>
     <a class="nav-link" href="nomina.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="6" r="3"/><path d="M2 17c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M14 8h4M14 11h4M14 14h2"/></svg>Nómina &amp; Asistencia</a>
     <a class="nav-link" href="ica.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-3 7 3v6l-7 3-7-3z"/><path d="M3 7l7 3 7-3M10 10v6"/></svg>ICA &amp; Movilización</a>
+    <a class="nav-link" href="reportes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h7l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M12 3v4h4M7 11h6M7 14h6"/></svg>Reportes</a>
     <div class="nav-group">Sistema</div>
     <a class="nav-link active" href="ajustes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.9 4.9l1.4 1.4M13.7 13.7l1.4 1.4M4.9 15.1l1.4-1.4M13.7 6.3l1.4-1.4"/></svg>Ajustes</a>
   </nav>
@@ -362,6 +370,36 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
         <div style="display:flex;gap:8px;margin-top:4px">
           <button class="btn btn-primary btn-sm" onclick="saveFinca()" style="flex:1;justify-content:center">Guardar finca</button>
           <button class="btn btn-ghost btn-sm" onclick="closeAddFinca()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONFIGURACIÓN DE PRODUCCIÓN -->
+    <div class="section-label" id="config-produccion">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:5px"><path d="M10 2v2M10 16v2M2 10h2M16 10h2"/><circle cx="10" cy="10" r="4"/></svg>
+      Configuración de producción
+    </div>
+    <div class="card">
+      <div class="card-h">
+        <div><div class="card-title">Parámetros productivos de la finca</div><div class="card-sub">Metas y valores objetivo usados en cálculos y reportes</div></div>
+        <span class="badge b-teal" id="cfg-finca-nombre">La Marinilla</span>
+      </div>
+      <div class="card-body">
+        <div class="form-grid">
+          <div class="fg"><label class="fl">Días de gestación · ovinos</label><input class="fi" type="number" id="cfg-gest-ovino" placeholder="147"></div>
+          <div class="fg"><label class="fl">Días de gestación · bovinos</label><input class="fi" type="number" id="cfg-gest-bovino" placeholder="283"></div>
+          <div class="fg"><label class="fl">Edad de destete (días)</label><input class="fi" type="number" id="cfg-destete" placeholder="60"></div>
+          <div class="fg"><label class="fl">Peso objetivo de sacrificio (kg)</label><input class="fi" type="number" step="0.1" id="cfg-peso-sacrificio" placeholder="48"></div>
+          <div class="fg"><label class="fl">Precio objetivo de venta (COP/kg)</label><input class="fi" type="number" id="cfg-precio-venta" placeholder="15000"></div>
+          <div class="fg"><label class="fl">Carga animal objetivo (ov/ha)</label><input class="fi" type="number" step="0.1" id="cfg-carga" placeholder="8"></div>
+          <div class="fg"><label class="fl">Meta de fertilidad (%)</label><input class="fi" type="number" step="0.1" id="cfg-fertilidad" placeholder="90"></div>
+          <div class="fg"><label class="fl">Meta GDP (g/día)</label><input class="fi" type="number" id="cfg-gdp" placeholder="200"></div>
+          <div class="fg"><label class="fl">Días de descanso de potrero (default)</label><input class="fi" type="number" id="cfg-descanso" placeholder="21"></div>
+          <div class="fg"><label class="fl">Días de pastoreo de potrero (default)</label><input class="fi" type="number" id="cfg-pastoreo" placeholder="7"></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+          <button class="btn btn-primary btn-sm" onclick="guardarConfigProduccion()">Guardar configuración</button>
+          <span id="cfg-status" style="font-size:11px;color:var(--text3)"></span>
         </div>
       </div>
     </div>
@@ -943,6 +981,67 @@ async function siigoSync(historico){
   }
 }
 
+// ── CONFIGURACIÓN DE PRODUCCIÓN (fincas.config JSONB) ─────────────────────────
+var CONFIG_DEFAULTS = {
+  dias_gestacion_ovino: 147,
+  dias_gestacion_bovino: 283,
+  edad_destete_dias: 60,
+  peso_objetivo_sacrificio: 48,
+  precio_objetivo_venta: 15000,
+  carga_animal_objetivo: 8,
+  meta_fertilidad: 90,
+  meta_gdp: 200,
+  dias_descanso_default: 21,
+  dias_pastoreo_default: 7
+};
+var CONFIG_CAMPOS = {
+  'cfg-gest-ovino':'dias_gestacion_ovino',
+  'cfg-gest-bovino':'dias_gestacion_bovino',
+  'cfg-destete':'edad_destete_dias',
+  'cfg-peso-sacrificio':'peso_objetivo_sacrificio',
+  'cfg-precio-venta':'precio_objetivo_venta',
+  'cfg-carga':'carga_animal_objetivo',
+  'cfg-fertilidad':'meta_fertilidad',
+  'cfg-gdp':'meta_gdp',
+  'cfg-descanso':'dias_descanso_default',
+  'cfg-pastoreo':'dias_pastoreo_default'
+};
+
+async function cargarConfigProduccion(){
+  if(!window._sb) return;
+  try{
+    var r = await window._sb.from('fincas').select('nombre,config').eq('id', FINCA_ID_AJ).maybeSingle();
+    var finca = r && r.data;
+    var cfg = Object.assign({}, CONFIG_DEFAULTS, (finca && finca.config) || {});
+    if(finca && finca.nombre){ var n=document.getElementById('cfg-finca-nombre'); if(n) n.textContent = finca.nombre; }
+    Object.keys(CONFIG_CAMPOS).forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.value = cfg[CONFIG_CAMPOS[id]];
+    });
+  }catch(e){ console.warn('[Config] cargar', e && e.message); }
+}
+
+async function guardarConfigProduccion(){
+  if(!window._sb){ toast('Supabase no disponible','err'); return; }
+  var status = document.getElementById('cfg-status');
+  var config = {};
+  Object.keys(CONFIG_CAMPOS).forEach(function(id){
+    var el = document.getElementById(id);
+    var v = el ? parseFloat(el.value) : NaN;
+    config[CONFIG_CAMPOS[id]] = isNaN(v) ? CONFIG_DEFAULTS[CONFIG_CAMPOS[id]] : v;
+  });
+  if(status){ status.style.color='var(--text3)'; status.textContent='Guardando…'; }
+  try{
+    var r = await window._sb.from('fincas').update({ config: config }).eq('id', FINCA_ID_AJ);
+    if(r.error) throw r.error;
+    if(status){ status.style.color='var(--green)'; status.textContent='✓ Configuración guardada'; }
+    toast('Configuración de producción guardada');
+  }catch(e){
+    if(status){ status.style.color='var(--red)'; status.textContent='Error: '+e.message; }
+    toast('Error al guardar: '+e.message,'err');
+  }
+}
+
 // ── INIT ─────────────────────────────────────────────────────────────────────
 (function init(){
   initTheme();
@@ -951,6 +1050,8 @@ async function siigoSync(historico){
   document.addEventListener('appstate:ready', cargarEquipo);
   // Integración Siigo
   if(window._sb) siigoInit(); else document.addEventListener('appstate:ready', siigoInit);
+  // Configuración de producción
+  if(window._sb) cargarConfigProduccion(); else document.addEventListener('appstate:ready', cargarConfigProduccion);
   // FIX: renderizar fincas al cargar la página
   if(typeof AppData !== 'undefined'){
     renderFincas();

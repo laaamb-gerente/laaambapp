@@ -127,6 +127,40 @@ window.AppState = {
     // Nombre de finca en el pill
     const nameEl = document.getElementById('sb-farm-name');
     if (nameEl && this.finca && this.finca.nombre) nameEl.textContent = this.finca.nombre;
+
+    // Badge de "Reporte disponible" en el link de Reportes
+    this._checkWeeklyReport();
+  },
+
+  // Reporte automático semanal: si han pasado 7+ días desde el último
+  // reporte (guardado en localStorage 'laaamb_ultimo_reporte'), muestra
+  // un badge en el sidebar junto al link "Reportes".
+  _checkWeeklyReport() {
+    try {
+      const links = document.querySelectorAll('a[href="reportes.html"]');
+      if (!links.length) return;
+      const ultimo = localStorage.getItem('laaamb_ultimo_reporte');
+      let disponible = true;
+      if (ultimo) {
+        const dias = (Date.now() - new Date(ultimo).getTime()) / 86400000;
+        disponible = dias >= 7;
+      }
+      links.forEach(link => {
+        let badge = link.querySelector('.nav-badge');
+        if (disponible) {
+          if (!badge) {
+            badge = document.createElement('span');
+            badge.className = 'nav-badge';
+            link.appendChild(badge);
+          }
+          badge.textContent = '●';
+          badge.title = 'Reporte semanal disponible';
+          badge.style.color = 'var(--orange)';
+        } else if (badge) {
+          badge.remove();
+        }
+      });
+    } catch(e) {}
   },
 
   // Helpers de conteo para el dashboard
