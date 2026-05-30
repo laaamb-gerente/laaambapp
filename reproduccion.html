@@ -422,7 +422,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div>
       <div class="ph-eyebrow">La Marinilla · Ganadería</div>
       <div class="ph-title">Reproducción</div>
-      <div class="ph-sub">43 gestantes activas · 18 partos este mes · Próximo parto: mañana</div>
+      <div class="ph-sub" id="repro-sub">Cargando datos reproductivos…</div>
     </div>
     <div class="ph-actions">
       <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar masivo<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importRepro(this)"></label>
@@ -452,23 +452,20 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <!-- ══ RESUMEN ══ -->
     <div id="t-resumen" class="tab-pane">
       <div class="g4">
-        <div class="kpi c-sky"><div class="kpi-label">Gestantes activas</div><div class="kpi-val">43</div><div class="kpi-delta up">▲ 8 vs mes anterior</div></div>
-        <div class="kpi c-green"><div class="kpi-label">Partos este mes</div><div class="kpi-val">18</div><div class="kpi-delta up">Natalidad 94%</div></div>
-        <div class="kpi c-teal"><div class="kpi-label">Crías / parto</div><div class="kpi-val">1.72</div><div class="kpi-delta up">▲ 0.08 vs año ant.</div></div>
-        <div class="kpi c-amber"><div class="kpi-label">Fertilidad</div><div class="kpi-val">87<span class="kpi-unit">%</span></div><div class="kpi-delta warn">Meta: 90%</div></div>
-        <div class="kpi c-orange"><div class="kpi-label">Intervalo partos</div><div class="kpi-val">7.4<span class="kpi-unit">m</span></div><div class="kpi-delta neu">Meta: &lt;7m</div></div>
-        <div class="kpi c-wine"><div class="kpi-label">Vacías 2+ ciclos</div><div class="kpi-val">19</div><div class="kpi-delta down">▼ Requieren atención</div></div>
-        <div class="kpi c-green"><div class="kpi-label">Partos próx. 7 días</div><div class="kpi-val">3</div><div class="kpi-delta neu">Preparar asistencia</div></div>
-        <div class="kpi c-teal"><div class="kpi-label">Montas este mes</div><div class="kpi-val">24</div><div class="kpi-delta neu">Ciclo 1: 18 · Ciclo 2: 6</div></div>
+        <div class="kpi c-sky"><div class="kpi-label">Gestantes activas</div><div class="kpi-val">--</div><div class="kpi-delta neu">Confirmadas por ecografía</div></div>
+        <div class="kpi c-green"><div class="kpi-label">Partos este mes</div><div class="kpi-val">--</div><div class="kpi-delta neu">Eventos registrados este mes</div></div>
+        <div class="kpi c-teal"><div class="kpi-label">Crías / parto</div><div class="kpi-val">--</div><div class="kpi-delta neu">Promedio sobre partos reales</div></div>
+        <div class="kpi c-amber"><div class="kpi-label">Fertilidad</div><div class="kpi-val">--</div><div class="kpi-delta warn">Meta: 90%</div></div>
+        <div class="kpi c-orange"><div class="kpi-label">Intervalo partos</div><div class="kpi-val">--</div><div class="kpi-delta neu">Meta: &lt;7m</div></div>
+        <div class="kpi c-wine"><div class="kpi-label">Vacías 2+ ciclos</div><div class="kpi-val">--</div><div class="kpi-delta down">Requieren atención</div></div>
+        <div class="kpi c-green"><div class="kpi-label">Partos próx. 7 días</div><div class="kpi-val">--</div><div class="kpi-delta neu">Preparar asistencia</div></div>
+        <div class="kpi c-teal"><div class="kpi-label">Montas este mes</div><div class="kpi-val">--</div><div class="kpi-delta neu">Registradas este mes</div></div>
       </div>
 
       <!-- Alertas reproductivas -->
       <div class="g2">
         <div id="repro-alerts">
-          <div class="alert-box red"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="10" cy="10" r="7"/><path d="M10 6v5M10 14h.01"/></svg></div><div><div class="alert-title" style="color:var(--red)">Parto inminente — hoy o mañana</div><div class="alert-text">#OV-1234 · Lote B · 3er parto · Fecha estimada: 11/04/2025</div></div></div>
-          <div class="alert-box amber"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg></div><div><div class="alert-title" style="color:var(--amber)">Partos próximos 7 días</div><div class="alert-text">#OV-2210 (6 días) · #OV-0788 (7 días) · Preparar manga y asistencia</div></div></div>
-          <div class="alert-box sky"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 10h2l1.5-3 2 6 1.5-3H16"/></svg></div><div><div class="alert-title" style="color:var(--sky)">Ecografía pendiente — 28 días post-monta</div><div class="alert-text">12 ovejas montadas hace 25-32 días sin resultado de ecografía</div></div></div>
-          <div class="alert-box green"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="10" cy="10" r="7"/><path d="M7 10l2 2 4-4"/></svg></div><div><div class="alert-title" style="color:var(--green)">Montas programadas esta semana</div><div class="alert-text">8 hembras en celo estimado · Reproductor recomendado: #RE-003 Príncipe</div></div></div>
+          <div class="alert-box sky"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="10" cy="10" r="7"/><path d="M10 6v5M10 14h.01"/></svg></div><div><div class="alert-title" style="color:var(--sky)">Cargando alertas reproductivas…</div><div class="alert-text">Las alertas se calculan desde los eventos registrados en Supabase.</div></div></div>
         </div>
         <div class="card">
           <div class="card-h"><div class="card-title">Acciones rápidas</div></div>
@@ -487,7 +484,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <!-- ══ GESTACIONES ══ -->
     <div id="t-gestaciones" class="tab-pane" style="display:none">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-        <div style="font-size:13px;color:var(--text3)">43 hembras en gestación · Duración estándar: 147 días</div>
+        <div style="font-size:13px;color:var(--text3)" id="gest-count-label">Duración estándar de gestación: 147 días</div>
         <button class="btn btn-ghost btn-sm" onclick="exportGestaciones()">↓ Excel gestaciones</button>
       </div>
       <div id="gest-list"></div>
@@ -497,7 +494,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div id="t-montas" class="tab-pane" style="display:none">
       <div style="display:flex;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
         <div style="display:flex;gap:8px">
-          <select class="fi" style="width:150px" onchange="filterMontas(this.value,'reproductor')"><option value="">Todos los machos</option><option value="RE-003">RE-003 Príncipe</option><option value="RE-007">RE-007 Zeus</option><option value="RE-001">RE-001 Titan</option></select>
+          <select class="fi" style="width:150px" id="filter-reproductor" onchange="filterMontas(this.value,'reproductor')"><option value="">Todos los machos</option></select>
           <select class="fi" style="width:130px" onchange="filterMontas(this.value,'ciclo')"><option value="">Todos los ciclos</option><option value="1">Ciclo 1</option><option value="2">Ciclo 2</option><option value="3">Ciclo 3</option></select>
           <select class="fi" style="width:140px" onchange="filterMontas(this.value,'resultado')"><option value="">Todos los resultados</option><option value="Gestante">Gestante</option><option value="Vacía">Vacía</option><option value="Pendiente">Pendiente</option></select>
         </div>
@@ -564,18 +561,14 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 
     <!-- ══ VACÍAS ══ -->
     <div id="t-vacias" class="tab-pane" style="display:none">
-      <div class="alert-box red" style="margin-bottom:16px"><div class="alert-ico">⚠️</div><div><div class="alert-title" style="color:var(--red)">19 hembras con 2+ ciclos sin preñez</div><div class="alert-text">Revisar estado sanitario, condición corporal y manejo nutricional. Las de 3+ ciclos son candidatas a culling.</div></div></div>
+      <div class="alert-box red" style="margin-bottom:16px"><div class="alert-ico">⚠️</div><div><div class="alert-title" style="color:var(--red)" id="vacias-count-label">Ovejas vacías con 2+ ciclos sin preñez</div><div class="alert-text">Revisar estado sanitario, condición corporal y manejo nutricional. Las de 3+ ciclos son candidatas a culling.</div></div></div>
       <div class="card">
         <div class="card-h"><div class="card-title">Ovejas vacías — detalle</div><button class="btn btn-ghost btn-sm" onclick="exportVacias()">↓ Excel vacías</button></div>
         <div style="overflow-x:auto">
           <table>
             <thead><tr><th>ID Animal</th><th>Raza</th><th>Edad</th><th>Ciclos vacía</th><th>Última monta</th><th>Reproductor</th><th>Condición corporal</th><th>Acción recomendada</th></tr></thead>
-            <tbody>
-              <tr><td class="td-mono">#OV-0441</td><td>Katahdin</td><td>5.3a</td><td><span class="badge b-red">3 ciclos</span></td><td>01/04/2025</td><td>#RE-001</td><td>2.5/5</td><td><span class="badge b-red">CULLING</span></td></tr>
-              <tr><td class="td-mono">#OV-1109</td><td>Pelibuey</td><td>4.8a</td><td><span class="badge b-amber">2 ciclos</span></td><td>05/04/2025</td><td>#RE-007</td><td>3/5</td><td><span class="badge b-amber">EVALUAR</span></td></tr>
-              <tr><td class="td-mono">#OV-2087</td><td>Dorper</td><td>5.4a</td><td><span class="badge b-amber">2 ciclos</span></td><td>01/04/2025</td><td>#RE-001</td><td>3.5/5</td><td><span class="badge b-amber">EVALUAR</span></td></tr>
-              <tr><td class="td-mono">#OV-0823</td><td>Katahdin</td><td>3.2a</td><td><span class="badge b-red">3 ciclos</span></td><td>28/03/2025</td><td>#RE-003</td><td>2/5</td><td><span class="badge b-red">CULLING</span></td></tr>
-              <tr><td class="td-mono">#OV-1441</td><td>Dorper</td><td>2.8a</td><td><span class="badge b-gray">1 ciclo</span></td><td>07/04/2025</td><td>#RE-003</td><td>3.5/5</td><td><span class="badge b-gray">MONITOREAR</span></td></tr>
+            <tbody id="vacias-tbody">
+              <tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">Sin ovejas vacías registradas — los resultados de ecografía "vacía" aparecerán aquí.</td></tr>
             </tbody>
           </table>
         </div>
@@ -807,33 +800,15 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 
 <script>
 // ═══ DATA ═══
-const MONTAS = [
-  {fecha:'10/04/2025',oveja:'OV-0445',raza:'Dorper',reproductor:'RE-003 Príncipe',lote:'Lote A',ciclo:1,tipo:'Natural',resultado:'Pendiente',eco:'10/05/2025',colaborador:'Carlos Ríos'},
-  {fecha:'08/04/2025',oveja:'OV-1234',raza:'Hampshire',reproductor:'RE-003 Príncipe',lote:'Lote B',ciclo:1,tipo:'Natural',resultado:'Gestante',eco:'08/04/2025',colaborador:'Juan García'},
-  {fecha:'05/04/2025',oveja:'OV-0892',raza:'Dorper',reproductor:'RE-007 Zeus',lote:'Lote C',ciclo:2,tipo:'Natural',resultado:'Gestante',eco:'05/04/2025',colaborador:'María López'},
-  {fecha:'01/04/2025',oveja:'OV-0441',raza:'Katahdin',reproductor:'RE-001 Titan',lote:'Lote A',ciclo:3,tipo:'Natural',resultado:'Vacía',eco:'01/04/2025',colaborador:'Juan García'},
-  {fecha:'28/03/2025',oveja:'OV-2210',raza:'Katahdin',reproductor:'RE-007 Zeus',lote:'Lote D',ciclo:1,tipo:'Natural',resultado:'Gestante',eco:'28/03/2025',colaborador:'Carlos Ríos'},
-  {fecha:'25/03/2025',oveja:'OV-0788',raza:'Katahdin',reproductor:'RE-003 Príncipe',lote:'Lote A',ciclo:1,tipo:'Natural',resultado:'Gestante',eco:'25/03/2025',colaborador:'Juan García'},
-  {fecha:'20/03/2025',oveja:'OV-1109',raza:'Pelibuey',reproductor:'RE-007 Zeus',lote:'Lote D',ciclo:2,tipo:'Natural',resultado:'Vacía',eco:'20/03/2025',colaborador:'María López'},
-  {fecha:'15/03/2025',oveja:'OV-2087',raza:'Dorper',reproductor:'RE-001 Titan',lote:'Lote D',ciclo:2,tipo:'Natural',resultado:'Vacía',eco:'15/03/2025',colaborador:'Carlos Ríos'},
-];
+// Sin datos demo: estos arreglos se llenan SOLO desde Supabase (eventos_reproductivos)
+// vía loadReproFromSupabase(), o desde AppData (localStorage) vía loadReproFromAppData().
+// Si no hay datos reales, las tablas/tarjetas muestran su estado vacío.
+const MONTAS = [];
 
-const PARTOS = [
-  {fecha:'10/04/2025',madre:'OV-2341',nro:3,padre:'RE-003',vivas:2,muertas:0,pesos:'6.2 / 5.8',tipo:'Normal',ids:'OV-0471, OV-0472',colaborador:'Juan García'},
-  {fecha:'08/04/2025',madre:'OV-1567',nro:2,padre:'RE-007',vivas:1,muertas:0,pesos:'7.1',tipo:'Normal',ids:'OV-0473',colaborador:'María López'},
-  {fecha:'05/04/2025',madre:'OV-0892',nro:4,padre:'RE-007',vivas:2,muertas:0,pesos:'5.9 / 6.1',tipo:'Asistido',ids:'OV-0474, OV-0475',colaborador:'Carlos Ríos'},
-  {fecha:'02/04/2025',madre:'OV-3102',nro:1,padre:'RE-003',vivas:1,muertas:0,pesos:'5.2',tipo:'Distócico',ids:'OV-0476',colaborador:'Juan García'},
-  {fecha:'28/03/2025',madre:'OV-0234',nro:4,padre:'RE-003',vivas:2,muertas:0,pesos:'6.4 / 6.0',tipo:'Normal',ids:'OV-0477, OV-0478',colaborador:'María López'},
-];
+const PARTOS = [];
 
 // Estado compartido
-const GESTACIONES = [
-  {id:'OV-1234',name:'',raza:'Hampshire',lote:'Lote B',padre:'RE-003',fechaMonta:'2025-02-12',diasGest:57,totalDias:147,partosN:3},
-  {id:'OV-0892',name:'',raza:'Dorper',lote:'Lote C',padre:'RE-007',fechaMonta:'2025-02-15',diasGest:54,totalDias:147,partosN:4},
-  {id:'OV-2210',name:'',raza:'Katahdin',lote:'Lote D',padre:'RE-007',fechaMonta:'2025-02-20',diasGest:49,totalDias:147,partosN:1},
-  {id:'OV-0788',name:'Rosa',raza:'Katahdin',lote:'Lote A',padre:'RE-003',fechaMonta:'2025-02-25',diasGest:44,totalDias:147,partosN:3},
-  {id:'OV-0234',name:'Bella',raza:'Dorper',lote:'Lote A',padre:'RE-003',fechaMonta:'2025-03-01',diasGest:40,totalDias:147,partosN:4},
-];
+const GESTACIONES = [];
 
 // ═══ TABS ═══
 function switchTab(el,id){
@@ -1192,13 +1167,16 @@ function loadReproFromAppData(){
     });
   }
 
-  // Actualizar KPIs resumen
+  // Actualizar KPIs resumen (modo localStorage; cada valor en su tarjeta correcta).
+  // Solo se llenan los KPIs que AppData puede calcular con certeza; el resto queda '--'.
+  const _hoyAD = new Date();
+  const _enMesAD = (f)=>{ const x=new Date(f); return x.getMonth()===_hoyAD.getMonth() && x.getFullYear()===_hoyAD.getFullYear(); };
   const gestantes=d.animales.filter(a=>a.activo&&a.estado==='Gestante').length;
   const kpis=document.querySelectorAll('.kpi-val');
-  if(kpis[0]) kpis[0].textContent=gestantes;
-  if(kpis[1]) kpis[1].textContent=d.montas.filter(m=>m.resultado==='Pendiente').length;
-  if(kpis[2]) kpis[2].textContent=d.partos.length;
-  if(kpis[3]) kpis[3].textContent=d.animales.filter(a=>a.activo&&a.estado==='Vacía').length;
+  if(kpis[0]) kpis[0].textContent=gestantes;                                              // Gestantes activas
+  if(kpis[1]) kpis[1].textContent=(d.partos||[]).filter(p=>p.fecha&&_enMesAD(p.fecha)).length; // Partos este mes
+  if(kpis[5]) kpis[5].textContent=d.animales.filter(a=>a.activo&&a.estado==='Vacía').length;    // Vacías
+  if(kpis[7]) kpis[7].textContent=(d.montas||[]).filter(m=>m.fecha&&_enMesAD(m.fecha)).length;  // Montas este mes
 
   renderPartos(PARTOS); renderMontas(MONTAS);
 }
@@ -1366,12 +1344,114 @@ function loadReproFromSupabase(){
     });
   });
 
-  // ── KPIs reales (orden real: 0 gestantes · 1 partos mes · 7 montas mes) ──
+  // ── KPIs reales — TODO calculado sobre datos de Supabase. Sin datos → '--' o 0. ──
   const enMes = (f)=>{ const d=new Date(f); return d.getMonth()===hoy.getMonth() && d.getFullYear()===hoy.getFullYear(); };
+  const ecoAll = (eventos||[]).filter(e=>e.tipo==='ecografia');
+  const partosMes = partosEv.filter(e=>enMes(e.fecha)).length;
+  const montasMes = montasEv.filter(e=>enMes(e.fecha)).length;
+
+  // Crías por parto: promedio de crias_vivas sobre partos reales
+  const partosConCrias = partosEv.filter(e=>e.crias_vivas!=null);
+  const criasParto = partosConCrias.length
+    ? (partosConCrias.reduce((s,e)=>s+(Number(e.crias_vivas)||0),0)/partosConCrias.length)
+    : null;
+
+  // Fertilidad: ecografías gestantes / ecografías con resultado (gestante|vacia)
+  const ecoConResultado = ecoAll.filter(e=>e.resultado==='gestante'||e.resultado==='vacia');
+  const fertilidad = ecoConResultado.length
+    ? Math.round(ecoAll.filter(e=>e.resultado==='gestante').length/ecoConResultado.length*100)
+    : null;
+
+  // Intervalo entre partos: promedio (meses) entre partos consecutivos de la misma hembra
+  const partosPorHembra = {};
+  partosEv.forEach(e=>{ const k=e.hembra_id; if(!k||!e.fecha) return; (partosPorHembra[k]=partosPorHembra[k]||[]).push(new Date(e.fecha)); });
+  const intervalos = [];
+  Object.values(partosPorHembra).forEach(fechas=>{
+    if(fechas.length<2) return;
+    fechas.sort((a,b)=>a-b);
+    for(let i=1;i<fechas.length;i++){ intervalos.push((fechas[i]-fechas[i-1])/86400000); }
+  });
+  const intervaloMeses = intervalos.length
+    ? (intervalos.reduce((s,d)=>s+d,0)/intervalos.length/30.44)
+    : null;
+
+  // Vacías 2+ ciclos: hembras con ≥2 ecografías 'vacia'
+  const vaciasPorHembra = {};
+  ecoAll.filter(e=>e.resultado==='vacia').forEach(e=>{ const k=e.hembra_id; if(!k) return; (vaciasPorHembra[k]=vaciasPorHembra[k]||[]).push(e); });
+  const vaciasIds = Object.keys(vaciasPorHembra).filter(k=>vaciasPorHembra[k].length>=2);
+  const vaciasCount = vaciasIds.length;
+
+  // Partos próximos 7 días: gestantes con fecha_parto_esperado dentro de 0–7 días
+  const partosProx7 = gestantes.filter(g=>{
+    if(!g.fecha_parto_esperado) return false;
+    const dias = Math.round((new Date(g.fecha_parto_esperado) - hoy)/86400000);
+    return dias>=0 && dias<=7;
+  }).length;
+
   const kpis = document.querySelectorAll('.kpi-val');
   if(kpis[0]) kpis[0].textContent = gestantes.length;
-  if(kpis[1]) kpis[1].textContent = partosEv.filter(e=>enMes(e.fecha)).length;
-  if(kpis[7]) kpis[7].textContent = montasEv.filter(e=>enMes(e.fecha)).length;
+  if(kpis[1]) kpis[1].textContent = partosMes;
+  if(kpis[2]) kpis[2].textContent = criasParto!=null ? criasParto.toFixed(2) : '--';
+  if(kpis[3]) kpis[3].innerHTML   = fertilidad!=null ? (fertilidad+'<span class="kpi-unit">%</span>') : '--';
+  if(kpis[4]) kpis[4].innerHTML   = intervaloMeses!=null ? (intervaloMeses.toFixed(1)+'<span class="kpi-unit">m</span>') : '--';
+  if(kpis[5]) kpis[5].textContent = vaciasCount;
+  if(kpis[6]) kpis[6].textContent = partosProx7;
+  if(kpis[7]) kpis[7].textContent = montasMes;
+
+  // ── Subtítulo del header desde datos reales ──
+  const subEl = document.getElementById('repro-sub');
+  if(subEl){
+    if(gestantes.length===0 && partosMes===0){
+      subEl.textContent = 'Sin gestaciones registradas · Registra el primer evento';
+    } else {
+      const futuras = gestantes
+        .filter(g=>g.fecha_parto_esperado && new Date(g.fecha_parto_esperado)>=hoy)
+        .sort((a,b)=>new Date(a.fecha_parto_esperado)-new Date(b.fecha_parto_esperado));
+      const proxTxt = futuras.length ? new Date(futuras[0].fecha_parto_esperado).toLocaleDateString('es-CO') : '--';
+      subEl.textContent = gestantes.length+' gestantes activas · '+partosMes+' partos este mes · Próximo parto: '+proxTxt;
+    }
+  }
+
+  // ── Etiqueta de conteo en la pestaña Gestaciones ──
+  const gestLbl = document.getElementById('gest-count-label');
+  if(gestLbl) gestLbl.textContent = gestantes.length+' hembras en gestación · Duración estándar: 147 días';
+
+  // ── Pestaña Vacías: alerta + tabla desde ecografías 'vacia' reales ──
+  const vaciasLbl = document.getElementById('vacias-count-label');
+  if(vaciasLbl) vaciasLbl.textContent = vaciasCount>0
+    ? (vaciasCount+' ovejas vacías con 2+ ciclos sin preñez')
+    : 'Sin ovejas vacías con 2+ ciclos registradas';
+  const vaciasTb = document.getElementById('vacias-tbody');
+  if(vaciasTb){
+    const animById = {};
+    (AS.animales||[]).forEach(a=>{ animById[a.id]=a; });
+    if(vaciasIds.length){
+      vaciasTb.innerHTML = vaciasIds.map(id=>{
+        const evs = vaciasPorHembra[id].slice().sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+        const a = animById[id] || {};
+        const h = evs[0].hembra || {};
+        const cod = h.codigo || a.codigo || id;
+        const ciclos = evs.length;
+        const accion = ciclos>=3 ? '<span class="badge b-red">CULLING</span>'
+                     : ciclos>=2 ? '<span class="badge b-amber">EVALUAR</span>'
+                     : '<span class="badge b-gray">MONITOREAR</span>';
+        const cicloBadge = ciclos>=3 ? 'b-red' : 'b-amber';
+        const ultMonta = a.fecha_ultima_monta ? new Date(a.fecha_ultima_monta).toLocaleDateString('es-CO') : '—';
+        return '<tr>'
+          + '<td class="td-mono">#'+cod+'</td>'
+          + '<td>'+(a.raza||'—')+'</td>'
+          + '<td>—</td>'
+          + '<td><span class="badge '+cicloBadge+'">'+ciclos+' ciclos</span></td>'
+          + '<td>'+ultMonta+'</td>'
+          + '<td>—</td>'
+          + '<td>—</td>'
+          + '<td>'+accion+'</td>'
+          + '</tr>';
+      }).join('');
+    } else {
+      vaciasTb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">Sin ovejas vacías con 2+ ciclos registradas.</td></tr>';
+    }
+  }
 
   // ── Selectores de reproductores (machos activos) en modales monta/parto ──
   const machos = (AS.animales||[]).filter(a=>a.sexo==='macho' && a.estado==='activo');
@@ -1381,6 +1461,9 @@ function loadReproFromSupabase(){
     if(montaRepro) montaRepro.innerHTML = opts;
     const partoPadre = document.getElementById('p-padre');
     if(partoPadre) partoPadre.innerHTML = opts + '<option value="desconocido">Desconocido</option>';
+    // Filtro de montas por reproductor (pestaña Montas)
+    const filtRepro = document.getElementById('filter-reproductor');
+    if(filtRepro) filtRepro.innerHTML = '<option value="">Todos los machos</option>' + opts;
   }
 
   // ── Datalist de hembras activas para los inputs de ID ──
