@@ -48,6 +48,10 @@ window.Auth = {
     // Actualizar UI con nombre del usuario
     this._actualizarUI(perfil);
 
+    // Marcar sesión como lista para AppState
+    window.AUTH_SESSION = session;
+    window.AUTH_READY = true;
+
     return true;
   },
 

@@ -5,6 +5,17 @@ window.AppState = {
   async init() {
     if (this._loaded) return;
     try {
+      // Asegurar que _sb tiene la sesión activa antes de consultar
+      // (RLS necesita el token de usuario autenticado, no solo la anon key)
+      const { data: { session } } = await window._sb.auth.getSession();
+      if (session) {
+        // Refrescar el cliente con el token activo
+        await window._sb.auth.setSession({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        });
+      }
+
       // Cargar en paralelo
       const [fincaRes, animalesRes, lotesRes, medRes, gestantesRes, eventosRepRes, costosRes, ingresosRes] =
         await Promise.all([
@@ -137,9 +148,22 @@ window.AppState = {
   }
 };
 
-// Auto-inicializar cuando el DOM esté listo
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => window.AppState.init());
-} else {
+// Auto-inicializar cuando el DOM esté listo, pero ESPERANDO a que
+// Auth establezca la sesión primero (evita consultar con anon key y
+// recibir todo en ceros por RLS).
+async function initAppWhenReady() {
+  // Esperar a que Auth verifique la sesión primero.
+  // Auth.init() setea window.AUTH_READY = true cuando termina.
+  let intentos = 0;
+  while (!window.AUTH_READY && intentos < 20) {
+    await new Promise(r => setTimeout(r, 100));
+    intentos++;
+  }
   window.AppState.init();
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAppWhenReady);
+} else {
+  initAppWhenReady();
 }
