@@ -25,6 +25,8 @@
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
+<!-- Generador de QR real (cliente) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -118,6 +120,30 @@ tr:last-child td{border-bottom:none}
 .filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
 .fchip{padding:6px 13px;border-radius:999px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer}
 .fchip.active{background:var(--teal-bg);border-color:var(--teal);color:var(--teal)}
+/* ETIQUETA IMPRIMIBLE */
+#etq-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9998;align-items:center;justify-content:center;padding:20px;overflow:auto}
+#etq-overlay.on{display:flex}
+.etq-modal{display:flex;flex-direction:column;align-items:center;gap:16px}
+.etq-label{width:380px;height:380px;background:#ffffff;color:#0d1117;border-radius:6px;padding:22px 18px;display:flex;flex-direction:column;align-items:center;justify-content:space-between;text-align:center;box-shadow:0 14px 50px rgba(0,0,0,.5);font-family:'Changa',sans-serif}
+.etq-logo{font-family:'Sigmar',cursive;font-size:30px;letter-spacing:1px;color:#00838a;line-height:1}
+.etq-logo-sub{font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0d1117;opacity:.55;margin-top:2px}
+.etq-qr{width:200px;height:200px;display:flex;align-items:center;justify-content:center}
+.etq-qr img,.etq-qr canvas{display:block}
+.etq-corte{font-family:'Sigmar',cursive;font-size:18px;color:#0d1117}
+.etq-codigo{font-size:14px;font-weight:700;letter-spacing:1.5px;color:#00838a}
+.etq-fechas{font-size:11px;color:#333;line-height:1.5}
+.etq-origen{font-size:10px;font-weight:600;letter-spacing:.5px;color:#0d1117;opacity:.7}
+.etq-modal-actions{display:flex;gap:10px}
+@media print{
+  body{overflow:visible!important}
+  body *{visibility:hidden!important}
+  #etq-overlay,#etq-overlay *{visibility:visible!important}
+  #etq-overlay{position:absolute!important;inset:0!important;display:block!important;background:#fff!important;padding:0!important}
+  .etq-modal-actions{display:none!important}
+  .etq-modal{gap:0!important}
+  .etq-label{box-shadow:none!important;margin:0 auto!important;width:10cm!important;height:10cm!important;border-radius:0!important;page-break-inside:avoid}
+  @page{size:10cm 10cm;margin:0}
+}
 @media(max-width:768px){
   #lham{display:flex}
   #sidebar{position:fixed!important;top:0;left:0;height:100vh;transform:translateX(-100%);z-index:9995;transition:transform .28s ease}
@@ -282,6 +308,27 @@ tr:last-child td{border-bottom:none}
 </div>
 </div>
 
+<!-- ETIQUETA IMPRIMIBLE -->
+<div id="etq-overlay" onclick="if(event.target===this)cerrarEtiqueta()">
+  <div class="etq-modal">
+    <div class="etq-label">
+      <div>
+        <div class="etq-logo">LAAAMB</div>
+        <div class="etq-logo-sub">Corderos premium</div>
+      </div>
+      <div class="etq-qr" id="etq-qr"></div>
+      <div class="etq-corte" id="etq-corte">—</div>
+      <div class="etq-codigo" id="etq-codigo">—</div>
+      <div class="etq-fechas" id="etq-fechas">—</div>
+      <div class="etq-origen">La Marinilla · Antioquia · Colombia</div>
+    </div>
+    <div class="etq-modal-actions">
+      <button class="btn btn-ghost btn-sm" onclick="cerrarEtiqueta()">Cerrar</button>
+      <button class="btn btn-primary btn-sm" onclick="window.print()">🖨 Imprimir etiqueta</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══ Hamburger ═══
 (function(){
@@ -426,39 +473,49 @@ tr:last-child td{border-bottom:none}
     try{
       var r = await window.DB.saveEmpaque({corte_id:corte_id, animal_id:beneficioActual.animal_id, beneficio_id:beneficioActual.id, peso_neto:peso, fecha_empaque:fempaque, fecha_limite_consumo:flimite, ubicacion_frigorifico:ubic, precio_venta:precio});
       if(r.error) throw new Error(r.error.message||'Error');
+      // Adjuntar el tipo de corte al objeto para la etiqueta
+      var corteObj = cortesActual.find(function(c){ return String(c.id)===String(corte_id); });
+      r.data.cortes = { tipo_corte: corteObj ? corteObj.tipo_corte : null };
       msg('e-msg','✓ Empaque generado', true);
       mostrarQR(r.data);
       document.getElementById('e-peso').value='';
     }catch(e){ msg('e-msg','Error: '+e.message, false); }
   };
-  function qrImgUrl(url){ return 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data='+encodeURIComponent(url); }
   function mostrarQR(emp){
     var url = BASE_PUBLICA+'/qr/'+emp.qr_code;
-    document.getElementById('qr-result').innerHTML =
+    var cont = document.getElementById('qr-result');
+    cont.innerHTML =
       '<div class="qr-result">'+
-        '<img class="qr-img" src="'+qrImgUrl(url)+'" alt="QR '+esc(emp.qr_code)+'">'+
+        '<div id="qr-container-'+esc(emp.id)+'" style="width:200px;height:200px;background:#fff;border-radius:10px;padding:8px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center"></div>'+
         '<div class="qr-code">'+esc(emp.qr_code)+'</div>'+
         '<div style="font-size:12px;color:var(--text3);margin-top:6px">'+esc(emp.peso_neto)+' kg · vence '+esc(emp.fecha_limite_consumo||'—')+'</div>'+
         '<div class="qr-actions">'+
-          '<button class="btn btn-ghost btn-sm" onclick="imprimirQR(\''+esc(emp.qr_code)+'\','+ (emp.peso_neto||0) +')">Imprimir QR</button>'+
+          '<button class="btn btn-ghost btn-sm" id="qr-print-btn">🖨 Imprimir etiqueta</button>'+
           '<a class="btn btn-primary btn-sm" href="'+url+'" target="_blank" rel="noopener">Ver micrositio público →</a>'+
         '</div>'+
       '</div>';
+    // QR real (escaneable) que apunta al micrositio del producto
+    var qrDiv = document.getElementById('qr-container-'+emp.id);
+    new QRCode(qrDiv, { text:url, width:200, height:200, colorDark:'#0d1117', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.H });
+    document.getElementById('qr-print-btn').onclick = function(){ abrirEtiqueta(emp); };
   }
-  window.imprimirQR = function(code, peso){
-    var url = BASE_PUBLICA+'/qr/'+code;
-    var w = window.open('', '_blank', 'width=380,height=520');
-    if(!w) return;
-    w.document.write('<html><head><title>'+code+'</title><style>body{font-family:sans-serif;text-align:center;padding:24px;color:#111}h1{font-size:18px;letter-spacing:1px;color:#00838a}img{width:240px;height:240px;margin:14px 0}.c{font-size:20px;font-weight:700;color:#00838a;letter-spacing:1px}.s{font-size:13px;color:#555}</style></head><body>'+
-      '<h1>LAAAMB · La Marinilla</h1>'+
-      '<img src="'+qrImgUrl(url)+'">'+
-      '<div class="c">'+code+'</div>'+
-      '<div class="s">'+peso+' kg · Trazabilidad verificada</div>'+
-      '<div class="s">'+url+'</div>'+
-      '</body></html>');
-    w.document.close();
-    setTimeout(function(){ w.print(); }, 400);
+
+  // ── Etiqueta imprimible (modal) ──
+  window.abrirEtiqueta = function(emp){
+    var url = BASE_PUBLICA+'/qr/'+emp.qr_code;
+    var tipo = (emp.cortes && (TIPO_LABEL[emp.cortes.tipo_corte]||emp.cortes.tipo_corte)) || 'Corte';
+    var peso = (emp.peso_neto!=null && emp.peso_neto!=='') ? (' · '+emp.peso_neto+' kg') : '';
+    document.getElementById('etq-corte').textContent = tipo + peso;
+    document.getElementById('etq-codigo').textContent = emp.qr_code || '';
+    var fEmp = emp.fecha_empaque ? 'Empacado: '+emp.fecha_empaque : '';
+    var fLim = emp.fecha_limite_consumo ? 'Consumir antes de: '+emp.fecha_limite_consumo : '';
+    document.getElementById('etq-fechas').innerHTML = esc(fEmp)+((fEmp&&fLim)?'<br>':'')+esc(fLim);
+    var qrEl = document.getElementById('etq-qr');
+    qrEl.innerHTML = '';
+    new QRCode(qrEl, { text:url, width:200, height:200, colorDark:'#0d1117', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.H });
+    document.getElementById('etq-overlay').classList.add('on');
   };
+  window.cerrarEtiqueta = function(){ document.getElementById('etq-overlay').classList.remove('on'); };
 
   // ── Inventario ──
   var INV = [];
@@ -490,9 +547,11 @@ tr:last-child td{border-bottom:none}
       var dias = e.fecha_limite_consumo ? Math.ceil((new Date(e.fecha_limite_consumo+'T00:00:00')-hoy)/86400000) : null;
       var alerta = (e.estado==='disponible' && dias!=null && dias<5) ? ' <span class="badge b-amber">'+(dias<0?'vencido':dias+'d')+'</span>' : '';
       var estadoBadge = {disponible:'b-green',vendido:'b-muted',vencido:'b-red',descartado:'b-muted'}[e.estado]||'b-muted';
-      var acc = e.estado==='disponible'
+      var accVenta = e.estado==='disponible'
         ? '<button class="btn btn-ghost btn-sm" onclick="abrirVenta(\''+e.id+'\')">Marcar vendido</button>'
-        : (e.cliente?'<span class="td-muted">'+esc(e.cliente)+'</span>':'—');
+        : (e.cliente?'<span class="td-muted">'+esc(e.cliente)+'</span>':'');
+      var btnEtq = '<button class="btn btn-ghost btn-sm" onclick="etiquetaInv(\''+e.id+'\')">🖨 Etiqueta</button>';
+      var acc = '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+btnEtq+accVenta+'</div>';
       return '<tr>'+
         '<td style="font-weight:600;color:var(--teal)">'+esc(e.qr_code)+'</td>'+
         '<td>'+esc(tipo)+'</td>'+
@@ -515,6 +574,10 @@ tr:last-child td{border-bottom:none}
       if(r.error) throw new Error(r.error.message);
       cargarInventario();
     }catch(e){ alert('Error: '+e.message); }
+  };
+  window.etiquetaInv = function(id){
+    var emp = INV.find(function(x){ return String(x.id)===String(id); });
+    if(emp) abrirEtiqueta(emp);
   };
 
   // ── Init ──

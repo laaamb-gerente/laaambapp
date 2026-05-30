@@ -18,6 +18,8 @@
 <script>
   window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 </script>
+<!-- Generador de QR real (cliente) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--bg:#0d1117;--bg2:#161b22;--bg3:#1c2530;
@@ -174,12 +176,24 @@ html,body{background:var(--bg);color:var(--text);font-family:'Changa',sans-serif
         '<p>En <b>La Marinilla</b>, Antioquia, criamos corderos Dorper y Katahdin con pastoreo rotacional, bienestar animal y trazabilidad completa — del potrero a tu mesa. Cada empaque cuenta su historia.</p>'+
       '</div>'+
 
+      '<div class="info-card" style="text-align:center;padding:18px">'+
+        '<h3 style="border-bottom:none;padding-bottom:4px">Comparte esta trazabilidad</h3>'+
+        '<div id="qr-display" style="display:inline-flex;align-items:center;justify-content:center;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin:8px 0 4px"></div>'+
+        '<div style="font-size:11px;color:var(--text3)">Escanea para volver a abrir esta página</div>'+
+      '</div>'+
+
       '<div class="foot">'+
         'Trazabilidad LAAAMB · Cada animal, cada corte, verificado.<br>'+
         '<a href="https://laaambapp.vercel.app">laaambapp.vercel.app</a>'+
       '</div>';
 
     document.getElementById('root').innerHTML = html;
+
+    // QR visual de esta misma página (compartir / reimprimir)
+    var qrDisp = document.getElementById('qr-display');
+    if(qrDisp && window.QRCode){
+      new QRCode(qrDisp, { text:window.location.href, width:150, height:150, colorDark:'#00AFB6', colorLight:'#0d1117', correctLevel:QRCode.CorrectLevel.H });
+    }
   }
 
   async function load(){
