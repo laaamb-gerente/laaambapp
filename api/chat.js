@@ -29,7 +29,19 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages, system, model } = req.body;
+    const { messages, system, model, tools } = req.body;
+
+    const anthropicBody = {
+      model: model || 'claude-opus-4-5',
+      max_tokens: 2048, // más tokens para el agentic loop
+      system: system || '',
+      messages: messages || []
+    };
+
+    // Incluir tools si vienen en el body (function calling)
+    if (tools && tools.length > 0) {
+      anthropicBody.tools = tools;
+    }
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -38,12 +50,7 @@ export default async function handler(req, res) {
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
-      body: JSON.stringify({
-        model: model || 'claude-opus-4-5',
-        max_tokens: 1024,
-        system: system || '',
-        messages: messages || []
-      })
+      body: JSON.stringify(anthropicBody)
     });
 
     const data = await response.json();

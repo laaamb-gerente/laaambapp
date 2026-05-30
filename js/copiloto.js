@@ -3,6 +3,67 @@
 // Copiloto dual: Claude (Anthropic) + Grok (xAI).
 // Construye contexto en vivo desde AppState y mantiene
 // historial de conversación por sesión.
+//
+// Copiloto PRESCRIPTIVO: usa function calling sobre datos
+// reales (AppState + AlertasMotor) para proponer acciones.
+
+// ── Herramientas disponibles para el modelo ────────────
+const COPILOTO_TOOLS = [
+  {
+    name: "get_alertas_activas",
+    description: "Obtiene las alertas operacionales activas de la finca: animales listos para ecografía, partos próximos, retiros sanitarios, lotes en sobrecarga, medicamentos por vencer.",
+    input_schema: {
+      type: "object",
+      properties: {
+        prioridad: {
+          type: "string",
+          enum: ["todas", "critica", "alta", "media"],
+          description: "Filtrar por prioridad de alerta"
+        }
+      },
+      required: []
+    }
+  },
+  {
+    name: "get_animales_por_estado",
+    description: "Obtiene animales filtrados por estado reproductivo, lote, o raza.",
+    input_schema: {
+      type: "object",
+      properties: {
+        estado_reproductivo: {
+          type: "string",
+          enum: ["gestante", "en_monta", "vacia", "lactante", "seca"]
+        },
+        lote_nombre: { type: "string" },
+        raza: { type: "string" }
+      },
+      required: []
+    }
+  },
+  {
+    name: "get_kpis_produccion",
+    description: "Obtiene los KPIs productivos actuales: GDP promedio, peso promedio, crías en levante, animales listos para sacrificio.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: []
+    }
+  },
+  {
+    name: "get_estado_financiero",
+    description: "Obtiene el balance financiero del mes actual: ingresos, costos, margen.",
+    input_schema: {
+      type: "object",
+      properties: {
+        periodo: {
+          type: "string",
+          enum: ["mes_actual", "mes_anterior", "trimestre"]
+        }
+      },
+      required: []
+    }
+  }
+];
 
 window.Copiloto = {
   // Historial de conversación en memoria (por sesión de página)
@@ -118,25 +179,140 @@ ${enfoque}${this._enfoquePagina ? '\n\n' + this._enfoquePagina : ''}`;
       : 'https://laaambapp.vercel.app';
   },
 
+  // ── Ejecutar una tool call sobre datos reales ─────────
+  _ejecutarTool(name, input) {
+    const as = window.AppState;
+    input = input || {};
+
+    if (name === 'get_alertas_activas') {
+      const alertas = window.AlertasMotor?._alertas || [];
+      const filtradas = input.prioridad && input.prioridad !== 'todas'
+        ? alertas.filter(a => a.prioridad === input.prioridad)
+        : alertas;
+      return JSON.stringify(filtradas.map(a => ({
+        tipo: a.tipo, prioridad: a.prioridad,
+        mensaje: a.mensaje, accion: a.accion_sugerida
+      })));
+    }
+
+    if (name === 'get_animales_por_estado') {
+      let animales = as.animales.filter(a => a.estado === 'activo');
+      if (input.estado_reproductivo)
+        animales = animales.filter(a =>
+          a.estado_reproductivo === input.estado_reproductivo);
+      if (input.lote_nombre)
+        animales = animales.filter(a =>
+          a.lote?.toLowerCase().includes(input.lote_nombre.toLowerCase()));
+      if (input.raza)
+        animales = animales.filter(a =>
+          a.raza?.toLowerCase().includes(input.raza.toLowerCase()));
+      return JSON.stringify({
+        total: animales.length,
+        animales: animales.slice(0, 20).map(a => ({
+          codigo: a.codigo, raza: a.raza,
+          edad_meses: a.edad_meses, peso: a.pesoParaTabla,
+          lote: a.lote, estado_rep: a.estado_reproductivo
+        }))
+      });
+    }
+
+    if (name === 'get_kpis_produccion') {
+      const activos = as.animales.filter(a => a.estado === 'activo');
+      const conPeso = activos.filter(a => a.pesoParaTabla);
+      const pesoPromedio = conPeso.length
+        ? (conPeso.reduce((s, a) => s + a.pesoParaTabla, 0) / conPeso.length).toFixed(1)
+        : 0;
+      const hoy = new Date();
+      const hace6m = new Date(hoy - 180 * 86400000);
+      const crias = activos.filter(a =>
+        a.fecha_nacimiento && new Date(a.fecha_nacimiento) > hace6m
+      ).length;
+      const listosSacrificio = conPeso.filter(a =>
+        a.pesoParaTabla >= (as.finca?.config?.peso_objetivo_sacrificio || 48)
+      ).length;
+      return JSON.stringify({
+        total_activos: activos.length,
+        con_peso: conPeso.length,
+        peso_promedio_kg: pesoPromedio,
+        crias_en_levante: crias,
+        listos_sacrificio: listosSacrificio,
+        gdp_promedio: as.gdpPromedio || 36,
+        gestantes: as.gestantes?.length || 0
+      });
+    }
+
+    if (name === 'get_estado_financiero') {
+      const totalCostos = as.getTotalCostosMes?.() || 0;
+      const totalIngresos = as.getTotalIngresosMes?.() || 0;
+      const balance = totalIngresos - totalCostos;
+      const margen = totalIngresos > 0
+        ? Math.round((balance / totalIngresos) * 100) : 0;
+      return JSON.stringify({
+        ingresos: totalIngresos,
+        costos: totalCostos,
+        balance,
+        margen_pct: margen,
+        num_transacciones: {
+          costos: as.getCostosMes?.().length || 0,
+          ingresos: as.getIngresosMes?.().length || 0
+        }
+      });
+    }
+
+    return JSON.stringify({ error: 'Tool no reconocida' });
+  },
+
   // ── Claude (Anthropic) vía proxy serverless ───────────
+  // Loop agentic de function calling: hasta 3 iteraciones.
+  // Mantiene la firma (system, messages) que usa ask().
   async _askClaude(system, messages) {
-    const res = await fetch(this._apiBase() + '/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        messages,
-        system,
-        model: 'claude-opus-4-5'
-      })
-    });
-    const data = await res.json();
-    if (data && data.content) {
-      return data.content.map(b => b.text || '').join('') || 'Sin respuesta.';
+    const msgs = messages.slice();
+
+    for (let i = 0; i < 3; i++) {
+      const res = await fetch(this._apiBase() + '/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-opus-4-5',
+          max_tokens: 1024,
+          system,
+          tools: COPILOTO_TOOLS,
+          messages: msgs
+        })
+      });
+      const data = await res.json();
+
+      if (data && data.error) {
+        throw new Error((data.error && data.error.message) || data.error || 'Error de la API de Claude');
+      }
+
+      // Si el modelo pide ejecutar tools → ejecutarlas y continuar
+      if (data.stop_reason === 'tool_use' && Array.isArray(data.content)) {
+        msgs.push({ role: 'assistant', content: data.content });
+        const toolResults = data.content
+          .filter(b => b.type === 'tool_use')
+          .map(b => ({
+            type: 'tool_result',
+            tool_use_id: b.id,
+            content: this._ejecutarTool(b.name, b.input)
+          }));
+        msgs.push({ role: 'user', content: toolResults });
+        continue; // siguiente iteración
+      }
+
+      // Respuesta final con texto
+      if (data && Array.isArray(data.content)) {
+        const texto = data.content
+          .filter(b => b.type === 'text')
+          .map(b => b.text || '')
+          .join('');
+        return texto || 'Sin respuesta.';
+      }
+
+      return 'Sin respuesta.';
     }
-    if (data && data.error) {
-      throw new Error((data.error && data.error.message) || data.error || 'Error de la API de Claude');
-    }
-    return 'Sin respuesta.';
+
+    return 'Respuesta no disponible — límite de iteraciones alcanzado.';
   },
 
   // ── Grok (xAI) vía proxy serverless ───────────────────

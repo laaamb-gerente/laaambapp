@@ -26,6 +26,7 @@
 <script src="js/auth.js"></script>
 <script src="js/db.js"></script>
 <script src="js/offline-db.js"></script>
+<script src="js/alertas-motor.js"></script>
 <script src="js/app-state.js"></script>
 <script src="js/copiloto.js"></script>
 <script src="js/clear-demo-data.js"></script>
@@ -176,7 +177,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
   <nav class="nav-scroll">
     <div class="nav-group">Principal</div>
     <a class="nav-link active" href="index.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
-    <a class="nav-link" href="hoy.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="14" height="14" rx="2"/><line x1="3" y1="8" x2="17" y2="8"/><line x1="7" y1="2" x2="7" y2="5"/><line x1="13" y1="2" x2="13" y2="5"/></svg>Hoy</a>
+    <a class="nav-link" href="hoy.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="14" height="14" rx="2"/><line x1="3" y1="8" x2="17" y2="8"/><line x1="7" y1="2" x2="7" y2="5"/><line x1="13" y1="2" x2="13" y2="5"/></svg>Hoy<span id="alertas-badge" style="display:none;background:#F18F22;color:white;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px;font-weight:700"></span></a>
     <a class="nav-link" href="okr.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>OKRs &amp; Análisis</a>
     <div class="nav-group">Ganadería</div>
     <a class="nav-link" href="animales.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Animales<span class="nav-badge" id="sb-count">—</span></a>
@@ -379,6 +380,40 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       input.focus();
     }
   };
+  // Agregar una burbuja del copiloto (asistente) al chat
+  window.agregarMensajeCopiloto = function(texto){
+    var chat = document.getElementById('cop-chat');
+    if(!chat) return;
+    var empty = document.getElementById('cop-empty');
+    if(empty) empty.remove();
+    var b = document.createElement('div');
+    b.className = 'cop-bub ai';
+    // Sin renderizador markdown: limpiar ** de negritas
+    b.textContent = String(texto).replace(/\*\*/g, '');
+    chat.appendChild(b);
+    chat.scrollTop = chat.scrollHeight;
+  };
+
+  // Bienvenida proactiva: si AlertasMotor encontró alertas,
+  // el copiloto saluda con un resumen sin que el usuario pregunte.
+  var _bienvenidaDada = false;
+  function bienvenidaProactiva(){
+    if(_bienvenidaDada) return;
+    setTimeout(function(){
+      if(_bienvenidaDada) return;
+      if(!window.AlertasMotor || !window.AlertasMotor._alertas || !window.AlertasMotor._alertas.length) return;
+      var counts = window.AlertasMotor.getCounts();
+      if(counts.total === 0) return;
+      _bienvenidaDada = true;
+      var resumen = window.AlertasMotor._alertas
+        .slice(0, 3)
+        .map(function(a){ return '• ' + a.mensaje; })
+        .join('\n');
+      var bienvenida = 'Tengo ' + counts.total + ' alertas para La Marinilla:\n\n' + resumen + '\n\n¿Por dónde empezamos?';
+      window.agregarMensajeCopiloto(bienvenida);
+    }, 1500);
+  }
+
   // Habilitar Grok cuando window.GROK_API_KEY esté disponible
   function checkGrok(){
     if(window.Copiloto && window.Copiloto.grokDisponible()){
@@ -386,7 +421,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       if(g){ g.disabled = false; g.removeAttribute('title'); }
     }
   }
-  document.addEventListener('appstate:ready', checkGrok);
+  document.addEventListener('appstate:ready', function(){ checkGrok(); bienvenidaProactiva(); });
   checkGrok();
 })();
 </script>
@@ -730,6 +765,25 @@ document.addEventListener('appstate:ready', function(e) {
   console.log('[Dashboard] Actualizado desde', e.detail.source,
     '— Total:', total, 'H:', hembras, 'M:', machos,
     'Gestantes:', gestantes, 'Levante:', levante);
+
+  // ── Generar alertas proactivas ──
+  if (window.AlertasMotor) {
+    window.AlertasMotor.generar().then(function(alertas){
+      const counts = window.AlertasMotor.getCounts();
+      // Mostrar badge en sidebar si hay alertas críticas o altas
+      if (counts.critica > 0 || counts.alta > 0) {
+        const badgeEl = document.getElementById('alertas-badge');
+        if (badgeEl) {
+          badgeEl.textContent = counts.total;
+          badgeEl.style.display = 'inline-block';
+        }
+      }
+      // Enviar resumen proactivo al copiloto
+      if (alertas.length > 0 && window.Copiloto) {
+        window.Copiloto._alertasActivas = alertas;
+      }
+    });
+  }
 });
 </script>
 <script>
