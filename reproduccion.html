@@ -14,6 +14,20 @@
 <script>(function(){var t=(function(){var _t=localStorage.getItem("laaamb-theme");return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute("data-theme",t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <!-- Supabase JS SDK -->
+<!-- Sentry: monitoreo de errores (DSN placeholder — reemplazar por el real) -->
+<script src="https://browser.sentry-cdn.com/7.120.0/bundle.min.js" crossorigin="anonymous"></script>
+<script>
+  if (window.Sentry) Sentry.init({
+    dsn: 'https://PLACEHOLDER@sentry.io/PROJECT_ID',
+    environment: location.hostname.includes('localhost') ? 'development' : 'production',
+    tracesSampleRate: 0.2,
+    beforeSend(event) {
+      if (event.exception?.values?.[0]?.type === 'NetworkError') return null;
+      return event;
+    }
+  });
+</script>
+<script src="js/error-handler.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- LAAAMBAPP: cliente y capa de datos -->
 <script src="js/supabase-client.js"></script>
@@ -22,6 +36,7 @@
   window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 </script>
 <script src="js/auth.js"></script>
+<script src="js/roles.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/db.js"></script>
 <script src="js/offline-db.js"></script>
@@ -683,6 +698,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <div class="fg"><label class="fl">Tipo de parto *</label><select class="fi" id="p-tipo"><option>Normal</option><option>Asistido</option><option>Distócico</option><option>Cesárea</option></select></div>
       <div class="fg"><label class="fl">Lote</label><select class="fi"><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select></div>
     </div>
+    <div id="p-lineaje-info" style="display:none"></div>
     <div class="form-section">Crías</div>
     <div class="form-grid">
       <div class="fg"><label class="fl">N° crías vivas *</label><input class="fi" type="number" id="p-vivas" placeholder="2" min="0" oninput="generarCrias()"/></div>
@@ -913,6 +929,59 @@ function filterMontas(val, field){
 function filterPartos(){ renderPartos(PARTOS); }
 
 // ═══ PARTO ═══
+// ═══ LINEAJE Y RAZA DE CRÍAS ═══
+function _normRz(s){ return (s||'').toString().trim(); }
+// Resuelve un animal por código o id desde AppState.
+function _findAnimalRepro(codeOrId){
+  if(!window.AppState || !Array.isArray(window.AppState.animales)) return null;
+  const v=_normRz(codeOrId).replace(/^#/,'');
+  if(!v) return null;
+  return window.AppState.animales.find(a=>a.codigo===v||a.id===v)||null;
+}
+// Calcula la raza de una cría a partir de las razas de los padres.
+// raza_madre === raza_padre → puro; distintas → "F1 padre x madre";
+// si alguna ya es F1/cruzado → "Cruzado padre x madre".
+function calcRazaCria(razaMadre, razaPadre){
+  const m=_normRz(razaMadre), p=_normRz(razaPadre);
+  if(!m && !p) return '';
+  if(!m) return p;
+  if(!p) return m;
+  if(m.toLowerCase()===p.toLowerCase()) return m; // puro
+  const yaCruce = /^(f1|f2|cruzad)/i.test(m) || /^(f1|f2|cruzad)/i.test(p) || /\sx\s/i.test(m) || /\sx\s/i.test(p);
+  if(yaCruce) return 'Cruzado '+p+' x '+m;
+  return 'F1 '+p+' x '+m;
+}
+// Contexto de monta de una hembra desde AppState.eventosReproductivos.
+// opts.soloActiva=true → ignora montas que ya tienen parto posterior.
+function getMontaContext(hembraCodeOrId, opts){
+  opts=opts||{};
+  const h=_findAnimalRepro(hembraCodeOrId);
+  if(!h) return null;
+  const evs=(window.AppState && window.AppState.eventosReproductivos)||[];
+  const montas=evs.filter(e=>e.tipo==='monta' && e.hembra_id===h.id)
+    .sort((a,b)=>String(b.fecha||'').localeCompare(String(a.fecha||'')));
+  if(!montas.length) return null;
+  let monta=montas[0];
+  if(opts.soloActiva){
+    const partos=evs.filter(e=>e.tipo==='parto' && e.hembra_id===h.id);
+    monta=montas.find(mo=>!partos.some(pa=>String(pa.fecha||'')>String(mo.fecha||'')))||null;
+    if(!monta) return null;
+  }
+  const d=monta.datos||{};
+  const padre=_findAnimalRepro(d.padre_id) || (monta.macho_id?_findAnimalRepro(monta.macho_id):null);
+  return {
+    montaId: monta.id,
+    fecha: monta.fecha,
+    ciclo: d.ciclo||'ok',
+    madre_id: h.id,
+    padre_id: d.padre_id || monta.macho_id || (padre?padre.id:null),
+    raza_madre: d.raza_madre || h.raza || '',
+    raza_padre: d.raza_padre || (padre?padre.raza:'') || '',
+    padre_codigo: padre?padre.codigo:(d.padre_codigo||''),
+    padre_nombre: padre?(padre.nombre||''):''
+  };
+}
+
 function generarCrias(){
   const n = parseInt(document.getElementById('p-vivas').value)||0;
   const container = document.getElementById('crias-form');
@@ -930,8 +999,30 @@ function generarCrias(){
   }
 }
 function autoFillMadre(val){
-  const nroInput = document.getElementById('p-nro');
-  // In production: lookup animal data and auto-fill N° parto
+  const box=document.getElementById('p-lineaje-info');
+  if(!box) return;
+  // Para el parto usamos la última monta registrada aunque su ecografía
+  // haya sido "vacía" (detección tardía de preñez).
+  const ctx=getMontaContext(val,{soloActiva:false});
+  if(!ctx){
+    box.style.display='block';
+    box.style.cssText='display:block;background:var(--amber-bg);border:1px solid rgba(232,160,48,.3);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2);margin-top:8px';
+    box.innerHTML='⚠ Sin monta registrada — la raza de las crías deberá ingresarse manualmente.';
+    box.dataset.razaCria=''; box.dataset.padreId=''; box.dataset.madreId='';
+    box.dataset.razaMadre=''; box.dataset.razaPadre='';
+    return;
+  }
+  const razaCria=calcRazaCria(ctx.raza_madre, ctx.raza_padre);
+  const padreLbl=(ctx.padre_codigo||'—')+(ctx.padre_nombre?(' · '+ctx.padre_nombre):'')+(ctx.raza_padre?(' ('+ctx.raza_padre+')'):'');
+  box.style.cssText='display:block;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2);margin-top:8px;line-height:1.7';
+  box.innerHTML='<div>🐏 <strong>Padre registrado:</strong> '+padreLbl+'</div>'+
+    '<div>🧬 <strong>Raza estimada crías:</strong> '+(razaCria||'—')+'</div>'+
+    (ctx.ciclo==='fallido'?'<div style="color:var(--amber)">La ecografía de esta monta fue "vacía"; se usa como referencia de raza por detección tardía.</div>':'');
+  box.dataset.razaCria=razaCria||'';
+  box.dataset.padreId=ctx.padre_id||'';
+  box.dataset.madreId=ctx.madre_id||'';
+  box.dataset.razaMadre=ctx.raza_madre||'';
+  box.dataset.razaPadre=ctx.raza_padre||'';
 }
 function saveParto(){
   const madreId = document.getElementById('p-madre')?.value?.trim();
@@ -981,21 +1072,51 @@ function saveParto(){
   }
 
   // ── Supabase: registrar evento reproductivo (parto) + estado de la madre ──
+  // + propagación de lineaje: padres y raza calculada a cada cría.
   if(window.DB && window.AppState && Array.isArray(window.AppState.animales)){
-    const _mCod=String(madreId||'').replace(/^#/,'').trim();
-    const _pCod=String(padreId||'').replace(/^#/,'').trim();
-    const _mo=window.AppState.animales.find(a=>a.codigo===_mCod||a.id===_mCod);
-    const _pa=window.AppState.animales.find(a=>a.codigo===_pCod||a.id===_pCod);
+    const _mo=_findAnimalRepro(madreId);
     if(_mo){
+      // Contexto de monta (última, aunque su ecografía haya sido "vacía").
+      const _ctx=getMontaContext(madreId,{soloActiva:false});
+      let _padreId=_ctx?_ctx.padre_id:null;
+      let _razaMadre=_ctx?(_ctx.raza_madre||_mo.raza||''):(_mo.raza||'');
+      let _razaPadre=_ctx?(_ctx.raza_padre||''):'';
+      // Override: padre seleccionado manualmente en el modal (si existe en el hato).
+      const _paSel=_findAnimalRepro(padreId);
+      if(_paSel){ _padreId=_paSel.id; if(!_razaPadre) _razaPadre=_paSel.raza||''; }
+      const _razaCria=calcRazaCria(_razaMadre,_razaPadre);
       const _pesoCria=crias.length?(crias.reduce((s,c)=>s+(c.peso_kg||0),0)/crias.length):null;
+      const _datos={
+        madre_id:_mo.id, padre_id:_padreId||null,
+        raza_madre:_razaMadre||null, raza_padre:_razaPadre||null,
+        raza_cria:_razaCria||null, crias:crias
+      };
       window.DB.saveEventoReproductivo({
         finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
-        hembra_id:_mo.id, macho_id:_pa?_pa.id:null,
+        hembra_id:_mo.id, macho_id:_padreId||null,
         tipo:'parto', fecha:fecha, resultado:tipo,
         crias_vivas:vivas, crias_muertas:muertas, peso_cria:_pesoCria,
-        notas:obs, registrado_por:colab
+        notas:obs, registrado_por:colab, datos:_datos
       }).then(()=>window.DB.updateEstadoReproductivo(_mo.id,'lactante',null,null))
-        .catch(err=>console.warn('[Repro] parto Supabase:',err&&err.message));
+        .catch(err=>{console.warn('[Repro] parto Supabase:',err&&err.message); if(window.logError)logError('saveParto.evento',err);});
+
+      // Crear cada cría viva como animal nuevo con raza y padres heredados.
+      const _especie=_mo.especie||'ovino';
+      const _pref=_especie==='bovino'?'BV':'OV';
+      const _stamp=Date.now().toString().slice(-6);
+      crias.forEach(function(c,i){
+        window.DB.saveAnimal({
+          finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+          codigo:_pref+'-'+_stamp+(i+1),
+          especie:_especie,
+          sexo:(c.sexo==='H'?'hembra':'macho'),
+          raza:(_razaCria||_razaMadre||null),
+          fecha_nacimiento:fecha,
+          madre_id:_mo.id, padre_id:_padreId||null,
+          peso_actual:c.peso_kg||null,
+          estado:'activo'
+        }).catch(err=>{console.warn('[Repro] cría Supabase:',err&&err.message); if(window.logError)logError('saveParto.cria',err);});
+      });
     }
   }
 
@@ -1054,20 +1175,29 @@ function saveMonta(){
   // ── Supabase: registrar evento reproductivo (monta) + estado de la hembra ──
   if(window.DB && window.AppState && Array.isArray(window.AppState.animales)){
     const _hCod=String(document.getElementById('m-hembra')?.value||hembraId||'').replace(/^#/,'').trim();
-    const _mCod=String(document.querySelector('#modal-monta select')?.value||machoId||'').replace(/^#/,'').trim();
-    const _h=window.AppState.animales.find(a=>a.codigo===_hCod||a.id===_hCod);
-    const _m=window.AppState.animales.find(a=>a.codigo===_mCod||a.id===_mCod);
+    // El select de reproductor muestra "RE-003 — Príncipe (Dorper)"; extraer el código.
+    const _mRaw=String(document.querySelector('#modal-monta select')?.value||machoId||'');
+    const _mCod=_mRaw.split(/[—–]/)[0].replace(/^#/,'').trim();
+    const _h=_findAnimalRepro(_hCod);
+    const _m=_findAnimalRepro(_mCod);
     if(_h){
       const _diasGest=especieMonta==='bovino'?283:147;
       const _pe=new Date(fecha); _pe.setDate(_pe.getDate()+_diasGest);
       const _peStr=_pe.toISOString().slice(0,10);
+      // Lineaje: guardar contexto de la monta para heredarlo a la cría.
+      const _razaPadre=_m?(_m.raza||''):(/\(([^)]+)\)/.test(_mRaw)?_mRaw.match(/\(([^)]+)\)/)[1]:'');
+      const _datosMonta={
+        madre_id:_h.id, padre_id:_m?_m.id:null,
+        raza_madre:_h.raza||null, raza_padre:_razaPadre||null,
+        padre_codigo:_m?_m.codigo:_mCod, ciclo:'ok'
+      };
       window.DB.saveEventoReproductivo({
         finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
         hembra_id:_h.id, macho_id:_m?_m.id:null,
         tipo:'monta', fecha:fecha, resultado:'Pendiente',
-        crias_vivas:0, notas:obs, registrado_por:colab
+        crias_vivas:0, notas:obs, registrado_por:colab, datos:_datosMonta
       }).then(()=>window.DB.updateEstadoReproductivo(_h.id,'en_monta',fecha,_peStr))
-        .catch(err=>console.warn('[Repro] monta Supabase:',err&&err.message));
+        .catch(err=>{console.warn('[Repro] monta Supabase:',err&&err.message); if(window.logError)logError('saveMonta.evento',err);});
     }
   }
 
@@ -1106,19 +1236,41 @@ function saveEco(){
                : resultado==='Vacía'    ? 'vacia'
                : 'dudosa';
     if(_a){
+      // Lineaje: heredar contexto de la monta activa (sin parto posterior).
+      const _ctxEco=getMontaContext(_a.id,{soloActiva:true})||getMontaContext(_a.id,{soloActiva:false});
+      let _datosEco={};
+      if(_res==='gestante' && _ctxEco){
+        // Preñez confirmada → heredar madre/padre/razas para la futura cría.
+        _datosEco={
+          madre_id:_ctxEco.madre_id, padre_id:_ctxEco.padre_id,
+          raza_madre:_ctxEco.raza_madre||null, raza_padre:_ctxEco.raza_padre||null,
+          ciclo:'ok'
+        };
+      } else if(_res==='vacia'){
+        // Ecografía vacía → ciclo fallido. Guardar referencia en historial,
+        // pero marcar la monta como fallida (se "limpia" para el ciclo siguiente).
+        _datosEco={ciclo:'fallido'};
+        if(_ctxEco){
+          _datosEco.madre_id=_ctxEco.madre_id; _datosEco.padre_id=_ctxEco.padre_id;
+          _datosEco.raza_madre=_ctxEco.raza_madre||null; _datosEco.raza_padre=_ctxEco.raza_padre||null;
+        }
+      }
       window.DB.saveEventoReproductivo({
         finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
-        hembra_id:_a.id, tipo:'ecografia', fecha:fecha,
-        resultado:_res, notas:obs, registrado_por:vet
+        hembra_id:_a.id, macho_id:(_ctxEco?_ctxEco.padre_id:null),
+        tipo:'ecografia', fecha:fecha,
+        resultado:_res, notas:obs, registrado_por:vet, datos:_datosEco
       }).then(function(){
         if(_res==='gestante'){
           const _pe = new Date(fecha); _pe.setDate(_pe.getDate()+147); // ovinos: 147 días
           return window.DB.updateEstadoReproductivo(_a.id,'gestante',null,_pe.toISOString().slice(0,10));
         }
         if(_res==='vacia'){
+          // Marcar la última monta como ciclo fallido en su historial.
+          if(window.DB.marcarMontaFallida) window.DB.marcarMontaFallida(_a.id).catch(function(){});
           return window.DB.updateEstadoReproductivo(_a.id,'vacia',null,null);
         }
-      }).catch(err=>console.warn('[Repro] ecografía Supabase:',err&&err.message));
+      }).catch(err=>{console.warn('[Repro] ecografía Supabase:',err&&err.message); if(window.logError)logError('saveEco.evento',err);});
     }
   }
 

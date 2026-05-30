@@ -141,6 +141,28 @@ window.DB = {
     return await window._sb.from('eventos_reproductivos')
       .insert(evento).select().single();
   },
+  async updateEventoReproductivo(id, patch) {
+    return await window._sb.from('eventos_reproductivos')
+      .update(patch).eq('id', id).select().single();
+  },
+  // Marca como ciclo fallido la última monta de una hembra (ecografía vacía).
+  async marcarMontaFallida(hembra_id) {
+    const { data } = await window._sb.from('eventos_reproductivos')
+      .select('id, datos').eq('hembra_id', hembra_id).eq('tipo', 'monta')
+      .order('fecha', { ascending: false }).limit(1);
+    if (!data || !data.length) return { data: null, error: null };
+    const ev = data[0];
+    const datos = Object.assign({}, ev.datos || {}, { ciclo: 'fallido' });
+    return await window._sb.from('eventos_reproductivos')
+      .update({ datos }).eq('id', ev.id).select().single();
+  },
+  // Última monta de una hembra (para heredar lineaje aunque el ciclo haya fallado).
+  async getUltimaMonta(hembra_id) {
+    return await window._sb.from('eventos_reproductivos')
+      .select('*, macho:macho_id(codigo, nombre, raza)')
+      .eq('hembra_id', hembra_id).eq('tipo', 'monta')
+      .order('fecha', { ascending: false }).limit(1);
+  },
   async getGestantes(finca_id) {
     return await window._sb.from('animales')
       .select('id, codigo, nombre, fecha_ultima_monta, fecha_parto_esperado, lotes(nombre)')

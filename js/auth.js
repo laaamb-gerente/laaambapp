@@ -94,6 +94,14 @@ window.Auth = {
     // Guardar rol en window para uso en páginas
     window.AUTH_ROL = rol;
     window.AUTH_PERFIL = this._perfil;
+
+    // Control de acceso por rol a nivel de UI (js/roles.js).
+    // Se aplica aquí (antes de restaurar la visibilidad) para que un
+    // redirect por página no autorizada ocurra sin flash de contenido.
+    if (window.Roles && typeof window.Roles.apply === 'function') {
+      window.__rolesApplied = true;
+      window.Roles.apply(rol);
+    }
   },
 
   _actualizarUI(perfil) {
