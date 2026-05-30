@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="LAAAMB">
 <link rel="apple-touch-icon" href="/laaambapp/icons/icon.svg">
-<title>LAAAMB · Trazabilidad</title>
+<title>LAAAMB · Trazabilidad verificada</title>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <!-- Supabase JS SDK (PÚBLICO — sin autenticación) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -22,53 +22,95 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--teal:#00AFB6;--teal-d:#008a90;--bg:#0d1117;--bg2:#161b22;--bg3:#1c2530;
-  --green:#2ec77a;--amber:#e8a030;--red:#e05252;--text:#d8edef;--text2:#7eadb2;--text3:#4d7e84;
-  --border:rgba(0,175,182,.14);--r:12px}
+:root{--teal:#00AFB6;--teal-d:#008a90;--teal-l:#39d4db;--bg:#0a0f14;--bg2:#121a21;--bg3:#19242d;
+  --green:#2ec77a;--amber:#e8a030;--red:#e05252;--gold:#d9b25a;
+  --text:#e2f3f4;--text2:#8fbabf;--text3:#52828a;--text4:#33565c;
+  --border:rgba(0,175,182,.16);--border2:rgba(0,175,182,.28);--r:14px;--r2:18px}
 html,body{background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:15px;line-height:1.55;min-height:100vh}
-.wrap{max-width:480px;margin:0 auto;padding:28px 18px 48px}
-/* HEADER */
-.brand{text-align:center;margin-bottom:24px}
-.brand-logo{font-family:'Sigmar',cursive;font-size:38px;color:var(--teal);letter-spacing:1px;line-height:1}
-.brand-sub{font-size:10px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--teal-d);margin-top:4px}
-.brand-finca{font-size:12px;color:var(--text3);margin-top:8px}
-/* HERO IMG */
-.hero{background:linear-gradient(160deg,#15323a,#0d1117);border:1px solid var(--border);border-radius:var(--r);padding:30px 20px;text-align:center;margin-bottom:18px;position:relative;overflow:hidden}
-.hero::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(0,175,182,.12),transparent 70%)}
-.hero svg{width:84px;height:84px;color:var(--teal);position:relative}
-.hero-corte{font-family:'Sigmar',cursive;font-size:24px;color:var(--text);margin-top:12px;position:relative;text-transform:capitalize}
-.hero-peso{font-size:14px;color:var(--teal);font-weight:600;position:relative}
-.badge-verif{display:inline-flex;align-items:center;gap:6px;background:rgba(46,199,122,.12);border:1px solid rgba(46,199,122,.35);color:var(--green);font-size:11px;font-weight:700;padding:5px 12px;border-radius:999px;margin-top:14px;position:relative}
+body{background:
+  radial-gradient(circle at 50% -10%,rgba(0,175,182,.10),transparent 55%),
+  radial-gradient(circle at 50% 105%,rgba(0,175,182,.06),transparent 45%),
+  var(--bg)}
+.wrap{max-width:500px;margin:0 auto;padding:26px 16px 52px}
+
+/* HEADER / BRAND */
+.brand{text-align:center;margin-bottom:22px}
+.brand-logo{font-family:'Sigmar',cursive;font-size:40px;color:var(--teal);letter-spacing:1px;line-height:1;text-shadow:0 0 24px rgba(0,175,182,.35)}
+.brand-sub{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--teal-d);margin-top:5px}
+.brand-finca{font-size:11.5px;color:var(--text3);margin-top:9px;letter-spacing:.3px}
+
+/* HERO — sello de trazabilidad verificada (sin foto de animal) */
+.hero{background:linear-gradient(165deg,#16323a 0%,#0e1820 100%);border:1px solid var(--border2);border-radius:var(--r2);padding:34px 22px 28px;text-align:center;margin-bottom:18px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(0,175,182,.18),transparent 65%)}
+.seal{width:96px;height:96px;margin:0 auto;position:relative;display:flex;align-items:center;justify-content:center}
+.seal-ring{position:absolute;inset:0;border-radius:50%;border:2px solid var(--border2);animation:pulse 2.6s ease-in-out infinite}
+.seal-ring.r2{inset:10px;border-color:rgba(46,199,122,.30)}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:.7}}
+.seal-core{width:62px;height:62px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#2ee08a,#1a9455);display:flex;align-items:center;justify-content:center;box-shadow:0 0 28px rgba(46,199,122,.5);position:relative}
+.seal-core svg{width:34px;height:34px;color:#06120c;stroke-width:3}
+.badge-verif{display:inline-flex;align-items:center;gap:7px;background:rgba(46,199,122,.14);border:1px solid rgba(46,199,122,.42);color:var(--green);font-size:11.5px;font-weight:700;letter-spacing:.4px;padding:6px 14px;border-radius:999px;margin-top:18px;position:relative;text-transform:uppercase}
+.hero-corte{font-family:'Sigmar',cursive;font-size:30px;color:#fff;margin-top:18px;position:relative;text-transform:capitalize;line-height:1.15}
+.hero-peso{font-size:18px;color:var(--teal-l);font-weight:700;position:relative;margin-top:2px}
+.hero-peso small{font-size:12px;color:var(--text2);font-weight:500}
+.hero-qrcode{font-family:'Changa',monospace;font-size:12px;color:var(--text3);letter-spacing:1.5px;margin-top:10px;position:relative}
+
 /* SEMÁFORO */
-.semaforo{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:var(--r);margin-bottom:18px;border:1px solid}
-.semaforo.verde{background:rgba(46,199,122,.10);border-color:rgba(46,199,122,.30)}
-.semaforo.amarillo{background:rgba(232,160,48,.10);border-color:rgba(232,160,48,.30)}
-.semaforo.rojo{background:rgba(224,82,82,.10);border-color:rgba(224,82,82,.30)}
-.sem-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0}
-.semaforo.verde .sem-dot{background:var(--green);box-shadow:0 0 10px var(--green)}
-.semaforo.amarillo .sem-dot{background:var(--amber);box-shadow:0 0 10px var(--amber)}
-.semaforo.rojo .sem-dot{background:var(--red);box-shadow:0 0 10px var(--red)}
-.sem-txt b{display:block;font-size:13px;color:var(--text)}
-.sem-txt span{font-size:11px;color:var(--text3)}
-/* CARD INFO */
-.info-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:6px 18px;margin-bottom:18px}
-.info-card h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--teal-d);padding:14px 0 8px;border-bottom:1px solid var(--border)}
-.info-row{display:flex;justify-content:space-between;gap:14px;padding:11px 0;border-bottom:1px solid var(--border);font-size:14px}
+.semaforo{display:flex;align-items:center;gap:13px;padding:15px 17px;border-radius:var(--r);margin-bottom:14px;border:1px solid}
+.semaforo.verde{background:rgba(46,199,122,.10);border-color:rgba(46,199,122,.32)}
+.semaforo.amarillo{background:rgba(232,160,48,.10);border-color:rgba(232,160,48,.32)}
+.semaforo.rojo{background:rgba(224,82,82,.10);border-color:rgba(224,82,82,.32)}
+.sem-dot{width:15px;height:15px;border-radius:50%;flex-shrink:0}
+.semaforo.verde .sem-dot{background:var(--green);box-shadow:0 0 12px var(--green)}
+.semaforo.amarillo .sem-dot{background:var(--amber);box-shadow:0 0 12px var(--amber)}
+.semaforo.rojo .sem-dot{background:var(--red);box-shadow:0 0 12px var(--red)}
+.sem-txt b{display:block;font-size:13.5px;color:var(--text)}
+.sem-txt span{font-size:11.5px;color:var(--text3)}
+
+/* BADGE CADENA DE FRÍO */
+.cold-badge{display:flex;align-items:center;gap:11px;padding:13px 16px;border-radius:var(--r);margin-bottom:18px;border:1px solid;font-size:12.5px}
+.cold-badge.ok{background:rgba(56,176,216,.10);border-color:rgba(56,176,216,.32);color:#7ed0e8}
+.cold-badge.bad{background:rgba(224,82,82,.10);border-color:rgba(224,82,82,.32);color:#f0a0a0}
+.cold-badge svg{width:20px;height:20px;flex-shrink:0}
+.cold-badge b{display:block;color:var(--text);font-size:13px}
+
+/* SECCIÓN / CARD */
+.sec{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:4px 18px;margin-bottom:16px}
+.sec-h{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--teal);padding:16px 0 10px;border-bottom:1px solid var(--border)}
+.sec-h .n{width:22px;height:22px;border-radius:50%;background:var(--teal-bg,rgba(0,175,182,.14));border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--teal-l);flex-shrink:0}
+.info-row{display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);font-size:14px}
 .info-row:last-child{border-bottom:none}
 .info-row .k{color:var(--text3)}
 .info-row .v{color:var(--text);font-weight:600;text-align:right}
-/* FINCA */
-.finca-card{background:linear-gradient(150deg,#15323a,#161b22);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:18px}
-.finca-card h3{font-family:'Sigmar',cursive;font-size:17px;color:var(--teal);margin-bottom:8px}
-.finca-card p{font-size:13px;color:var(--text2);line-height:1.6}
-/* FOOT */
-.foot{text-align:center;font-size:11px;color:var(--text3);margin-top:26px;line-height:1.7}
-.foot a{color:var(--teal);text-decoration:none}
+.info-row .v.big{font-size:18px;color:var(--teal-l)}
+/* flujo de peso */
+.flow{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:14px 0;border-bottom:1px solid var(--border)}
+.flow-step{text-align:center;flex:1}
+.flow-step .fv{font-size:16px;font-weight:700;color:var(--text)}
+.flow-step .fl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
+.flow-arrow{color:var(--teal-d);font-size:16px;flex-shrink:0}
+/* atributos / chips */
+.attrs{display:flex;flex-wrap:wrap;gap:7px;padding:13px 0 15px}
+.attr-chip{display:inline-flex;align-items:center;gap:5px;background:rgba(0,175,182,.08);border:1px solid var(--border);color:var(--text2);font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:999px}
+.attr-chip svg{width:12px;height:12px;color:var(--green)}
+
+/* SOBRE LAAAMB */
+.about{background:linear-gradient(155deg,#16323a,#121a21);border:1px solid var(--border2);border-radius:var(--r2);padding:22px;margin-bottom:18px}
+.about h3{font-family:'Sigmar',cursive;font-size:19px;color:var(--teal);margin-bottom:10px}
+.about p{font-size:13px;color:var(--text2);line-height:1.65}
+.about p+p{margin-top:9px}
+
+/* FOOTER con QR */
+.foot{text-align:center;margin-top:24px}
+.foot-qr{display:inline-flex;align-items:center;justify-content:center;background:#fff;border-radius:var(--r);padding:11px;margin-bottom:14px}
+.foot-line{font-size:11.5px;color:var(--text3);line-height:1.8}
+.foot-line b{color:var(--text2)}
+.foot a{color:var(--teal);text-decoration:none;font-weight:600}
+
 /* STATES */
-.center-state{min-height:70vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px}
-.center-state .brand-logo{font-size:46px}
+.center-state{min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px}
+.center-state .brand-logo{font-size:48px}
 .center-state p{color:var(--text3);font-size:14px}
-.spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
@@ -76,7 +118,7 @@ html,body{background:var(--bg);color:var(--text);font-family:'Changa',sans-serif
 <div class="wrap" id="root">
   <div class="center-state">
     <div class="spinner"></div>
-    <p>Cargando trazabilidad…</p>
+    <p>Verificando trazabilidad…</p>
   </div>
 </div>
 
@@ -85,19 +127,22 @@ html,body{background:var(--bg);color:var(--text);font-family:'Changa',sans-serif
   var TIPO_LABEL = {
     canal_completa:'Canal completa', cuarto_delantero:'Cuarto delantero', cuarto_trasero:'Cuarto trasero',
     rack:'Rack', paleta:'Paleta', pierna:'Pierna', costillar:'Costillar', lomo:'Lomo',
-    cuello:'Cuello', menudencias:'Menudencias', otro:'Corte'
+    cuello:'Cuello', menudencias:'Menudencias', otro:'Corte premium'
   };
   var MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
   function esc(s){ var d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
   function fmtFecha(f){ if(!f) return '—'; var d=new Date(f+'T00:00:00'); return d.getDate()+' '+MESES[d.getMonth()]+' '+d.getFullYear(); }
-  function edadAprox(nac){
-    if(!nac) return null;
-    var d = (Date.now() - new Date(nac+'T00:00:00').getTime())/86400000;
-    var meses = Math.round(d/30.4);
-    if(meses < 12) return meses+' meses';
-    var a = Math.floor(meses/12), m = meses%12;
-    return a+' año'+(a>1?'s':'')+(m?' '+m+' m':'');
+  function fmtFechaCorta(f){ if(!f) return '—'; var d=new Date(f+'T00:00:00'); var p=function(n){return (n<10?'0':'')+n;}; return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear(); }
+  function mesesEntre(ini, fin){
+    if(!ini) return null;
+    var a = new Date(ini+'T00:00:00').getTime();
+    var b = fin ? new Date(fin+'T00:00:00').getTime() : Date.now();
+    var m = Math.round((b-a)/86400000/30.4);
+    if(m < 1) return 'menos de 1 mes';
+    if(m < 12) return m+' meses';
+    var y=Math.floor(m/12), r=m%12;
+    return y+' año'+(y>1?'s':'')+(r?' '+r+' m':'');
   }
 
   function noEncontrado(){
@@ -105,94 +150,137 @@ html,body{background:var(--bg);color:var(--text);font-family:'Changa',sans-serif
       '<div class="center-state">'+
       '<div class="brand-logo">LAAAMB</div>'+
       '<div class="brand-sub">Corderos premium</div>'+
-      '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#4d7e84" stroke-width="1.4" style="margin-top:10px"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>'+
+      '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#52828a" stroke-width="1.4" style="margin-top:10px"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>'+
       '<p>Producto no encontrado.<br>Verifica el código QR del empaque.</p>'+
       '</div>';
   }
 
-  function render(d){
+  function render(d, frio){
     var corte = d.cortes || {};
     var animal = d.animales || {};
     var ben = d.beneficios || {};
     var lote = (animal.lotes && animal.lotes.nombre) || null;
 
-    // Semáforo por fecha límite de consumo
+    // ── Semáforo (verde >7d · amarillo 3-7d · rojo <3d) ──
     var semClase='verde', semTit='Producto fresco', semSub='En óptimas condiciones';
     if(d.fecha_limite_consumo){
       var dias = Math.ceil((new Date(d.fecha_limite_consumo+'T00:00:00') - Date.now())/86400000);
       if(dias < 0){ semClase='rojo'; semTit='Fecha de consumo vencida'; semSub='Venció el '+fmtFecha(d.fecha_limite_consumo); }
-      else if(dias <= 5){ semClase='amarillo'; semTit='Consumir pronto'; semSub='Quedan '+dias+' día'+(dias===1?'':'s')+' (límite '+fmtFecha(d.fecha_limite_consumo)+')'; }
-      else { semClase='verde'; semTit='Producto fresco'; semSub='Consumir antes del '+fmtFecha(d.fecha_limite_consumo); }
+      else if(dias < 3){ semClase='rojo'; semTit='Consumir hoy'; semSub='Quedan '+dias+' día'+(dias===1?'':'s')+' — consumir de inmediato'; }
+      else if(dias <= 7){ semClase='amarillo'; semTit='Consumir pronto'; semSub='Quedan '+dias+' días para el límite de consumo'; }
+      else { semClase='verde'; semTit='Producto fresco'; semSub='Quedan '+dias+' días de óptima frescura'; }
     }
 
     var tipoLbl = TIPO_LABEL[corte.tipo_corte] || 'Corte premium';
-    var edad = edadAprox(animal.fecha_nacimiento);
+    var edadSacrificio = mesesEntre(animal.fecha_nacimiento, ben.fecha);
+
+    // ── Badge cadena de frío ──
+    var coldHtml = '';
+    if(frio && frio.length){
+      var ult = frio[0];
+      var t = parseFloat(ult.temperatura_c);
+      var ok = !isNaN(t) && t < 4;
+      var fh = ult.fecha_hora ? new Date(ult.fecha_hora) : null;
+      var fhTxt = fh ? (fh.getDate()+' '+MESES[fh.getMonth()]+' '+fh.getFullYear()) : '';
+      coldHtml =
+        '<div class="cold-badge '+(ok?'ok':'bad')+'">'+
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 2v20M4.5 7l15 10M19.5 7l-15 10"/><path d="M12 2l2.5 2.5M12 2l-2.5 2.5M12 22l2.5-2.5M12 22l-2.5-2.5"/></svg>'+
+          '<div><b>'+(ok?'Cadena de frío verificada':'Alerta de temperatura')+'</b>'+
+          'Último registro: '+esc(isNaN(t)?'—':t.toFixed(1))+' °C'+(fhTxt?' · '+esc(fhTxt):'')+'</div>'+
+        '</div>';
+    }
 
     var html =
+      // BRAND
       '<div class="brand">'+
         '<div class="brand-logo">LAAAMB</div>'+
         '<div class="brand-sub">Corderos premium</div>'+
-        '<div class="brand-finca">La Marinilla · San Bernardo · Ibagué · Tolima · Colombia</div>'+
+        '<div class="brand-finca">La Marinilla · Vereda San Bernardo · Ibagué · Tolima · Colombia</div>'+
       '</div>'+
 
+      // HERO — sello verificado
       '<div class="hero">'+
-        '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'+
-          '<path d="M20 30c-5 0-9 4-9 9s4 9 9 9h24c5 0 9-4 9-9s-4-9-9-9"/>'+
-          '<circle cx="22" cy="22" r="7"/><circle cx="42" cy="22" r="7"/>'+
-          '<path d="M16 20c-3-1-5 1-5 4M48 20c3-1 5 1 5 4"/>'+
-          '<path d="M24 48v6M40 48v6M30 48v6M34 48v6"/>'+
-        '</svg>'+
+        '<div class="seal">'+
+          '<div class="seal-ring"></div><div class="seal-ring r2"></div>'+
+          '<div class="seal-core"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>'+
+        '</div>'+
+        '<div class="badge-verif">✓ Trazabilidad verificada · LAAAMB</div>'+
         '<div class="hero-corte">'+esc(tipoLbl)+'</div>'+
-        '<div class="hero-peso">'+esc(d.peso_neto)+' kg · empaque al vacío</div>'+
-        '<div class="badge-verif">✓ Trazabilidad verificada</div>'+
+        '<div class="hero-peso">'+esc(d.peso_neto)+' kg <small>· empaque al vacío</small></div>'+
+        '<div class="hero-qrcode">'+esc(d.qr_code)+'</div>'+
       '</div>'+
 
+      // SEMÁFORO + apto consumo
       '<div class="semaforo '+semClase+'">'+
         '<div class="sem-dot"></div>'+
         '<div class="sem-txt"><b>'+semTit+'</b><span>'+semSub+'</span></div>'+
       '</div>'+
+      coldHtml+
 
-      '<div class="info-card">'+
-        '<h3>El corte</h3>'+
-        '<div class="info-row"><span class="k">Tipo de corte</span><span class="v">'+esc(tipoLbl)+'</span></div>'+
-        '<div class="info-row"><span class="k">Peso neto</span><span class="v">'+esc(d.peso_neto)+' kg</span></div>'+
+      // ── SECCIÓN 1 · IDENTIDAD ──
+      '<div class="sec">'+
+        '<div class="sec-h"><span class="n">1</span>Identidad del producto</div>'+
+        '<div class="info-row"><span class="k">Tipo de corte</span><span class="v big">'+esc(tipoLbl)+'</span></div>'+
+        '<div class="info-row"><span class="k">Peso neto</span><span class="v big">'+esc(d.peso_neto)+' kg</span></div>'+
+        '<div class="info-row"><span class="k">Código de trazabilidad</span><span class="v">'+esc(d.qr_code)+'</span></div>'+
         '<div class="info-row"><span class="k">Fecha de empaque</span><span class="v">'+fmtFecha(d.fecha_empaque)+'</span></div>'+
-        (d.ubicacion_frigorifico?'<div class="info-row"><span class="k">Conservación</span><span class="v">'+esc(d.ubicacion_frigorifico)+'</span></div>':'')+
-        '<div class="info-row"><span class="k">Código QR</span><span class="v">'+esc(d.qr_code)+'</span></div>'+
+        (d.fecha_limite_consumo?'<div class="info-row"><span class="k">Apto para consumo hasta</span><span class="v">'+fmtFechaCorta(d.fecha_limite_consumo)+'</span></div>':'')+
       '</div>'+
 
-      '<div class="info-card">'+
-        '<h3>El animal</h3>'+
-        (animal.codigo?'<div class="info-row"><span class="k">Identificación</span><span class="v">'+esc(animal.codigo)+(animal.nombre?' · '+esc(animal.nombre):'')+'</span></div>':'')+
+      // ── SECCIÓN 2 · HISTORIA DEL ANIMAL ──
+      '<div class="sec">'+
+        '<div class="sec-h"><span class="n">2</span>Historia del animal</div>'+
         (animal.raza?'<div class="info-row"><span class="k">Raza</span><span class="v">'+esc(animal.raza)+'</span></div>':'')+
-        (edad?'<div class="info-row"><span class="k">Edad estimada</span><span class="v">'+esc(edad)+'</span></div>':'')+
-        (lote?'<div class="info-row"><span class="k">Lote de pastoreo</span><span class="v">'+esc(lote)+'</span></div>':'')+
+        (edadSacrificio?'<div class="info-row"><span class="k">Edad al sacrificio</span><span class="v">'+esc(edadSacrificio)+'</span></div>':'')+
+        '<div class="info-row"><span class="k">Finca de origen</span><span class="v">La Marinilla</span></div>'+
+        '<div class="info-row"><span class="k">Ubicación</span><span class="v">Vereda San Bernardo<br>Ibagué, Tolima</span></div>'+
+        '<div class="info-row"><span class="k">Manejo</span><span class="v">Pastoreo adaptativo multipotrero</span></div>'+
+        '<div class="attrs">'+
+          '<span class="attr-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>100% pasto natural</span>'+
+          '<span class="attr-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Sin hormonas</span>'+
+          '<span class="attr-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Sin antibióticos profilácticos</span>'+
+        '</div>'+
+      '</div>'+
+
+      // ── SECCIÓN 3 · TRAZABILIDAD ──
+      '<div class="sec">'+
+        '<div class="sec-h"><span class="n">3</span>Trazabilidad completa</div>'+
+        (animal.codigo?'<div class="info-row"><span class="k">Identificación animal</span><span class="v">'+esc(animal.codigo)+(animal.nombre?' · '+esc(animal.nombre):'')+'</span></div>':'')+
+        (animal.fecha_nacimiento?'<div class="info-row"><span class="k">Fecha de nacimiento</span><span class="v">'+fmtFecha(animal.fecha_nacimiento)+'</span></div>':'')+
+        (ben.fecha?'<div class="info-row"><span class="k">Fecha de sacrificio</span><span class="v">'+fmtFecha(ben.fecha)+'</span></div>':'')+
         (ben.frigorifico?'<div class="info-row"><span class="k">Frigorífico</span><span class="v">'+esc(ben.frigorifico)+'</span></div>':'')+
-        (ben.fecha?'<div class="info-row"><span class="k">Fecha de beneficio</span><span class="v">'+fmtFecha(ben.fecha)+'</span></div>':'')+
+        ((ben.peso_vivo_entrada||ben.peso_canal)?
+          '<div class="flow">'+
+            '<div class="flow-step"><div class="fv">'+esc(ben.peso_vivo_entrada||'—')+(ben.peso_vivo_entrada?' kg':'')+'</div><div class="fl">Peso vivo</div></div>'+
+            '<div class="flow-arrow">→</div>'+
+            '<div class="flow-step"><div class="fv">'+esc(ben.peso_canal||'—')+(ben.peso_canal?' kg':'')+'</div><div class="fl">Canal</div></div>'+
+            '<div class="flow-arrow">→</div>'+
+            '<div class="flow-step"><div class="fv">'+(ben.rendimiento_canal!=null?esc(Math.round(ben.rendimiento_canal*10)/10)+'%':'—')+'</div><div class="fl">Rendimiento</div></div>'+
+          '</div>'
+        :'')+
+        (lote?'<div class="info-row"><span class="k">Lote de origen</span><span class="v">'+esc(lote)+'</span></div>':'')+
       '</div>'+
 
-      '<div class="finca-card">'+
-        '<h3>Nuestra finca</h3>'+
-        '<p>En <b>La Marinilla</b>, vereda San Bernardo (Ibagué, Tolima), criamos corderos Dorper y Katahdin con pastoreo rotacional, bienestar animal y trazabilidad completa — del potrero a tu mesa. Cada empaque cuenta su historia.</p>'+
+      // ── SECCIÓN 4 · SOBRE LAAAMB ──
+      '<div class="about">'+
+        '<h3>Sobre LAAAMB</h3>'+
+        '<p>LAAAMB es un proyecto de ganadería ovina regenerativa en el Tolima. Criamos corderos en pastoreo adaptativo multipotrero, respetando el bienestar animal y la salud del suelo.</p>'+
+        '<p>Cada animal es trazado desde su nacimiento hasta tu mesa. Este código QR es la prueba: una historia verificable de origen, manejo y calidad — del potrero a tu plato.</p>'+
       '</div>'+
 
-      '<div class="info-card" style="text-align:center;padding:18px">'+
-        '<h3 style="border-bottom:none;padding-bottom:4px">Comparte esta trazabilidad</h3>'+
-        '<div id="qr-display" style="display:inline-flex;align-items:center;justify-content:center;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin:8px 0 4px"></div>'+
-        '<div style="font-size:11px;color:var(--text3)">Escanea para volver a abrir esta página</div>'+
-      '</div>'+
-
+      // FOOTER con QR
       '<div class="foot">'+
-        'Trazabilidad LAAAMB · Cada animal, cada corte, verificado.<br>'+
-        '<a href="https://laaambapp.vercel.app">laaambapp.vercel.app</a>'+
+        '<div class="foot-qr" id="foot-qr"></div>'+
+        '<div class="foot-line"><b>Powered by LAAAMBAPP</b> · Trazabilidad verificada<br>'+
+        '<a href="https://laaambapp.vercel.app">laaambapp.vercel.app</a></div>'+
       '</div>';
 
     document.getElementById('root').innerHTML = html;
 
-    // QR visual de esta misma página (compartir / reimprimir)
-    var qrDisp = document.getElementById('qr-display');
-    if(qrDisp && window.QRCode){
-      new QRCode(qrDisp, { text:window.location.href, width:150, height:150, colorDark:'#00AFB6', colorLight:'#0d1117', correctLevel:QRCode.CorrectLevel.H });
+    // QR visual de esta misma página
+    var fq = document.getElementById('foot-qr');
+    if(fq && window.QRCode){
+      new QRCode(fq, { text:window.location.href, width:128, height:128, colorDark:'#0a0f14', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.H });
     }
   }
 
@@ -201,11 +289,21 @@ html,body{background:var(--bg);color:var(--text);font-family:'Changa',sans-serif
     if(!qrCode){ return noEncontrado(); }
     try{
       var resp = await window._sb.from('empaques')
-        .select('*, cortes(tipo_corte, peso_kg), animales(codigo, nombre, raza, especie, fecha_nacimiento, notas, lotes(nombre)), beneficios(fecha, frigorifico, peso_canal, rendimiento_canal)')
+        .select('*, cortes(tipo_corte, peso_kg), animales(codigo, nombre, raza, especie, fecha_nacimiento, notas, lotes(nombre)), beneficios(fecha, frigorifico, peso_vivo_entrada, peso_canal, rendimiento_canal)')
         .eq('qr_code', qrCode)
         .single();
       if(resp.error || !resp.data){ return noEncontrado(); }
-      render(resp.data);
+      // Cadena de frío (último registro) — opcional
+      var frio = [];
+      try{
+        var fr = await window._sb.from('cadena_frio')
+          .select('temperatura_c, fecha_hora')
+          .eq('empaque_id', resp.data.id)
+          .order('fecha_hora', { ascending:false })
+          .limit(1);
+        frio = fr.data || [];
+      }catch(e){}
+      render(resp.data, frio);
     }catch(e){ noEncontrado(); }
   }
   load();

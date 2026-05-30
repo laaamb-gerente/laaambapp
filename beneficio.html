@@ -180,6 +180,7 @@ tr:last-child td{border-bottom:none}
     <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
     <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
     <a class="nav-link active" href="beneficio.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>Beneficio &amp; QR</a>
+    <a class="nav-link" href="b2b.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="9" height="14" rx="1"/><path d="M12 8h5v9h-5"/><path d="M6 6h3M6 9h3M6 12h3"/></svg>Clientes B2B</a>
     <a class="nav-link" href="nomina.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="6" r="3"/><path d="M2 17c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M14 8h4M14 11h4M14 14h2"/></svg>Nómina &amp; Asistencia</a>
     <a class="nav-link" href="ica.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-3 7 3v6l-7 3-7-3z"/><path d="M3 7l7 3 7-3M10 10v6"/></svg>ICA &amp; Movilización</a>
     <a class="nav-link" href="reportes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h7l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M12 3v4h4M7 11h6M7 14h6"/></svg>Reportes</a>
@@ -300,8 +301,8 @@ tr:last-child td{border-bottom:none}
           <div class="fchip" data-estado="vencido" onclick="filtrarInv('vencido')">Vencidos</div>
         </div>
         <div style="overflow-x:auto">
-          <table><thead><tr><th>QR</th><th>Corte</th><th>Peso</th><th>Fecha límite</th><th>Precio/kg</th><th>Estado</th><th>Acciones</th></tr></thead>
-          <tbody id="inv-tbody"><tr><td colspan="7" class="empty">Cargando…</td></tr></tbody></table>
+          <table><thead><tr><th>QR</th><th>Corte</th><th>Peso</th><th>Temp.</th><th>Fecha límite</th><th>Precio/kg</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="inv-tbody"><tr><td colspan="8" class="empty">Cargando…</td></tr></tbody></table>
         </div>
       </div>
     </div>
@@ -326,6 +327,28 @@ tr:last-child td{border-bottom:none}
     <div class="etq-modal-actions">
       <button class="btn btn-ghost btn-sm" onclick="cerrarEtiqueta()">Cerrar</button>
       <button class="btn btn-primary btn-sm" onclick="window.print()">🖨 Imprimir etiqueta</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CADENA DE FRÍO -->
+<div id="frio-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9990;backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)cerrarFrio()">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2,14px);width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.6)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
+      <div style="font-size:15px;font-weight:700">🌡️ Registrar temperatura</div>
+      <button onclick="cerrarFrio()" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1">&times;</button>
+    </div>
+    <div style="padding:20px">
+      <input type="hidden" id="fr-empaque-id">
+      <div style="margin-bottom:6px;font-size:13px;color:var(--text3)">Empaque <b id="fr-qr" style="color:var(--teal)"></b></div>
+      <div class="fg" style="margin-bottom:14px"><label class="fl">Temperatura (°C) *</label><input class="fi" id="fr-temp" type="number" step="0.1" placeholder="Ej: 2.5"></div>
+      <div class="fg" style="margin-bottom:14px"><label class="fl">Ubicación</label><input class="fi" id="fr-ubic" placeholder="Cuarto frío, transporte…"></div>
+      <div class="fg" style="margin-bottom:4px"><label class="fl">Observación</label><input class="fi" id="fr-obs" placeholder="Opcional"></div>
+      <div id="fr-alerta" style="display:none;margin-top:12px;padding:10px 12px;border-radius:8px;background:var(--red-bg,rgba(224,82,82,.1));border:1px solid var(--red);color:var(--red);font-size:12.5px;font-weight:600">⚠️ Temperatura sobre 4 °C — fuera de cadena de frío.</div>
+    </div>
+    <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="cerrarFrio()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="guardarFrio()">Guardar registro</button>
     </div>
   </div>
 </div>
@@ -520,18 +543,31 @@ tr:last-child td{border-bottom:none}
 
   // ── Inventario ──
   var INV = [];
+  var TEMPS = {};   // empaque_id -> {temperatura_c, fecha_hora}
   var filtroInv = 'todos';
   async function cargarInventario(){
     var tb = document.getElementById('inv-tbody');
-    tb.innerHTML = '<tr><td colspan="7" class="empty">Cargando…</td></tr>';
+    tb.innerHTML = '<tr><td colspan="8" class="empty">Cargando…</td></tr>';
     try{
       var r = await window._sb.from('empaques')
         .select('*, cortes(tipo_corte), animales(codigo, nombre, raza)')
         .order('fecha_limite_consumo', {nullsFirst:false});
       if(r.error) throw new Error(r.error.message);
       INV = r.data || [];
+      // Último registro de cadena de frío por empaque
+      TEMPS = {};
+      try{
+        var ids = INV.map(function(e){ return e.id; });
+        if(ids.length){
+          var fr = await window._sb.from('cadena_frio')
+            .select('empaque_id, temperatura_c, fecha_hora')
+            .in('empaque_id', ids)
+            .order('fecha_hora', {ascending:false});
+          (fr.data||[]).forEach(function(c){ if(!TEMPS[c.empaque_id]) TEMPS[c.empaque_id] = c; });
+        }
+      }catch(e){}
       renderInv();
-    }catch(e){ tb.innerHTML = '<tr><td colspan="7" class="empty">Error: '+esc(e.message)+'</td></tr>'; }
+    }catch(e){ tb.innerHTML = '<tr><td colspan="8" class="empty">Error: '+esc(e.message)+'</td></tr>'; }
   }
   window.filtrarInv = function(estado){
     filtroInv = estado;
@@ -542,7 +578,7 @@ tr:last-child td{border-bottom:none}
     var tb = document.getElementById('inv-tbody');
     var hoy = new Date(); hoy.setHours(0,0,0,0);
     var lista = INV.filter(function(e){ return filtroInv==='todos' || e.estado===filtroInv; });
-    if(!lista.length){ tb.innerHTML = '<tr><td colspan="7" class="empty">Sin empaques para este filtro.</td></tr>'; return; }
+    if(!lista.length){ tb.innerHTML = '<tr><td colspan="8" class="empty">Sin empaques para este filtro.</td></tr>'; return; }
     tb.innerHTML = lista.map(function(e){
       var tipo = (e.cortes && TIPO_LABEL[e.cortes.tipo_corte]) || '—';
       var dias = e.fecha_limite_consumo ? Math.ceil((new Date(e.fecha_limite_consumo+'T00:00:00')-hoy)/86400000) : null;
@@ -552,11 +588,23 @@ tr:last-child td{border-bottom:none}
         ? '<button class="btn btn-ghost btn-sm" onclick="abrirVenta(\''+e.id+'\')">Marcar vendido</button>'
         : (e.cliente?'<span class="td-muted">'+esc(e.cliente)+'</span>':'');
       var btnEtq = '<button class="btn btn-ghost btn-sm" onclick="etiquetaInv(\''+e.id+'\')">🖨 Etiqueta</button>';
-      var acc = '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+btnEtq+accVenta+'</div>';
+      var btnFrio = '<button class="btn btn-ghost btn-sm" title="Registrar temperatura" onclick="abrirFrio(\''+e.id+'\')">🌡️</button>';
+      var acc = '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+btnEtq+btnFrio+accVenta+'</div>';
+      // Celda de temperatura (último registro de cadena de frío)
+      var t = TEMPS[e.id];
+      var tempCell;
+      if(t){
+        var tv = parseFloat(t.temperatura_c);
+        var col = (!isNaN(tv) && tv > 4) ? 'var(--red)' : 'var(--green)';
+        tempCell = '<span style="color:'+col+';font-weight:600">🌡 '+esc(isNaN(tv)?t.temperatura_c:tv.toFixed(1))+'°C</span>';
+      } else {
+        tempCell = '<span class="td-muted">—</span>';
+      }
       return '<tr>'+
         '<td style="font-weight:600;color:var(--teal)">'+esc(e.qr_code)+'</td>'+
         '<td>'+esc(tipo)+'</td>'+
         '<td>'+esc(e.peso_neto)+' kg</td>'+
+        '<td>'+tempCell+'</td>'+
         '<td class="td-muted">'+esc(e.fecha_limite_consumo||'—')+alerta+'</td>'+
         '<td class="td-muted">'+(e.precio_venta?cop(e.precio_venta):'—')+'</td>'+
         '<td><span class="badge '+estadoBadge+'">'+esc(e.estado)+'</span></td>'+
@@ -564,6 +612,41 @@ tr:last-child td{border-bottom:none}
         '</tr>';
     }).join('');
   }
+  // ── Cadena de frío ──
+  window.abrirFrio = function(id){
+    var emp = INV.find(function(x){ return String(x.id)===String(id); });
+    if(!emp) return;
+    document.getElementById('fr-empaque-id').value = emp.id;
+    document.getElementById('fr-qr').textContent = emp.qr_code || '';
+    document.getElementById('fr-temp').value = '';
+    document.getElementById('fr-ubic').value = '';
+    document.getElementById('fr-obs').value = '';
+    document.getElementById('fr-alerta').style.display = 'none';
+    document.getElementById('frio-overlay').style.display = 'flex';
+  };
+  window.cerrarFrio = function(){ document.getElementById('frio-overlay').style.display = 'none'; };
+  document.getElementById('fr-temp').addEventListener('input', function(){
+    var v = parseFloat(this.value);
+    document.getElementById('fr-alerta').style.display = (!isNaN(v) && v > 4) ? 'block' : 'none';
+  });
+  window.guardarFrio = async function(){
+    var empId = document.getElementById('fr-empaque-id').value;
+    var temp = parseFloat(document.getElementById('fr-temp').value);
+    if(isNaN(temp)){ alert('Ingresa una temperatura válida'); return; }
+    var registro = {
+      empaque_id: empId,
+      temperatura_c: temp,
+      ubicacion: document.getElementById('fr-ubic').value.trim() || null,
+      registrado_por: nombreUsuario(),
+      observacion: document.getElementById('fr-obs').value.trim() || null
+    };
+    try{
+      var r = await window.DB.saveCadenaFrio(registro);
+      if(r.error) throw new Error(r.error.message);
+      cerrarFrio();
+      cargarInventario();
+    }catch(e){ alert('Error: '+e.message); }
+  };
   window.abrirVenta = async function(id){
     var emp = INV.find(function(x){return x.id===id;});
     var cliente = prompt('Nombre del cliente:');

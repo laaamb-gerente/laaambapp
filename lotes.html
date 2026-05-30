@@ -352,6 +352,7 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
     <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
     <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
     <a class="nav-link" href="beneficio.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>Beneficio &amp; QR</a>
+    <a class="nav-link" href="b2b.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="9" height="14" rx="1"/><path d="M12 8h5v9h-5"/><path d="M6 6h3M6 9h3M6 12h3"/></svg>Clientes B2B</a>
     <a class="nav-link" href="nomina.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="6" r="3"/><path d="M2 17c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M14 8h4M14 11h4M14 14h2"/></svg>Nómina &amp; Asistencia</a>
     <a class="nav-link" href="ica.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-3 7 3v6l-7 3-7-3z"/><path d="M3 7l7 3 7-3M10 10v6"/></svg>ICA &amp; Movilización</a>
     <a class="nav-link" href="reportes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h7l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M12 3v4h4M7 11h6M7 14h6"/></svg>Reportes</a>
@@ -443,10 +444,12 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
     </div>
     <!-- Legend -->
     <div class="map-legend" id="map-legend">
-      <div class="map-legend-title">Ocupación</div>
-      <div class="map-legend-item"><div class="map-legend-swatch" style="background:#2ec77a"></div> Normal (&lt;70%)</div>
-      <div class="map-legend-item"><div class="map-legend-swatch" style="background:#e8a030"></div> Atención (70-90%)</div>
-      <div class="map-legend-item"><div class="map-legend-swatch" style="background:#e05252"></div> Crítico (&gt;90%)</div>
+      <div class="map-legend-title">Carga (kg/ha)</div>
+      <div class="map-legend-item"><div class="map-legend-swatch" style="background:#22c55e"></div> Baja (&lt;50% meta)</div>
+      <div class="map-legend-item"><div class="map-legend-swatch" style="background:#86efac"></div> Óptima (50-75%)</div>
+      <div class="map-legend-item"><div class="map-legend-swatch" style="background:#f59e0b"></div> Atención (75-90%)</div>
+      <div class="map-legend-item"><div class="map-legend-swatch" style="background:#ef4444"></div> Alta (90-100%)</div>
+      <div class="map-legend-item"><div class="map-legend-swatch" style="background:#7f1d1d"></div> Sobrecarga (&gt;100%)</div>
       <div class="map-legend-item"><div class="map-legend-swatch" style="background:rgba(0,175,182,.3)"></div> Perímetro finca</div>
     </div>
     <!-- Buscador de ubicación -->
@@ -1054,29 +1057,47 @@ function renderLoteLayers(){
   });
 }
 
+// Color del polígono según carga en kg/ha (mapa de calor de carga animal).
+function getColorKgHa(kgHa, objetivo){
+  var r=(objetivo>0?kgHa/objetivo:0);
+  if(r<0.5) return '#22c55e';
+  if(r<0.75) return '#86efac';
+  if(r<0.9) return '#f59e0b';
+  if(r<1.0) return '#ef4444';
+  return '#7f1d1d';
+}
 function renderLoteLayer(loteId, lote, geojson){
   if(loteLayers[loteId]) MAP.removeLayer(loteLayers[loteId]);
   var d=AppData.get();
   var animales=getAnimalesForLote(lote.nombre, lote.finca_id||'default');
   var cap=lote.capacidad_max||1;
-  var pct=animales.length/cap;
-  var color=pct>0.9?'#e05252':pct>0.7?'#e8a030':'#2ec77a';
+  // Carga en kg/ha (biomasa por hectárea) — mapa de calor de carga animal.
+  var objetivoKgHa=(window.AppState&&window.AppState.finca&&window.AppState.finca.config&&window.AppState.finca.config.carga_animal_kgha)||200000;
+  var haLote=parseFloat(lote.area_ha)||0;
+  var pesoPromLote=animales.length?animales.reduce(function(s,a){return s+(parseFloat(a.peso_actual)||25);},0)/animales.length:25;
+  var biomasaKg=animales.length*pesoPromLote;
+  var kgHa=haLote>0?Math.round(biomasaKg/haLote):0;
+  var color=getColorKgHa(kgHa, objetivoKgHa);
+  var kgHaTxt=kgHa.toLocaleString('es-CO');
+  var biomasaTxt=Math.round(biomasaKg).toLocaleString('es-CO');
   var coords=geojson.coordinates[0].map(function(c){return [c[1],c[0]];});
   var isActiveFinca=(lote.finca_id||'default')===activeFincaMap;
 
   var poly=L.polygon(coords,{
     color:color,weight:2,opacity:isActiveFinca?0.9:0.3,
-    fillColor:color,fillOpacity:isActiveFinca?0.2:0.05
+    fillColor:color,fillOpacity:isActiveFinca?0.32:0.08
   }).addTo(MAP);
 
   // Popup
   var popupContent='<div style="font-family:Changa,sans-serif">'
     +'<div style="font-weight:700;font-size:14px;color:#00AFB6;margin-bottom:4px">'+lote.nombre+'</div>'
     +'<div style="font-size:11px;color:#7eadb2;margin-bottom:6px">'+getFincaById(lote.finca_id||'default').nombre+'</div>'
-    +'<div style="display:flex;gap:12px;font-size:12px">'
-    +'<span>🐑 <strong>'+animales.length+'</strong> / '+cap+'</span>'
+    +'<div style="display:flex;gap:12px;font-size:12px;flex-wrap:wrap">'
+    +'<span>🐑 <strong>'+animales.length+'</strong> animales</span>'
+    +'<span>⚖️ <strong>~'+biomasaTxt+'</strong> kg</span>'
     +'<span>📏 <strong>'+(lote.area_ha||'—')+'</strong> ha</span>'
     +'</div>'
+    +'<div style="margin-top:5px;font-size:12px;font-weight:700;color:'+color+'">'+kgHaTxt+' kg/ha <span style="color:#7eadb2;font-weight:400">(meta '+objetivoKgHa.toLocaleString('es-CO')+')</span></div>'
     +(lote.tipo_pasto?'<div style="font-size:11px;margin-top:4px;color:#7eadb2">'+lote.tipo_pasto+' · '+lote.condicion_pasto+'% condición</div>':'')
     +'<div style="margin-top:8px;display:flex;gap:6px">'
     +'<button onclick="abrirEditarLoteDesdeMap(\''+loteId+'\')" style="font-size:11px;padding:3px 10px;border-radius:6px;background:rgba(0,175,182,.12);border:1px solid rgba(0,175,182,.3);color:#00AFB6;cursor:pointer;font-family:Changa,sans-serif">Editar</button>'

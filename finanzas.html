@@ -371,6 +371,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <a class="nav-link active" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
     <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
     <a class="nav-link" href="beneficio.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>Beneficio &amp; QR</a>
+    <a class="nav-link" href="b2b.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="9" height="14" rx="1"/><path d="M12 8h5v9h-5"/><path d="M6 6h3M6 9h3M6 12h3"/></svg>Clientes B2B</a>
     <a class="nav-link" href="nomina.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="6" r="3"/><path d="M2 17c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M14 8h4M14 11h4M14 14h2"/></svg>Nómina &amp; Asistencia</a>
     <a class="nav-link" href="ica.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-3 7 3v6l-7 3-7-3z"/><path d="M3 7l7 3 7-3M10 10v6"/></svg>ICA &amp; Movilización</a>
     <a class="nav-link" href="reportes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h7l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M12 3v4h4M7 11h6M7 14h6"/></svg>Reportes</a>
@@ -558,13 +559,20 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
             <div class="card-title">Conciliación de extracto bancario</div>
             <div class="card-sub" id="extracto-sub">Transacciones detectadas en el extracto</div>
           </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span class="badge b-teal" id="extracto-banco">—</span>
+            <button class="btn btn-ghost btn-sm" onclick="toggleTodasTx(true)">Marcar todas</button>
+            <button class="btn btn-ghost btn-sm" onclick="toggleTodasTx(false)">Ninguna</button>
+            <button class="btn btn-green btn-sm" onclick="importarSeleccionadas()">Importar seleccionadas</button>
+          </div>
         </div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>Fecha</th><th>Descripción</th><th>Valor COP</th><th>Sugerencia</th><th>Clasificar como</th></tr></thead>
+            <thead><tr><th style="width:34px"><input type="checkbox" id="ex-check-all" onchange="toggleTodasTx(this.checked)"></th><th>Fecha</th><th>Descripción</th><th>Valor COP</th><th>Tipo</th><th>Categoría</th></tr></thead>
             <tbody id="extracto-tbody"></tbody>
           </table>
         </div>
+        <div id="extracto-resumen" style="padding:12px 18px;border-top:1px solid var(--border);font-size:12px;color:var(--text2)"></div>
       </div>
     </div>
 
@@ -1399,92 +1407,161 @@ async function savePagoAparceria(){
 }
 
 // ═══════ CONCILIACIÓN BANCARIA — Importar extracto CSV ═══════
+// Auto-clasificación por palabras clave (sobre la descripción del movimiento).
 const EXTRACTO_REGLAS=[
-  {re:/conce|aliment|forraje|pasto|sal miner/i,cat:'alimentacion',tipo:'costo',lbl:'Alimentación'},
+  {re:/nomina|jornal|salario|sueldo|mano de obra|pago empleado/i,cat:'mano_obra',tipo:'costo',lbl:'Mano de obra'},
   {re:/veterin|medicam|ivermec|vacuna|sanidad|droga/i,cat:'sanidad',tipo:'costo',lbl:'Sanidad'},
-  {re:/nomina|jornal|salario|sueldo|mano de obra/i,cat:'mano_obra',tipo:'costo',lbl:'Mano de obra'},
-  {re:/transport|flete|combustible|gasolina|acpm/i,cat:'transporte',tipo:'costo',lbl:'Transporte'},
-  {re:/energia|acueduc|agua|luz|epm|servicio/i,cat:'administrativo',tipo:'costo',lbl:'Servicios'},
-  {re:/frigorif|carnes|sacrific|venta|consignaci|abono/i,cat:'venta_animal',tipo:'ingreso',lbl:'Venta animal'}
+  {re:/aliment|conce|forraje|pasto|sal miner|insumo/i,cat:'alimentacion',tipo:'costo',lbl:'Alimentación'},
+  {re:/transport|flete|combustible|gasolina|acpm|peaje/i,cat:'transporte',tipo:'costo',lbl:'Transporte'},
+  {re:/energia|acueduc|agua|luz|epm|servicio|internet/i,cat:'administrativo',tipo:'costo',lbl:'Servicios'},
+  {re:/frigorif|carnes|sacrific|venta|consignaci|abono|transferencia recib/i,cat:'venta_animal',tipo:'ingreso',lbl:'Venta animal'}
 ];
-function _parseCSV(text){
+// Parser de CSV con separador explícito.
+function _splitCSV(text,sep){
   const lines=text.split(/\r?\n/).filter(l=>l.trim());
-  const sep=(lines[0].match(/;/g)||[]).length>(lines[0].match(/,/g)||[]).length?';':',';
   return lines.map(l=>l.split(sep).map(c=>c.replace(/^"|"$/g,'').trim()));
 }
-function _detectCols(rows){
-  // Heurística Bancolombia/Davivienda: busca encabezado con fecha/descripcion/valor
-  const head=(rows[0]||[]).map(h=>h.toLowerCase());
-  let fi=head.findIndex(h=>/fecha/.test(h));
-  let di=head.findIndex(h=>/descrip|detalle|concepto|referencia/.test(h));
-  let vi=head.findIndex(h=>/valor|monto|importe|debito|credito/.test(h));
-  // Si no hay encabezado reconocible, usar posiciones por defecto
-  const hasHeader=fi>=0||di>=0||vi>=0;
-  if(fi<0) fi=0; if(di<0) di=1; if(vi<0) vi=2;
-  return {fi,di,vi,start:hasHeader?1:0};
+// Convierte "1.234.567,89" / "-1234.56" / "$ 1.000" a número (con signo).
+function _num(raw){
+  if(raw==null) return 0;
+  let s=String(raw).replace(/[^0-9,.\-]/g,'');
+  if(!s) return 0;
+  const neg=/^-/.test(s)||/-$/.test(s);
+  s=s.replace(/-/g,'');
+  // Formato colombiano: punto miles, coma decimal
+  if(s.indexOf(',')>=0){ s=s.replace(/\./g,'').replace(',','.'); }
+  else { s=s.replace(/\.(?=\d{3}\b)/g,''); } // puntos de miles sin decimales
+  let n=parseFloat(s)||0;
+  return neg?-n:n;
 }
+// Auto-detección de banco por estructura del CSV.
+function _detectBanco(text){
+  const firstLine=(text.split(/\r?\n/).find(l=>l.trim())||'').toLowerCase();
+  const semis=(firstLine.match(/;/g)||[]).length;
+  const commas=(firstLine.match(/,/g)||[]).length;
+  const sep=semis>=commas?';':',';
+  const head=firstLine.split(sep);
+  const hasDebCred=head.some(h=>/d[eé]bito/.test(h))&&head.some(h=>/cr[eé]dito/.test(h));
+  if(hasDebCred) return {banco:'Davivienda',sep,modo:'debcred'};
+  if(sep===';') return {banco:'Bancolombia',sep,modo:'valor'};
+  // Genérico: una sola columna Valor con signo
+  return {banco:'Genérico',sep,modo:'valor'};
+}
+function _idx(head,re){ return head.findIndex(h=>re.test(h)); }
 function importarExtracto(input){
   const f=input.files[0]; if(!f) return;
   const r=new FileReader();
   r.onload=function(e){
     try{
-      const rows=_parseCSV(e.target.result);
+      const text=e.target.result;
+      const det=_detectBanco(text);
+      const rows=_splitCSV(text,det.sep);
       if(rows.length<2){ toast('Extracto vacío o ilegible','err'); return; }
-      const {fi,di,vi,start}=_detectCols(rows);
+      const head=rows[0].map(h=>h.toLowerCase());
+      let fi=_idx(head,/fecha/); let di=_idx(head,/descrip|detalle|concepto|referencia/);
+      let vi=_idx(head,/valor|monto|importe/);
+      let dbi=_idx(head,/d[eé]bito/); let cri=_idx(head,/cr[eé]dito/);
+      const hasHeader=fi>=0||di>=0||vi>=0||dbi>=0;
+      if(fi<0) fi=0; if(di<0) di=1;
+      const start=hasHeader?1:0;
       const txs=[];
       for(let k=start;k<rows.length;k++){
-        const row=rows[k]; if(!row||!row.length) continue;
+        const row=rows[k]; if(!row||row.length<2) continue;
         const fecha=row[fi]||''; const desc=row[di]||'';
-        const valRaw=(row[vi]||'').replace(/[^0-9,.-]/g,'').replace(/\.(?=\d{3})/g,'').replace(',','.');
-        const valor=Math.abs(parseFloat(valRaw)||0);
-        if(!valor||!desc) continue;
+        if(!desc) continue;
+        let signed=0;
+        if(det.modo==='debcred'){
+          const deb=dbi>=0?_num(row[dbi]):0;
+          const cred=cri>=0?_num(row[cri]):0;
+          // Débito = salida (costo, negativo); Crédito = entrada (ingreso, positivo)
+          signed=(Math.abs(cred)>0?Math.abs(cred):0)-(Math.abs(deb)>0?Math.abs(deb):0);
+        } else {
+          if(vi<0) vi=Math.min(3,row.length-1);
+          signed=_num(row[vi]);
+        }
+        const valor=Math.abs(signed);
+        if(!valor) continue;
+        // Tipo por signo; categoría por palabra clave (respetando el tipo del signo)
+        const tipoSigno=signed>=0?'ingreso':'costo';
         const regla=EXTRACTO_REGLAS.find(rg=>rg.re.test(desc));
-        txs.push({fecha,desc,valor,sug:regla});
+        let tipo=tipoSigno, cat;
+        if(regla && regla.tipo===tipoSigno){ cat=regla.cat; }
+        else { cat=tipoSigno==='ingreso'?'venta_animal':'otro'; }
+        txs.push({fecha,desc,valor,tipo,cat,incluir:true});
       }
-      renderExtracto(txs);
-      toast('✓ '+txs.length+' transacciones leídas del extracto');
+      renderExtracto(txs,det.banco);
+      toast('✓ '+det.banco+': '+txs.length+' transacciones leídas');
     }catch(err){ toast('Error leyendo extracto','err'); console.warn(err); }
     input.value='';
   };
   r.readAsText(f,'ISO-8859-1');
 }
-function renderExtracto(txs){
+function renderExtracto(txs,banco){
   const card=document.getElementById('extracto-card');
   const tb=document.getElementById('extracto-tbody');
-  document.getElementById('extracto-sub').textContent=txs.length+' transacciones · clasifica las no reconocidas y guárdalas';
+  document.getElementById('extracto-banco').textContent=banco||'—';
+  document.getElementById('extracto-sub').textContent=txs.length+' transacciones · revisa categoría y marca las que quieres importar';
   const OPTS_COSTO=Object.keys(CAT_GASTO_LBL).map(k=>'<option value="costo:'+k+'">Costo · '+CAT_GASTO_LBL[k]+'</option>').join('');
   const OPTS_ING=Object.keys(TIPO_ING_LBL).map(k=>'<option value="ingreso:'+k+'">Ingreso · '+TIPO_ING_LBL[k]+'</option>').join('');
   window._extractoTxs=txs;
   tb.innerHTML=txs.map((t,idx)=>{
-    const sugVal=t.sug?(t.sug.tipo+':'+t.sug.cat):'';
-    const sugLbl=t.sug?('<span class="badge b-teal">'+t.sug.lbl+'</span>'):'<span class="badge b-amber">Sin clasificar</span>';
-    return '<tr><td class="td-muted">'+t.fecha+'</td><td style="font-size:12px">'+t.desc+'</td>'+
-      '<td style="font-weight:700">$'+t.valor.toLocaleString('es-CO')+'</td>'+
-      '<td>'+sugLbl+'</td>'+
-      '<td><div style="display:flex;gap:6px;align-items:center"><select class="fi" id="ex-sel-'+idx+'" style="width:170px;padding:5px 8px">'+
-      '<option value="">— Ignorar —</option>'+OPTS_COSTO+OPTS_ING+'</select>'+
-      '<button class="btn btn-green btn-sm" onclick="guardarTxExtracto('+idx+')">✓</button></div></td></tr>';
+    const signo=t.tipo==='ingreso'?'+':'−';
+    const colSigno=t.tipo==='ingreso'?'var(--green)':'var(--red)';
+    const tipoBadge=t.tipo==='ingreso'?'<span class="badge b-green">Ingreso</span>':'<span class="badge b-red">Costo</span>';
+    return '<tr id="ex-row-'+idx+'">'+
+      '<td><input type="checkbox" class="ex-chk" id="ex-chk-'+idx+'" '+(t.incluir?'checked':'')+' onchange="onTxCheck('+idx+',this.checked)"></td>'+
+      '<td class="td-muted">'+t.fecha+'</td><td style="font-size:12px">'+t.desc+'</td>'+
+      '<td style="font-weight:700;color:'+colSigno+'">'+signo+'$'+t.valor.toLocaleString('es-CO')+'</td>'+
+      '<td>'+tipoBadge+'</td>'+
+      '<td><select class="fi" id="ex-sel-'+idx+'" style="width:180px;padding:5px 8px" onchange="onTxCat('+idx+',this.value)">'+
+      OPTS_COSTO+OPTS_ING+'</select></td></tr>';
   }).join('');
-  // Preseleccionar sugerencias
-  txs.forEach((t,idx)=>{ if(t.sug){ const s=document.getElementById('ex-sel-'+idx); if(s) s.value=t.sug.tipo+':'+t.sug.cat; } });
+  // Preseleccionar categoría sugerida
+  txs.forEach((t,idx)=>{ const s=document.getElementById('ex-sel-'+idx); if(s) s.value=t.tipo+':'+t.cat; });
+  const ca=document.getElementById('ex-check-all'); if(ca) ca.checked=true;
   card.style.display='block';
+  updateExtractoResumen();
 }
-async function guardarTxExtracto(idx){
-  const t=(window._extractoTxs||[])[idx]; if(!t) return;
-  const sel=document.getElementById('ex-sel-'+idx); const v=sel?sel.value:'';
-  if(!v){ toast('Selecciona una clasificación','err'); return; }
-  const [tipo,cat]=v.split(':');
-  const fechaISO=_fechaExtractoISO(t.fecha);
+function onTxCheck(idx,val){ const t=(window._extractoTxs||[])[idx]; if(t){ t.incluir=val; updateExtractoResumen(); } }
+function onTxCat(idx,val){ const t=(window._extractoTxs||[])[idx]; if(!t||!val) return; const p=val.split(':'); t.tipo=p[0]; t.cat=p[1]; updateExtractoResumen(); }
+function toggleTodasTx(val){
+  (window._extractoTxs||[]).forEach((t,idx)=>{ t.incluir=val; const c=document.getElementById('ex-chk-'+idx); if(c) c.checked=val; });
+  const ca=document.getElementById('ex-check-all'); if(ca) ca.checked=val;
+  updateExtractoResumen();
+}
+function updateExtractoResumen(){
+  const txs=(window._extractoTxs||[]).filter(t=>t.incluir);
+  let nC=0,nI=0,sumC=0,sumI=0;
+  txs.forEach(t=>{ if(t.tipo==='ingreso'){ nI++; sumI+=t.valor; } else { nC++; sumC+=t.valor; } });
+  const neto=sumI-sumC;
+  document.getElementById('extracto-resumen').innerHTML=
+    '<b>'+txs.length+'</b> seleccionadas · <span style="color:var(--red)">'+nC+' costos ($'+sumC.toLocaleString('es-CO')+')</span> · '+
+    '<span style="color:var(--green)">'+nI+' ingresos ($'+sumI.toLocaleString('es-CO')+')</span> · '+
+    'Neto: <b style="color:'+(neto>=0?'var(--green)':'var(--red)')+'">$'+neto.toLocaleString('es-CO')+'</b>';
+}
+async function importarSeleccionadas(){
+  const txs=(window._extractoTxs||[]).map((t,idx)=>Object.assign({idx},t)).filter(t=>t.incluir);
+  if(!txs.length){ toast('Marca al menos una transacción','err'); return; }
   if(!(window.DB)){ toast('DB no disponible','err'); return; }
-  let res;
-  if(tipo==='ingreso'){
-    res=await window.DB.saveIngreso({finca_id:FINCA_ID_FIN,tipo:cat,descripcion:t.desc,valor:t.valor,fecha:fechaISO,cliente:'Extracto bancario',fuente:'extracto'});
-  } else {
-    res=await window.DB.saveCosto({finca_id:FINCA_ID_FIN,categoria:cat,descripcion:t.desc,valor:t.valor,fecha:fechaISO,especie:'ovino',fuente:'extracto'});
+  let okC=0,okI=0,err=0;
+  for(const t of txs){
+    const fechaISO=_fechaExtractoISO(t.fecha);
+    let res;
+    try{
+      if(t.tipo==='ingreso'){
+        res=await window.DB.saveIngreso({finca_id:FINCA_ID_FIN,tipo:t.cat,descripcion:t.desc,valor:t.valor,fecha:fechaISO,cliente:'Extracto bancario',fuente:'extracto'});
+      } else {
+        res=await window.DB.saveCosto({finca_id:FINCA_ID_FIN,categoria:t.cat,descripcion:t.desc,valor:t.valor,fecha:fechaISO,especie:'ovino',fuente:'extracto'});
+      }
+      if(res&&res.error){ err++; continue; }
+      if(t.tipo==='ingreso') okI++; else okC++;
+      const row=document.getElementById('ex-row-'+t.idx); if(row){ row.style.opacity='0.4'; const c=document.getElementById('ex-chk-'+t.idx); if(c){ c.checked=false; c.disabled=true; } }
+      const orig=(window._extractoTxs||[])[t.idx]; if(orig) orig.incluir=false;
+    }catch(e){ err++; }
   }
-  if(res&&res.error){ toast('Error: '+res.error.message,'err'); return; }
-  if(sel){ sel.closest('tr').style.opacity='0.4'; sel.disabled=true; }
-  toast('Transacción clasificada como '+tipo);
+  updateExtractoResumen();
+  toast('Importadas: '+okC+' costos, '+okI+' ingresos'+(err?(' · '+err+' con error'):''),err?'err':'ok');
+  if(typeof loadFinanzas==='function') try{ loadFinanzas(); }catch(e){}
 }
 function _fechaExtractoISO(f){
   if(!f) return new Date().toISOString().slice(0,10);

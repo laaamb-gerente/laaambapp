@@ -119,6 +119,29 @@ textarea.fi{resize:vertical;min-height:60px}
   .ph-title{font-size:20px!important}.tab-nav{padding:0 10px!important}.content{padding:12px!important;padding-bottom:60px!important}
   .g3,.form-grid,.form-grid-3{grid-template-columns:1fr!important}
 }
+
+/* ── DOCUMENTO RSPP ── */
+.rspp-doc{font-family:'Changa',sans-serif;color:#0d2b2e;background:#fff;max-width:880px;margin:0 auto;padding:34px;border-radius:10px;border:1px solid var(--border)}
+.rspp-head{display:flex;align-items:center;gap:16px;border-bottom:3px solid #00AFB6;padding-bottom:14px;margin-bottom:18px}
+.rspp-logo{width:56px;height:56px;border-radius:10px;background:#00AFB6;color:#fff;display:flex;align-items:center;justify-content:center;font-family:'Sigmar',cursive;font-size:20px;flex-shrink:0}
+.rspp-title{font-family:'Sigmar',cursive;font-size:19px;color:#00AFB6;line-height:1.2}
+.rspp-meta{font-size:11.5px;color:#5a8a90;margin-top:3px}
+.rspp-doc h2{font-size:14px;color:#9C3F66;margin:20px 0 9px;border-left:4px solid #F18F22;padding-left:9px}
+.rspp-doc table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0}
+.rspp-doc th{background:#e8f0f1;color:#2d5a60;text-align:left;padding:7px 10px;border:1px solid #c8dde0;font-size:11px;text-transform:uppercase;letter-spacing:.3px}
+.rspp-doc td{padding:7px 10px;border:1px solid #d8e8ea;color:#0d2b2e}
+.rspp-doc .tot td{background:#f0f7f8;font-weight:700}
+.rspp-firma{margin-top:40px;display:flex;justify-content:space-between;gap:30px;font-size:12px;color:#2d5a60}
+.rspp-firma .ln{border-top:1px solid #5a8a90;padding-top:6px;flex:1;text-align:center}
+.rspp-foot{margin-top:26px;border-top:1px solid #c8dde0;padding-top:12px;font-size:10px;color:#9ab;text-align:center}
+@media print{
+  body{overflow:visible!important;height:auto!important;background:#fff!important}
+  .app,#lham,#lov,.toasts{display:none!important}
+  #rspp-print{display:block!important}
+  #rspp-print .rspp-doc{border:none;max-width:100%}
+  @page{margin:14mm}
+}
+#rspp-print{display:none}
 </style>
 </head>
 <body>
@@ -152,6 +175,7 @@ textarea.fi{resize:vertical;min-height:60px}
     <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
     <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
     <a class="nav-link" href="beneficio.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>Beneficio &amp; QR</a>
+    <a class="nav-link" href="b2b.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="9" height="14" rx="1"/><path d="M12 8h5v9h-5"/><path d="M6 6h3M6 9h3M6 12h3"/></svg>Clientes B2B</a>
     <a class="nav-link" href="nomina.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="6" r="3"/><path d="M2 17c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M14 8h4M14 11h4M14 14h2"/></svg>Nómina &amp; Asistencia</a>
     <a class="nav-link active" href="ica.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-3 7 3v6l-7 3-7-3z"/><path d="M3 7l7 3 7-3M10 10v6"/></svg>ICA &amp; Movilización</a>
     <a class="nav-link" href="reportes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h7l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M12 3v4h4M7 11h6M7 14h6"/></svg>Reportes</a>
@@ -183,6 +207,7 @@ textarea.fi{resize:vertical;min-height:60px}
   <div class="tab-nav">
     <div class="tn active" onclick="switchTab(this,'t-registrar')">Registrar movilización</div>
     <div class="tn" onclick="switchTab(this,'t-historial')">Historial</div>
+    <div class="tn" onclick="switchTab(this,'t-rspp')">RSPP</div>
   </div>
 
   <div class="content">
@@ -258,9 +283,25 @@ textarea.fi{resize:vertical;min-height:60px}
       </div>
     </div>
 
+    <!-- ══ RSPP ══ -->
+    <div id="t-rspp" class="tab-pane" style="display:none">
+      <div style="display:flex;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;align-items:center">
+        <div><div class="card-title">Registro Sanitario de Predio Pecuario</div><div class="card-sub">Formato ICA generado automáticamente desde el inventario</div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="renderRSPP()">↻ Actualizar</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportarRSPPExcel()">↓ Excel</button>
+          <button class="btn btn-primary btn-sm" onclick="exportarRSPPPDF()">🖨 Exportar PDF</button>
+        </div>
+      </div>
+      <div id="rspp-doc" class="rspp-doc"><div style="text-align:center;color:var(--text3);padding:40px">Generando reporte…</div></div>
+    </div>
+
   </div><!-- /content -->
 </div><!-- /main -->
 </div><!-- /app -->
+
+<!-- Área de impresión RSPP -->
+<div id="rspp-print"></div>
 
 <div class="toasts" id="toasts"></div>
 
@@ -283,6 +324,7 @@ function switchTab(el,id){
   document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
   document.getElementById(id).style.display='block';
   if(id==='t-historial') loadMovilizaciones();
+  if(id==='t-rspp') renderRSPP();
 }
 function onTipoChange(){
   const tipo=document.getElementById('m-tipo').value;
@@ -362,6 +404,111 @@ function generarReporteICA(){
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'Reporte ICA');
   XLSX.writeFile(wb,'reporte-ica-rspp-'+fecha+'.xlsx');
   toast('Reporte ICA (RSPP) generado');
+}
+
+// ═══ RSPP (Registro Sanitario de Predio Pecuario) ═══
+function escR(s){ var d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
+function edadMesesR(fnac){ if(!fnac) return null; var ms=Date.now()-new Date(fnac+'T00:00:00').getTime(); return Math.max(0,Math.round(ms/2629800000)); }
+function categoriaAnimal(a){
+  var sexo=(a.sexo||'').toLowerCase();
+  var em=edadMesesR(a.fecha_nacimiento||a.nacimiento);
+  var adulto = em!=null ? em>=12 : false;
+  if(sexo.indexOf('h')===0||sexo==='f'||sexo.indexOf('hembra')>=0) return adulto?'Hembras ≥ 12 meses':'Hembras < 12 meses';
+  if(sexo.indexOf('m')===0||sexo.indexOf('macho')>=0) return adulto?'Machos ≥ 12 meses':'Machos < 12 meses';
+  return 'Sin clasificar';
+}
+function buildRSPPData(){
+  var f=(window.AppState&&window.AppState.finca)||{};
+  var cfg=f.config||{};
+  var animales=((window.AppState&&window.AppState.animales)||[]).filter(function(a){return a.estado==='activo';});
+  // Inventario por especie + categoría
+  var mapa={};
+  animales.forEach(function(a){
+    var esp=(a.especie||'Ovino'); esp=esp.charAt(0).toUpperCase()+esp.slice(1);
+    var cat=categoriaAnimal(a);
+    var k=esp+'||'+cat;
+    if(!mapa[k]) mapa[k]={especie:esp,categoria:cat,cantidad:0};
+    mapa[k].cantidad++;
+  });
+  var inventario=Object.values(mapa).sort(function(x,y){ return x.especie.localeCompare(y.especie)||x.categoria.localeCompare(y.categoria); });
+  return {
+    predio:{
+      nombre: f.nombre||'La Marinilla',
+      ubicacion: f.ubicacion||'Vereda San Bernardo, Ibagué, Tolima',
+      vereda: f.vereda||'San Bernardo',
+      propietario: f.propietario||'Juan Manuel Arbeláez',
+      area_ha: f.hectareas||f.area_ha||'—',
+      registro_ica: cfg.registro_ica||f.registro_ica||'—'
+    },
+    fecha_reporte: new Date().toISOString().slice(0,10),
+    inventario: inventario,
+    total: animales.length
+  };
+}
+function rsppHTML(){
+  var d=buildRSPPData(); var p=d.predio;
+  var html='<div class="rspp-head">'
+    +'<div class="rspp-logo">LA</div>'
+    +'<div style="flex:1"><div class="rspp-title">Registro Sanitario de Predio Pecuario (RSPP)</div>'
+    +'<div class="rspp-meta">Instituto Colombiano Agropecuario · ICA · Generado: '+new Date().toLocaleString('es-CO')+'</div></div></div>';
+  html+='<h2>1. Datos del predio</h2><table><tbody>'
+    +'<tr><th style="width:25%">Nombre del predio</th><td>'+escR(p.nombre)+'</td><th style="width:22%">N° Registro ICA</th><td>'+escR(p.registro_ica)+'</td></tr>'
+    +'<tr><th>Propietario</th><td>'+escR(p.propietario)+'</td><th>Área (ha)</th><td>'+escR(p.area_ha)+'</td></tr>'
+    +'<tr><th>Ubicación</th><td colspan="3">'+escR(p.ubicacion)+'</td></tr>'
+    +'</tbody></table>';
+  html+='<h2>2. Inventario pecuario por especie y categoría</h2>';
+  if(d.inventario.length){
+    html+='<table><thead><tr><th>Especie</th><th>Categoría</th><th style="text-align:right">Cantidad</th></tr></thead><tbody>'
+      +d.inventario.map(function(r){ return '<tr><td>'+escR(r.especie)+'</td><td>'+escR(r.categoria)+'</td><td style="text-align:right">'+r.cantidad+'</td></tr>'; }).join('')
+      +'<tr class="tot"><td colspan="2">Total animales activos</td><td style="text-align:right">'+d.total+'</td></tr>'
+      +'</tbody></table>';
+  } else {
+    html+='<p style="font-size:12px;color:#5a8a90">Sin animales activos registrados.</p>';
+  }
+  // Últimas movilizaciones (de MOVS, si están cargadas)
+  html+='<h2>3. Últimas movilizaciones</h2>';
+  var movs=(MOVS||[]).slice(0,10);
+  if(movs.length){
+    html+='<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Origen → Destino</th><th>Cant.</th><th>GSMI</th></tr></thead><tbody>'
+      +movs.map(function(m){ return '<tr><td>'+escR(m.fecha||'—')+'</td><td>'+escR(TIPO_LBL[m.tipo]||m.tipo||'—')+'</td><td>'+escR((m.origen||'—')+' → '+(m.destino||'—'))+'</td><td style="text-align:right">'+(m.cantidad_animales||0)+'</td><td>'+escR(m.gsmi_numero||(m.gsmi_generado?'Generado':'—'))+'</td></tr>'; }).join('')
+      +'</tbody></table>';
+  } else {
+    html+='<p style="font-size:12px;color:#5a8a90">Sin movilizaciones registradas en el período (abre la pestaña Historial para cargarlas).</p>';
+  }
+  html+='<h2>4. Declaración sanitaria</h2>'
+    +'<p style="font-size:12px;line-height:1.6">El predio mantiene un programa sanitario activo con registro de tratamientos, vacunaciones y movilizaciones conforme a la normativa del ICA. Los movimientos de animales se documentan mediante Guía Sanitaria de Movilización Interna (GSMI). La información de este reporte se genera automáticamente a partir del inventario vigente en LAAAMBAPP.</p>';
+  html+='<div class="rspp-firma"><div class="ln">Firma del propietario / responsable<br><b>'+escR(p.propietario)+'</b></div><div class="ln">Fecha de generación<br><b>'+escR(d.fecha_reporte)+'</b></div></div>';
+  html+='<div class="rspp-foot">LAAAMBAPP · Registro Sanitario de Predio Pecuario · '+escR(p.nombre)+' · '+escR(p.ubicacion)+'</div>';
+  return html;
+}
+function renderRSPP(){
+  var el=document.getElementById('rspp-doc');
+  if(el) el.innerHTML=rsppHTML();
+}
+function exportarRSPPPDF(){
+  document.getElementById('rspp-print').innerHTML='<div class="rspp-doc">'+rsppHTML()+'</div>';
+  setTimeout(function(){ window.print(); },60);
+}
+function exportarRSPPExcel(){
+  if(typeof XLSX==='undefined'){ toast('Excel no disponible','err'); return; }
+  var d=buildRSPPData(); var p=d.predio;
+  var rows=[
+    ['REGISTRO SANITARIO DE PREDIO PECUARIO (RSPP) — ICA'],
+    ['Predio',p.nombre],['Registro ICA',p.registro_ica],['Propietario',p.propietario],
+    ['Ubicación',p.ubicacion],['Área (ha)',p.area_ha],['Fecha reporte',d.fecha_reporte],
+    [],
+    ['Especie','Categoría','Cantidad']
+  ];
+  d.inventario.forEach(function(r){ rows.push([r.especie,r.categoria,r.cantidad]); });
+  rows.push(['','Total',d.total]);
+  rows.push([]);
+  rows.push(['Últimas movilizaciones']);
+  rows.push(['Fecha','Tipo','Origen','Destino','Cantidad','GSMI']);
+  (MOVS||[]).slice(0,20).forEach(function(m){ rows.push([m.fecha||'',TIPO_LBL[m.tipo]||m.tipo||'',m.origen||'',m.destino||'',m.cantidad_animales||0,m.gsmi_numero||(m.gsmi_generado?'Generado':'')]); });
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(rows),'RSPP');
+  XLSX.writeFile(wb,'rspp-'+d.fecha_reporte+'.xlsx');
+  toast('RSPP exportado a Excel');
 }
 
 // ═══ HISTORIAL ═══

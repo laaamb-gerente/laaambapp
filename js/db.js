@@ -329,6 +329,46 @@ window.DB = {
       .eq('id', empaque_id);
   },
 
+  // ── B2B: clientes corporativos, pedidos, cartera ─────
+  async getClientesB2B(finca_id) {
+    return await window._sb.from('clientes_b2b')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .eq('activo', true)
+      .order('razon_social');
+  },
+  async saveClienteB2B(c) {
+    if (c.id) {
+      return await window._sb.from('clientes_b2b')
+        .update(c).eq('id', c.id).select().single();
+    }
+    return await window._sb.from('clientes_b2b')
+      .insert(c).select().single();
+  },
+  async getPedidosB2B(finca_id, estado) {
+    let q = window._sb.from('pedidos_b2b')
+      .select('*, clientes_b2b(razon_social, condicion_pago)')
+      .eq('finca_id', finca_id);
+    if (estado) q = q.eq('estado', estado);
+    return await q.order('fecha_pedido', { ascending: false });
+  },
+  async savePedidoB2B(p) {
+    return await window._sb.from('pedidos_b2b')
+      .insert(p).select().single();
+  },
+
+  // ── CADENA DE FRÍO ───────────────────────────────────
+  async saveCadenaFrio(registro) {
+    return await window._sb.from('cadena_frio')
+      .insert(registro).select().single();
+  },
+  async getCadenaFrio(empaque_id) {
+    return await window._sb.from('cadena_frio')
+      .select('*')
+      .eq('empaque_id', empaque_id)
+      .order('fecha_hora', { ascending: false });
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();
