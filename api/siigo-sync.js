@@ -8,13 +8,22 @@
 // El access_token devuelto se guarda en la tabla siigo_config.
 // ─────────────────────────────────────────────────────────────
 
-import { aplicarCors, validarToken, obtenerRol } from './_auth.js';
+import { aplicarCors, validarToken, obtenerRol, checkRateLimit } from './_auth.js';
 
 export default async function handler(req, res) {
   aplicarCors(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')
     return res.status(405).json({ error: 'Method not allowed' });
+
+  // Rate limiting por IP (30 req/min) antes de validar sesión
+  const rl = checkRateLimit(req, 30, 60000);
+  if (rl.limited) {
+    res.setHeader('Retry-After', rl.retryAfter);
+    return res.status(429).json({
+      error: 'Demasiadas peticiones. Intenta en ' + rl.retryAfter + 's'
+    });
+  }
 
   // Exigir sesión válida
   const auth = await validarToken(req);

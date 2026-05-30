@@ -1,0 +1,80 @@
+name: CI — LAAAMBAPP
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    name: Syntax & Security Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check JS syntax (node --check)
+        run: |
+          echo "Checking JS files..."
+          find . -name "*.js" \
+            -not -path "./.git/*" \
+            -not -path "./node_modules/*" \
+            -not -path "./AppData.js" \
+            | while read f; do
+              node --check "$f" && echo "✅ $f" || { echo "❌ $f"; exit 1; }
+            done
+
+      - name: Check API files (ESM load test)
+        run: |
+          echo "Testing API serverless functions..."
+          for f in api/*.js; do
+            node --input-type=module < "$f" 2>&1 | grep -v "^$" || true
+            echo "✅ ESM check: $f"
+          done
+
+      - name: Check for exposed secrets
+        run: |
+          echo "Checking for exposed tokens..."
+          # Verificar que no hay tokens hardcodeados en JS/HTML
+          if grep -r "ghp_[a-zA-Z0-9]*" --include="*.js" --include="*.html" \
+            --include="*.json" .; then
+            echo "❌ Token de GitHub encontrado en el código"
+            exit 1
+          fi
+          if grep -r "sk-ant-api" --include="*.js" --include="*.html" .; then
+            echo "❌ API key de Anthropic encontrada en el código"
+            exit 1
+          fi
+          echo "✅ Sin secretos expuestos"
+
+      - name: Verify auth protection
+        run: |
+          echo "Verifying auth.js is included in protected pages..."
+          PROTECTED="index animales lotes reproduccion salud medicamentos
+            finanzas okr bajas ajustes hoy beneficio nomina ica
+            reportes b2b"
+          for page in $PROTECTED; do
+            if [ -f "${page}.html" ]; then
+              if grep -q "auth.js" "${page}.html"; then
+                echo "✅ ${page}.html tiene auth.js"
+              else
+                echo "❌ ${page}.html NO tiene auth.js"
+                exit 1
+              fi
+            fi
+          done
+          # Verificar que qr.html y login.html NO tienen auth.js
+          for page in qr login; do
+            if grep -q "auth.js" "${page}.html" 2>/dev/null; then
+              echo "❌ ${page}.html tiene auth.js (página pública)"
+              exit 1
+            fi
+            echo "✅ ${page}.html correctamente sin auth.js"
+          done

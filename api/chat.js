@@ -1,4 +1,4 @@
-import { aplicarCors, validarToken } from './_auth.js';
+import { aplicarCors, validarToken, checkRateLimit } from './_auth.js';
 
 export default async function handler(req, res) {
   // CORS por allowlist (en TODAS las respuestas, incluido preflight)
@@ -12,6 +12,15 @@ export default async function handler(req, res) {
   // Solo POST
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Rate limiting por IP (30 req/min) antes de validar sesión
+  const rl = checkRateLimit(req, 30, 60000);
+  if (rl.limited) {
+    res.setHeader('Retry-After', rl.retryAfter);
+    return res.status(429).json({
+      error: 'Demasiadas peticiones. Intenta en ' + rl.retryAfter + 's'
+    });
   }
 
   // Exigir sesión válida antes de gastar la ANTHROPIC_API_KEY

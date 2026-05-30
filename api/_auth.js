@@ -12,6 +12,47 @@
 //   · obtenerRol   → rol del usuario desde perfiles (service key).
 // ─────────────────────────────────────────────────────────────
 
+// Rate limiting simple en memoria (por IP, por endpoint).
+// Nota: la memoria es por-instancia de la función serverless; en Vercel
+// cada cold start arranca un mapa nuevo. Es una primera barrera contra
+// abuso/ráfagas, no un límite global estricto.
+const rateLimitMap = new Map();
+
+export function checkRateLimit(req, maxRequests = 20, windowMs = 60000) {
+  const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+    || req.socket?.remoteAddress
+    || 'unknown';
+  const key = `${ip}:${req.url}`;
+  const now = Date.now();
+
+  const record = rateLimitMap.get(key) || { count: 0, resetAt: now + windowMs };
+
+  // Reset si venció la ventana
+  if (now > record.resetAt) {
+    record.count = 0;
+    record.resetAt = now + windowMs;
+  }
+
+  record.count++;
+  rateLimitMap.set(key, record);
+
+  if (record.count > maxRequests) {
+    return {
+      limited: true,
+      retryAfter: Math.ceil((record.resetAt - now) / 1000)
+    };
+  }
+  return { limited: false };
+}
+
+// Limpiar entradas viejas cada 5 minutos
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, record] of rateLimitMap.entries()) {
+    if (now > record.resetAt + 60000) rateLimitMap.delete(key);
+  }
+}, 300000);
+
 export const ALLOWED_ORIGINS = [
   'https://laaambapp.vercel.app',
   'https://laaamb-gerente.github.io',

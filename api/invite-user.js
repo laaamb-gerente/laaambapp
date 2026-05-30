@@ -21,6 +21,7 @@
 // ─────────────────────────────────────────────────────────────
 
 import crypto from 'crypto';
+import { checkRateLimit } from './_auth.js';
 
 const ALLOWED_ORIGINS = [
   'https://laaambapp.vercel.app',
@@ -46,6 +47,15 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Rate limiting por IP (5 req/min — estricto: crea usuarios admin)
+  const rl = checkRateLimit(req, 5, 60000);
+  if (rl.limited) {
+    res.setHeader('Retry-After', rl.retryAfter);
+    return res.status(429).json({
+      error: 'Demasiadas peticiones. Intenta en ' + rl.retryAfter + 's'
+    });
   }
 
   const serviceKey = process.env.SUPABASE_SERVICE_KEY;
