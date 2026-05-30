@@ -167,6 +167,36 @@ window.AlertasMotor = {
         });
       }
 
+      // 8. Sin registros financieros este mes (después del día 10)
+      const costosMes = window.AppState.getTotalCostosMes?.() || 0;
+      const ingresosMes = window.AppState.getTotalIngresosMes?.() || 0;
+      const hoyDia = new Date().getDate();
+      if (costosMes === 0 && ingresosMes === 0 && hoyDia > 10) {
+        alertas.push({
+          tipo: 'sin_registros_financieros',
+          prioridad: 'media',
+          mensaje: `Sin registros financieros este mes — conecta Siigo o registra manualmente`,
+          accion_sugerida: 'Registrar gastos e ingresos',
+          accion_url: 'finanzas.html',
+          datos: {}
+        });
+      }
+
+      // 9. Margen bajo (solo si hay datos reales)
+      if (ingresosMes > 0) {
+        const margen = ((ingresosMes - costosMes) / ingresosMes) * 100;
+        if (margen < 30) {
+          alertas.push({
+            tipo: 'margen_bajo',
+            prioridad: margen < 15 ? 'critica' : 'alta',
+            mensaje: `Margen del mes ${margen.toFixed(1)}% bajo la meta del 30%`,
+            accion_sugerida: 'Revisar costos y estrategia de ingresos',
+            accion_url: 'finanzas.html',
+            datos: { margen, costosMes, ingresosMes }
+          });
+        }
+      }
+
     } catch (e) {
       console.warn('[AlertasMotor] Error generando alertas:', e.message);
     }

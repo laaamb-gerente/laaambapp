@@ -24,6 +24,7 @@
 <script src="js/auth.js"></script>
 <script src="js/db.js"></script>
 <script src="js/offline-db.js"></script>
+<script src="js/alertas-motor.js"></script>
 <script src="js/app-state.js"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
@@ -420,6 +421,9 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 
   <div class="content">
 
+    <!-- Banner de alertas financieras (poblado por AlertasMotor) -->
+    <div id="fin-alertas-banner" style="display:none;margin-bottom:14px"></div>
+
     <!-- ══ RESUMEN ══ -->
     <div id="t-resumen" class="tab-pane">
       <!-- Balance cards -->
@@ -704,6 +708,13 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
             <tbody id="flujo-tbody"></tbody>
           </table>
         </div>
+      </div>
+
+      <!-- Proyección próximos 6 meses -->
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin:22px 0 4px">Proyección próximos 6 meses</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Estimada sobre el promedio mensual real registrado este mes</div>
+      <div class="card">
+        <div id="flujo-proyeccion" style="padding:4px"><div style="color:var(--text3);font-size:12px;padding:8px">Cargando…</div></div>
       </div>
     </div>
 
@@ -1153,6 +1164,26 @@ function loadFinanzasFromSupabase(){
   } else { renderIngresos(); }
 
   console.log('[Finanzas] Supabase —',costos.length,'costos,',ingresos.length,'ingresos · balance',_fmtMoney(balance));
+
+  // Alertas financieras (margen bajo / sin registros) en el banner
+  if(window.AlertasMotor && typeof window.AlertasMotor.generar==='function'){
+    window.AlertasMotor.generar().then(alertas=>{
+      const finAlertas=(alertas||[]).filter(a=>['margen_bajo','sin_registros_financieros'].includes(a.tipo));
+      const banner=document.getElementById('fin-alertas-banner');
+      if(!banner) return;
+      if(!finAlertas.length){ banner.style.display='none'; banner.innerHTML=''; return; }
+      banner.style.display='block';
+      banner.innerHTML=finAlertas.map(a=>{
+        const crit=(a.prioridad==='critica'||a.prioridad==='alta');
+        const col=crit?'var(--red)':'var(--orange)';
+        const bg=crit?'var(--red-bg)':'rgba(232,154,42,.10)';
+        return '<div style="background:'+bg+';border:1px solid '+col+';border-left:3px solid '+col+';border-radius:var(--r);padding:12px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">'
+          +'<div style="font-size:13px;color:var(--text)"><strong style="color:'+col+'">⚠ '+(crit?'Atención':'Aviso')+'</strong> · '+(a.mensaje||'')+'</div>'
+          +(a.accion_sugerida?'<span style="font-size:11px;color:var(--text3)">'+a.accion_sugerida+'</span>':'')
+          +'</div>';
+      }).join('');
+    }).catch(()=>{});
+  }
 }
 document.addEventListener('appstate:ready', loadFinanzasFromSupabase);
 if(window.AppState && window.AppState._loaded) loadFinanzasFromSupabase();
@@ -1229,6 +1260,61 @@ function renderFlujoCaja(){
   }).join('')+'</tr>';
   document.getElementById('flujo-tbody').innerHTML=html;
   window._flujoCols=cols; window._flujoIng=ingMat; window._flujoCost=costMat; window._flujoIngCats=ingCats; window._flujoCostCats=costCats;
+  renderFlujoProyeccion();
+}
+// Proyección 6 meses basada en el promedio mensual real (datos de este mes).
+function renderFlujoProyeccion(){
+  const cont=document.getElementById('flujo-proyeccion');
+  if(!cont) return;
+  const AS=window.AppState;
+  const costoPromMes=(AS&&AS.getTotalCostosMes&&AS.getTotalCostosMes())||0;
+  const ingPromMes=(AS&&AS.getTotalIngresosMes&&AS.getTotalIngresosMes())||0;
+
+  if(costoPromMes===0 && ingPromMes===0){
+    cont.innerHTML='<div style="text-align:center;padding:24px 16px;color:var(--text2)">'
+      +'<div style="font-size:13px;margin-bottom:6px;color:var(--text2)">Conecta Siigo o registra transacciones para activar la proyección.</div>'
+      +'<div style="font-size:12px;color:var(--text3);margin-bottom:14px">Los datos históricos son necesarios para proyectar.</div>'
+      +'<a class="btn btn-primary btn-sm" href="ajustes.html#siigo">Ir a Ajustes → Siigo</a>'
+      +'</div>';
+    return;
+  }
+
+  const hoy=new Date();
+  const filas=[];
+  let accBalance=0, maxAbs=0;
+  for(let i=1;i<=6;i++){
+    const f=new Date(hoy.getFullYear(),hoy.getMonth()+i,1);
+    const balance=ingPromMes-costoPromMes;
+    accBalance+=balance;
+    const margen=ingPromMes>0?Math.round((balance/ingPromMes)*100):0;
+    const label=MESES_ES[f.getMonth()]+' '+String(f.getFullYear()).slice(2);
+    filas.push({label:label,ing:ingPromMes,cost:costoPromMes,balance:balance,acc:accBalance,margen:margen});
+    if(Math.abs(balance)>maxAbs) maxAbs=Math.abs(balance);
+  }
+
+  let tabla='<div style="overflow-x:auto;margin-bottom:14px"><table><thead><tr>'
+    +'<th>Mes</th><th style="text-align:right">Ingresos est.</th><th style="text-align:right">Egresos est.</th><th style="text-align:right">Balance</th><th style="text-align:right">Acumulado</th><th style="text-align:right">Margen</th>'
+    +'</tr></thead><tbody>';
+  filas.forEach(r=>{
+    tabla+='<tr><td>'+r.label+'</td>'
+      +'<td style="text-align:right;color:var(--green)">'+_fmtMoney(r.ing)+'</td>'
+      +'<td style="text-align:right;color:var(--red)">'+_fmtMoney(r.cost)+'</td>'
+      +'<td style="text-align:right;font-weight:600;color:'+(r.balance>=0?'var(--green)':'var(--red)')+'">'+(r.balance>=0?'+':'')+_fmtMoney(r.balance)+'</td>'
+      +'<td style="text-align:right;color:'+(r.acc>=0?'var(--green)':'var(--red)')+'">'+(r.acc>=0?'+':'')+_fmtMoney(r.acc)+'</td>'
+      +'<td style="text-align:right;color:var(--text2)">'+r.margen+'%</td></tr>';
+  });
+  tabla+='</tbody></table></div>';
+
+  const barras=filas.map(r=>{
+    const pct=maxAbs>0?Math.round(Math.abs(r.balance)/maxAbs*100):0;
+    const col=r.balance>=0?'var(--green)':'var(--red)';
+    return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">'
+      +'<div style="width:64px;font-size:11px;color:var(--text3)">'+r.label+'</div>'
+      +'<div style="flex:1;height:14px;background:var(--bg3);border-radius:7px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+col+'"></div></div>'
+      +'<div style="width:72px;text-align:right;font-size:11px;color:'+col+'">'+(r.balance>=0?'+':'')+_fmtMoney(r.balance)+'</div></div>';
+  }).join('');
+
+  cont.innerHTML=tabla+barras;
 }
 function exportFlujoCaja(){
   const cols=window._flujoCols||_ultimosMeses(7);

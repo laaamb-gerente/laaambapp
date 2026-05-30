@@ -62,6 +62,17 @@ const COPILOTO_TOOLS = [
       },
       required: []
     }
+  },
+  {
+    name: "get_proyeccion_financiera",
+    description: "Proyecta el flujo de caja de los próximos meses basado en histórico. Si no hay datos históricos, lo indica claramente.",
+    input_schema: {
+      type: "object",
+      properties: {
+        meses: { type: "number", description: "Meses a proyectar (3 o 6)" }
+      },
+      required: []
+    }
   }
 ];
 
@@ -257,6 +268,30 @@ ${enfoque}${this._enfoquePagina ? '\n\n' + this._enfoquePagina : ''}`;
           ingresos: as.getIngresosMes?.().length || 0
         }
       });
+    }
+
+    if (name === 'get_proyeccion_financiera') {
+      const costoPromMes = as.getTotalCostosMes?.() || 0;
+      const ingPromMes = as.getTotalIngresosMes?.() || 0;
+      if (costoPromMes === 0 && ingPromMes === 0) {
+        return JSON.stringify({
+          error: 'Sin datos financieros históricos. Conectar Siigo o registrar transacciones primero.'
+        });
+      }
+      const meses = input.meses || 6;
+      const hoy = new Date();
+      const proyeccion = [];
+      for (let i = 1; i <= meses; i++) {
+        const fecha = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
+        proyeccion.push({
+          mes: fecha.toLocaleString('es-CO', {month:'long', year:'numeric'}),
+          ingresos_proyectados: ingPromMes,
+          costos_proyectados: costoPromMes,
+          balance: ingPromMes - costoPromMes,
+          margen_pct: Math.round(((ingPromMes-costoPromMes)/ingPromMes)*100)
+        });
+      }
+      return JSON.stringify({ proyeccion });
     }
 
     return JSON.stringify({ error: 'Tool no reconocida' });

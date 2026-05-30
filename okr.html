@@ -676,15 +676,15 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
           <div class="card-body" id="rank-culling"><div style="color:var(--text3);font-size:12px;padding:8px">Cargando…</div></div>
         </div>
 
-        <!-- Ranking 3: Listos para sacrificio -->
+        <!-- Ranking 3: Reproductores activos -->
         <div class="card">
-          <div class="card-h"><div><div class="card-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:4px"><path d="M3 17l5-6 4 3 5-8"/></svg>Listos para sacrificio</div><div class="card-sub" id="rank-sacrificio-sub">Peso ≥ objetivo</div></div></div>
+          <div class="card-h"><div><div class="card-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:4px"><circle cx="10" cy="6" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Reproductores activos</div><div class="card-sub" id="rank-sacrificio-sub">Machos y reproductores identificados del hato</div></div></div>
           <div class="card-body" id="rank-sacrificio"><div style="color:var(--text3);font-size:12px;padding:8px">Cargando…</div></div>
         </div>
 
-        <!-- Ranking 4: Crías con mejor potencial -->
+        <!-- Ranking 4: Crías en levante (0-6 meses) -->
         <div class="card">
-          <div class="card-h"><div><div class="card-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:4px"><path d="M10 2l2 5h5l-4 3 1.5 5L10 12l-4.5 3L7 10 3 7h5L10 2z"/></svg>Crías con mejor potencial</div><div class="card-sub">Futuros reproductores / candidatos a retención</div></div></div>
+          <div class="card-h"><div><div class="card-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:4px"><path d="M10 2l2 5h5l-4 3 1.5 5L10 12l-4.5 3L7 10 3 7h5L10 2z"/></svg>Crías en levante (0-6 meses)</div><div class="card-sub">Nacidas en los últimos 180 días</div></div></div>
           <div class="card-body" id="rank-levante"><div style="color:var(--text3);font-size:12px;padding:8px">Cargando…</div></div>
         </div>
       </div>
@@ -709,7 +709,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <!-- ══ TAB: PROYECCIÓN ══ -->
     <div id="t-proyeccion" class="tab-pane" style="display:none">
       <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-left:3px solid var(--teal);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--text2)">
-        <strong style="color:var(--teal)">Análisis predictivo</strong> — Proyección de animales que alcanzan peso objetivo y nacimientos esperados, calculada sobre el GDP estimado y las fechas de parto registradas.
+        <strong style="color:var(--teal)">Análisis predictivo</strong> — Proyección calculada solo con datos reales: pesajes registrados en Supabase y fechas de parto previstas. Si no hay pesajes o gestantes, la sección lo indica en vez de inventar cifras.
       </div>
       <div class="g2">
         <!-- Proyección de sacrificio -->
@@ -728,19 +728,19 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <!-- ══ TAB: CULLING ══ -->
     <div id="t-culling" class="tab-pane" style="display:none">
       <div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-left:3px solid var(--red);border-radius:var(--r);padding:14px 18px;margin-bottom:16px;font-size:13px;color:var(--text2)">
-        <strong style="color:var(--red)">Análisis de culling</strong> — Candidatos detectados a partir de datos reales: hembras &gt; 6 años, machos sin montas recientes, animales con tratamientos repetidos y hembras sin registro de gestación. Se compara el costo estimado de mantenerlos vs su valor de venta.
+        <strong style="color:var(--red)">Análisis de culling</strong> — Candidatas detectadas a partir de datos reales de Supabase: hembras mayores a 5 años. Aún no hay histórico de partos ni ciclos reproductivos cargado, por lo que la evaluación se basa solo en la edad. Agrega datos reproductivos para un análisis completo.
       </div>
       <div class="card">
         <div class="card-h"><div class="card-title">Candidatos a culling</div><button class="btn btn-ghost btn-sm" onclick="exportCulling()">↓ Excel culling</button></div>
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>ID Animal</th><th>Edad</th><th>Motivo(s)</th><th>Costo mantener (est.)</th><th>Valor venta (est.)</th><th>Balance</th><th>Acción</th></tr></thead>
-            <tbody id="culling-tbody"><tr><td colspan="7" style="text-align:center;color:var(--text3);padding:20px">Cargando…</td></tr></tbody>
+            <thead><tr><th>ID Animal</th><th>Edad</th><th>Lote</th><th>Evaluación</th><th>Acción</th></tr></thead>
+            <tbody id="culling-tbody"><tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">Cargando…</td></tr></tbody>
           </table>
         </div>
         <div class="card-body" style="padding-top:12px;border-top:1px solid var(--border)">
           <div style="font-size:12px;color:var(--text3)">
-            <strong style="color:var(--text2)">Metodología:</strong> Costo de mantener ≈ meses de vida × costo mensual estimado de alimentación/manejo. Valor de venta ≈ peso actual (o peso objetivo) × precio objetivo. Un balance negativo indica que el animal cuesta más de lo que retorna.
+            <strong style="color:var(--text2)">Metodología:</strong> La lista se basa únicamente en la edad real registrada en Supabase (hembras &gt; 5 años). No se inventan partos, ciclos vacíos ni históricos que aún no existen en la base de datos. Cuando se carguen datos reproductivos, la evaluación incorporará rendimiento por número de partos y fertilidad.
           </div>
         </div>
       </div>
@@ -1250,7 +1250,11 @@ document.addEventListener('DOMContentLoaded', initEspecieTabs);
   function activos(){ return ((AS()&&AS().animales)||[]).filter(function(a){return a.estado==='activo';}); }
   function edadDias(a){ if(!a.fecha_nacimiento) return null; var d=(Date.now()-new Date(a.fecha_nacimiento))/86400000; return d>0?d:null; }
   function edadMeses(a){ var d=edadDias(a); return d==null?null:d/30.4; }
-  function gdpDe(a){ var ed=edadDias(a); if(ed==null||a.peso_actual==null) return null; var g=(parseFloat(a.peso_actual)/ed)*1000; return isFinite(g)?g:null; }
+  // Peso real: usa pesoParaTabla (enriquecido) si existe, si no peso_actual (columna Supabase). 0 = sin pesaje.
+  function pesoReal(a){ var p=(a.pesoParaTabla!=null?a.pesoParaTabla:a.peso_actual); p=parseFloat(p); return (isFinite(p)&&p>0)?p:0; }
+  function sexoDe(a){ return (a.sexo||'').toLowerCase(); }
+  function nombreReal(a){ var n=(a.nombre==null?'':String(a.nombre)).trim(); return (n&&n!=='—')?n:''; }
+  function gdpDe(a){ var ed=edadDias(a); var p=pesoReal(a); if(ed==null||p<=0) return null; var g=(p/ed)*1000; return isFinite(g)?g:null; }
   function loteMap(){ var m={}; ((AS()&&AS().lotes)||[]).forEach(function(l){ m[l.id]=l.nombre; }); return m; }
   function loteNombre(a,m){ return (m&&m[a.lote_actual_id]) || a.lote || '—'; }
   function fmtKg(p){ return (Math.round(parseFloat(p)*10)/10)+' kg'; }
@@ -1266,51 +1270,58 @@ document.addEventListener('DOMContentLoaded', initEspecieTabs);
   function emptyMsg(txt){ return '<div style="color:var(--text3);font-size:12px;padding:12px 4px">'+esc(txt)+'</div>'; }
   function setHTML(id,html){ var el=document.getElementById(id); if(el) el.innerHTML=html; }
 
-  // ── RANKINGS ────────────────────────────────────────────
+  // ── RANKINGS (SOLO datos reales de AppState.animales / Supabase) ────────
   function renderRankings(){
     var lm=loteMap(), act=activos();
-    var pesoObj=cfg('peso_objetivo_sacrificio',48), metaGdp=cfg('meta_gdp',200);
 
-    // Ranking 1 — Top GDP
-    var r1=act.filter(function(a){return a.peso_actual!=null&&a.fecha_nacimiento;})
+    // Ranking 1 — Top GDP: solo animales con peso real (>0) y fecha de nacimiento válida
+    var r1=act.filter(function(a){return pesoReal(a)>0 && a.fecha_nacimiento;})
       .map(function(a){return {a:a,gdp:gdpDe(a)};}).filter(function(x){return x.gdp!=null;})
       .sort(function(x,y){return y.gdp-x.gdp;}).slice(0,10);
     setHTML('rank-gdp', r1.length ? r1.map(function(x,i){
-      var a=x.a, g=Math.round(x.gdp);
+      var a=x.a, g=Math.round(x.gdp), nm=nombreReal(a);
       var score=i<3?'<span class="badge b-green">'+g+' g/d</span>':'<div class="rank-score">'+g+'</div>';
-      return rankRow(i+1,posClass(i),'#'+(a.codigo||a.id),(a.raza||'—')+' · '+loteNombre(a,lm),score,fmtKg(a.peso_actual)+' · '+fmtEdad(edadMeses(a)));
-    }).join('') : emptyMsg('Sin animales con peso y fecha de nacimiento para calcular GDP.'));
+      var nameTxt=(nm?nm+' · ':'')+(a.raza||'—')+' · '+loteNombre(a,lm);
+      return rankRow(i+1,posClass(i),'#'+(a.codigo||a.id),nameTxt,score,fmtKg(pesoReal(a))+' · '+fmtEdad(edadMeses(a)));
+    }).join('') : emptyMsg('Sin pesajes registrados — registra pesajes para ver el ranking'));
 
-    // Ranking 2 — Costo oportunidad / culling por edad
-    var r2=act.filter(function(a){ var em=edadMeses(a); var p=a.peso_actual!=null?parseFloat(a.peso_actual):null; return em!=null&&em>18&&(p==null||p<pesoObj); })
+    // Ranking 2 — Candidatos a culling por edad: hembras con > 72 meses (6 años)
+    var r2=act.filter(function(a){ var em=edadMeses(a); return sexoDe(a)==='hembra' && em!=null && em>72; })
       .map(function(a){return {a:a,em:edadMeses(a)};}).sort(function(x,y){return y.em-x.em;}).slice(0,10);
     setHTML('rank-culling', r2.length ? r2.map(function(x,i){
-      var a=x.a;
+      var a=x.a, nm=nombreReal(a);
       var score=i<3?'<span class="badge b-red">'+fmtEdad(x.em)+'</span>':'<div class="rank-score" style="font-size:14px">'+fmtEdad(x.em)+'</div>';
-      var det=(a.peso_actual!=null?fmtKg(a.peso_actual):'sin peso')+' · '+loteNombre(a,lm);
-      return rankRow(i+1,posClass(i),'#'+(a.codigo||a.id),(a.raza||'—')+' · '+(a.sexo||''),score,det);
-    }).join('') : emptyMsg('Sin candidatos por edad/costo oportunidad.'));
+      var nameTxt=(nm?nm+' · ':'')+(a.raza||'—')+' · '+loteNombre(a,lm);
+      return rankRow(i+1,posClass(i),'#'+(a.codigo||a.id),nameTxt,score,'Hembra > 6 años');
+    }).join('') : emptyMsg('Sin animales mayores a 6 años identificados'));
 
-    // Ranking 3 — Listos para sacrificio
-    var r3=act.filter(function(a){return a.peso_actual!=null&&parseFloat(a.peso_actual)>=pesoObj;})
-      .sort(function(x,y){return parseFloat(y.peso_actual)-parseFloat(x.peso_actual);}).slice(0,10);
-    var subEl=document.getElementById('rank-sacrificio-sub');
-    if(subEl) subEl.textContent='Peso ≥ '+pesoObj+' kg · '+act.filter(function(a){return a.peso_actual!=null&&parseFloat(a.peso_actual)>=pesoObj;}).length+' animales';
+    // Ranking 3 — Reproductores activos: categoría 'Reproductor', nombre con 'Zeus', o código N* macho
+    var r3=act.filter(function(a){
+      var cat=(a.categoria||'').toLowerCase();
+      var nom=(a.nombre||'').toLowerCase();
+      var cod=String(a.codigo||'');
+      return cat.indexOf('reproductor')>=0 || nom.indexOf('zeus')>=0 || (cod.charAt(0).toUpperCase()==='N' && sexoDe(a)==='macho');
+    }).sort(function(a,b){ return (edadMeses(b)||0)-(edadMeses(a)||0); }).slice(0,10);
     setHTML('rank-sacrificio', r3.length ? r3.map(function(a,i){
-      var score='<span class="badge b-amber" style="background:rgba(212,175,55,.15);color:#d4af37">'+fmtKg(a.peso_actual)+'</span>';
-      return rankRow(i+1,posClass(i),'#'+(a.codigo||a.id),(a.raza||'—')+' · '+loteNombre(a,lm),score,fmtEdad(edadMeses(a)));
-    }).join('') : emptyMsg('Ningún animal alcanza aún el peso objetivo de '+pesoObj+' kg.'));
+      var nm=nombreReal(a);
+      var score='<span class="badge b-sky">'+esc(a.raza||'—')+'</span>';
+      var nameTxt=(nm?nm+' · ':'')+loteNombre(a,lm);
+      return rankRow(i+1,posClass(i),'#'+(a.codigo||a.id),nameTxt,score,fmtEdad(edadMeses(a)));
+    }).join('') : emptyMsg('Sin reproductores identificados'));
 
-    // Ranking 4 — Crías con mejor potencial
-    var seis=new Date(); seis.setMonth(seis.getMonth()-6);
-    var r4=act.filter(function(a){return a.fecha_nacimiento&&new Date(a.fecha_nacimiento)>=seis&&a.peso_actual!=null;})
-      .map(function(a){return {a:a,gdp:gdpDe(a)};}).filter(function(x){return x.gdp!=null&&x.gdp>metaGdp;})
-      .sort(function(x,y){return y.gdp-x.gdp;}).slice(0,10);
-    setHTML('rank-levante', r4.length ? r4.map(function(x,i){
-      var a=x.a, g=Math.round(x.gdp);
-      var score=i<3?'<span class="badge b-green">'+g+' g/d</span>':'<div class="rank-score">'+g+'</div>';
-      return rankRow(i+1,posClass(i),'#'+(a.codigo||a.id),(a.raza||'—')+' · '+fmtKg(a.peso_actual),score,'Retención / pie de cría · '+fmtEdad(edadMeses(a)));
-    }).join('') : emptyMsg('Sin crías (≤6 meses) que superen la meta de GDP ('+metaGdp+' g/d).'));
+    // Ranking 4 — Crías en levante: nacidas en los últimos 180 días
+    var lim=new Date(); lim.setDate(lim.getDate()-180);
+    var r4=act.filter(function(a){return a.fecha_nacimiento && new Date(a.fecha_nacimiento)>=lim;})
+      .sort(function(a,b){ return new Date(b.fecha_nacimiento)-new Date(a.fecha_nacimiento); }).slice(0,10);
+    setHTML('rank-levante', r4.length ? r4.map(function(a,i){
+      var g=gdpDe(a), nm=nombreReal(a);
+      var score=(g!=null)
+        ? '<span class="badge b-green">'+Math.round(g)+' g/d</span>'
+        : '<div class="rank-score" style="font-size:13px">'+fmtEdad(edadMeses(a))+'</div>';
+      var nameTxt=(nm?nm+' · ':'')+(a.raza||'—')+' · '+loteNombre(a,lm);
+      var det=(pesoReal(a)>0?fmtKg(pesoReal(a)):'sin peso')+' · '+fmtEdad(edadMeses(a));
+      return rankRow(i+1,posClass(i),'#'+(a.codigo||a.id),nameTxt,score,det);
+    }).join('') : emptyMsg('Sin crías en levante registradas'));
   }
 
   // ── PROYECCIÓN ──────────────────────────────────────────
@@ -1320,35 +1331,49 @@ document.addEventListener('DOMContentLoaded', initEspecieTabs);
     var act=activos();
     var pesoObj=cfg('peso_objetivo_sacrificio',48), precio=cfg('precio_objetivo_venta',15000);
 
-    // Proyección de sacrificio
-    var buckets={};
-    act.forEach(function(a){
-      if(a.peso_actual==null||!a.fecha_nacimiento) return;
-      var p=parseFloat(a.peso_actual); if(p>=pesoObj) return;
-      var g=gdpDe(a); if(g==null||g<=0) return;
-      var dias=((pesoObj-p)*1000)/g;
-      if(!(dias>0)||dias>183) return;
-      var k=mesKey(new Date(Date.now()+dias*86400000));
-      buckets[k]=(buckets[k]||0)+1;
-    });
-    var keys=Object.keys(buckets).sort();
-    var totalAnim=0, totalIng=0, maxIng=0;
-    keys.forEach(function(k){ var ing=buckets[k]*pesoObj*precio; totalAnim+=buckets[k]; totalIng+=ing; if(ing>maxIng) maxIng=ing; });
+    // Solo se proyecta con pesajes reales. Sin peso => no inventamos nada.
+    var conPeso=act.filter(function(a){return pesoReal(a)>0;});
     var subP=document.getElementById('proy-sac-sub');
-    if(subP) subP.textContent='Próximos 6 meses · '+totalAnim+' animales · '+fmtCop(totalIng)+' est.';
-    if(keys.length){
-      var tabla='<div style="overflow-x:auto;margin-bottom:14px"><table><thead><tr><th>Mes</th><th>Animales</th><th>Ingresos est.</th></tr></thead><tbody>'
-        + keys.map(function(k){ var ing=buckets[k]*pesoObj*precio; return '<tr><td>'+mesLabel(k)+'</td><td>'+buckets[k]+'</td><td class="td-mono" style="color:var(--green)">'+fmtCop(ing)+'</td></tr>'; }).join('')
-        + '</tbody></table></div>';
-      var barras=keys.map(function(k){
-        var ing=buckets[k]*pesoObj*precio; var pct=maxIng>0?Math.round(ing/maxIng*100):0;
-        return '<div class="bar-row"><div class="bar-lbl">'+mesLabel(k)+' ('+buckets[k]+')</div>'
-          +'<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:var(--green)"></div></div>'
-          +'<div class="bar-val" style="width:64px">'+fmtCopShort(ing)+'</div></div>';
-      }).join('');
-      setHTML('proy-sacrificio', tabla+barras);
+    if(!conPeso.length){
+      if(subP) subP.textContent='Sin pesajes registrados';
+      setHTML('proy-sacrificio', emptyMsg('Sin pesajes registrados — registra pesajes en los animales para proyectar la llegada a peso de sacrificio.'));
     } else {
-      setHTML('proy-sacrificio', emptyMsg('Sin animales con peso y GDP suficientes para proyectar la llegada a peso en los próximos 6 meses.'));
+      var listosAhora=conPeso.filter(function(a){return pesoReal(a)>=pesoObj;}).length;
+      // Animales por debajo del objetivo, con GDP real, que llegarían en los próximos 6 meses
+      var buckets={};
+      conPeso.forEach(function(a){
+        var p=pesoReal(a); if(p>=pesoObj||!a.fecha_nacimiento) return;
+        var g=gdpDe(a); if(g==null||g<=0) return;
+        var dias=((pesoObj-p)*1000)/g;
+        if(!(dias>0)||dias>183) return;
+        var k=mesKey(new Date(Date.now()+dias*86400000));
+        buckets[k]=(buckets[k]||0)+1;
+      });
+      var keys=Object.keys(buckets).sort();
+      var totalProy=0, totalIng=0, maxIng=0;
+      keys.forEach(function(k){ var ing=buckets[k]*pesoObj*precio; totalProy+=buckets[k]; totalIng+=ing; if(ing>maxIng) maxIng=ing; });
+      if(subP) subP.textContent=listosAhora+' listos ahora · '+totalProy+' en 6 meses · '+fmtCop(totalIng)+' est.';
+
+      if(!listosAhora && !keys.length){
+        setHTML('proy-sacrificio', emptyMsg('Ningún animal alcanza el peso objetivo de '+pesoObj+' kg, ni se proyecta que lo alcance en los próximos 6 meses con los pesajes y GDP actuales.'));
+      } else {
+        var head='<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px">'
+          +'<div style="flex:1;min-width:120px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px"><div style="font-size:11px;color:var(--text3)">Listos ahora (≥ '+pesoObj+' kg)</div><div style="font-size:22px;font-weight:700;color:#d4af37">'+listosAhora+'</div></div>'
+          +'<div style="flex:1;min-width:120px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px"><div style="font-size:11px;color:var(--text3)">Proyectados (6 meses)</div><div style="font-size:22px;font-weight:700;color:var(--green)">'+totalProy+'</div></div>'
+          +'</div>';
+        var tabla=keys.length
+          ? ('<div style="overflow-x:auto;margin-bottom:14px"><table><thead><tr><th>Mes</th><th>Animales</th><th>Ingresos est.</th></tr></thead><tbody>'
+            + keys.map(function(k){ var ing=buckets[k]*pesoObj*precio; return '<tr><td>'+mesLabel(k)+'</td><td>'+buckets[k]+'</td><td class="td-mono" style="color:var(--green)">'+fmtCop(ing)+'</td></tr>'; }).join('')
+            + '</tbody></table></div>')
+          : '';
+        var barras=keys.map(function(k){
+          var ing=buckets[k]*pesoObj*precio; var pct=maxIng>0?Math.round(ing/maxIng*100):0;
+          return '<div class="bar-row"><div class="bar-lbl">'+mesLabel(k)+' ('+buckets[k]+')</div>'
+            +'<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:var(--green)"></div></div>'
+            +'<div class="bar-val" style="width:64px">'+fmtCopShort(ing)+'</div></div>';
+        }).join('');
+        setHTML('proy-sacrificio', head+tabla+barras);
+      }
     }
 
     // Proyección de partos
@@ -1372,65 +1397,29 @@ document.addEventListener('DOMContentLoaded', initEspecieTabs);
     }
   }
 
-  // ── CULLING ─────────────────────────────────────────────
+  // ── CULLING (solo edad real; sin inventar históricos) ───────────────────
   function renderCulling(){
     var act=activos(), lm=loteMap();
-    var pesoObj=cfg('peso_objetivo_sacrificio',48), precio=cfg('precio_objetivo_venta',15000);
-    var eventos=(AS()&&AS().eventosReproductivos)||[];
-    var trats=(AS()&&AS().tratamientos)||null;
 
-    // Set de hembras gestantes (por id y codigo) para detectar "vacías"
-    var gestSet={};
-    ((AS()&&AS().gestantes)||[]).forEach(function(g){ if(g.id)gestSet[g.id]=1; if(g.animal_id)gestSet[g.animal_id]=1; if(g.codigo)gestSet[g.codigo]=1; });
-
-    // Montas recientes por macho (últimos 6 meses), si hay eventos
-    var seis=new Date(); seis.setMonth(seis.getMonth()-6);
-    function machoTuvoMontaReciente(a){
-      if(!eventos.length) return true; // sin datos de eventos: no penalizar
-      return eventos.some(function(e){
-        var ref=e.macho_id||e.padre_id||e.reproductor_id||e.animal_id;
-        var tipo=(e.tipo||e.tipo_evento||'').toLowerCase();
-        var fecha=e.fecha||e.fecha_evento;
-        return ref===a.id && (tipo.indexOf('monta')>=0||tipo==='') && fecha && new Date(fecha)>=seis;
-      });
-    }
-    // Tratamientos en los últimos 90 días, si hay datos
-    var noventa=new Date(); noventa.setDate(noventa.getDate()-90);
-    function tratamientosRecientes(a){
-      if(!trats) return 0;
-      return trats.filter(function(t){ var ref=t.animal_id; var f=t.fecha||t.fecha_inicio; return ref===a.id && f && new Date(f)>=noventa; }).length;
-    }
-
-    var cands=[];
-    act.forEach(function(a){
-      var em=edadMeses(a), motivos=[];
-      var sexo=(a.sexo||'').toUpperCase();
-      if(sexo==='H'||sexo==='HEMBRA'){ if(em!=null&&em>72) motivos.push('Hembra > 6 años'); }
-      if(sexo==='M'||sexo==='MACHO'){ if(em!=null&&em>12&&!machoTuvoMontaReciente(a)) motivos.push('Macho sin montas recientes'); }
-      var nTrat=tratamientosRecientes(a);
-      if(nTrat>3) motivos.push(nTrat+' tratamientos en 90 días');
-      if((sexo==='H'||sexo==='HEMBRA') && em!=null && em>18 && (a.estado_reproductivo==='vacia') && !gestSet[a.id] && !gestSet[a.codigo]) motivos.push('Vacía sin gestación registrada');
-      if(motivos.length) cands.push({a:a,em:em,motivos:motivos});
-    });
+    // SOLO hembras con > 60 meses (5 años). No se infieren partos ni ciclos vacíos
+    // porque esos datos aún no existen en Supabase.
+    var cands=act.filter(function(a){ var em=edadMeses(a); return sexoDe(a)==='hembra' && em!=null && em>60; })
+      .map(function(a){return {a:a,em:edadMeses(a)};})
+      .sort(function(x,y){ return (y.em||0)-(x.em||0); });
 
     var tb=document.getElementById('culling-tbody');
     if(!tb) return;
-    if(!cands.length){ tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:20px">Sin candidatos a culling con los datos actuales. 🎉</td></tr>'; return; }
-    cands.sort(function(x,y){ return (y.em||0)-(x.em||0); });
-    tb.innerHTML=cands.slice(0,25).map(function(c){
-      var a=c.a;
-      var costoMantener=Math.round((c.em||0)*35000);
-      var valorVenta=Math.round((a.peso_actual!=null?parseFloat(a.peso_actual):pesoObj)*precio);
-      var balance=valorVenta-costoMantener;
-      var balColor=balance<0?'var(--red)':'var(--green)';
-      var cod=a.codigo||a.id;
+    if(!cands.length){
+      tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--text3);padding:20px">Sin candidatas a culling identificadas basado en edad — agrega datos reproductivos para análisis completo</td></tr>';
+      return;
+    }
+    tb.innerHTML=cands.map(function(c){
+      var a=c.a, cod=a.codigo||a.id, nm=nombreReal(a);
       return '<tr>'
-        +'<td class="td-mono">#'+esc(cod)+'</td>'
+        +'<td class="td-mono">#'+esc(cod)+(nm?' <span style="color:var(--text3)">· '+esc(nm)+'</span>':'')+'</td>'
         +'<td>'+fmtEdad(c.em)+'</td>'
-        +'<td>'+c.motivos.map(function(m){return '<span class="badge b-red" style="margin:1px 2px">'+esc(m)+'</span>';}).join('')+'</td>'
-        +'<td>'+fmtCop(costoMantener)+'</td>'
-        +'<td>'+fmtCop(valorVenta)+'</td>'
-        +'<td style="color:'+balColor+';font-weight:600">'+fmtCop(balance)+'</td>'
+        +'<td>'+esc(loteNombre(a,lm))+'</td>'
+        +'<td style="color:var(--text2)">Evaluar rendimiento — sin datos históricos suficientes</td>'
         +'<td><a class="btn btn-ghost btn-sm" href="bajas.html?codigo='+encodeURIComponent(cod)+'">Registrar baja</a></td>'
         +'</tr>';
     }).join('');
