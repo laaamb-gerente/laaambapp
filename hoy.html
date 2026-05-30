@@ -2,7 +2,7 @@
 <html lang="es" data-theme="dark">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <link rel="manifest" href="/laaambapp/manifest.json">
 <meta name="theme-color" content="#00AFB6">
 <meta name="mobile-web-app-capable" content="yes">
@@ -21,6 +21,7 @@
   window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
 </script>
 <script src="js/auth.js"></script>
+<script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/db.js"></script>
 <script src="js/alertas-motor.js"></script>
@@ -135,7 +136,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
   #sidebar.on{transform:translateX(0)}
   .main{padding:12px;padding-top:64px}
   .agenda-grid{grid-template-columns:1fr}
-  .acc-grid{grid-template-columns:1fr 1fr}
+  /* Acciones rápidas: touch targets grandes (mín. 80px) */
+  .acc-grid{grid-template-columns:1fr 1fr;gap:12px}
+  .acc-btn{min-height:80px;font-size:15px;padding:18px 14px;border-radius:14px;touch-action:manipulation}
+  .acc-btn svg{width:30px;height:30px}
+  /* Botones cómodos al tacto */
+  .btn{min-height:44px;font-size:14px}
+  /* Inputs a 16px para evitar zoom automático en iOS */
+  .fld input,.fld select,.fld textarea{font-size:16px}
+  /* Modal como hoja inferior a pantalla completa */
+  .modal-ov{padding:0;align-items:flex-end}
+  .modal{max-width:100%;width:100%;border-radius:18px 18px 0 0;max-height:92vh}
 }
 </style>
 </head>
