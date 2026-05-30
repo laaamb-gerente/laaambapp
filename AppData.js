@@ -206,7 +206,7 @@ const AppData = (function() {
       {id:'L-C',nombre:'Lote C',area_ha:19.7,capacidad_max:158,tipo_pasto:'Mixto',condicion_pasto:61,fuente_agua:'Quebrada',descripcion:'Zona sur',activo:true,created_at:new Date().toISOString()},
       {id:'L-D',nombre:'Lote D',area_ha:14.0,capacidad_max:112,tipo_pasto:'Kikuyo',condicion_pasto:22,fuente_agua:'Bebedero',descripcion:'Zona oriente',activo:true,created_at:new Date().toISOString()},
     ],
-    finca: {nombre:'La Marinilla',empresa:'LAAAMB',municipio:'La Marinilla',departamento:'Antioquia',area_ha:76.2},
+    finca: {nombre:'La Marinilla',empresa:'LAAAMB',municipio:'Ibagué',departamento:'Tolima',vereda:'San Bernardo',area_ha:76.2},
     meta: {version:VERSION,creado:new Date().toISOString(),actualizado:new Date().toISOString()}
   };
 

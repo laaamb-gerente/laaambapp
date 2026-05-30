@@ -181,7 +181,7 @@ tbody td{padding:9px 12px;color:var(--text);vertical-align:middle}
     <div class="sb-logo-sub">Corderos · App</div>
     <div class="farm-pill">
       <span style="color:var(--teal)"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg></span>
-      <div><div class="farm-name" id="sb-farm-name">La Marinilla</div><div class="farm-sub" id="sb-farm-sub">Antioquia</div></div>
+      <div><div class="farm-name" id="sb-farm-name">La Marinilla</div><div class="farm-sub" id="sb-farm-sub">Ibagué, Tolima</div></div>
     </div>
   </div>
   <nav class="nav-scroll">
@@ -315,8 +315,8 @@ function fincaInfo(){
   var f = (window.AppState && window.AppState.finca) || {};
   return {
     nombre: f.nombre || 'La Marinilla',
-    municipio: f.municipio || 'La Marinilla',
-    departamento: f.departamento || 'Antioquia',
+    municipio: f.municipio || 'Ibagué',
+    departamento: f.departamento || 'Tolima',
     area_ha: f.area_ha || 50,
     ica: f.ica || f.registro_ica || '—',
     propietario: f.propietario || 'Juan Manuel Arbeláez'
@@ -343,7 +343,7 @@ function repHead(titulo, subtitulo){
     +'</div></div>';
 }
 function repFoot(){
-  return '<div class="rep-doc-foot">LAAAMBAPP · Reporte generado automáticamente · '+fincaInfo().nombre+' · La Marinilla, Antioquia</div>';
+  return '<div class="rep-doc-foot">LAAAMBAPP · Reporte generado automáticamente · '+fincaInfo().nombre+' · La Marinilla, Ibagué, Tolima</div>';
 }
 
 // Imprime un documento HTML (lo coloca en #print-area y dispara print)

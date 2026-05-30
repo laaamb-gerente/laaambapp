@@ -360,8 +360,8 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
         <div class="form-grid">
           <div class="fg"><label class="fl">Nombre *</label><input class="fi" id="nf-nombre" placeholder="Finca El Paraíso"></div>
           <div class="fg"><label class="fl">Empresa</label><input class="fi" id="nf-empresa" placeholder="LAAAMB"></div>
-          <div class="fg"><label class="fl">Municipio</label><input class="fi" id="nf-municipio" placeholder="La Marinilla"></div>
-          <div class="fg"><label class="fl">Departamento</label><input class="fi" id="nf-depto" placeholder="Antioquia"></div>
+          <div class="fg"><label class="fl">Municipio</label><input class="fi" id="nf-municipio" placeholder="Ibagué"></div>
+          <div class="fg"><label class="fl">Departamento</label><input class="fi" id="nf-depto" placeholder="Tolima"></div>
           <div class="fg"><label class="fl">Área total (ha)</label><input class="fi" type="number" id="nf-area" placeholder="50" step="0.1"></div>
           <div class="fg"><label class="fl">N° PREDIO (ICA)</label><input class="fi" id="nf-ica" placeholder="Registro ICA"></div>
           <div class="fg"><label class="fl">Propietario</label><input class="fi" id="nf-propietario" placeholder="Juan García"></div>
@@ -497,7 +497,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
     </div>
 
     <div style="text-align:center;font-size:11px;color:var(--text4);margin-top:24px">
-      LAAAMBAPP v1.0 · La Marinilla, Antioquia · 2025 · Desarrollado con Claude
+      LAAAMBAPP v1.0 · La Marinilla, Ibagué, Tolima · 2025 · Desarrollado con Claude
     </div>
 
   </div>
@@ -640,7 +640,7 @@ function renderFincas(){
   var container = document.getElementById('fincas-list');
   if(!container) return;
   var totalAnimales = d.animales ? d.animales.filter(function(a){return a.activo;}).length : 0;
-  var finca = d.finca || {nombre:'La Marinilla', area_ha:50, municipio:'La Marinilla', departamento:'Antioquia'};
+  var finca = d.finca || {nombre:'La Marinilla', area_ha:50, municipio:'Ibagué', departamento:'Tolima'};
   var isDefaultActive = (activeFincaId === 'default');
   var html = '';
 
@@ -651,7 +651,7 @@ function renderFincas(){
       +'<div style="font-size:13px;font-weight:700;color:'+(isDefaultActive?'var(--teal)':'var(--text)')+'">'+finca.nombre
         +(isDefaultActive?' <span style="font-size:10px;font-weight:400;background:var(--teal-bg);color:var(--teal);padding:1px 7px;border-radius:10px;margin-left:6px">Activa</span>':'')
       +'</div>'
-      +'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(finca.area_ha||50)+' ha &middot; '+totalAnimales+' animales &middot; '+(finca.municipio||'La Marinilla')+', '+(finca.departamento||'Antioquia')+'</div>'
+      +'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(finca.area_ha||50)+' ha &middot; '+totalAnimales+' animales &middot; '+(finca.municipio||'Ibagué')+', '+(finca.departamento||'Tolima')+'</div>'
     +'</div>'
     +'<div style="display:flex;gap:6px">'
       +(!isDefaultActive?'<button class="btn btn-ghost btn-sm" onclick="selectFinca(\'default\')">Seleccionar</button>':'')
@@ -732,7 +732,7 @@ function saveFinca(){
     nombre: nombre,
     empresa: document.getElementById('nf-empresa') ? document.getElementById('nf-empresa').value.trim() : 'LAAAMB',
     municipio: document.getElementById('nf-municipio') ? document.getElementById('nf-municipio').value.trim() : '',
-    departamento: document.getElementById('nf-depto') ? document.getElementById('nf-depto').value.trim() : 'Antioquia',
+    departamento: document.getElementById('nf-depto') ? document.getElementById('nf-depto').value.trim() : 'Tolima',
     area_ha: parseFloat(document.getElementById('nf-area') ? document.getElementById('nf-area').value : 0) || 0,
     ica: document.getElementById('nf-ica') ? document.getElementById('nf-ica').value.trim() : '',
     propietario: document.getElementById('nf-propietario') ? document.getElementById('nf-propietario').value.trim() : '',
