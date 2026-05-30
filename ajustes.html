@@ -591,8 +591,14 @@ async function saveColab(){
   result.style.color = 'var(--text2)';
   result.textContent = 'Creando usuario…';
   try{
+    const { data:{ session } } = await window._sb.auth.getSession();
+    if(!session){ throw new Error('Sesión expirada. Vuelve a iniciar sesión.'); }
     const resp = await fetch(apiBase()+'/api/invite-user', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization': 'Bearer '+session.access_token
+      },
       body: JSON.stringify({ nombre, email, rol })
     });
     const data = await resp.json();
