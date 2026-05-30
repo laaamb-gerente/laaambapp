@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAAAMBAPP · Beneficio &amp; QR</title>
+<script>(function(){var t=localStorage.getItem('laaamb-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
+<link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Supabase JS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script>
+  window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+</script>
+<script src="js/auth.js"></script>
+<script src="js/offline-db.js"></script>
+<script src="js/db.js"></script>
+<script src="js/app-state.js"></script>
+<script src="js/clear-demo-data.js"></script>
+<script src="AppData.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
+  --wine:#9C3F66;--wine-bg:rgba(156,63,102,.12);--orange:#F18F22;--orange-bg:rgba(241,143,34,.12);
+  --bg:#080f10;--bg2:#0c1517;--bg3:#101d1f;--bg4:#152224;--surface:#172628;--surface2:#1d3235;
+  --border:rgba(0,175,182,.10);--border2:rgba(0,175,182,.20);--border3:rgba(0,175,182,.35);
+  --green:#2ec77a;--green-bg:rgba(46,199,122,.10);--red:#e05252;--red-bg:rgba(224,82,82,.10);
+  --amber:#e8a030;--amber-bg:rgba(232,160,48,.10);--sky:#38b0d8;--sky-bg:rgba(56,176,216,.10);
+  --text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;
+  --r:8px;--r2:14px;--sidebar:236px;--anim:.16s cubic-bezier(.4,0,.2,1)}
+html[data-theme="light"]{--teal:#007a80;--teal-d:#005f64;--teal-bg:rgba(0,122,128,.10);--teal-bg2:rgba(0,122,128,.05);--bg:#f0f4f5;--bg2:#ffffff;--bg3:#f7fafa;--bg4:#e8f0f1;--surface:#e8f0f1;--surface2:#d4e4e6;--border:rgba(0,100,110,.12);--border2:rgba(0,100,110,.22);--border3:rgba(0,100,110,.40);--green:#1a9455;--green-bg:rgba(26,148,85,.10);--red:#c0392b;--red-bg:rgba(192,57,43,.09);--amber:#b87400;--amber-bg:rgba(184,116,0,.10);--text:#0d2b2e;--text2:#2d5a60;--text3:#5a8a90;--text4:#a0c4c8}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+.app{display:flex;height:100vh;width:100vw}
+.sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0}
+.sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:.5}
+.sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
+.sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
+.nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}
+.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;text-decoration:none;transition:all var(--anim);position:relative}
+.nav-link:hover{background:var(--surface);color:var(--text)}
+.nav-link.active{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
+.nav-link.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--teal);border-radius:2px}
+.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}.nav-link.active .nav-ico,.nav-link:hover .nav-ico{opacity:1}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:600;background:var(--surface2);color:var(--teal);padding:1px 7px;border-radius:10px;border:1px solid var(--border2)}
+.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border);background:var(--bg2)}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
+.user-name{font-size:12px;font-weight:600;color:var(--text)}.user-role{font-size:10px;color:var(--text3)}
+#lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);width:46px;height:46px;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 16px rgba(0,0,0,.45)}
+#lham svg{width:22px;height:22px;stroke:var(--text);stroke-width:2;fill:none;stroke-linecap:round}
+#lov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990}#lov.on{display:block}
+.main{flex:1;overflow-y:auto;padding:24px;background:var(--bg)}
+.page-head{margin-bottom:18px}
+.ph-eyebrow{font-size:10px;font-weight:700;color:var(--teal-d);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px}
+.ph-title{font-family:'Sigmar',cursive;font-size:30px;color:var(--text);line-height:1.1}
+.ph-sub{font-size:12px;color:var(--text3);margin-top:4px}
+/* TABS */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px;overflow-x:auto}
+.tab{padding:11px 18px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all var(--anim)}
+.tab:hover{color:var(--text2)}
+.tab.active{color:var(--teal);border-bottom-color:var(--teal)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow:hidden;margin-bottom:16px}
+.card-h{padding:16px 18px 12px;border-bottom:1px solid var(--border)}
+.card-title{font-family:'Sigmar',cursive;font-size:16px;color:var(--text)}
+.card-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.card-b{padding:18px}
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.fg{margin-bottom:0}
+.fg.full{grid-column:1/-1}
+.fl{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.fi{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;color:var(--text);font-family:inherit;font-size:14px}
+.fi:focus{outline:none;border-color:var(--teal)}
+textarea.fi{resize:vertical;min-height:60px}
+.hint{font-size:11px;color:var(--text3);margin-top:5px}
+.calc{font-family:'Sigmar',cursive;font-size:22px;color:var(--teal)}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all var(--anim);text-decoration:none}
+.btn-primary{background:var(--teal);color:#080f10}.btn-primary:hover{background:#1cc8d0}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}.btn-ghost:hover{background:var(--surface);color:var(--teal)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+/* TABLE */
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);padding:10px 14px;border-bottom:1px solid var(--border)}
+td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);color:var(--text)}
+tr:last-child td{border-bottom:none}
+.td-muted{color:var(--text3)}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.b-green{background:var(--green-bg);color:var(--green)}
+.b-amber{background:var(--amber-bg);color:var(--amber)}
+.b-red{background:var(--red-bg);color:var(--red)}
+.b-muted{background:var(--surface);color:var(--text3)}
+/* PROGRESS */
+.prog-wrap{margin-top:14px}
+.prog-bar{height:12px;background:var(--bg3);border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--teal-d),var(--teal));border-radius:8px;transition:width .3s}
+.prog-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-top:6px}
+/* QR RESULT */
+.qr-result{text-align:center;padding:22px;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);margin-top:16px}
+.qr-img{width:170px;height:170px;background:#fff;border-radius:10px;padding:8px;margin:0 auto 12px}
+.qr-code{font-family:'Sigmar',cursive;font-size:20px;color:var(--teal);letter-spacing:1px}
+.qr-actions{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.msg{font-size:12px;margin-top:10px;min-height:16px}.msg.ok{color:var(--green)}.msg.err{color:var(--red)}
+.empty{padding:30px;text-align:center;color:var(--text3);font-size:13px}
+.filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.fchip{padding:6px 13px;border-radius:999px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-size:12px;font-weight:600;cursor:pointer}
+.fchip.active{background:var(--teal-bg);border-color:var(--teal);color:var(--teal)}
+@media(max-width:768px){
+  #lham{display:flex}
+  #sidebar{position:fixed!important;top:0;left:0;height:100vh;transform:translateX(-100%);z-index:9995;transition:transform .28s ease}
+  #sidebar.on{transform:translateX(0)}
+  .main{padding:12px;padding-top:64px}
+  .form-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<button id="lham" aria-label="Menú"><svg id="lico" viewBox="0 0 22 22"><line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/></svg></button>
+<div id="lov"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sb-head">
+    <div class="sb-logo-text">LAAAMB</div>
+    <div class="sb-logo-sub">Corderos · App</div>
+  </div>
+  <nav class="nav-scroll">
+    <div class="nav-group">Principal</div>
+    <a class="nav-link" href="index.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a class="nav-link" href="hoy.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="14" height="14" rx="2"/><line x1="3" y1="8" x2="17" y2="8"/><line x1="7" y1="2" x2="7" y2="5"/><line x1="13" y1="2" x2="13" y2="5"/></svg>Hoy</a>
+    <a class="nav-link" href="okr.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>OKRs &amp; Análisis</a>
+    <div class="nav-group">Ganadería</div>
+    <a class="nav-link" href="animales.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Animales<span class="nav-badge" id="sb-count">—</span></a>
+    <a class="nav-link" href="reproduccion.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 3"/></svg>Reproducción</a>
+    <a class="nav-link" href="lotes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>Lotes &amp; Potreros</a>
+    <div class="nav-group">Salud</div>
+    <a class="nav-link" href="salud.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>Salud &amp; Tratamientos</a>
+    <a class="nav-link" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos</a>
+    <div class="nav-group">Gestión</div>
+    <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
+    <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
+    <a class="nav-link active" href="beneficio.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>Beneficio &amp; QR</a>
+    <div class="nav-group">Sistema</div>
+    <a class="nav-link" href="ajustes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.9 4.9l1.4 1.4M13.7 13.7l1.4 1.4M4.9 15.1l1.4-1.4M13.7 6.3l1.4-1.4"/></svg>Ajustes</a>
+  </nav>
+  <div class="sb-foot">
+    <div style="font-size:9px;color:var(--text4);text-align:center;margin-bottom:8px;letter-spacing:.5px">LAAAMBAPP v1.0 · 2025</div>
+    <div class="user-row"><div class="avatar">JA</div><div><div class="user-name">Usuario</div><div class="user-role">—</div></div></div>
+    <button onclick="Auth.signOut()" style="width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;background:transparent;border:1px solid var(--border);border-radius:var(--r,8px);color:var(--text3);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:border-color .15s,color .15s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M13 14l3-4-3-4M16 10H7M9 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h4"/></svg>Cerrar sesión</button>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="page-head">
+    <div class="ph-eyebrow">La Marinilla · Antioquia · Colombia</div>
+    <div class="ph-title">Beneficio &amp; Trazabilidad</div>
+    <div class="ph-sub">Del animal al empaque al vacío con QR</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="t1" onclick="setTab('t1')">1 · Registrar beneficio</div>
+    <div class="tab" data-tab="t2" onclick="setTab('t2')">2 · Despiece</div>
+    <div class="tab" data-tab="t3" onclick="setTab('t3')">3 · Empaques &amp; QR</div>
+    <div class="tab" data-tab="t4" onclick="setTab('t4')">4 · Inventario</div>
+  </div>
+
+  <!-- TAB 1: REGISTRAR BENEFICIO -->
+  <div class="tab-panel active" id="t1">
+    <div class="card">
+      <div class="card-h"><div class="card-title">Registrar beneficio</div><div class="card-sub">Registro del sacrificio de un animal</div></div>
+      <div class="card-b">
+        <div class="form-grid">
+          <div class="fg full"><label class="fl">Animal (código)</label>
+            <input class="fi" id="b-animal" list="animales-list" placeholder="Busca por código o nombre…" autocomplete="off">
+            <datalist id="animales-list"></datalist>
+            <div class="hint" id="b-animal-info">—</div>
+          </div>
+          <div class="fg"><label class="fl">Fecha de sacrificio</label><input class="fi" id="b-fecha" type="date"></div>
+          <div class="fg"><label class="fl">Frigorífico</label><input class="fi" id="b-frigo" placeholder="Ej. Frigorífico del Oriente"></div>
+          <div class="fg"><label class="fl">Peso vivo entrada (kg)</label><input class="fi" id="b-pvivo" type="number" step="0.1" oninput="calcRend()"></div>
+          <div class="fg"><label class="fl">Peso canal (kg)</label><input class="fi" id="b-pcanal" type="number" step="0.1" oninput="calcRend()"></div>
+          <div class="fg"><label class="fl">Rendimiento en canal</label><div class="calc" id="b-rend">—</div></div>
+          <div class="fg"><label class="fl">Costo del beneficio (COP)</label><input class="fi" id="b-costo" type="number" step="1000" placeholder="0"></div>
+          <div class="fg full"><label class="fl">Observaciones</label><textarea class="fi" id="b-notas" placeholder="Notas del beneficio…"></textarea></div>
+        </div>
+        <div style="margin-top:16px"><button class="btn btn-primary" onclick="guardarBeneficio()">Registrar beneficio y continuar al despiece →</button></div>
+        <div class="msg" id="b-msg"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: DESPIECE -->
+  <div class="tab-panel" id="t2">
+    <div class="card">
+      <div class="card-h"><div class="card-title">Despiece de la canal</div><div class="card-sub" id="t2-sub">Selecciona un beneficio para despiezar</div></div>
+      <div class="card-b">
+        <div class="form-grid">
+          <div class="fg"><label class="fl">Tipo de corte</label>
+            <select class="fi" id="c-tipo">
+              <option value="canal_completa">Canal completa</option>
+              <option value="cuarto_delantero">Cuarto delantero</option>
+              <option value="cuarto_trasero">Cuarto trasero</option>
+              <option value="rack">Rack</option>
+              <option value="paleta">Paleta</option>
+              <option value="pierna">Pierna</option>
+              <option value="costillar">Costillar</option>
+              <option value="lomo">Lomo</option>
+              <option value="cuello">Cuello</option>
+              <option value="menudencias">Menudencias</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Peso (kg)</label><input class="fi" id="c-peso" type="number" step="0.1"></div>
+          <div class="fg" style="display:flex;align-items:flex-end"><button class="btn btn-primary" style="width:100%;justify-content:center" onclick="agregarCorte()">+ Agregar corte</button></div>
+        </div>
+        <div class="msg" id="c-msg"></div>
+        <div style="overflow-x:auto;margin-top:16px">
+          <table><thead><tr><th>Tipo de corte</th><th>Peso (kg)</th></tr></thead><tbody id="cortes-tbody"><tr><td colspan="2" class="empty">Sin cortes aún</td></tr></tbody></table>
+        </div>
+        <div class="prog-wrap">
+          <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+          <div class="prog-lbl"><span id="prog-txt">0 / 0 kg despiezados</span><span id="prog-pct">0%</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: EMPAQUES & QR -->
+  <div class="tab-panel" id="t3">
+    <div class="card">
+      <div class="card-h"><div class="card-title">Generar empaque + QR</div><div class="card-sub">Producto al vacío con código de trazabilidad</div></div>
+      <div class="card-b">
+        <div class="form-grid">
+          <div class="fg"><label class="fl">Corte</label><select class="fi" id="e-corte"><option value="">Selecciona…</option></select></div>
+          <div class="fg"><label class="fl">Peso neto (kg)</label><input class="fi" id="e-peso" type="number" step="0.01"></div>
+          <div class="fg"><label class="fl">Fecha de empaque</label><input class="fi" id="e-fempaque" type="date" oninput="autoLimite()"></div>
+          <div class="fg"><label class="fl">Fecha límite de consumo</label><input class="fi" id="e-flimite" type="date"></div>
+          <div class="fg"><label class="fl">Ubicación / frigorífico</label><input class="fi" id="e-ubic" placeholder="Ej. Cámara 2"></div>
+          <div class="fg"><label class="fl">Precio de venta (COP/kg)</label><input class="fi" id="e-precio" type="number" step="500"></div>
+        </div>
+        <div style="margin-top:16px"><button class="btn btn-primary" onclick="generarEmpaque()">Generar empaque + QR</button></div>
+        <div class="msg" id="e-msg"></div>
+        <div id="qr-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: INVENTARIO -->
+  <div class="tab-panel" id="t4">
+    <div class="card">
+      <div class="card-h"><div class="card-title">Inventario de empaques</div><div class="card-sub">Productos al vacío con trazabilidad QR</div></div>
+      <div class="card-b">
+        <div class="filters" id="inv-filters">
+          <div class="fchip active" data-estado="todos" onclick="filtrarInv('todos')">Todos</div>
+          <div class="fchip" data-estado="disponible" onclick="filtrarInv('disponible')">Disponibles</div>
+          <div class="fchip" data-estado="vendido" onclick="filtrarInv('vendido')">Vendidos</div>
+          <div class="fchip" data-estado="vencido" onclick="filtrarInv('vencido')">Vencidos</div>
+        </div>
+        <div style="overflow-x:auto">
+          <table><thead><tr><th>QR</th><th>Corte</th><th>Peso</th><th>Fecha límite</th><th>Precio/kg</th><th>Estado</th><th>Acciones</th></tr></thead>
+          <tbody id="inv-tbody"><tr><td colspan="7" class="empty">Cargando…</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ═══ Hamburger ═══
+(function(){
+  var open=false;
+  var BARS='<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
+  var CROSS='<line x1="4" y1="4" x2="18" y2="18"/><line x1="18" y1="4" x2="4" y2="18"/>';
+  function show(){open=true;document.getElementById('sidebar').classList.add('on');document.getElementById('lov').classList.add('on');document.getElementById('lico').innerHTML=CROSS;}
+  function hide(){open=false;document.getElementById('sidebar').classList.remove('on');document.getElementById('lov').classList.remove('on');document.getElementById('lico').innerHTML=BARS;}
+  document.getElementById('lham').onclick=function(){open?hide():show();};
+  document.getElementById('lov').onclick=hide;
+})();
+</script>
+
+<script>
+// ═══ BENEFICIO & TRAZABILIDAD ═══
+(function(){
+  var FINCA_ID = (window.AppState && window.AppState._finca_id) || 'a1b2c3d4-0000-0000-0000-000000000001';
+  var BASE_PUBLICA = 'https://laaambapp.vercel.app';
+  var TIPO_LABEL = {canal_completa:'Canal completa',cuarto_delantero:'Cuarto delantero',cuarto_trasero:'Cuarto trasero',rack:'Rack',paleta:'Paleta',pierna:'Pierna',costillar:'Costillar',lomo:'Lomo',cuello:'Cuello',menudencias:'Menudencias',otro:'Otro'};
+
+  // Estado de la sesión de trabajo
+  var beneficioActual = null;   // objeto beneficio insertado
+  var cortesActual = [];        // cortes del beneficio actual
+
+  function esc(s){ var d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
+  function fechaISO(d){ return d.toISOString().split('T')[0]; }
+  function nombreUsuario(){ return (window.AUTH_PERFIL && window.AUTH_PERFIL.nombre) || 'Usuario'; }
+  function cop(n){ return '$'+(Number(n)||0).toLocaleString('es-CO'); }
+  function msg(id,txt,ok){ var el=document.getElementById(id); if(el){ el.textContent=txt; el.className='msg '+(ok?'ok':'err'); } }
+
+  // ── Tabs ──
+  window.setTab = function(id){
+    document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('active', t.getAttribute('data-tab')===id); });
+    document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.toggle('active', p.id===id); });
+    if(id==='t4') cargarInventario();
+    if(id==='t3') refrescarSelectCortes();
+  };
+
+  // ── Animales autocomplete ──
+  function animalesActivos(){ return ((window.AppState && window.AppState.animales)||[]).filter(function(a){return a.estado==='activo';}); }
+  function llenarAnimales(){
+    var dl = document.getElementById('animales-list');
+    dl.innerHTML = animalesActivos().map(function(a){ return '<option value="'+esc(a.codigo||a.nombre)+'">'+esc(a.nombre||'')+(a.raza?' · '+esc(a.raza):'')+'</option>'; }).join('');
+  }
+  function buscarAnimal(valor){
+    valor=(valor||'').trim().toLowerCase();
+    return animalesActivos().find(function(a){ return (a.codigo&&a.codigo.toLowerCase()===valor) || (a.nombre&&a.nombre.toLowerCase()===valor); });
+  }
+  document.getElementById('b-animal').addEventListener('input', function(){
+    var a = buscarAnimal(this.value);
+    var info = document.getElementById('b-animal-info');
+    info.textContent = a ? (a.raza||'—')+' · '+(a.sexo||'')+(a.peso_actual?' · '+a.peso_actual+' kg':'') : 'Animal no encontrado';
+    if(a && a.peso_actual && !document.getElementById('b-pvivo').value){ document.getElementById('b-pvivo').value=a.peso_actual; calcRend(); }
+  });
+
+  // ── Rendimiento ──
+  window.calcRend = function(){
+    var pv=parseFloat(document.getElementById('b-pvivo').value), pc=parseFloat(document.getElementById('b-pcanal').value);
+    var el=document.getElementById('b-rend');
+    if(pv>0 && pc>0){ el.textContent = (Math.round(pc/pv*1000)/10)+'%'; } else { el.textContent='—'; }
+  };
+
+  // ── Guardar beneficio ──
+  window.guardarBeneficio = async function(){
+    var a = buscarAnimal(document.getElementById('b-animal').value);
+    if(!a){ return msg('b-msg','Selecciona un animal válido por código.', false); }
+    var fecha = document.getElementById('b-fecha').value || fechaISO(new Date());
+    var pv = parseFloat(document.getElementById('b-pvivo').value)||null;
+    var pc = parseFloat(document.getElementById('b-pcanal').value)||null;
+    var costo = parseFloat(document.getElementById('b-costo').value)||0;
+    var notas = document.getElementById('b-notas').value.trim();
+    msg('b-msg','Registrando…', true);
+    try{
+      var r = await window.DB.saveBeneficio({finca_id:FINCA_ID, animal_id:a.id, fecha:fecha, frigorifico:document.getElementById('b-frigo').value.trim()||null, peso_vivo_entrada:pv, peso_canal:pc, costo_beneficio:costo, registrado_por:nombreUsuario(), notas:notas||null});
+      if(r.error) throw new Error(r.error.message||'Error');
+      beneficioActual = r.data;
+      cortesActual = [];
+      // Marcar animal como vendido
+      await window._sb.from('animales').update({estado:'vendido', updated_at:new Date()}).eq('id', a.id);
+      // Quitar de AppState local
+      if(window.AppState && window.AppState.animales){ window.AppState.animales = window.AppState.animales.filter(function(x){return x.id!==a.id;}); }
+      msg('b-msg','✓ Beneficio registrado. Animal '+(a.codigo||'')+' marcado como vendido.', true);
+      document.getElementById('t2-sub').textContent = 'Beneficio de '+(a.codigo||a.nombre)+' · canal '+(pc||'?')+' kg';
+      renderCortes();
+      llenarAnimales();
+      setTimeout(function(){ setTab('t2'); }, 700);
+    }catch(e){ msg('b-msg','Error: '+e.message, false); }
+  };
+
+  // ── Despiece ──
+  window.agregarCorte = async function(){
+    if(!beneficioActual){ return msg('c-msg','Primero registra un beneficio (pestaña 1).', false); }
+    var tipo = document.getElementById('c-tipo').value;
+    var peso = parseFloat(document.getElementById('c-peso').value);
+    if(!peso || peso<=0){ return msg('c-msg','Ingresa un peso válido.', false); }
+    msg('c-msg','Guardando corte…', true);
+    try{
+      var r = await window.DB.saveCorte({beneficio_id:beneficioActual.id, animal_id:beneficioActual.animal_id, tipo_corte:tipo, peso_kg:peso});
+      if(r.error) throw new Error(r.error.message||'Error');
+      cortesActual.push(r.data);
+      document.getElementById('c-peso').value='';
+      msg('c-msg','✓ Corte agregado', true);
+      renderCortes();
+    }catch(e){ msg('c-msg','Error: '+e.message, false); }
+  };
+  function renderCortes(){
+    var tb = document.getElementById('cortes-tbody');
+    if(!cortesActual.length){ tb.innerHTML='<tr><td colspan="2" class="empty">Sin cortes aún</td></tr>'; }
+    else{ tb.innerHTML = cortesActual.map(function(c){ return '<tr><td>'+esc(TIPO_LABEL[c.tipo_corte]||c.tipo_corte)+'</td><td>'+esc(c.peso_kg)+' kg</td></tr>'; }).join(''); }
+    var totalCortes = cortesActual.reduce(function(s,c){return s+(parseFloat(c.peso_kg)||0);},0);
+    var canal = beneficioActual ? (parseFloat(beneficioActual.peso_canal)||0) : 0;
+    var pct = canal>0 ? Math.min(100, Math.round(totalCortes/canal*100)) : 0;
+    document.getElementById('prog-fill').style.width = pct+'%';
+    document.getElementById('prog-txt').textContent = (Math.round(totalCortes*10)/10)+' / '+(canal||'?')+' kg despiezados';
+    document.getElementById('prog-pct').textContent = pct+'%';
+    refrescarSelectCortes();
+  }
+
+  // ── Empaques ──
+  function refrescarSelectCortes(){
+    var sel = document.getElementById('e-corte');
+    if(!sel) return;
+    var prev = sel.value;
+    sel.innerHTML = '<option value="">Selecciona…</option>' + cortesActual.map(function(c){ return '<option value="'+c.id+'">'+esc(TIPO_LABEL[c.tipo_corte]||c.tipo_corte)+' · '+esc(c.peso_kg)+' kg</option>'; }).join('');
+    if(prev) sel.value = prev;
+  }
+  window.autoLimite = function(){
+    var fe = document.getElementById('e-fempaque').value;
+    if(fe && !document.getElementById('e-flimite').value){ var d=new Date(fe+'T00:00:00'); d.setDate(d.getDate()+21); document.getElementById('e-flimite').value=fechaISO(d); }
+  };
+  window.generarEmpaque = async function(){
+    if(!beneficioActual){ return msg('e-msg','Primero registra un beneficio.', false); }
+    var corte_id = document.getElementById('e-corte').value;
+    var peso = parseFloat(document.getElementById('e-peso').value);
+    var fempaque = document.getElementById('e-fempaque').value || fechaISO(new Date());
+    var flimite = document.getElementById('e-flimite').value || null;
+    var ubic = document.getElementById('e-ubic').value.trim()||null;
+    var precio = parseFloat(document.getElementById('e-precio').value)||null;
+    if(!corte_id){ return msg('e-msg','Selecciona un corte.', false); }
+    if(!peso || peso<=0){ return msg('e-msg','Ingresa un peso neto válido.', false); }
+    msg('e-msg','Generando empaque…', true);
+    try{
+      var r = await window.DB.saveEmpaque({corte_id:corte_id, animal_id:beneficioActual.animal_id, beneficio_id:beneficioActual.id, peso_neto:peso, fecha_empaque:fempaque, fecha_limite_consumo:flimite, ubicacion_frigorifico:ubic, precio_venta:precio});
+      if(r.error) throw new Error(r.error.message||'Error');
+      msg('e-msg','✓ Empaque generado', true);
+      mostrarQR(r.data);
+      document.getElementById('e-peso').value='';
+    }catch(e){ msg('e-msg','Error: '+e.message, false); }
+  };
+  function qrImgUrl(url){ return 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data='+encodeURIComponent(url); }
+  function mostrarQR(emp){
+    var url = BASE_PUBLICA+'/qr/'+emp.qr_code;
+    document.getElementById('qr-result').innerHTML =
+      '<div class="qr-result">'+
+        '<img class="qr-img" src="'+qrImgUrl(url)+'" alt="QR '+esc(emp.qr_code)+'">'+
+        '<div class="qr-code">'+esc(emp.qr_code)+'</div>'+
+        '<div style="font-size:12px;color:var(--text3);margin-top:6px">'+esc(emp.peso_neto)+' kg · vence '+esc(emp.fecha_limite_consumo||'—')+'</div>'+
+        '<div class="qr-actions">'+
+          '<button class="btn btn-ghost btn-sm" onclick="imprimirQR(\''+esc(emp.qr_code)+'\','+ (emp.peso_neto||0) +')">Imprimir QR</button>'+
+          '<a class="btn btn-primary btn-sm" href="'+url+'" target="_blank" rel="noopener">Ver micrositio público →</a>'+
+        '</div>'+
+      '</div>';
+  }
+  window.imprimirQR = function(code, peso){
+    var url = BASE_PUBLICA+'/qr/'+code;
+    var w = window.open('', '_blank', 'width=380,height=520');
+    if(!w) return;
+    w.document.write('<html><head><title>'+code+'</title><style>body{font-family:sans-serif;text-align:center;padding:24px;color:#111}h1{font-size:18px;letter-spacing:1px;color:#00838a}img{width:240px;height:240px;margin:14px 0}.c{font-size:20px;font-weight:700;color:#00838a;letter-spacing:1px}.s{font-size:13px;color:#555}</style></head><body>'+
+      '<h1>LAAAMB · La Marinilla</h1>'+
+      '<img src="'+qrImgUrl(url)+'">'+
+      '<div class="c">'+code+'</div>'+
+      '<div class="s">'+peso+' kg · Trazabilidad verificada</div>'+
+      '<div class="s">'+url+'</div>'+
+      '</body></html>');
+    w.document.close();
+    setTimeout(function(){ w.print(); }, 400);
+  };
+
+  // ── Inventario ──
+  var INV = [];
+  var filtroInv = 'todos';
+  async function cargarInventario(){
+    var tb = document.getElementById('inv-tbody');
+    tb.innerHTML = '<tr><td colspan="7" class="empty">Cargando…</td></tr>';
+    try{
+      var r = await window._sb.from('empaques')
+        .select('*, cortes(tipo_corte), animales(codigo, nombre, raza)')
+        .order('fecha_limite_consumo', {nullsFirst:false});
+      if(r.error) throw new Error(r.error.message);
+      INV = r.data || [];
+      renderInv();
+    }catch(e){ tb.innerHTML = '<tr><td colspan="7" class="empty">Error: '+esc(e.message)+'</td></tr>'; }
+  }
+  window.filtrarInv = function(estado){
+    filtroInv = estado;
+    document.querySelectorAll('#inv-filters .fchip').forEach(function(c){ c.classList.toggle('active', c.getAttribute('data-estado')===estado); });
+    renderInv();
+  };
+  function renderInv(){
+    var tb = document.getElementById('inv-tbody');
+    var hoy = new Date(); hoy.setHours(0,0,0,0);
+    var lista = INV.filter(function(e){ return filtroInv==='todos' || e.estado===filtroInv; });
+    if(!lista.length){ tb.innerHTML = '<tr><td colspan="7" class="empty">Sin empaques para este filtro.</td></tr>'; return; }
+    tb.innerHTML = lista.map(function(e){
+      var tipo = (e.cortes && TIPO_LABEL[e.cortes.tipo_corte]) || '—';
+      var dias = e.fecha_limite_consumo ? Math.ceil((new Date(e.fecha_limite_consumo+'T00:00:00')-hoy)/86400000) : null;
+      var alerta = (e.estado==='disponible' && dias!=null && dias<5) ? ' <span class="badge b-amber">'+(dias<0?'vencido':dias+'d')+'</span>' : '';
+      var estadoBadge = {disponible:'b-green',vendido:'b-muted',vencido:'b-red',descartado:'b-muted'}[e.estado]||'b-muted';
+      var acc = e.estado==='disponible'
+        ? '<button class="btn btn-ghost btn-sm" onclick="abrirVenta(\''+e.id+'\')">Marcar vendido</button>'
+        : (e.cliente?'<span class="td-muted">'+esc(e.cliente)+'</span>':'—');
+      return '<tr>'+
+        '<td style="font-weight:600;color:var(--teal)">'+esc(e.qr_code)+'</td>'+
+        '<td>'+esc(tipo)+'</td>'+
+        '<td>'+esc(e.peso_neto)+' kg</td>'+
+        '<td class="td-muted">'+esc(e.fecha_limite_consumo||'—')+alerta+'</td>'+
+        '<td class="td-muted">'+(e.precio_venta?cop(e.precio_venta):'—')+'</td>'+
+        '<td><span class="badge '+estadoBadge+'">'+esc(e.estado)+'</span></td>'+
+        '<td>'+acc+'</td>'+
+        '</tr>';
+    }).join('');
+  }
+  window.abrirVenta = async function(id){
+    var emp = INV.find(function(x){return x.id===id;});
+    var cliente = prompt('Nombre del cliente:');
+    if(cliente===null) return;
+    var precioStr = prompt('Precio de venta total (COP):', emp && emp.precio_venta ? String(emp.precio_venta) : '');
+    var precio = parseFloat(precioStr)||null;
+    try{
+      var r = await window.DB.marcarVendido(id, cliente.trim(), precio);
+      if(r.error) throw new Error(r.error.message);
+      cargarInventario();
+    }catch(e){ alert('Error: '+e.message); }
+  };
+
+  // ── Init ──
+  function init(){
+    document.getElementById('b-fecha').value = fechaISO(new Date());
+    document.getElementById('e-fempaque').value = fechaISO(new Date());
+    autoLimite();
+    llenarAnimales();
+  }
+  if(window.AppState && window.AppState._loaded) init();
+  document.addEventListener('appstate:ready', function(){ init(); });
+  init();
+})();
+</script>
+
+<script>
+  if (window.OfflineDB) { window.OfflineDB.init().then(() => { window.OfflineDB.setupAutoSync(); }); }
+</script>
+</body>
+</html>

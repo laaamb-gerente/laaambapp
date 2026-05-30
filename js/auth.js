@@ -42,6 +42,17 @@ window.Auth = {
 
     this._perfil = perfil;
 
+    // Redirección por rol: veterinario y auxiliar arrancan en "Hoy"
+    // (su agenda de campo), no en el Dashboard gerencial.
+    const path = window.location.pathname;
+    const enIndex = /\/index\.html$/.test(path) ||
+                    path === '/' ||
+                    /\/laaambapp\/?$/.test(path);
+    if ((perfil.rol === 'veterinario' || perfil.rol === 'auxiliar') && enIndex) {
+      window.location.href = this._base() + 'hoy.html';
+      return false;
+    }
+
     // Aplicar restricciones por rol
     this._aplicarRol(perfil.rol);
 

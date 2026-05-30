@@ -99,7 +99,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%233d6e74' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
-.b-green{background:var(--green-bg);color:var(--green)}.b-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
+.b-green{background:var(--green-bg);color:var(--green)}.b-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}.b-red{background:var(--red-bg,rgba(224,82,82,.1));color:var(--red,#e05252)}
 
 /* THEME SELECTOR */
 .theme-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:4px}
@@ -210,6 +210,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
   <nav class="nav-scroll">
     <div class="nav-group">Principal</div>
     <a class="nav-link" href="index.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a class="nav-link" href="hoy.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="14" height="14" rx="2"/><line x1="3" y1="8" x2="17" y2="8"/><line x1="7" y1="2" x2="7" y2="5"/><line x1="13" y1="2" x2="13" y2="5"/></svg>Hoy</a>
     <a class="nav-link" href="okr.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>OKRs &amp; Análisis</a>
     <div class="nav-group">Ganadería</div>
     <a class="nav-link" href="animales.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Animales<span class="nav-badge">470</span></a>
@@ -221,6 +222,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
     <div class="nav-group">Gestión</div>
     <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
     <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
+    <a class="nav-link" href="beneficio.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>Beneficio &amp; QR</a>
     <div class="nav-group">Sistema</div>
     <a class="nav-link active" href="ajustes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.9 4.9l1.4 1.4M13.7 13.7l1.4 1.4M4.9 15.1l1.4-1.4M13.7 6.3l1.4-1.4"/></svg>Ajustes</a>
   </nav>
@@ -366,31 +368,35 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
     <div class="section-label">👥 Colaboradores</div>
     <div class="card">
       <div class="card-h">
-        <div><div class="card-title">Equipo de trabajo</div><div class="card-sub">Aparecen en los registros de tratamientos, partos, ventas, etc.</div></div>
+        <div><div class="card-title">Equipo de trabajo</div><div class="card-sub">Usuarios con acceso a la app. Conectado a Supabase Auth.</div></div>
         <button class="btn btn-primary btn-sm" onclick="openAddColab()">+ Agregar</button>
       </div>
       <div style="overflow-x:auto">
         <table>
-          <thead><tr><th>Nombre</th><th>Rol</th><th>Teléfono</th><th>Estado</th><th>Acciones</th></tr></thead>
-          <tbody id="colab-tbody"></tbody>
+          <thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th>Estado</th><th>Última conexión</th><th>Acciones</th></tr></thead>
+          <tbody id="colab-tbody"><tr><td colspan="6" class="td-muted" style="text-align:center;padding:18px">Cargando equipo…</td></tr></tbody>
         </table>
       </div>
       <div class="card-body" id="add-colab-form" style="display:none;border-top:1px solid var(--border)">
-        <div style="font-size:12px;font-weight:700;color:var(--teal);margin-bottom:12px">Nuevo colaborador</div>
+        <div style="font-size:12px;font-weight:700;color:var(--teal);margin-bottom:12px">Invitar nuevo usuario</div>
         <div class="form-grid">
-          <div class="fg"><label class="fl">Nombre *</label><input class="fi" id="nc-nombre" placeholder="Carlos Ríos"></div>
+          <div class="fg"><label class="fl">Nombre completo *</label><input class="fi" id="nc-nombre" placeholder="Carlos Ríos"></div>
+          <div class="fg"><label class="fl">Email *</label><input class="fi" id="nc-email" type="email" placeholder="carlos@ejemplo.com"></div>
           <div class="fg"><label class="fl">Rol *</label>
             <select class="fi" id="nc-rol">
-              <option>Administrador</option><option>Mayordomo</option><option>Vaquero</option>
-              <option>Veterinario</option><option>Auxiliar</option>
+              <option value="gerente">Gerente</option>
+              <option value="veterinario">Veterinario</option>
+              <option value="auxiliar">Auxiliar</option>
+              <option value="socio">Socio</option>
+              <option value="administrador">Administrador</option>
             </select>
           </div>
-          <div class="fg"><label class="fl">Teléfono</label><input class="fi" id="nc-tel" placeholder="+57 300 000 0000"></div>
           <div class="fg" style="display:flex;align-items:flex-end;gap:8px">
-            <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="saveColab()">Guardar</button>
+            <button class="btn btn-primary btn-sm" id="nc-save-btn" style="flex:1;justify-content:center" onclick="saveColab()">Crear usuario</button>
             <button class="btn btn-ghost btn-sm" onclick="closeAddColab()">Cancelar</button>
           </div>
         </div>
+        <div id="nc-result" style="font-size:12px;margin-top:10px;min-height:16px"></div>
       </div>
     </div>
 
@@ -442,44 +448,104 @@ function initTheme(){
   });
 }
 
-// ── COLABORADORES ────────────────────────────────────────────────────────────
-var COLABS = [
-  {nombre:'Juan García',rol:'Administrador',tel:'+57 300 123 4567',estado:'Activo'},
-  {nombre:'Carlos Ríos',rol:'Mayordomo',tel:'+57 311 234 5678',estado:'Activo'},
-  {nombre:'María López',rol:'Auxiliar',tel:'+57 322 345 6789',estado:'Activo'},
-];
+// ── EQUIPO DE TRABAJO (Supabase Auth + perfiles) ─────────────────────────────
+var EQUIPO = [];
+var ROLES = ['gerente','veterinario','auxiliar','socio','administrador'];
+function rolLabel(r){ return r ? r.charAt(0).toUpperCase()+r.slice(1) : '—'; }
+function escq(s){ var d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
+function fmtConexion(u){
+  if(!u) return '—';
+  try{ var d=new Date(u); return d.toLocaleDateString('es-CO')+' '+d.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'}); }catch(e){ return '—'; }
+}
+
+// Base de la API (mismo criterio que copiloto.js)
+function apiBase(){
+  return (location.hostname.includes('vercel.app') || location.hostname==='localhost')
+    ? '' : 'https://laaambapp.vercel.app';
+}
+
+async function cargarEquipo(){
+  try{
+    const { data, error } = await window._sb.from('perfiles').select('*').order('rol');
+    if(error) throw error;
+    EQUIPO = data || [];
+    renderColabs();
+  }catch(e){
+    document.getElementById('colab-tbody').innerHTML =
+      '<tr><td colspan="6" class="td-muted" style="text-align:center;padding:18px">No se pudo cargar el equipo: '+escq(e.message)+'</td></tr>';
+  }
+}
+
 function renderColabs(){
   const tb = document.getElementById('colab-tbody');
-  tb.innerHTML = COLABS.map(function(c,i){
+  if(!EQUIPO.length){ tb.innerHTML = '<tr><td colspan="6" class="td-muted" style="text-align:center;padding:18px">Sin usuarios todavía.</td></tr>'; return; }
+  tb.innerHTML = EQUIPO.map(function(c){
+    var activo = c.activo !== false;
+    var opciones = ROLES.map(function(r){ return '<option value="'+r+'"'+(r===c.rol?' selected':'')+'>'+rolLabel(r)+'</option>'; }).join('');
+    var conexion = fmtConexion(c.last_sign_in_at || c.ultima_conexion);
     return '<tr>'
-      +'<td style="font-weight:600">'+c.nombre+'</td>'
-      +'<td class="td-muted">'+c.rol+'</td>'
-      +'<td class="td-muted">'+(c.tel||'—')+'</td>'
-      +'<td><span class="badge b-green">✓ '+c.estado+'</span></td>'
-      +'<td><button class="btn btn-ghost" style="padding:3px 10px;font-size:11px" onclick="deleteColab('+i+')">Eliminar</button></td>'
+      +'<td style="font-weight:600">'+escq(c.nombre)+'</td>'
+      +'<td class="td-muted">'+escq(c.email||'—')+'</td>'
+      +'<td><select class="fi" style="padding:4px 8px;font-size:12px;min-width:120px" onchange="cambiarRol(\''+c.id+'\',this.value)">'+opciones+'</select></td>'
+      +'<td><span class="badge '+(activo?'b-green':'b-red')+'">'+(activo?'✓ Activo':'Inactivo')+'</span></td>'
+      +'<td class="td-muted" style="font-size:11px">'+conexion+'</td>'
+      +'<td><button class="btn btn-ghost" style="padding:3px 10px;font-size:11px" onclick="toggleActivo(\''+c.id+'\','+activo+')">'+(activo?'Desactivar':'Activar')+'</button></td>'
       +'</tr>';
   }).join('');
 }
-function openAddColab(){ document.getElementById('add-colab-form').style.display='block'; }
+
+function openAddColab(){ document.getElementById('add-colab-form').style.display='block'; document.getElementById('nc-result').textContent=''; }
 function closeAddColab(){ document.getElementById('add-colab-form').style.display='none'; }
-function saveColab(){
-  const n = document.getElementById('nc-nombre').value.trim();
-  const r = document.getElementById('nc-rol').value;
-  const t = document.getElementById('nc-tel').value.trim();
-  if(!n){ toast('El nombre es requerido','err'); return; }
-  COLABS.push({nombre:n,rol:r,tel:t,estado:'Activo'});
-  localStorage.setItem('laaamb-colabs', JSON.stringify(COLABS));
-  renderColabs();
-  closeAddColab();
-  toast('Colaborador '+n+' agregado');
+
+async function saveColab(){
+  const nombre = document.getElementById('nc-nombre').value.trim();
+  const email = document.getElementById('nc-email').value.trim();
+  const rol = document.getElementById('nc-rol').value;
+  const result = document.getElementById('nc-result');
+  const btn = document.getElementById('nc-save-btn');
+  if(!nombre){ toast('El nombre es requerido','err'); return; }
+  if(!email){ toast('El email es requerido','err'); return; }
+  btn.disabled = true;
+  result.style.color = 'var(--text2)';
+  result.textContent = 'Creando usuario…';
+  try{
+    const resp = await fetch(apiBase()+'/api/invite-user', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ nombre, email, rol })
+    });
+    const data = await resp.json();
+    if(!resp.ok || data.error) throw new Error(data.error || 'Error creando usuario');
+    result.style.color = 'var(--green)';
+    result.innerHTML = '✓ '+escq(data.mensaje||'Usuario creado.')+(data.password?'<br><b>Contraseña temporal:</b> <code>'+escq(data.password)+'</code>':'');
+    toast('Usuario '+nombre+' creado');
+    document.getElementById('nc-nombre').value='';
+    document.getElementById('nc-email').value='';
+    cargarEquipo();
+  }catch(e){
+    result.style.color = 'var(--red)';
+    result.textContent = 'Error: '+e.message;
+    toast('No se pudo crear el usuario','err');
+  }finally{ btn.disabled = false; }
 }
-function deleteColab(i){
-  if(confirm('¿Eliminar a '+COLABS[i].nombre+'?')){
-    COLABS.splice(i,1);
-    localStorage.setItem('laaamb-colabs', JSON.stringify(COLABS));
-    renderColabs();
-    toast('Colaborador eliminado');
-  }
+
+async function cambiarRol(userId, nuevoRol){
+  try{
+    const { error } = await window._sb.from('perfiles').update({ rol: nuevoRol }).eq('id', userId);
+    if(error) throw error;
+    var p = EQUIPO.find(function(x){return x.id===userId;}); if(p) p.rol = nuevoRol;
+    toast('Rol actualizado a '+rolLabel(nuevoRol));
+  }catch(e){ toast('Error: '+e.message,'err'); cargarEquipo(); }
+}
+
+async function toggleActivo(userId, activoActual){
+  const nuevo = !activoActual;
+  if(!confirm(nuevo ? '¿Activar este usuario?' : '¿Desactivar este usuario? No podrá iniciar sesión.')) return;
+  try{
+    const { error } = await window._sb.from('perfiles').update({ activo: nuevo }).eq('id', userId);
+    if(error) throw error;
+    toast(nuevo ? 'Usuario activado' : 'Usuario desactivado');
+    cargarEquipo();
+  }catch(e){ toast('Error: '+e.message,'err'); }
 }
 
 // ── GESTIÓN DE FINCAS ────────────────────────────────────────────────────────
@@ -698,10 +764,10 @@ function updateSidebarBadgesLocal(){
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 (function init(){
-  const savedColabs = localStorage.getItem('laaamb-colabs');
-  if(savedColabs) COLABS = JSON.parse(savedColabs);
   initTheme();
-  renderColabs();
+  // Cargar equipo desde Supabase (perfiles)
+  cargarEquipo();
+  document.addEventListener('appstate:ready', cargarEquipo);
   // FIX: renderizar fincas al cargar la página
   if(typeof AppData !== 'undefined'){
     renderFincas();

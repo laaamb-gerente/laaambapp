@@ -8,6 +8,12 @@ window.Copiloto = {
   // Historial de conversación en memoria (por sesión de página)
   _historial: [],
 
+  // Enfoque especializado por página (salud, reproducción, etc.)
+  // Las páginas lo establecen con setEnfoquePagina() para inyectar
+  // contexto y especialización adicional al system prompt.
+  _enfoquePagina: '',
+  setEnfoquePagina(texto) { this._enfoquePagina = texto || ''; this._historial = []; },
+
   // ── Contexto dinámico de la finca desde AppState ──────
   getContexto() {
     const ctx = window.AppState;
@@ -75,7 +81,7 @@ Respondes en español, eres conciso y práctico.
 Priorizas la salud animal, la rentabilidad y el bienestar.
 Cuando no tienes datos suficientes lo dices claramente.
 
-${enfoque}`;
+${enfoque}${this._enfoquePagina ? '\n\n' + this._enfoquePagina : ''}`;
   },
 
   // ── Llamada principal ─────────────────────────────────

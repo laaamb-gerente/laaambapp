@@ -199,6 +199,31 @@ window.DB = {
       .insert(ingreso).select().single();
   },
 
+  // ── BENEFICIO & TRAZABILIDAD ─────────────────────────
+  async saveBeneficio(b) {
+    return await window._sb.from('beneficios').insert(b).select().single();
+  },
+  async getCortesByBeneficio(beneficio_id) {
+    return await window._sb.from('cortes').select('*').eq('beneficio_id', beneficio_id);
+  },
+  async saveCorte(c) {
+    return await window._sb.from('cortes').insert(c).select().single();
+  },
+  async saveEmpaque(e) {
+    return await window._sb.from('empaques').insert(e).select().single();
+  },
+  async getEmpaques(finca_id) {
+    return await window._sb.from('empaques')
+      .select('*, cortes(tipo_corte), animales(codigo, nombre, raza)')
+      .eq('estado', 'disponible')
+      .order('fecha_limite_consumo');
+  },
+  async marcarVendido(empaque_id, cliente, precio) {
+    return await window._sb.from('empaques')
+      .update({ estado: 'vendido', cliente, precio_venta: precio })
+      .eq('id', empaque_id);
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();

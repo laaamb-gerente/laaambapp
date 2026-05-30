@@ -18,6 +18,7 @@
 <script src="js/db.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
+<script src="js/copiloto.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
@@ -402,6 +403,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <nav class="nav-scroll">
     <div class="nav-group">Principal</div>
     <a class="nav-link" href="index.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a class="nav-link" href="hoy.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="14" height="14" rx="2"/><line x1="3" y1="8" x2="17" y2="8"/><line x1="7" y1="2" x2="7" y2="5"/><line x1="13" y1="2" x2="13" y2="5"/></svg>Hoy</a>
     <a class="nav-link" href="okr.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>OKRs &amp; Análisis</a>
     <div class="nav-group">Ganadería</div>
     <a class="nav-link" href="animales.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Animales<span class="nav-badge">470</span></a>
@@ -413,6 +415,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div class="nav-group">Gestión</div>
     <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
     <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
+    <a class="nav-link" href="beneficio.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>Beneficio &amp; QR</a>
     <div class="nav-group">Sistema</div>
     <a class="nav-link" href="ajustes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2"/></svg>Ajustes</a>
   </nav>
@@ -667,6 +670,94 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
         </div>
       </div>
     </div>
+
+  <!-- ═══ Copiloto LAAAMB · Salud ═══ -->
+  <style>
+  .cop-card{margin-top:18px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2,14px);overflow:hidden}
+  .cop-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:16px 18px 12px;border-bottom:1px solid var(--border)}
+  .cop-title{font-family:'Sigmar',cursive;font-size:16px;color:var(--text)}
+  .cop-sub{font-size:11px;color:var(--text3);margin-top:2px}
+  .cop-models{display:flex;gap:6px}
+  .cop-mbtn{padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
+  .cop-mbtn.active{background:var(--teal-bg);border-color:var(--teal);color:var(--teal)}
+  .cop-mbtn:disabled{opacity:.45;cursor:not-allowed}
+  .cop-chat{max-height:300px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--bg2);margin:0}
+  .cop-empty{text-align:center;color:var(--text3);font-size:12px;padding:24px 8px;line-height:1.5}
+  .cop-bub{max-width:85%;padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word}
+  .cop-bub.user{align-self:flex-end;background:var(--teal);color:#04181a;border-bottom-right-radius:4px}
+  .cop-bub.ai{align-self:flex-start;background:var(--surface);border:1px solid var(--border);color:var(--text);border-bottom-left-radius:4px}
+  .cop-bub.thinking{color:var(--text3);font-style:italic}
+  .cop-inrow{display:flex;gap:8px;padding:0 14px 14px}
+  .cop-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:inherit;font-size:13px}
+  .cop-input:focus{outline:none;border-color:var(--border2)}
+  .cop-send{background:var(--teal);color:#04181a;border:none;border-radius:10px;padding:0 16px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  .cop-send:disabled{opacity:.5;cursor:not-allowed}
+  </style>
+  <div class="cop-card">
+    <div class="cop-head">
+      <div>
+        <div class="cop-title">Copiloto LAAAMB · Salud</div>
+        <div class="cop-sub">Protocolos sanitarios, dosificación, retiro y bienestar</div>
+      </div>
+      <div class="cop-models">
+        <button class="cop-mbtn active" id="cop-claude" onclick="copSetModel('claude')">Claude</button>
+        <button class="cop-mbtn" id="cop-grok" onclick="copSetModel('grok')" disabled title="Próximamente">Grok</button>
+      </div>
+    </div>
+    <div class="cop-chat" id="cop-chat">
+      <div class="cop-empty" id="cop-empty">Pregúntame sobre tratamientos, dosis, períodos de retiro o protocolos sanitarios…</div>
+    </div>
+    <div class="cop-inrow">
+      <input class="cop-input" id="cop-input" placeholder="Ej. ¿Qué animales están en retiro sanitario?" onkeydown="if(event.key==='Enter')copAsk()">
+      <button class="cop-send" id="cop-send" onclick="copAsk()">Enviar</button>
+    </div>
+  </div>
+
+  <script>
+  // ═══ Copiloto LAAAMB · Salud — controlador ═══
+  (function(){
+    var COP_MODEL = 'claude';
+    var FINCA_ID = (window.AppState && window.AppState._finca_id) || 'a1b2c3d4-0000-0000-0000-000000000001';
+    window.copSetModel = function(m){
+      if(m === 'grok' && !(window.Copiloto && window.Copiloto.grokDisponible())) return;
+      COP_MODEL = m;
+      var c=document.getElementById('cop-claude'), g=document.getElementById('cop-grok');
+      if(c) c.classList.toggle('active', m==='claude');
+      if(g) g.classList.toggle('active', m==='grok');
+    };
+    window.copAsk = async function(){
+      var input=document.getElementById('cop-input'), chat=document.getElementById('cop-chat'), send=document.getElementById('cop-send');
+      var q=input.value.trim(); if(!q || !window.Copiloto) return;
+      var empty=document.getElementById('cop-empty'); if(empty) empty.remove();
+      var u=document.createElement('div'); u.className='cop-bub user'; u.textContent=q; chat.appendChild(u);
+      input.value=''; send.disabled=true; chat.scrollTop=chat.scrollHeight;
+      var t=document.createElement('div'); t.className='cop-bub ai thinking'; t.textContent='Pensando…'; chat.appendChild(t); chat.scrollTop=chat.scrollHeight;
+      try{ var ans=await window.Copiloto.ask(q, COP_MODEL); t.classList.remove('thinking'); t.textContent=ans; }
+      catch(err){ t.classList.remove('thinking'); t.style.color='var(--red)'; t.textContent=(err&&err.message)?err.message:'Error al consultar el copiloto.'; }
+      finally{ send.disabled=false; chat.scrollTop=chat.scrollHeight; input.focus(); }
+    };
+    function checkGrok(){ if(window.Copiloto && window.Copiloto.grokDisponible()){ var g=document.getElementById('cop-grok'); if(g){ g.disabled=false; g.removeAttribute('title'); } } }
+
+    // Enfoque especializado de SALUD con contexto en vivo
+    async function setEnfoqueSalud(){
+      if(!window.Copiloto) return;
+      var trats=[], meds=[], enRetiro=0;
+      try{ var r=await window.DB.getTratamientos(FINCA_ID, true); trats=(r&&r.data)||[]; }catch(e){}
+      try{ var rm=await window.DB.getMedicamentos(FINCA_ID); meds=(rm&&rm.data)||[]; }catch(e){}
+      var hoy=new Date().toISOString().split('T')[0];
+      enRetiro = trats.filter(function(t){ return t.fecha_fin_retiro && t.fecha_fin_retiro >= hoy; }).length;
+      var medsTxt = meds.length ? meds.map(function(m){ return m.nombre+(m.stock_actual!=null?' (stock '+m.stock_actual+')':''); }).slice(0,20).join(', ') : 'sin medicamentos registrados';
+      var ctx = 'Contexto de salud actual:\n'+
+        '- Tratamientos activos/con retiro vigente: '+trats.length+'\n'+
+        '- Animales en período de retiro sanitario: '+enRetiro+'\n'+
+        '- Medicamentos disponibles: '+medsTxt+'\n\n'+
+        'Enfócate en protocolos sanitarios, dosificación, períodos de retiro y bienestar animal.';
+      window.Copiloto.setEnfoquePagina(ctx);
+    }
+    document.addEventListener('appstate:ready', function(){ checkGrok(); setEnfoqueSalud(); });
+    checkGrok(); if(window.AppState && window.AppState._loaded) setEnfoqueSalud();
+  })();
+  </script>
 
   </div><!-- /content -->
 </div><!-- /main -->

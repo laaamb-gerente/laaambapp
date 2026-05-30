@@ -1,0 +1,5 @@
+{
+  "rewrites": [
+    { "source": "/qr/:code", "destination": "/qr.html?code=:code" }
+  ]
+}
