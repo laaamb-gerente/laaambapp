@@ -1,4 +1,9 @@
 -- ─────────────────────────────────────────────────────────────
+-- ⚠️  SUPERADA POR 0021_rls_por_rol_real.sql — NO RE-EJECUTAR.
+-- Esta versión no cuajó en producción (dejó políticas previas vivas y
+-- no terminó de aplicar la matriz por rol). El estado real del esquema
+-- está en 0021. Se conserva este archivo solo por historial.
+-- ─────────────────────────────────────────────────────────────
 -- 0020_rls_por_rol.sql
 -- RLS REAL POR ROL (Sprint 0 de seguridad — Acción 1)
 --
