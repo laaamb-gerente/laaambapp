@@ -670,7 +670,7 @@ function getColabs(){
 // ══════════════════════════════════════════════════════
 // MAPA
 // ══════════════════════════════════════════════════════
-var MAP=null, SAT_LAYER=null, OSM_LAYER=null, GOOGLE_SAT=null, GOOGLE_LABELS=null, ESRI_LAYER=null, isSat=true;
+var MAP=null, SAT_LAYER=null, OSM_LAYER=null, ESRI_LABELS=null, isSat=true;
 var drawMode=null; // 'finca' | 'lote' | null
 var editMode=false;
 var activeFincaMap='default';
@@ -692,23 +692,22 @@ function initMap(){
   MAP=L.map('map',{zoomControl:true,attributionControl:false});
 
   // ── Tiles de alta calidad ──────────────────────────────
-  // Google Hybrid (satélite + etiquetas de calles) — mejor calidad disponible
-  // Misma fuente que usa Google Maps y equivalente a FlockFinder
-  var GOOGLE_SAT = L.tileLayer(
-    'https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',
-    {subdomains:'0123', maxZoom:21, maxNativeZoom:20,
-     attribution:'© Google', tileSize:256}
+  // Esri World Imagery — satélite de alta resolución
+  var ESRI_SAT = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/' +
+    'World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    {
+      attribution: 'Tiles © Esri — Source: Esri, Maxar, ' +
+        'GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, ' +
+        'USGS, AeroGRID, IGN, and the GIS User Community',
+      maxZoom: 19, tileSize:256
+    }
   );
-  // Etiquetas de calles/caminos encima del satélite (capa transparente)
-  var GOOGLE_LABELS = L.tileLayer(
-    'https://mt{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}',
-    {subdomains:'0123', maxZoom:21, maxNativeZoom:20,
-     attribution:'© Google', tileSize:256, opacity:0.7}
-  );
-  // Esri World Imagery Clarity — alternativa si Google falla (también alta res)
-  var ESRI_LAYER = L.tileLayer(
-    'https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    {maxZoom:21, maxNativeZoom:19, attribution:'© Esri', tileSize:256}
+  // Etiquetas de veredas/municipios encima del satélite
+  ESRI_LABELS = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/' +
+    'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+    { opacity: 0.8, maxZoom: 19, tileSize:256 }
   );
   // OSM para modo mapa
   OSM_LAYER=L.tileLayer(
@@ -716,28 +715,15 @@ function initMap(){
     {maxZoom:19, attribution:'© OpenStreetMap'}
   );
 
-  // Intentar Google primero; si falla, usar Esri Clarity
-  SAT_LAYER = GOOGLE_SAT;
+  // Esri satélite + etiquetas de lugares
+  SAT_LAYER = ESRI_SAT;
   SAT_LAYER.addTo(MAP);
-  GOOGLE_LABELS.addTo(MAP); // etiquetas de caminos sobre satélite
-
-  // Fallback automático: si tiles de Google no cargan, cambiar a Esri
-  var googleFailed = 0;
-  GOOGLE_SAT.on('tileerror', function(){
-    googleFailed++;
-    if(googleFailed === 3){
-      MAP.removeLayer(GOOGLE_SAT);
-      MAP.removeLayer(GOOGLE_LABELS);
-      SAT_LAYER = ESRI_LAYER;
-      ESRI_LAYER.addTo(MAP);
-      console.log('Google tiles no disponibles, usando Esri Clarity');
-    }
-  });
+  ESRI_LABELS.addTo(MAP); // nombres de veredas/municipios sobre satélite
 
   isSat = true;
 
   // Centro inicial — La Marinilla, vereda San Bernardo, Ibagué, Tolima
-  MAP.setView([4.438,-75.232],14);
+  MAP.setView([4.2850,-75.2800],15);
 
   // Click handler para dibujo
   MAP.on('click',function(e){
@@ -787,14 +773,14 @@ function setMapFinca(id){
 function toggleSatellite(){
   if(isSat){
     MAP.removeLayer(SAT_LAYER);
-    if(MAP.hasLayer(GOOGLE_LABELS)) MAP.removeLayer(GOOGLE_LABELS);
+    if(ESRI_LABELS && MAP.hasLayer(ESRI_LABELS)) MAP.removeLayer(ESRI_LABELS);
     OSM_LAYER.addTo(MAP);
     isSat=false;
     document.getElementById('btn-satellite').setAttribute('data-tip','Ver satélite (alta resolución)');
   } else {
     MAP.removeLayer(OSM_LAYER);
     SAT_LAYER.addTo(MAP);
-    if(SAT_LAYER===GOOGLE_SAT) GOOGLE_LABELS.addTo(MAP);
+    if(ESRI_LABELS) ESRI_LABELS.addTo(MAP);
     isSat=true;
     document.getElementById('btn-satellite').setAttribute('data-tip','Ver mapa / calles');
   }

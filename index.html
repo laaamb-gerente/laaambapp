@@ -576,12 +576,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if(!DMAP){
       DMAP=L.map('dash-map',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,keyboard:false,touchZoom:false});
-      var gsat=L.tileLayer('https://mt{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{subdomains:'0123',maxZoom:20,maxNativeZoom:20});
-      var glab=L.tileLayer('https://mt{s}.google.com/vt/lyrs=h&x={x}&y={y}&z={z}',{subdomains:'0123',maxZoom:20,opacity:0.6});
-      gsat.addTo(DMAP); glab.addTo(DMAP);
-      var failCount=0;
-      gsat.on('tileerror',function(){failCount++;if(failCount===3){DMAP.removeLayer(gsat);L.tileLayer('https://clarity.maptiles.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19}).addTo(DMAP);}});
-      DMAP.setView([4.438,-75.232],10);
+      var esat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri — Source: Esri, Maxar, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community',maxZoom:19});
+      var elab=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{opacity:0.8,maxZoom:19});
+      esat.addTo(DMAP); elab.addTo(DMAP);
+      DMAP.setView([4.2850,-75.2800],15);
     }
 
     DMAP_LAYERS.forEach(function(l){DMAP.removeLayer(l);}); DMAP_LAYERS=[];

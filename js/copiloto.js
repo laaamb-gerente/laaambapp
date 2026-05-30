@@ -125,7 +125,8 @@ Crías en levante (últimos 6 meses): ${levante}
 Lotes activos: ${(ctx.lotes || []).length}
 Peso promedio del hato: ${pesoProm != null ? pesoProm + ' kg' : 'sin datos de pesaje'}
 Razas presentes: ${razas.length ? razas.join(', ') : 'Dorper, Katahdin, Lacaune'}
-Ubicación: vereda San Bernardo, Ibagué, Tolima, Colombia${finanzas}`;
+Ubicación: vereda San Bernardo, Ibagué, Tolima, Colombia
+Propietario: Juan Manuel Arbelaez${finanzas}`;
   },
 
   // ── System prompt compartido por ambos modelos ────────
