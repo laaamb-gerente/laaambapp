@@ -392,7 +392,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
           <div class="fg"><label class="fl">Edad de destete (días)</label><input class="fi" type="number" id="cfg-destete" placeholder="60"></div>
           <div class="fg"><label class="fl">Peso objetivo de sacrificio (kg)</label><input class="fi" type="number" step="0.1" id="cfg-peso-sacrificio" placeholder="48"></div>
           <div class="fg"><label class="fl">Precio objetivo de venta (COP/kg)</label><input class="fi" type="number" id="cfg-precio-venta" placeholder="15000"></div>
-          <div class="fg"><label class="fl">Carga animal objetivo (ov/ha)</label><input class="fi" type="number" step="0.1" id="cfg-carga" placeholder="8"></div>
+          <div class="fg"><label class="fl">Carga animal objetivo (kg/ha)</label><input class="fi" type="number" step="1000" id="cfg-carga" placeholder="200000"><div style="font-size:11px;color:var(--text3);margin-top:4px;line-height:1.4">Carga instantánea máxima en kg de biomasa por hectárea. Sistema de pastoreo adaptativo — 200.000 kg/ha es referencia de alta densidad con rotación rápida (Greg Judy / Allen Williams).</div></div>
           <div class="fg"><label class="fl">Meta de fertilidad (%)</label><input class="fi" type="number" step="0.1" id="cfg-fertilidad" placeholder="90"></div>
           <div class="fg"><label class="fl">Meta GDP (g/día)</label><input class="fi" type="number" id="cfg-gdp" placeholder="200"></div>
           <div class="fg"><label class="fl">Días de descanso de potrero (default)</label><input class="fi" type="number" id="cfg-descanso" placeholder="21"></div>
@@ -989,7 +989,7 @@ var CONFIG_DEFAULTS = {
   edad_destete_dias: 60,
   peso_objetivo_sacrificio: 48,
   precio_objetivo_venta: 15000,
-  carga_animal_objetivo: 8,
+  carga_animal_kgha: 200000,
   meta_fertilidad: 90,
   meta_gdp: 200,
   dias_descanso_default: 21,
@@ -1001,7 +1001,7 @@ var CONFIG_CAMPOS = {
   'cfg-destete':'edad_destete_dias',
   'cfg-peso-sacrificio':'peso_objetivo_sacrificio',
   'cfg-precio-venta':'precio_objetivo_venta',
-  'cfg-carga':'carga_animal_objetivo',
+  'cfg-carga':'carga_animal_kgha',
   'cfg-fertilidad':'meta_fertilidad',
   'cfg-gdp':'meta_gdp',
   'cfg-descanso':'dias_descanso_default',

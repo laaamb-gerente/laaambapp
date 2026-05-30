@@ -1647,21 +1647,29 @@ function renderLotesTab(){
       ? window.AppState.getAnimalesActivos().filter(function(a){return a.lote_actual_id===l.id;})
       : getAnimalesForLote(l.nombre, l.finca_id||'default');
     var cap=l.capacidad_max||1;
-    var pct=Math.round((animales.length/cap)*100);
-    var status=pct>90?'crit':pct>70?'warn':'ok';
-    var color=pct>90?'var(--red)':pct>70?'var(--amber)':'var(--teal)';
+    // Carga animal en kg/ha (biomasa por hectárea) — pastoreo adaptativo.
+    // Biomasa = sumatoria de peso_actual de animales (default 25 kg si no hay pesaje).
+    var objetivoKgHa=(window.AppState&&window.AppState.finca&&window.AppState.finca.config&&window.AppState.finca.config.carga_animal_kgha)||200000;
+    var haLote=parseFloat(l.area_ha)||0;
+    var pesoPromLote=animales.length?animales.reduce(function(s,a){return s+(parseFloat(a.peso_actual)||25);},0)/animales.length:25;
+    var biomasaKg=animales.length*pesoPromLote;
+    var kgHa=haLote>0?Math.round(biomasaKg/haLote):0;
+    var status=kgHa>200000?'crit':kgHa>=150000?'warn':'ok';
+    var color=kgHa>200000?'var(--red)':kgHa>=150000?'var(--amber)':'var(--teal)';
+    var pctBar=Math.min(100,objetivoKgHa>0?Math.round(kgHa/objetivoKgHa*100):0);
+    var kgHaTxt=kgHa.toLocaleString('es-CO');
     var finca=getFincaById(l.finca_id||'default');
     return '<div class="lote-card '+status+'" onclick="abrirEditarLotePorId(\''+l.id+'\')">'
       +'<div class="lc-header">'
         +'<div><div class="lc-name">'+l.nombre+'</div><div class="lc-finca">'+(l.finca||finca.nombre)+'</div></div>'
-        +'<span class="badge '+(status==='crit'?'b-red':status==='warn'?'b-amber':'b-teal')+'">'+pct+'%</span>'
+        +'<span class="badge '+(status==='crit'?'b-red':status==='warn'?'b-amber':'b-teal')+'">'+kgHaTxt+' kg/ha</span>'
       +'</div>'
       +'<div class="lc-stats">'
         +'<div class="lc-stat"><div class="lc-stat-val">'+animales.length+'<span style="font-size:11px;color:var(--text3)">/'+cap+'</span></div><div class="lc-stat-label">Animales</div></div>'
         +'<div class="lc-stat"><div class="lc-stat-val">'+(l.area_ha||'—')+'<span style="font-size:11px;color:var(--text3)"> ha</span></div><div class="lc-stat-label">Área</div></div>'
       +'</div>'
-      +'<div class="lc-bar"><div class="lc-bar-fill" style="width:'+Math.min(pct,100)+'%;background:'+color+'"></div></div>'
-      +'<div style="font-size:11px;color:var(--text3);margin-bottom:8px">'+l.tipo_pasto+' · '+l.condicion_pasto+'% · '+l.fuente_agua+'</div>'
+      +'<div class="lc-bar"><div class="lc-bar-fill" style="width:'+pctBar+'%;background:'+color+'"></div></div>'
+      +'<div style="font-size:11px;color:var(--text3);margin-bottom:8px">'+kgHaTxt+' kg/ha · ('+animales.length+' animales)'+(l.tipo_pasto&&l.tipo_pasto!=='—'?' · '+l.tipo_pasto:'')+'</div>'
       +'<div class="lc-actions">'
         +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirMoverDesde(\''+l.id+'\')">↔ Mover</button>'
         +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirEditarLotePorId(\''+l.id+'\')">Editar</button>'

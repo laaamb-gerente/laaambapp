@@ -109,6 +109,19 @@ window.Copiloto = {
     // Razas presentes
     const razas = [...new Set((ctx.getAnimalesActivos() || []).map(a => a.raza).filter(Boolean))];
 
+    // Carga animal del lote más cargado en kg/ha (biomasa por hectárea)
+    const objetivoCarga = ctx.finca?.config?.carga_animal_kgha || 200000;
+    let kgHaActual = 0;
+    (ctx.lotes || []).forEach(l => {
+      const ha = parseFloat(l.hectareas) || 0;
+      if (ha <= 0) return;
+      const enLote = ctx.getAnimalesActivos().filter(a => a.lote_actual_id === l.id);
+      if (!enLote.length) return;
+      const pp = enLote.reduce((s, a) => s + (parseFloat(a.peso_actual) || 25), 0) / enLote.length;
+      const kgHa = Math.round(enLote.length * pp / ha);
+      if (kgHa > kgHaActual) kgHaActual = kgHa;
+    });
+
     // Finanzas del mes (si están disponibles)
     let finanzas = '';
     if (typeof ctx.getTotalIngresosMes === 'function' && typeof ctx.getTotalCostosMes === 'function') {
@@ -126,7 +139,9 @@ Lotes activos: ${(ctx.lotes || []).length}
 Peso promedio del hato: ${pesoProm != null ? pesoProm + ' kg' : 'sin datos de pesaje'}
 Razas presentes: ${razas.length ? razas.join(', ') : 'Dorper, Katahdin, Lacaune'}
 Ubicación: vereda San Bernardo, Ibagué, Tolima, Colombia
-Propietario: Juan Manuel Arbelaez${finanzas}`;
+Propietario: Juan Manuel Arbelaez
+Carga animal actual: ${kgHaActual.toLocaleString('es-CO')} kg/ha
+Carga objetivo: ${objetivoCarga.toLocaleString('es-CO')} kg/ha${finanzas}`;
   },
 
   // ── System prompt compartido por ambos modelos ────────

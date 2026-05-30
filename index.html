@@ -571,7 +571,25 @@ document.addEventListener('DOMContentLoaded', function() {
       if(subEl) subEl.textContent=totalHa.toFixed(0)+' ha totales · '+(todasFincas||[]).length+' fincas · '+animales.length+' animales';
     } else {
       if(titleEl) titleEl.textContent='Vista GPS — '+(finca.nombre||'Finca');
-      if(subEl) subEl.textContent=(finca.area_ha||'—')+' ha · '+lotes.length+' lote'+(lotes.length!==1?'s':'')+' activos · '+animales.length+' animales'+(finca.municipio?' · '+finca.municipio:'');
+      // Carga animal del lote activo (el de más animales) en kg/ha — pastoreo adaptativo
+      var kgHaSub='';
+      try{
+        var loteAct=null,maxN=-1;
+        (lotes||[]).forEach(function(l){
+          var n=animales.filter(function(a){return a.lote===l.nombre||a.lote_actual_id===l.id;}).length;
+          if(n>maxN){maxN=n;loteAct=l;}
+        });
+        if(loteAct){
+          var aL=animales.filter(function(a){return a.lote===loteAct.nombre||a.lote_actual_id===loteAct.id;});
+          var haL=parseFloat(loteAct.area_ha)||parseFloat(loteAct.hectareas)||0;
+          if(haL>0&&aL.length){
+            var ppL=aL.reduce(function(s,a){return s+(parseFloat(a.peso_actual)||parseFloat(a.peso_inicial)||25);},0)/aL.length;
+            var kgha=Math.round(aL.length*ppL/haL);
+            kgHaSub=' · '+kgha.toLocaleString('es-CO')+' kg/ha actual';
+          }
+        }
+      }catch(e){}
+      if(subEl) subEl.textContent=(finca.area_ha||'—')+' ha · '+lotes.length+' lote'+(lotes.length!==1?'s':'')+' · '+animales.length+' animales'+kgHaSub;
     }
 
     if(!DMAP){

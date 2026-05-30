@@ -1134,13 +1134,20 @@ function loadOKRFromSupabase(){
   const cont=document.getElementById('gdp-lote-list');
   if(cont){
     const lotes=AS.lotes||[];
+    const objetivoKgHa=(AS.finca&&AS.finca.config&&AS.finca.config.carga_animal_kgha)||200000;
     const rows=lotes.map(function(l){
       const enLote=activos.filter(a=>a.lote_actual_id===l.id);
       const lg=enLote.map(_okrGdp).filter(g=>g!=null);
       const prom=lg.length?Math.round(lg.reduce((s,g)=>s+g,0)/lg.length):null;
       const pct=prom?Math.min(100,Math.round(prom/200*100)):0;
       const color=prom==null?'var(--text3)':prom>=180?'var(--teal)':prom>=150?'var(--amber)':'var(--red)';
-      return '<div class="bar-row"><div class="bar-lbl">'+l.nombre+' ('+enLote.length+')</div>'
+      // Carga animal kg/ha (biomasa por hectárea) — pastoreo adaptativo
+      const haL=parseFloat(l.hectareas)||0;
+      const ppL=enLote.length?enLote.reduce((s,a)=>s+(parseFloat(a.peso_actual)||25),0)/enLote.length:25;
+      const kgHa=haL>0?Math.round(enLote.length*ppL/haL):0;
+      const kgHaColor=kgHa>200000?'var(--red)':kgHa>=150000?'var(--amber)':'var(--teal)';
+      return '<div class="bar-row"><div class="bar-lbl">'+l.nombre+' ('+enLote.length+')'
+        +'<span style="display:block;font-size:10px;color:'+kgHaColor+'">'+kgHa.toLocaleString('es-CO')+' kg/ha</span></div>'
         +'<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+color+'"></div></div>'
         +'<div class="bar-val">'+(prom!=null?prom+'g':'—')+'</div></div>';
     }).join('');

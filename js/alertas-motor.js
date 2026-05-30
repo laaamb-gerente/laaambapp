@@ -111,18 +111,29 @@ window.AlertasMotor = {
         });
       });
 
-      // 5. Lotes en sobrecarga >90%
+      // 5. Lotes en sobrecarga — cálculo en kg/ha (biomasa por hectárea).
+      // El conteo de animales se calcula desde AppState.animales por lote_actual_id
+      // (no existe columna num_animales en la tabla lotes).
+      const objetivoCarga = window.AppState.finca?.config?.carga_animal_kgha || 200000;
       window.AppState.lotes.forEach(l => {
-        if (!l.capacidad_animales) return;
-        const pct = (l.num_animales / l.capacidad_animales) * 100;
-        if (pct > 90) {
+        const ha = parseFloat(l.hectareas) || 0;
+        if (ha <= 0) return;
+        const animalesLote = window.AppState.animales.filter(a =>
+          a.lote_actual_id === l.id && a.estado === 'activo'
+        );
+        if (animalesLote.length === 0) return;
+        const pesoPromLote = animalesLote.reduce((s, a) => s + (parseFloat(a.peso_actual) || 25), 0)
+          / animalesLote.length;
+        const biomasaKg = animalesLote.length * pesoPromLote;
+        const kgHa = biomasaKg / ha;
+        if (kgHa > objetivoCarga * 0.9) {
           alertas.push({
             tipo: 'sobrecarga_lote',
-            prioridad: pct > 100 ? 'critica' : 'alta',
-            mensaje: `${l.nombre} al ${Math.round(pct)}% de capacidad — considerar rotación`,
-            accion_sugerida: 'Mover animales a otro lote',
+            prioridad: kgHa > objetivoCarga ? 'critica' : 'alta',
+            mensaje: `${l.nombre} con ${Math.round(kgHa).toLocaleString()} kg/ha — cerca del límite de ${objetivoCarga.toLocaleString()} kg/ha`,
+            accion_sugerida: 'Rotar animales al siguiente potrero',
             accion_url: 'lotes.html',
-            datos: { lote: l.nombre, pct: Math.round(pct) }
+            datos: { lote: l.nombre, kgHa: Math.round(kgHa), objetivo: objetivoCarga }
           });
         }
       });
