@@ -270,9 +270,10 @@ tbody td{padding:9px 12px;color:var(--text);vertical-align:middle}
       <div class="rep-card">
         <div class="rep-ico"><svg viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-4"/></svg></div>
         <div class="rep-name">Reporte ICA / RSPP</div>
-        <div class="rep-desc">Formato ICA para Registro Sanitario de Predio Pecuario: predio, inventario por especie y sanidad.</div>
+        <div class="rep-desc">Formato ICA para Registro Sanitario de Predio Pecuario: predio, inventario por especie y sanidad. CSV de movilizaciones compatible con SIGMA.</div>
         <div class="rep-actions">
           <button class="btn btn-primary btn-sm" onclick="generarICA()">Generar y descargar</button>
+          <button class="btn btn-ghost btn-sm" onclick="exportarSIGMA()">Exportar CSV para SIGMA</button>
         </div>
       </div>
 
@@ -600,6 +601,56 @@ async function generarICA(){
   html += '<h2>Declaración sanitaria</h2><p style="font-size:12px;color:#0d2b2e">El predio mantiene un programa sanitario activo con registro de tratamientos, vacunaciones y movilizaciones conforme a la normativa ICA. Los movimientos de animales se documentan mediante Guía Sanitaria de Movilización Interna (GSMI).</p>';
   html += repFoot();
   imprimirReporte(html, false);
+}
+
+// ── 6. EXPORTAR CSV PARA SIGMA (ICA) ──────────────────────────────────────────
+// Genera un CSV de movilizaciones compatible con el sistema SIGMA del ICA.
+// Columnas: fecha_movimiento, tipo_movimiento, cantidad, especie,
+//           codigo_animal, origen, destino, motivo, gsmi
+function _csvCampo(v){
+  var s = (v==null ? '' : String(v));
+  if(/[",\n\r]/.test(s)) s = '"'+s.replace(/"/g,'""')+'"';
+  return s;
+}
+function _codigosDeIds(ids){
+  if(!Array.isArray(ids) || !ids.length) return '';
+  var animales = (window.AppState && window.AppState.animales) || [];
+  var mapa = {};
+  animales.forEach(function(a){ mapa[a.id] = a.codigo || a.id; });
+  return ids.map(function(id){ return mapa[id] || id; }).join('; ');
+}
+async function exportarSIGMA(){
+  toast('Generando CSV para SIGMA…');
+  var movs = [];
+  try{ var r = await window.DB.getMovilizaciones(FINCA_ID_R, 1000); movs = r.data || []; }
+  catch(e){ toast('No se pudieron leer las movilizaciones','err'); return; }
+  if(!movs.length){ toast('No hay movilizaciones registradas para exportar','err'); return; }
+
+  var cols = ['fecha_movimiento','tipo_movimiento','cantidad','especie','codigo_animal','origen','destino','motivo','gsmi'];
+  var lineas = [cols.join(',')];
+  movs.forEach(function(m){
+    var fila = [
+      m.fecha || '',
+      m.tipo || '',
+      (m.cantidad_animales!=null ? m.cantidad_animales : ''),
+      m.especie || 'ovino',
+      _codigosDeIds(m.animal_ids),
+      m.origen || '',
+      m.destino || '',
+      m.motivo || '',
+      m.gsmi_numero || m.guia_numero || ''
+    ];
+    lineas.push(fila.map(_csvCampo).join(','));
+  });
+  var csv = '﻿' + lineas.join('\r\n');   /* BOM al inicio para acentos en Excel/SIGMA */
+  var blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'sigma-movilizaciones-'+hoyISO()+'.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  toast(movs.length+' movilización(es) exportadas a CSV');
 }
 </script>
 
