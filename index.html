@@ -207,7 +207,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 
 <div class="main">
   <div class="page-head">
-    <div class="ph-eyebrow" id="ph-eyebrow">La Marinilla · Ibagué · Tolima · Colombia</div>
+    <div class="ph-eyebrow" id="ph-eyebrow">La Marinilla · Vereda San Bernardo · Ibagué · Tolima · Colombia</div>
     <div class="ph-title">Dashboard</div>
     <div class="ph-date" id="ph-date"></div>
   </div>
@@ -513,7 +513,7 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       animales = animalesFinca(active, d.animales||[]);
       lotes = (d.lotes||[]).filter(function(l){return l.activo&&(l.finca_id||'default')===active;});
-      eyebrow = [finca.nombre, finca.municipio||'', finca.departamento||'', 'Colombia'].filter(Boolean).join(' · ');
+      eyebrow = [finca.nombre, finca.vereda ? 'Vereda '+finca.vereda : '', finca.municipio||'', finca.departamento||'', 'Colombia'].filter(Boolean).join(' · ');
     }
 
     setEl('ph-eyebrow', eyebrow);
