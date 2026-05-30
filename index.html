@@ -594,10 +594,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if(!DMAP){
       DMAP=L.map('dash-map',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,keyboard:false,touchZoom:false});
-      var esat=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{attribution:'Tiles © Esri — Source: Esri, Maxar, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community',maxZoom:19});
-      var elab=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{opacity:0.8,maxZoom:19});
-      esat.addTo(DMAP); elab.addTo(DMAP);
-      DMAP.setView([4.2850,-75.2800],15);
+      var gsat=L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{subdomains:['mt0','mt1','mt2','mt3'],maxZoom:21,attribution:'© Google Maps'});
+      gsat.addTo(DMAP);
+      DMAP.setView([4.2339,-75.1982],14);
     }
 
     DMAP_LAYERS.forEach(function(l){DMAP.removeLayer(l);}); DMAP_LAYERS=[];

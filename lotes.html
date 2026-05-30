@@ -461,8 +461,8 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
         </div>
       </div>
       <div class="map-coord-row">
-        <input id="coord-lat" placeholder="Latitud (ej: 6.177)" type="number" step="0.0001">
-        <input id="coord-lng" placeholder="Longitud (ej: -75.501)" type="number" step="0.0001">
+        <input id="coord-lat" placeholder="Latitud (ej: 4.2339)" type="number" step="0.0001">
+        <input id="coord-lng" placeholder="Longitud (ej: -75.1982)" type="number" step="0.0001">
         <button onclick="irACoordenadas()">Ir</button>
       </div>
     </div>
@@ -635,6 +635,13 @@ function switchTab(btn, tabId){
 // ══════════════════════════════════════════════════════
 function getAllFincas(){
   var d=AppData.get();
+  // Si Supabase (AppState) está cargado, la única finca real es La Marinilla.
+  // Se ignoran las fincas demo de localStorage (ej. "La Alpujarra") para que
+  // el selector del mapa solo muestre fincas reales. Se conserva id:'default'
+  // por compatibilidad con el resto del módulo (activeFincaMap, lote.finca_id).
+  if(window.AppState && window.AppState._loaded && window.AppState.finca){
+    return [Object.assign({id:'default'}, window.AppState.finca)];
+  }
   var main=Object.assign({id:'default'},d.finca||{nombre:'La Marinilla',area_ha:50});
   var extras=d.fincas||[];
   return [main].concat(extras);
@@ -670,7 +677,7 @@ function getColabs(){
 // ══════════════════════════════════════════════════════
 // MAPA
 // ══════════════════════════════════════════════════════
-var MAP=null, SAT_LAYER=null, OSM_LAYER=null, ESRI_LABELS=null, isSat=true;
+var MAP=null, GSAT=null, GSTREET=null, isSat=true;
 var drawMode=null; // 'finca' | 'lote' | null
 var editMode=false;
 var activeFincaMap='default';
@@ -691,39 +698,27 @@ var fincaAreaLabels={};   // labels de área sobre perímetros
 function initMap(){
   MAP=L.map('map',{zoomControl:true,attributionControl:false});
 
-  // ── Tiles de alta calidad ──────────────────────────────
-  // Esri World Imagery — satélite de alta resolución
-  var ESRI_SAT = L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/' +
-    'World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    {
-      attribution: 'Tiles © Esri — Source: Esri, Maxar, ' +
-        'GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, ' +
-        'USGS, AeroGRID, IGN, and the GIS User Community',
-      maxZoom: 19, tileSize:256
-    }
+  // ── Tile satelital: Google Maps híbrido ────────────────
+  // Mejor resolución a zoom alto en zonas rurales colombianas que Esri.
+  // lyrs=s,h = satélite + etiquetas (híbrido). maxZoom 21 = máximo detalle.
+  GSAT = L.tileLayer(
+    'https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',
+    { subdomains:['mt0','mt1','mt2','mt3'], maxZoom:21, attribution:'© Google Maps' }
   );
-  // Etiquetas de veredas/municipios encima del satélite
-  ESRI_LABELS = L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/' +
-    'Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
-    { opacity: 0.8, maxZoom: 19, tileSize:256 }
-  );
-  // OSM para modo mapa
-  OSM_LAYER=L.tileLayer(
-    'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    {maxZoom:19, attribution:'© OpenStreetMap'}
+  // Vista de calles/mapa Google para alternar con el botón satélite
+  GSTREET = L.tileLayer(
+    'https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}',
+    { subdomains:['mt0','mt1','mt2','mt3'], maxZoom:21, attribution:'© Google Maps' }
   );
 
-  // Esri satélite + etiquetas de lugares
-  SAT_LAYER = ESRI_SAT;
-  SAT_LAYER.addTo(MAP);
-  ESRI_LABELS.addTo(MAP); // nombres de veredas/municipios sobre satélite
-
+  GSAT.addTo(MAP);
   isSat = true;
 
-  // Centro inicial — La Marinilla, vereda San Bernardo, Ibagué, Tolima
-  MAP.setView([4.2850,-75.2800],15);
+  // Exponer el mapa para listeners externos (appstate:ready)
+  window._map = MAP;
+
+  // Centro inicial — vereda San Bernardo, Ibagué, Tolima
+  MAP.setView([4.2339,-75.1982],15);
 
   // Click handler para dibujo
   MAP.on('click',function(e){
@@ -771,16 +766,14 @@ function setMapFinca(id){
 }
 
 function toggleSatellite(){
-  if(isSat){
-    MAP.removeLayer(SAT_LAYER);
-    if(ESRI_LABELS && MAP.hasLayer(ESRI_LABELS)) MAP.removeLayer(ESRI_LABELS);
-    OSM_LAYER.addTo(MAP);
+  if(MAP.hasLayer(GSAT)){
+    MAP.removeLayer(GSAT);
+    MAP.addLayer(GSTREET);
     isSat=false;
     document.getElementById('btn-satellite').setAttribute('data-tip','Ver satélite (alta resolución)');
   } else {
-    MAP.removeLayer(OSM_LAYER);
-    SAT_LAYER.addTo(MAP);
-    if(ESRI_LABELS) ESRI_LABELS.addTo(MAP);
+    MAP.removeLayer(GSTREET);
+    MAP.addLayer(GSAT);
     isSat=true;
     document.getElementById('btn-satellite').setAttribute('data-tip','Ver mapa / calles');
   }
@@ -2109,6 +2102,25 @@ document.addEventListener('DOMContentLoaded', function(){
 document.addEventListener('appstate:ready', function(e){
   if(!window.AppState || !Array.isArray(window.AppState.lotes)) return;
   renderLotesTab();
+  // Re-render del selector de finca: ahora getAllFincas() usa AppState y deja
+  // de mostrar fincas demo de localStorage (ej. "La Alpujarra").
+  if(typeof renderMapFincaSelector==='function' && document.getElementById('map-finca-selector')){
+    renderMapFincaSelector();
+  }
+  // Centrar el mapa en el perímetro de la finca si existe; si no, queda el
+  // centro por defecto de San Bernardo. (La tabla fincas no tiene geo_perimetro
+  // por ahora — el guard con optional chaining lo hace un no-op seguro.)
+  if (window.AppState?.finca?.geo_perimetro) {
+    try {
+      const coords = JSON.parse(window.AppState.finca.geo_perimetro);
+      if (coords?.coordinates?.[0]) {
+        const pts = coords.coordinates[0];
+        const lat = pts.reduce((s,p) => s+p[1],0)/pts.length;
+        const lng = pts.reduce((s,p) => s+p[0],0)/pts.length;
+        window._map?.setView([lat, lng], 16);
+      }
+    } catch(e) {}
+  }
   // Badge + pill del sidebar con el conteo real
   var total = window.AppState.getAnimalesActivos().length;
   setEl('sb-count', total);
