@@ -4,33 +4,35 @@
 
 const CACHE_NAME = 'laaambapp-v1';
 
+// Paths relativos: resuelven contra la ubicación del SW en cada host
+// (raíz en Vercel, /laaambapp/ en GitHub Pages).
 const STATIC_ASSETS = [
-  '/laaambapp/index.html',
-  '/laaambapp/hoy.html',
-  '/laaambapp/animales.html',
-  '/laaambapp/reproduccion.html',
-  '/laaambapp/lotes.html',
-  '/laaambapp/salud.html',
-  '/laaambapp/medicamentos.html',
-  '/laaambapp/finanzas.html',
-  '/laaambapp/bajas.html',
-  '/laaambapp/beneficio.html',
-  '/laaambapp/nomina.html',
-  '/laaambapp/ica.html',
-  '/laaambapp/reportes.html',
-  '/laaambapp/okr.html',
-  '/laaambapp/ajustes.html',
-  '/laaambapp/login.html',
-  '/laaambapp/js/supabase-client.js',
-  '/laaambapp/js/auth.js',
-  '/laaambapp/js/db.js',
-  '/laaambapp/js/app-state.js',
-  '/laaambapp/js/offline-db.js',
-  '/laaambapp/js/clear-demo-data.js',
-  '/laaambapp/AppData.js',
-  '/laaambapp/farm-selector.js',
-  '/laaambapp/manifest.json',
-  '/laaambapp/icons/icon.svg',
+  './index.html',
+  './hoy.html',
+  './animales.html',
+  './reproduccion.html',
+  './lotes.html',
+  './salud.html',
+  './medicamentos.html',
+  './finanzas.html',
+  './bajas.html',
+  './beneficio.html',
+  './nomina.html',
+  './ica.html',
+  './reportes.html',
+  './okr.html',
+  './ajustes.html',
+  './login.html',
+  './js/supabase-client.js',
+  './js/auth.js',
+  './js/db.js',
+  './js/app-state.js',
+  './js/offline-db.js',
+  './js/clear-demo-data.js',
+  './AppData.js',
+  './farm-selector.js',
+  './manifest.json',
+  './icons/icon.svg',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
 ];
 
@@ -77,7 +79,7 @@ self.addEventListener('fetch', (event) => {
       }).catch(() => {
         // Fallback de navegación: servir index.html del cache
         if (req.mode === 'navigate') {
-          return caches.match('/laaambapp/index.html');
+          return caches.match('./index.html');
         }
       });
     })

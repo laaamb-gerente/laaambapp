@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link rel="manifest" href="/laaambapp/manifest.json">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#00AFB6">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="LAAAMB">
-<link rel="apple-touch-icon" href="/laaambapp/icons/icon.svg">
+<link rel="apple-touch-icon" href="icons/icon.svg">
 <title>LAAAMBAPP · Dashboard</title>
 <script>(function(){var t=localStorage.getItem('laaamb-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -829,7 +829,7 @@ document.addEventListener('appstate:ready', function(e) {
   // Registrar Service Worker
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', function(){
-      navigator.serviceWorker.register('/laaambapp/sw.js')
+      navigator.serviceWorker.register('sw.js')
         .then(function(reg){ console.log('[PWA] SW registrado', reg.scope); })
         .catch(function(err){ console.warn('[PWA] SW error', err); });
     });
