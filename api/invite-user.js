@@ -126,17 +126,23 @@ export default async function handler(req, res) {
     const user = await resp.json();
     if (!resp.ok) throw new Error(user.message || user.msg || 'Error creando usuario');
 
-    // 5b. Crear el perfil asociado en la tabla perfiles
-    const perfilResp = await fetch(`${supabaseUrl}/rest/v1/perfiles`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': serviceKey,
-        'Authorization': `Bearer ${serviceKey}`,
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({ id: user.id, nombre, email, rol, activo: true })
-    });
+    // 5b. Crear/actualizar el perfil asociado en la tabla perfiles.
+    // El trigger on_auth_user_created (0008) ya crea un perfil al crear el
+    // usuario en Auth, así que hacemos upsert (merge sobre id) para no
+    // chocar con esa fila y respetar el rol enviado.
+    const perfilResp = await fetch(
+      `${supabaseUrl}/rest/v1/perfiles?on_conflict=id`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': serviceKey,
+          'Authorization': `Bearer ${serviceKey}`,
+          'Prefer': 'resolution=merge-duplicates,return=minimal'
+        },
+        body: JSON.stringify({ id: user.id, nombre, email, rol, activo: true })
+      }
+    );
     if (!perfilResp.ok) {
       // revertir el auth user huérfano para no dejar basura
       await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
