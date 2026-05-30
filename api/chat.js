@@ -1,8 +1,8 @@
+import { aplicarCors, validarToken } from './_auth.js';
+
 export default async function handler(req, res) {
-  // CORS headers (en TODAS las respuestas, incluido preflight)
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // CORS por allowlist (en TODAS las respuestas, incluido preflight)
+  aplicarCors(req, res);
 
   // Preflight: el navegador envía OPTIONS antes del POST cross-origin
   if (req.method === 'OPTIONS') {
@@ -14,13 +14,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Verificar que viene de la app (origen válido)
-  const origin = req.headers.origin || '';
-  const allowed = [
-    'https://laaambapp.vercel.app',
-    'https://laaamb-gerente.github.io',
-    'http://localhost:3000'
-  ];
+  // Exigir sesión válida antes de gastar la ANTHROPIC_API_KEY
+  const auth = await validarToken(req);
+  if (!auth.ok) {
+    return res.status(auth.status).json({ error: auth.error });
+  }
 
   // Leer ANTHROPIC_API_KEY desde env vars de Vercel
   const apiKey = process.env.ANTHROPIC_API_KEY;

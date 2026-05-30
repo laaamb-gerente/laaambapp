@@ -1,8 +1,8 @@
+import { aplicarCors, validarToken } from './_auth.js';
+
 export default async function handler(req, res) {
-  // CORS headers (en TODAS las respuestas, incluido preflight)
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // CORS por allowlist (en TODAS las respuestas, incluido preflight)
+  aplicarCors(req, res);
 
   // Preflight: el navegador envía OPTIONS antes del POST cross-origin
   if (req.method === 'OPTIONS') {
@@ -11,6 +11,12 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  // Exigir sesión válida antes de gastar la GROK_API_KEY
+  const auth = await validarToken(req);
+  if (!auth.ok) {
+    return res.status(auth.status).json({ error: auth.error });
   }
 
   const apiKey = process.env.GROK_API_KEY;

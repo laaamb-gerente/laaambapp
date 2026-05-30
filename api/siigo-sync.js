@@ -8,13 +8,23 @@
 // El access_token devuelto se guarda en la tabla siigo_config.
 // ─────────────────────────────────────────────────────────────
 
+import { aplicarCors, validarToken, obtenerRol } from './_auth.js';
+
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  aplicarCors(req, res);
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST')
     return res.status(405).json({ error: 'Method not allowed' });
+
+  // Exigir sesión válida
+  const auth = await validarToken(req);
+  if (!auth.ok) return res.status(auth.status).json({ error: auth.error });
+
+  // Integración financiera: solo gerente o administrador
+  const rol = await obtenerRol(auth.user.id);
+  if (rol !== 'gerente' && rol !== 'administrador') {
+    return res.status(403).json({ error: 'No autorizado: se requiere rol gerente o administrador' });
+  }
 
   const { accion, username, access_token, fecha_desde, fecha_hasta }
     = req.body;

@@ -910,8 +910,10 @@ async function siigoConectar(){
   var btn = document.getElementById('siigo-btn-conectar');
   btn.textContent = 'Conectando…'; btn.disabled = true;
   try{
+    const { data:{ session } } = await window._sb.auth.getSession();
+    if(!session){ toast('Sesión expirada. Vuelve a iniciar sesión.','err'); return; }
     var resp = await fetch(apiBase()+'/api/siigo-sync', {
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
       body: JSON.stringify({ accion:'auth', username:username, access_key:access_key })
     });
     var data = await resp.json();
@@ -935,6 +937,8 @@ async function siigoConectar(){
 }
 async function siigoSync(historico){
   if(!SIIGO_CFG || !SIIGO_CFG.access_token){ toast('Conecta con Siigo primero','err'); return; }
+  const { data:{ session } } = await window._sb.auth.getSession();
+  if(!session){ toast('Sesión expirada. Vuelve a iniciar sesión.','err'); return; }
   var hoy = new Date();
   var desde, hasta;
   if(historico){
@@ -952,7 +956,7 @@ async function siigoSync(historico){
   var nIng=0, nCost=0;
   try{
     // Facturas (ingresos)
-    var rf = await fetch(apiBase()+'/api/siigo-sync', { method:'POST', headers:{'Content-Type':'application/json'},
+    var rf = await fetch(apiBase()+'/api/siigo-sync', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
       body: JSON.stringify({ accion:'facturas', access_token:SIIGO_CFG.access_token, fecha_desde:desde, fecha_hasta:hasta }) });
     var df = await rf.json();
     var facturas = (df && df.results) || [];
@@ -966,7 +970,7 @@ async function siigoSync(historico){
       }
     }
     // Comprobantes de egreso (gastos)
-    var rg = await fetch(apiBase()+'/api/siigo-sync', { method:'POST', headers:{'Content-Type':'application/json'},
+    var rg = await fetch(apiBase()+'/api/siigo-sync', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+session.access_token},
       body: JSON.stringify({ accion:'gastos', access_token:SIIGO_CFG.access_token, fecha_desde:desde, fecha_hasta:hasta }) });
     var dg = await rg.json();
     var gastos = (dg && dg.results) || [];

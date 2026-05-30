@@ -320,10 +320,17 @@ ${enfoque}${this._enfoquePagina ? '\n\n' + this._enfoquePagina : ''}`;
   async _askClaude(system, messages) {
     const msgs = messages.slice();
 
+    // Token de la sesión activa para autenticar el proxy serverless
+    const session = window._sb ? (await window._sb.auth.getSession()).data.session : null;
+    if (!session) throw new Error('Sesión expirada. Vuelve a iniciar sesión para usar el copiloto.');
+
     for (let i = 0; i < 3; i++) {
       const res = await fetch(this._apiBase() + '/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + session.access_token
+        },
         body: JSON.stringify({
           model: 'claude-opus-4-5',
           max_tokens: 1024,
@@ -376,9 +383,14 @@ ${enfoque}${this._enfoquePagina ? '\n\n' + this._enfoquePagina : ''}`;
         window.location.hostname !== 'localhost') {
       return 'Grok disponible próximamente. Configura GROK_API_KEY en Vercel.';
     }
+    const session = window._sb ? (await window._sb.auth.getSession()).data.session : null;
+    if (!session) return 'Sesión expirada. Vuelve a iniciar sesión para usar el copiloto.';
     const res = await fetch(this._apiBase() + '/api/chat-grok', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token
+      },
       body: JSON.stringify({ messages, system })
     });
     const data = await res.json();
