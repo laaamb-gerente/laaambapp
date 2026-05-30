@@ -187,7 +187,7 @@ window.DB = {
   // ── BAJAS & VENTAS ───────────────────────────────────
   async getBajas(finca_id, limit = 200) {
     return await window._sb.from('bajas')
-      .select('*, animales(codigo, nombre, raza, especie, fecha_nacimiento, lote_id)')
+      .select('*, animales(codigo, nombre, raza, especie, fecha_nacimiento, lote_actual_id)')
       .eq('finca_id', finca_id)
       .order('fecha', { ascending: false })
       .limit(limit);
@@ -405,6 +405,79 @@ window.DB = {
     return await window._sb.from('okr_metas')
       .upsert(rows, { onConflict: 'finca_id,departamento,clave' })
       .select();
+  },
+
+  // ── NUTRICIÓN & ALIMENTACIÓN ─────────────────────────
+  async getRaciones(finca_id) {
+    return await window._sb.from('raciones_nutricion')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .order('categoria');
+  },
+  async getRecetasNutricion(finca_id) {
+    return await window._sb.from('recetas_nutricion')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .eq('activa', true)
+      .order('tipo');
+  },
+  async getInventarioNutricion(finca_id) {
+    return await window._sb.from('inventario_nutricion')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .order('tipo');
+  },
+  async getRegistrosAlimentacion(finca_id, fecha) {
+    let q = window._sb.from('registros_alimentacion')
+      .select('*')
+      .eq('finca_id', finca_id);
+    if (fecha) q = q.eq('fecha', fecha);
+    return await q.order('created_at', { ascending: false });
+  },
+  async saveRegistroAlimentacion(data) {
+    // Upsert por lote+fecha: si ya existe, actualizar; si no, insertar
+    const finca_id = data.finca_id;
+    const lote_id = data.lote_id || null;
+    const fecha = data.fecha;
+    let existing = null;
+    try {
+      let q = window._sb.from('registros_alimentacion')
+        .select('id').eq('finca_id', finca_id).eq('fecha', fecha);
+      q = lote_id ? q.eq('lote_id', lote_id) : q.is('lote_id', null);
+      const res = await q.maybeSingle();
+      existing = res && res.data;
+    } catch (e) { existing = null; }
+    if (existing && existing.id) {
+      return await window._sb.from('registros_alimentacion')
+        .update(data).eq('id', existing.id).select().single();
+    }
+    return await window._sb.from('registros_alimentacion')
+      .insert(data).select().single();
+  },
+  async updateInventarioStock(id, delta_kg) {
+    // Lee el stock actual y suma delta (negativo para consumo)
+    const cur = await window._sb.from('inventario_nutricion')
+      .select('stock_kg').eq('id', id).single();
+    const actual = (cur && cur.data && parseFloat(cur.data.stock_kg)) || 0;
+    const nuevo = actual + (parseFloat(delta_kg) || 0);
+    return await window._sb.from('inventario_nutricion')
+      .update({ stock_kg: nuevo, updated_at: new Date() }).eq('id', id).select().single();
+  },
+  async saveRaciones(finca_id, raciones) {
+    const rows = (raciones || []).map(r => Object.assign({ finca_id: finca_id }, r));
+    return await window._sb.from('raciones_nutricion')
+      .upsert(rows, { onConflict: 'finca_id,categoria' })
+      .select();
+  },
+  async saveReceta(receta) {
+    return await window._sb.from('recetas_nutricion')
+      .update({
+        nombre: receta.nombre,
+        descripcion: receta.descripcion,
+        ingredientes: receta.ingredientes,
+        updated_at: new Date()
+      })
+      .eq('id', receta.id).select().single();
   },
 
   // ── UTILIDADES ───────────────────────────────────────

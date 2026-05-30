@@ -177,6 +177,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     <div class="nav-group">Ganadería</div>
     <a class="nav-link" href="animales.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Animales<span class="nav-badge" id="sb-count">—</span></a>
     <a class="nav-link" href="reproduccion.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 3"/></svg>Reproducción</a>
+    <a class="nav-link" href="nutricion.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 17c4-1 7-4 7-9V4l-4 1c-3 .8-5 3-5 6v6z"/><path d="M10 17c-3-1-5-3-5-6"/></svg>Nutrición</a>
     <a class="nav-link" href="lotes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>Lotes &amp; Potreros</a>
     <div class="nav-group">Salud</div>
     <a class="nav-link" href="salud.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>Salud &amp; Tratamientos</a>
@@ -235,6 +236,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
         <div class="big" id="rot-count">—</div>
         <div class="unit">lotes por rotar</div>
         <div class="agenda-list" id="rot-list"></div>
+      </div>
+      <div class="agenda-card">
+        <h4><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="var(--teal)" stroke-width="1.8"><path d="M10 17c4-1 7-4 7-9V4l-4 1c-3 .8-5 3-5 6v6z"/><path d="M10 17c-3-1-5-3-5-6"/></svg>🌾 Alimentación pendiente</h4>
+        <div class="big" id="alim-count">—</div>
+        <div class="unit">lotes sin confirmar hoy</div>
+        <div class="agenda-list" id="alim-list"></div>
+        <a href="nutricion.html" style="display:inline-block;margin-top:10px;font-size:11px;font-weight:600;color:var(--teal);text-decoration:none">Ver nutrición →</a>
       </div>
     </div>
   </div>
@@ -330,9 +338,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     try { var r = await window.DB.getTratamientos(FINCA_ID, true); tratamientos = (r && r.data) || []; } catch(e){}
     try { var r2 = await window.DB.getPesajes(FINCA_ID); pesajes = (r2 && r2.data) || []; } catch(e){}
     try { var r3 = await window.DB.getEventos(FINCA_ID, 100); eventos = (r3 && r3.data) || []; } catch(e){}
+    var regAlim = [];
+    try { var rA = await window.DB.getRegistrosAlimentacion(FINCA_ID, todayISO()); regAlim = (rA && rA.data) || []; } catch(e){}
 
     renderAlertas(animales, lotes, gestantes, tratamientos, hoy, manana, en7);
     renderAgenda(animales, lotes, pesajes, hoy);
+    renderAlimentacion(animales, lotes, regAlim);
     renderRegistros(eventos, hoy);
   }
 
@@ -423,6 +434,25 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     document.getElementById('rot-list').innerHTML = rot.length
       ? rot.map(function(l){var d=diffDias(hoy,new Date(l.fecha_inicio_pastoreo+'T00:00:00'));return '<div class="agenda-row"><b>'+esc(l.nombre)+'</b><span>'+d+'/'+(l.dias_pastoreo_objetivo||7)+' días</span></div>';}).join('')
       : '<div class="agenda-none">Sin rotaciones pendientes</div>';
+  }
+
+  // ── B2) Alimentación pendiente hoy ──
+  function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function renderAlimentacion(animales, lotes, regAlim){
+    var cEl=document.getElementById('alim-count'), lEl=document.getElementById('alim-list');
+    if(!cEl||!lEl) return;
+    var loteName={}; lotes.forEach(function(l){ loteName[l.id]=l.nombre; });
+    // lotes con animales activos
+    var conAnimales={};
+    animales.forEach(function(a){ var k=a.lote_actual_id||'__none__'; if(!conAnimales[k]) conAnimales[k]={id:a.lote_actual_id||null, nombre:loteName[a.lote_actual_id]||'Sin lote', count:0}; conAnimales[k].count++; });
+    // confirmados hoy
+    var confirmados={};
+    (regAlim||[]).forEach(function(r){ if(r.confirmado) confirmados[(r.lote_id||'__none__')]=true; });
+    var pend=Object.keys(conAnimales).filter(function(k){ return !confirmados[k]; }).map(function(k){ return conAnimales[k]; });
+    cEl.textContent=pend.length;
+    lEl.innerHTML=pend.length
+      ? pend.map(function(l){ return '<div class="agenda-row"><b>'+esc(l.nombre)+'</b><span>'+l.count+' 🐑</span></div>'; }).join('')
+      : '<div class="agenda-none">Todos confirmados ✅</div>';
   }
 
   // ── D) Mis registros de hoy ──

@@ -386,6 +386,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div class="nav-group">Ganadería</div>
     <a class="nav-link" href="animales.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Animales<span class="nav-badge">470</span></a>
     <a class="nav-link" href="reproduccion.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 3"/></svg>Reproducción</a>
+    <a class="nav-link" href="nutricion.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 17c4-1 7-4 7-9V4l-4 1c-3 .8-5 3-5 6v6z"/><path d="M10 17c-3-1-5-3-5-6"/></svg>Nutrición</a>
     <a class="nav-link" href="lotes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>Lotes &amp; Potreros</a>
     <div class="nav-group">Salud</div>
     <a class="nav-link" href="salud.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>Salud &amp; Tratamientos</a>
@@ -1355,7 +1356,7 @@ function renderAnalisisCausas(bajas){
         const causa=dc.causa_muerte||b.causa||'—';
         const dias=(dc.dias_evolucion!=null&&dc.dias_evolucion!=='')?dc.dias_evolucion:'—';
         const trat=dc.tenia_tratamiento_previo===true?'Sí':dc.tenia_tratamiento_previo===false?'No':'—';
-        const lote=_loteName(b.animales&&b.animales.lote_id);
+        const lote=_loteName(b.animales&&b.animales.lote_actual_id);
         return '<tr><td '+td+'>'+_esc(fTxt)+'</td><td '+td+'><strong>'+_esc(cod)+'</strong></td><td '+td+'>'+_esc(causa)+'</td><td '+td+'>'+_esc(dias)+'</td><td '+td+'>'+trat+'</td><td '+td+'>'+_esc(lote)+'</td></tr>';
       }).join('');
       elTab.innerHTML='<table style="width:100%;border-collapse:collapse;min-width:560px">'
