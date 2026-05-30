@@ -10,10 +10,16 @@
   "orientation": "portrait-primary",
   "icons": [
     {
+      "src": "icons/icon-laaamb.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
       "src": "icons/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ]
 }

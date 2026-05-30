@@ -33,6 +33,7 @@ const STATIC_ASSETS = [
   './farm-selector.js',
   './manifest.json',
   './icons/icon.svg',
+  './icons/icon-laaamb.jpg',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
 ];
 
