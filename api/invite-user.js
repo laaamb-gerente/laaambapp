@@ -79,7 +79,7 @@ export default async function handler(req, res) {
     }
 
     // ── 3. Verificar que el llamador sea gerente o administrador ─
-    const perfilResp = await fetch(
+    const rolResp = await fetch(
       `${supabaseUrl}/rest/v1/perfiles?id=eq.${caller.id}&select=rol`,
       {
         headers: {
@@ -88,10 +88,10 @@ export default async function handler(req, res) {
         }
       }
     );
-    if (!perfilResp.ok) {
+    if (!rolResp.ok) {
       return res.status(403).json({ error: 'No se pudo verificar el rol del llamador' });
     }
-    const perfiles = await perfilResp.json();
+    const perfiles = await rolResp.json();
     const callerRol = Array.isArray(perfiles) && perfiles[0] ? perfiles[0].rol : null;
     if (callerRol !== 'gerente' && callerRol !== 'administrador') {
       return res.status(403).json({ error: 'No autorizado: se requiere rol gerente o administrador' });
