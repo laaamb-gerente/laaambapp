@@ -120,7 +120,7 @@ ${enfoque}`;
       body: JSON.stringify({
         messages,
         system,
-        model: 'claude-sonnet-4-20250514'
+        model: 'claude-opus-4-5'
       })
     });
     const data = await res.json();
