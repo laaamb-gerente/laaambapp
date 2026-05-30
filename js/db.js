@@ -23,10 +23,19 @@ window.DB = {
     return await window._sb.from('animales').select('*').eq('id', id).single();
   },
   async saveAnimal(animal) {
-    if (animal.id) {
-      return await window._sb.from('animales').update({...animal, updated_at: new Date()}).eq('id', animal.id).select().single();
+    const res = animal.id
+      ? await window._sb.from('animales').update({...animal, updated_at: new Date()}).eq('id', animal.id).select().single()
+      : await window._sb.from('animales').insert(animal).select().single();
+    // Si falla por red, encolar para sync posterior
+    if (res.error && !navigator.onLine && window.OfflineDB) {
+      await window.OfflineDB.encolar({
+        tabla: 'animales',
+        accion: animal.id ? 'update' : 'insert',
+        datos: animal
+      });
+      return { data: animal, error: null, offline: true };
     }
-    return await window._sb.from('animales').insert(animal).select().single();
+    return res;
   },
   async deleteAnimal(id) {
     return await window._sb.from('animales').update({ estado: 'descartado', updated_at: new Date() }).eq('id', id);
@@ -59,7 +68,17 @@ window.DB = {
     return await window._sb.from('eventos').select('*').eq('animal_id', animal_id).order('fecha', { ascending: false });
   },
   async saveEvento(evento) {
-    return await window._sb.from('eventos').insert(evento).select().single();
+    const res = await window._sb.from('eventos').insert(evento).select().single();
+    // Si falla por red, encolar para sync posterior
+    if (res.error && !navigator.onLine && window.OfflineDB) {
+      await window.OfflineDB.encolar({
+        tabla: 'eventos',
+        accion: 'insert',
+        datos: evento
+      });
+      return { data: evento, error: null, offline: true };
+    }
+    return res;
   },
 
   // ── MEDICAMENTOS ─────────────────────────────────────
@@ -97,6 +116,15 @@ window.DB = {
         peso_actual: p.peso,
         updated_at: new Date()
       }).eq('id', p.animal_id);
+    }
+    // Si falla por red, encolar para sync posterior
+    if (error && !navigator.onLine && window.OfflineDB) {
+      await window.OfflineDB.encolar({
+        tabla: 'pesajes',
+        accion: 'insert',
+        datos: p
+      });
+      return { data: p, error: null, offline: true };
     }
     return { data, error };
   },

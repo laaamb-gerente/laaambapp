@@ -102,23 +102,25 @@ ${enfoque}`;
     return respuesta;
   },
 
-  // ── Claude (Anthropic) — mismo endpoint ya integrado ──
+  // ── Base de la API según el host ──────────────────────
+  // En Vercel/localhost usamos rutas relativas (/api/chat).
+  // En GitHub Pages apuntamos al proxy serverless en Vercel.
+  _apiBase() {
+    return (window.location.hostname.includes('vercel.app') ||
+            window.location.hostname === 'localhost')
+      ? ''
+      : 'https://laaambapp.vercel.app';
+  },
+
+  // ── Claude (Anthropic) vía proxy serverless ───────────
   async _askClaude(system, messages) {
-    const headers = { 'Content-Type': 'application/json' };
-    // Si hay API key disponible (configurada en Vercel/env), usarla.
-    if (window.ANTHROPIC_API_KEY) {
-      headers['x-api-key'] = window.ANTHROPIC_API_KEY;
-      headers['anthropic-version'] = '2023-06-01';
-      headers['anthropic-dangerous-direct-browser-access'] = 'true';
-    }
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(this._apiBase() + '/api/chat', {
       method: 'POST',
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
+        messages,
         system,
-        messages
+        model: 'claude-sonnet-4-20250514'
       })
     });
     const data = await res.json();
@@ -126,33 +128,32 @@ ${enfoque}`;
       return data.content.map(b => b.text || '').join('') || 'Sin respuesta.';
     }
     if (data && data.error) {
-      throw new Error(data.error.message || 'Error de la API de Claude');
+      throw new Error((data.error && data.error.message) || data.error || 'Error de la API de Claude');
     }
     return 'Sin respuesta.';
   },
 
-  // ── Grok (xAI) ────────────────────────────────────────
+  // ── Grok (xAI) vía proxy serverless ───────────────────
   async _askGrok(system, messages) {
-    if (!window.GROK_API_KEY) {
-      throw new Error('Grok no está configurado todavía. Configura tu API key de xAI en Vercel.');
+    // Grok solo funciona donde el proxy tiene la GROK_API_KEY (Vercel)
+    // o si se inyectó window.GROK_API_KEY localmente.
+    if (!window.GROK_API_KEY &&
+        !window.location.hostname.includes('vercel.app') &&
+        window.location.hostname !== 'localhost') {
+      return 'Grok disponible próximamente. Configura GROK_API_KEY en Vercel.';
     }
-    const res = await fetch('https://api.x.ai/v1/chat/completions', {
+    const res = await fetch(this._apiBase() + '/api/chat-grok', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + window.GROK_API_KEY
-      },
-      body: JSON.stringify({
-        model: 'grok-3-mini',
-        messages: [{ role: 'system', content: system }].concat(messages)
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, system })
     });
     const data = await res.json();
+    // Formato xAI es OpenAI-compatible
     if (data && data.choices && data.choices[0]) {
       return data.choices[0].message?.content || 'Sin respuesta.';
     }
     if (data && data.error) {
-      throw new Error((data.error && data.error.message) || 'Error de la API de Grok');
+      throw new Error((data.error && data.error.message) || data.error || 'Error de la API de Grok');
     }
     return 'Sin respuesta.';
   },
@@ -160,5 +161,10 @@ ${enfoque}`;
   // ── Utilidades ────────────────────────────────────────
   reset() { this._historial = []; },
   getHistorial() { return this._historial.slice(); },
-  grokDisponible() { return !!window.GROK_API_KEY; }
+  grokDisponible() {
+    // Disponible si hay key local o si corremos donde el proxy la tiene.
+    return !!window.GROK_API_KEY ||
+      window.location.hostname.includes('vercel.app') ||
+      window.location.hostname === 'localhost';
+  }
 };

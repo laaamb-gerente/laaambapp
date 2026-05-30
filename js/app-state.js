@@ -50,6 +50,12 @@ window.AppState = {
         detail: { source: 'supabase' }
       }));
 
+      // Guardar datos en IndexedDB como cache offline
+      if (window.OfflineDB) {
+        window.OfflineDB.guardar('animales', this.animales).catch(() => {});
+        window.OfflineDB.guardar('lotes', this.lotes).catch(() => {});
+      }
+
       // Marcar AppData para que use AppState como fuente
       if (window.AppData) {
         window.AppData._useSupabase = true;
@@ -63,7 +69,22 @@ window.AppState = {
     }
   },
 
-  _loadFromLocalStorage() {
+  async _loadFromLocalStorage() {
+    // Intentar cargar desde IndexedDB antes que localStorage
+    if (window.OfflineDB) {
+      try {
+        const animales = await window.OfflineDB.leer('animales');
+        if (animales?.length > 0) {
+          this.animales = animales;
+          this.lotes = await window.OfflineDB.leer('lotes');
+          this._loaded = true;
+          document.dispatchEvent(new CustomEvent('appstate:ready', {
+            detail: { source: 'indexeddb' }
+          }));
+          return;
+        }
+      } catch(e) {}
+    }
     try {
       const d = JSON.parse(localStorage.getItem('laaamb_data') || '{}');
       this.finca = d.finca || null;
