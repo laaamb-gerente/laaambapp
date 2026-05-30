@@ -391,6 +391,19 @@ window.DB = {
       .order('fecha_hora', { ascending: false });
   },
 
+  // ── METAS OKR ─────────────────────────────────────────
+  async getOkrMetas(finca_id) {
+    return await window._sb.from('okr_metas')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .order('departamento');
+  },
+  async saveOkrMetas(rows) {
+    return await window._sb.from('okr_metas')
+      .upsert(rows, { onConflict: 'finca_id,departamento,clave' })
+      .select();
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();

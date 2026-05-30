@@ -177,19 +177,11 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- Supabase JS SDK -->
-<!-- Sentry: monitoreo de errores (DSN placeholder — reemplazar por el real) -->
-<script src="https://browser.sentry-cdn.com/7.120.0/bundle.min.js" crossorigin="anonymous"></script>
-<script>
-  if (window.Sentry) Sentry.init({
-    dsn: 'https://PLACEHOLDER@sentry.io/PROJECT_ID',
-    environment: location.hostname.includes('localhost') ? 'development' : 'production',
-    tracesSampleRate: 0.2,
-    beforeSend(event) {
-      if (event.exception?.values?.[0]?.type === 'NetworkError') return null;
-      return event;
-    }
-  });
-</script>
+<!-- Sentry: monitoreo de errores -->
+<script
+  src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js"
+  crossorigin="anonymous"
+></script>
 <script src="js/error-handler.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- LAAAMBAPP: cliente y capa de datos -->
@@ -384,6 +376,18 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
           <button class="btn btn-primary btn-sm" onclick="guardarConfigProduccion()">Guardar configuración</button>
           <span id="cfg-status" style="font-size:11px;color:var(--text3)"></span>
         </div>
+      </div>
+    </div>
+
+    <!-- METAS OKR -->
+    <div class="section-label" id="metas-okr">🎯 Metas OKR</div>
+    <div class="card">
+      <div class="card-h">
+        <div><div class="card-title">Objetivos y resultados clave por área</div><div class="card-sub">Metas usadas en la página OKR para calcular avances. Se guardan por finca.</div></div>
+        <button class="btn btn-primary btn-sm" onclick="guardarMetasOKR()">Guardar metas</button>
+      </div>
+      <div class="card-body" id="metas-okr-body">
+        <div style="color:var(--text3);font-size:12px;padding:8px">Cargando metas…</div>
       </div>
     </div>
 
@@ -1084,6 +1088,89 @@ async function guardarConfigProduccion(){
   }
 }
 
+// ── METAS OKR ────────────────────────────────────────────────────────────────
+// Estructura de KRs agrupados por departamento. clave = columna en okr_metas.
+var OKR_DEPTS = [
+  { id:'levante', label:'Levante', krs:[
+    { clave:'gdp_diario', label:'GDP diario meta', unidad:'g/día', valor:200, step:1 },
+    { clave:'peso_sacrificio', label:'Peso objetivo sacrificio', unidad:'kg', valor:48, step:0.1 },
+    { clave:'dias_nacimiento_sacrificio', label:'Días nacimiento→sacrificio', unidad:'días', valor:180, step:1 }
+  ]},
+  { id:'reproduccion', label:'Reproducción', krs:[
+    { clave:'fertilidad', label:'Meta fertilidad', unidad:'%', valor:85, step:0.1 },
+    { clave:'intervalo_partos', label:'Intervalo entre partos', unidad:'meses', valor:7, step:0.1 },
+    { clave:'prolificidad', label:'Prolificidad meta', unidad:'crías/parto', valor:1.8, step:0.01 }
+  ]},
+  { id:'sanidad', label:'Sanidad', krs:[
+    { clave:'mortalidad_total', label:'Mortalidad total meta', unidad:'%', valor:3, step:0.1 },
+    { clave:'mortalidad_crias', label:'Mortalidad crías meta', unidad:'%', valor:5, step:0.1 }
+  ]},
+  { id:'pastoreo', label:'Pastoreo', krs:[
+    { clave:'carga_instantanea', label:'Carga instantánea objetivo', unidad:'kg/ha', valor:200000, step:1000 },
+    { clave:'dias_descanso', label:'Días descanso potrero', unidad:'días', valor:45, step:1 }
+  ]},
+  { id:'financiero', label:'Financiero', krs:[
+    { clave:'ingreso_por_animal', label:'Ingreso por animal', unidad:'COP', valor:750000, step:10000 },
+    { clave:'margen_bruto', label:'Margen bruto meta', unidad:'%', valor:35, step:0.1 },
+    { clave:'costo_por_kg', label:'Costo por kg producido', unidad:'COP/kg', valor:8000, step:100 }
+  ]}
+];
+function _okrInputId(dep, clave){ return 'okrm-'+dep+'-'+clave; }
+function renderMetasOKR(){
+  var body = document.getElementById('metas-okr-body');
+  if(!body) return;
+  var html = '';
+  OKR_DEPTS.forEach(function(dep){
+    html += '<div class="section-label" style="margin-top:14px">'+dep.label+'</div>';
+    html += '<div class="form-grid">';
+    dep.krs.forEach(function(kr){
+      html += '<div class="fg"><label class="fl">'+kr.label+' <span style="color:var(--text3)">('+kr.unidad+')</span></label>'
+        + '<input class="fi" type="number" step="'+kr.step+'" id="'+_okrInputId(dep.id, kr.clave)+'" '
+        + 'data-dep="'+dep.id+'" data-clave="'+kr.clave+'" data-unidad="'+kr.unidad+'" data-label="'+kr.label.replace(/"/g,"&quot;")+'" '
+        + 'value="'+kr.valor+'"></div>';
+    });
+    html += '</div>';
+  });
+  body.innerHTML = html;
+}
+async function cargarMetasOKR(){
+  renderMetasOKR();
+  if(!window._sb) return;
+  try{
+    var r = await window._sb.from('okr_metas').select('*').eq('finca_id', FINCA_ID_AJ);
+    if(r.error) throw r.error;
+    (r.data||[]).forEach(function(m){
+      var el = document.getElementById(_okrInputId(m.departamento, m.clave));
+      if(el) el.value = m.valor;
+    });
+  }catch(e){ console.warn('[OKR metas] usando defaults:', e.message); }
+}
+async function guardarMetasOKR(){
+  if(!window._sb){ toast('Supabase no disponible','err'); return; }
+  var rows = [];
+  document.querySelectorAll('#metas-okr-body input[data-clave]').forEach(function(el){
+    var v = parseFloat(el.value);
+    if(isNaN(v)) return;
+    rows.push({
+      finca_id: FINCA_ID_AJ,
+      departamento: el.getAttribute('data-dep'),
+      clave: el.getAttribute('data-clave'),
+      valor: v,
+      unidad: el.getAttribute('data-unidad'),
+      label: el.getAttribute('data-label'),
+      updated_at: new Date().toISOString()
+    });
+  });
+  if(!rows.length){ toast('No hay metas para guardar','err'); return; }
+  try{
+    var r = await window._sb.from('okr_metas').upsert(rows, { onConflict: 'finca_id,departamento,clave' });
+    if(r.error) throw r.error;
+    toast('Metas OKR guardadas ('+rows.length+')');
+  }catch(e){
+    toast('Error al guardar metas: '+e.message,'err');
+  }
+}
+
 // ── INIT ─────────────────────────────────────────────────────────────────────
 (function init(){
   initTheme();
@@ -1094,6 +1181,8 @@ async function guardarConfigProduccion(){
   if(window._sb) siigoInit(); else document.addEventListener('appstate:ready', siigoInit);
   // Configuración de producción
   if(window._sb) cargarConfigProduccion(); else document.addEventListener('appstate:ready', cargarConfigProduccion);
+  // Metas OKR
+  if(window._sb) cargarMetasOKR(); else document.addEventListener('appstate:ready', cargarMetasOKR);
   // FIX: renderizar fincas al cargar la página
   if(typeof AppData !== 'undefined'){
     renderFincas();

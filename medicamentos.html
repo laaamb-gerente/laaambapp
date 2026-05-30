@@ -180,19 +180,11 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 }
 </style>
 <!-- Supabase JS SDK -->
-<!-- Sentry: monitoreo de errores (DSN placeholder — reemplazar por el real) -->
-<script src="https://browser.sentry-cdn.com/7.120.0/bundle.min.js" crossorigin="anonymous"></script>
-<script>
-  if (window.Sentry) Sentry.init({
-    dsn: 'https://PLACEHOLDER@sentry.io/PROJECT_ID',
-    environment: location.hostname.includes('localhost') ? 'development' : 'production',
-    tracesSampleRate: 0.2,
-    beforeSend(event) {
-      if (event.exception?.values?.[0]?.type === 'NetworkError') return null;
-      return event;
-    }
-  });
-</script>
+<!-- Sentry: monitoreo de errores -->
+<script
+  src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js"
+  crossorigin="anonymous"
+></script>
 <script src="js/error-handler.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- LAAAMBAPP: cliente y capa de datos -->
