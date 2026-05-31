@@ -213,6 +213,7 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .repo-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;background:var(--surface)}
 .repo-row.low{border-left:3px solid var(--orange)}
 .repo-row.venc{border-left:3px solid var(--red)}
+.empty-state{grid-column:1/-1;text-align:center;padding:48px 20px;background:var(--bg3);border:1px dashed var(--border2);border-radius:var(--r2)}
 </style>
 <!-- Supabase JS SDK -->
 <!-- Sentry: monitoreo de errores -->
@@ -463,18 +464,9 @@ function setEl(id, v) { var e = document.getElementById(id); if (e) e.textConten
 function setElHTML(id, v) { var e = document.getElementById(id); if (e) e.innerHTML = v; }
 
 // ── Estado ──────────────────────────────────────────────────────────────────
-let MEDS = [
-  {nombre:'Ivermectina 1%',principio:'Ivermectina',cat:'Antiparasitario',pres:'Inyectable',lote:'IV-2024-341',stock:340,max:500,dosis:'0.2 mL/10kg SC',retiro:14,venc:'2026-08-12',costo:85000},
-  {nombre:'Oxitetraciclina 20%',principio:'Oxitetraciclina',cat:'Antibiótico',pres:'Inyectable',lote:'OX-A2341',stock:180,max:250,dosis:'5 mL/10kg IM',retiro:28,venc:'2025-04-18',costo:42000},
-  {nombre:'Closantel 10%',principio:'Closantel',cat:'Antiparasitario',pres:'Oral (líquido)',lote:'CL-1102',stock:62,max:100,dosis:'5 mg/kg VO',retiro:42,venc:'2025-04-13',costo:28000},
-  {nombre:'Florfenicol 30%',principio:'Florfenicol',cat:'Antibiótico',pres:'Inyectable',lote:'FL-0887',stock:420,max:500,dosis:'0.67 mL/10kg SC',retiro:0,venc:'2027-01-20',costo:65000},
-  {nombre:'Vitamina ADE',principio:'Vit. A+D+E',cat:'Vitamina',pres:'Inyectable',lote:'VIT-B0921',stock:195,max:250,dosis:'0.05 mL/kg IM',retiro:0,venc:'2025-04-24',costo:18000},
-  {nombre:'Oxfendazol 10%',principio:'Oxfendazol',cat:'Antiparasitario',pres:'Oral (líquido)',lote:'OXF-4421',stock:850,max:1000,dosis:'5 mg/kg VO',retiro:7,venc:'2026-11-30',costo:32000},
-  {nombre:'Meloxicam 5%',principio:'Meloxicam',cat:'Antiinflamatorio',pres:'Inyectable',lote:'MEL-2201',stock:280,max:500,dosis:'0.5 mg/kg SC',retiro:0,venc:'2026-06-15',costo:55000},
-  {nombre:'Vitamina B12',principio:'Cianocobalamina',cat:'Vitamina',pres:'Inyectable',lote:'B12-0341',stock:340,max:500,dosis:'0.2 mL/10kg IM',retiro:0,venc:'2027-03-10',costo:12000},
-  {nombre:'Vacuna Clostridial',principio:'Multi-bacterinas',cat:'Vacuna',pres:'Vacuna',lote:'VAC-CL-2401',stock:120,max:200,dosis:'2 mL SC',retiro:0,venc:'2025-09-15',costo:8500},
-  {nombre:'Penicilina G',principio:'Bencilpenicilina',cat:'Antibiótico',pres:'Inyectable',lote:'PEN-0921',stock:480,max:500,dosis:'22,000 UI/kg IM',retiro:14,venc:'2026-03-20',costo:15000},
-];
+// Inventario real (se llena desde AppData/Supabase). SIN datos demo:
+// si no hay medicamentos registrados se muestra un estado vacío honesto.
+let MEDS = [];
 let filteredMeds = [...MEDS];
 let activeFilters = {q:'',cat:'',venc:'',pres:''};
 
@@ -492,6 +484,29 @@ function renderMeds(){
   const grid = document.getElementById('meds-grid');
   const PRES_ICO = {Inyectable:'💉','Oral (líquido)':'🧪','Oral (sólido)':'💊',Vacuna:'🩺',Tópico:'🧴'};
   const PRES_CLASS = {Inyectable:'inyectable','Oral (líquido)':'oral','Oral (sólido)':'oral',Vacuna:'vacuna',Tópico:'topico'};
+  // ── Estado vacío honesto (sin datos demo) ──
+  if(!MEDS.length){
+    grid.innerHTML = '<div class="empty-state">'
+      +'<div style="font-size:34px;margin-bottom:8px">💊</div>'
+      +'<p style="font-size:14px;font-weight:600;color:var(--text)">Sin medicamentos registrados.</p>'
+      +'<p style="font-size:12px;color:var(--text3);margin-top:4px">Agrega tu primer medicamento con el botón <strong>“+ Agregar medicamento”</strong>.</p>'
+      +'</div>';
+    setEl('filter-count', '0 productos');
+    setEl('sb-count', 0);
+    setEl('ph-sub', 'Sin medicamentos registrados');
+    setElHTML('alertas-venc', '');
+    if(typeof fillCalcSelect==='function') fillCalcSelect();
+    if(typeof renderKardex==='function') renderKardex();
+    if(typeof renderMetricas==='function') renderMetricas();
+    return;
+  }
+  if(!filteredMeds.length){
+    grid.innerHTML = '<div class="empty-state"><p style="font-size:13px;color:var(--text3)">Ningún medicamento coincide con los filtros.</p></div>';
+    setEl('filter-count', '0 de ' + MEDS.length + ' productos');
+    renderAlertas();
+    if(typeof fillCalcSelect==='function') fillCalcSelect();
+    return;
+  }
   grid.innerHTML = filteredMeds.map(function(m){
     const dias = diasVenc(m.venc);
     const vs = vencStatus(m.venc);
