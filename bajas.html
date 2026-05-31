@@ -31,7 +31,7 @@
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=25"></script>
+<script src="js/db.js?v=26"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
@@ -510,7 +510,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <div class="card">
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>Fecha</th><th>Animal</th><th>Categoría</th><th>Causa</th><th>Edad</th><th>Peso est.</th><th>Lote</th><th>Pérdida econ.</th><th>Colaborador</th><th>Necropsia</th></tr></thead>
+            <thead><tr><th>Fecha</th><th>Animal</th><th>Categoría</th><th>Causa</th><th>Foto</th><th>Edad</th><th>Peso est.</th><th>Lote</th><th>Pérdida econ.</th><th>Colaborador</th><th>Necropsia</th></tr></thead>
             <tbody id="muertes-tbody"></tbody>
           </table>
         </div>
@@ -785,6 +785,19 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <div class="fg" id="muerte-necropsia-wrap" style="display:none;margin-top:6px"><label class="fl">Hallazgos de necropsia</label>
         <textarea class="fi" id="muerte-hallazgos" placeholder="Describe los hallazgos del examen post-mortem…"></textarea>
       </div>
+
+      <!-- Campo 7 · Foto de evidencia OBLIGATORIA -->
+      <div class="fg" id="campo-foto-muerte" style="margin-top:8px">
+        <label class="fl">📷 Foto de evidencia — OBLIGATORIA</label>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px;margin-bottom:5px">La foto debe mostrar al animal muerto con la chapeta (arete) visible. Muerte sin foto no se acepta en el sistema.</div>
+        <input class="fi" type="file" id="muerte-foto" accept="image/*" capture="environment" onchange="previewFotoMuerte(this)">
+        <div id="muerte-foto-preview" style="display:none;margin-top:6px">
+          <img id="muerte-foto-img" style="max-height:120px;border-radius:6px;border:1px solid var(--border)" alt="evidencia">
+          <span id="muerte-foto-nombre" style="font-size:10px;color:var(--text2);margin-left:6px"></span>
+        </div>
+        <div id="muerte-foto-error" style="display:none;color:var(--red);font-size:11px;font-weight:600;margin-top:6px">⚠️ La foto es obligatoria para registrar una muerte.</div>
+      </div>
+      <div id="muerte-subiendo" style="display:none;font-size:11px;color:var(--amber);margin-top:8px">⏳ Subiendo foto… no cierres la ventana.</div>
     </div>
 
     <!-- Campos venta -->
@@ -903,21 +916,28 @@ const TIPO_BADGE={'Sacrificio':'b-green','Pie de cría':'b-teal','Reproductor':'
 
 function renderMuertes(data){
   if(!data||!data.length){
-    document.getElementById('muertes-tbody').innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text2);padding:24px">Sin bajas registradas — usa los botones para registrar</td></tr>';
+    document.getElementById('muertes-tbody').innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--text2);padding:24px">Sin bajas registradas — usa los botones para registrar</td></tr>';
     return;
   }
-  document.getElementById('muertes-tbody').innerHTML=data.map(m=>`
+  document.getElementById('muertes-tbody').innerHTML=data.map(m=>{
+    const _safe=m.foto_url?String(m.foto_url).replace(/'/g,'%27'):'';
+    const _fotoCell=m.foto_url
+      ? `<img src="${m.foto_url}" onclick="abrirLightbox('${_safe}','Muerte · #${m.id}')" style="width:40px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;border:1px solid var(--border)">`
+      : `<span style="color:var(--red);font-size:11px;font-weight:600">Sin foto</span>`;
+    return `
     <tr><td class="td-muted">${m.fecha}</td>
     <td class="td-mono">#${m.id}</td>
     <td><span class="badge b-gray">${m.cat}</span></td>
     <td><span class="badge ${CAUSA_BADGE[m.causa]||'b-gray'}">${m.causa}</span></td>
+    <td>${_fotoCell}</td>
     <td class="td-muted">${m.edad}</td>
     <td class="td-muted">${m.peso} kg</td>
     <td class="td-muted">${m.lote}</td>
     <td style="color:var(--red);font-weight:600">${m.perdida>0?'$'+Math.round(m.perdida/1000)+'K':'—'}</td>
     <td class="td-muted">${m.colab}</td>
     <td><span class="badge ${m.necropsia==='Sí'?'b-teal':'b-gray'}">${m.necropsia}</span></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function renderVentas(data){
@@ -1002,13 +1022,40 @@ function onNecropsiaChange(){
   document.getElementById('muerte-necropsia-wrap').style.display=c?'block':'none';
 }
 
+// ── PASO 4B — Preview de la foto de evidencia de muerte ──
+function previewFotoMuerte(input){
+  const file=input.files&&input.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const img=document.getElementById('muerte-foto-img');
+    if(img) img.src=e.target.result;
+    const nom=document.getElementById('muerte-foto-nombre');
+    if(nom) nom.textContent=file.name;
+    const prev=document.getElementById('muerte-foto-preview');
+    if(prev) prev.style.display='block';
+    const err=document.getElementById('muerte-foto-error');
+    if(err) err.style.display='none';
+  };
+  reader.readAsDataURL(file);
+}
+
+// ── PASO 5 — Lightbox compartido (también definido en reproduccion.html) ──
+function abrirLightbox(url, titulo){
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;';
+  overlay.innerHTML='<p style="color:white;font-size:0.9rem;opacity:0.8">'+(titulo||'')+'</p><img src="'+url+'" style="max-width:90vw;max-height:80vh;border-radius:8px;object-fit:contain;"><p style="color:white;opacity:0.6;font-size:0.8rem">Toca para cerrar</p>';
+  overlay.onclick=function(){overlay.remove();};
+  document.body.appendChild(overlay);
+}
+
 function calcVenta(){
   const p=parseFloat(document.getElementById('v-peso').value)||0;
   const pr=parseFloat(document.getElementById('v-precio').value)||0;
   if(p&&pr) document.getElementById('v-total').value='$'+Math.round(p*pr).toLocaleString('es-CO');
 }
 
-function saveBaja(){
+async function saveBaja(){
   const animalId=document.getElementById('baja-animal')?.value?.trim()||document.querySelectorAll('#modal-baja input.fi')[0]?.value?.trim()||'';
   if(typeof validateForm!=='undefined'){
     validateForm([
@@ -1025,7 +1072,7 @@ function saveBaja(){
   const obs=document.querySelector('#modal-baja textarea')?.value||'';
 
   // ── PASO 3/4 — Información clínica de la muerte ──
-  let datosClinicos=null, causa='—';
+  let datosClinicos=null, causa='—', fotoFileMuerte=null;
   if(tipo==='muerte'){
     const enf=document.querySelector('input[name="muerte-enf"]:checked')?.value||null; // si | no | nose
     const teniaTrat = enf==='si'?true : enf==='no'?false : null;
@@ -1033,6 +1080,16 @@ function saveBaja(){
     const causaSel=document.getElementById('muerte-causa')?.value||'';
     if(!causaSel){toast('Selecciona la causa de muerte','err');return;}
     causa=causaSel;
+    // FOTO OBLIGATORIA — bloquea el guardado si no se adjuntó.
+    fotoFileMuerte=document.getElementById('muerte-foto')?.files[0]||null;
+    if(!fotoFileMuerte){
+      const errEl=document.getElementById('muerte-foto-error');
+      if(errEl) errEl.style.display='block';
+      const campo=document.getElementById('campo-foto-muerte');
+      if(campo) campo.scrollIntoView({behavior:'smooth',block:'center'});
+      toast('La foto es obligatoria para registrar una muerte','err');
+      return;
+    }
     const fechaReal=document.getElementById('muerte-fecha-real')?.value||fecha;
     const signos=document.getElementById('muerte-signos')?.value?.trim()||'';
     const diasRaw=document.getElementById('muerte-dias')?.value;
@@ -1049,6 +1106,25 @@ function saveBaja(){
       necropsia:necropsia,
       hallazgos_necropsia:hallazgos
     };
+  }
+
+  // ── PASO 4D — Subir foto de evidencia de la muerte a Supabase Storage ──
+  let fotoUrlMuerte=null;
+  if(tipo==='muerte' && fotoFileMuerte && window.DB && window.DB.uploadEvidencia){
+    const subiendo=document.getElementById('muerte-subiendo');
+    if(subiendo) subiendo.style.display='block';
+    try{
+      const _codFoto=String(animalId).replace(/^#/,'').trim();
+      const path='bajas/a1b2c3d4-0000-0000-0000-000000000001/'+_codFoto+'_'+Date.now()+'.jpg';
+      fotoUrlMuerte=await window.DB.uploadEvidencia(fotoFileMuerte,path);
+      if(datosClinicos) datosClinicos.foto_url=fotoUrlMuerte;
+    }catch(err){
+      console.warn('[Bajas] uploadEvidencia muerte:',err&&err.message);
+      if(subiendo) subiendo.style.display='none';
+      toast('No se pudo subir la foto. Verifica tu conexión e intenta de nuevo','err');
+      return; // Muerte sin foto no se acepta: abortar el guardado.
+    }
+    if(subiendo) subiendo.style.display='none';
   }
 
   if(typeof AppData!=='undefined'){
@@ -1073,6 +1149,7 @@ function saveBaja(){
         registrado_por:colab
       };
       if(datosClinicos) _payload.datos_clinicos=datosClinicos;
+      if(fotoUrlMuerte) _payload.foto_evidencia_url=fotoUrlMuerte;
       window.DB.saveBaja(_payload).catch(err=>console.warn('[Bajas] saveBaja Supabase:',err&&err.message));
       const _estado=_tipoSb==='muerte'?'muerto':_tipoSb==='venta'?'vendido':'descartado';
       window.DB.saveAnimal({id:_a.id,estado:_estado}).catch(err=>console.warn('[Bajas] saveAnimal estado:',err&&err.message));
@@ -1087,7 +1164,7 @@ function saveBaja(){
     }
   }
 
-  MUERTES.unshift({fecha:fecha.split('-').reverse().join('/'),id:animalId,cat:'Animal',causa,edad:'—',peso,lote:'—',perdida:tipo==='muerte'?peso*15000:0,colab,necropsia:datosClinicos&&datosClinicos.necropsia?'Sí':'No'});
+  MUERTES.unshift({fecha:fecha.split('-').reverse().join('/'),id:animalId,cat:'Animal',causa,edad:'—',peso,lote:'—',perdida:tipo==='muerte'?peso*15000:0,colab,necropsia:datosClinicos&&datosClinicos.necropsia?'Sí':'No',foto_url:fotoUrlMuerte});
   renderMuertes(MUERTES);
   closeModal('modal-baja');
   toast('Baja registrada · Animal #'+animalId+' removido del inventario activo');
@@ -1209,7 +1286,8 @@ async function loadBajasFromSupabase(){
           fecha:fechaTxt, id:cod, cat:a.especie||'Animal',
           causa:b.causa||(b.tipo==='robo'?'Robo / Extravío':b.tipo==='descarte'?'Descarte':'—'),
           edad:'—', peso:parseFloat(b.peso_salida)||0, lote:'—',
-          perdida:0, colab:b.registrado_por||'—', necropsia:'No'
+          perdida:0, colab:b.registrado_por||'—', necropsia:'No',
+          foto_url:b.foto_evidencia_url||(b.datos_clinicos&&b.datos_clinicos.foto_url)||null
         });
       }
     });

@@ -480,6 +480,23 @@ window.DB = {
       .eq('id', receta.id).select().single();
   },
 
+  // ── EVIDENCIAS (Supabase Storage · bucket privado 'evidencias') ──
+  // Sube un archivo y devuelve una URL firmada con 1 año de validez.
+  async uploadEvidencia(file, path) {
+    const { data, error } = await window._sb.storage.from('evidencias')
+      .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+    if (error) throw error;
+    const { data: signed } = await window._sb.storage.from('evidencias')
+      .createSignedUrl(path, 365 * 24 * 3600);
+    return signed?.signedUrl || null;
+  },
+  // Regenera una URL firmada (1 año) a partir del path almacenado.
+  async getSignedUrl(path) {
+    const { data } = await window._sb.storage.from('evidencias')
+      .createSignedUrl(path, 365 * 24 * 3600);
+    return data?.signedUrl || null;
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();

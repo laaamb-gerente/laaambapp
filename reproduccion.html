@@ -31,7 +31,7 @@
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=25"></script>
+<script src="js/db.js?v=26"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
 <script src="js/copiloto.js"></script>
@@ -438,6 +438,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <button class="btn btn-ghost btn-sm" onclick="exportRepro()">↓ Exportar Excel</button>
       <button class="btn btn-ghost btn-sm" onclick="openModal('modal-monta')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg> Registrar monta</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('modal-parto')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><ellipse cx="10" cy="12" rx="4" ry="3"/><circle cx="13" cy="9.5" r="1.5"/><path d="M10 7v-2"/></svg> Registrar parto</button>
+      <button class="btn btn-wine btn-sm" onclick="abrirModalAborto()"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/></svg> Registrar aborto</button>
     </div>
   
       <div class="species-tabs" id="species-tabs">
@@ -454,6 +455,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div class="tn" onclick="switchTab(this,'t-partos')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><ellipse cx="10" cy="12" rx="4" ry="3"/><circle cx="13" cy="9.5" r="1.5"/><path d="M10 7v-2"/></svg>Partos</div>
     <div class="tn" onclick="switchTab(this,'t-ecografia')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 10h2l1.5-3 2 6 1.5-3H16"/></svg>Ecografías</div>
     <div class="tn" onclick="switchTab(this,'t-vacias')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg>Vacías</div>
+    <div class="tn" onclick="switchTab(this,'t-abortos')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/></svg>Abortos</div>
   </div>
 
   <div class="content">
@@ -578,6 +580,27 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
             <thead><tr><th>ID Animal</th><th>Raza</th><th>Edad</th><th>Ciclos vacía</th><th>Última monta</th><th>Reproductor</th><th>Condición corporal</th><th>Acción recomendada</th></tr></thead>
             <tbody id="vacias-tbody">
               <tr><td colspan="8" style="text-align:center;color:var(--text2);padding:24px">Sin ovejas vacías registradas — los resultados de ecografía "vacía" aparecerán aquí.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ABORTOS ══ -->
+    <div id="t-abortos" class="tab-pane" style="display:none">
+      <div class="g4" style="margin-bottom:16px">
+        <div class="kpi c-wine"><div class="kpi-label">Abortos este año</div><div class="kpi-val" id="ab-kpi-anio">--</div><div class="kpi-delta neu">Eventos registrados en el año</div></div>
+        <div class="kpi c-red"><div class="kpi-label">Tasa de abortos</div><div class="kpi-val" id="ab-kpi-tasa">--</div><div class="kpi-delta down">Sobre gestaciones confirmadas</div></div>
+        <div class="kpi c-amber"><div class="kpi-label">Causa más frecuente</div><div class="kpi-val" id="ab-kpi-causa" style="font-size:14px">--</div><div class="kpi-delta neu">Mayor recurrencia</div></div>
+        <div class="kpi c-orange"><div class="kpi-label">Pérdida estimada</div><div class="kpi-val" id="ab-kpi-perdida">--</div><div class="kpi-delta down">Valor cordero ref. $350.000</div></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div class="card-title">Registro de abortos</div><div class="card-sub" id="ab-count-label">—</div></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Fecha</th><th>Animal</th><th>Días gestación</th><th>Causa</th><th>Estado feto</th><th>Foto</th><th>Acciones</th></tr></thead>
+            <tbody id="abortos-tbody">
+              <tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">Sin abortos registrados — usa "Registrar aborto" para añadir el primero.</td></tr>
             </tbody>
           </table>
         </div>
@@ -802,6 +825,84 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="modal-foot">
     <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-ecografia-masiva')">Cancelar</button>
     <button class="btn btn-primary btn-sm" id="btn-confirm-eco" style="display:none" onclick="confirmEcoMasiva()">✓ Confirmar e importar</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL ABORTO ══ -->
+<div class="overlay" id="modal-aborto" onclick="if(event.target===this)closeModal('modal-aborto')">
+<div class="modal modal-md">
+  <div class="modal-head"><div class="modal-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14" style="vertical-align:middle"><line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/></svg> Registrar aborto</div><button class="modal-close" onclick="closeModal('modal-aborto')">✕</button></div>
+  <div class="modal-body">
+    <div class="form-section">Animal y fecha</div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Hembra (ID) *</label>
+        <select class="fi" id="ab-animal" onchange="abOnAnimalChange()"><option value="">— Selecciona la hembra —</option></select>
+        <div id="ab-monta-info" style="font-size:10px;color:var(--text2);margin-top:3px"></div>
+      </div>
+      <div class="fg"><label class="fl">Fecha del aborto *</label>
+        <input class="fi" type="date" id="ab-fecha" onchange="abRecalcDias()">
+        <div style="font-size:10px;color:var(--text2);margin-top:3px">Puede ser anterior a la fecha de registro</div>
+      </div>
+      <div class="fg"><label class="fl">Días de gestación al abortar</label>
+        <input class="fi" type="number" id="ab-dias" min="1" max="200" placeholder="Ej: 90">
+        <div style="font-size:10px;color:var(--text2);margin-top:3px">Se calcula automáticamente si hay monta; ajustable a mano</div>
+      </div>
+      <div class="fg"><label class="fl">Estado del feto</label>
+        <select class="fi" id="ab-feto"><option>Fresco</option><option>Macerado</option><option>Momificado</option><option>No recuperado</option><option>No aplica</option></select>
+      </div>
+    </div>
+    <div class="form-section">Causa</div>
+    <div class="fg"><label class="fl">Causa del aborto *</label>
+      <select class="fi" id="ab-causa" onchange="abOnCausaChange()">
+        <option value="">— Selecciona la causa —</option>
+        <optgroup label="Infecciosas">
+          <option>Brucelosis</option>
+          <option>Toxoplasmosis</option>
+          <option>Campilobacteriosis</option>
+          <option>Listeriosis</option>
+          <option>Fiebre Q</option>
+          <option>Enfermedad de Border</option>
+          <option>Causa infecciosa no identificada</option>
+        </optgroup>
+        <optgroup label="Nutricionales / Metabólicas">
+          <option>Toxemia de la preñez</option>
+          <option>Deficiencia nutricional severa</option>
+          <option>Hipocalcemia</option>
+        </optgroup>
+        <optgroup label="Traumáticas / Manejo">
+          <option>Trauma / golpe</option>
+          <option>Estrés por manejo</option>
+          <option>Hacinamiento</option>
+        </optgroup>
+        <optgroup label="Otras">
+          <option>Causa desconocida</option>
+          <option>Intoxicación</option>
+          <option>Malformación fetal</option>
+        </optgroup>
+      </select>
+    </div>
+    <div id="ab-brucelosis-alert" style="display:none;margin-top:10px;background:rgba(224,82,82,.12);border:2px solid var(--red);border-radius:var(--r);padding:12px 14px">
+      <div style="font-weight:800;color:var(--red);font-size:13px;margin-bottom:4px">🚨 REPORTE OBLIGATORIO AL ICA</div>
+      <div style="font-size:11.5px;color:var(--text1);line-height:1.5">La brucelosis es de <strong>declaración obligatoria</strong>. Debes notificar al ICA (Resolución ICA 3714/2015) y realizar pruebas serológicas al hato. Contacta tu médico veterinario.</div>
+    </div>
+    <div class="form-section">Evidencia y notas</div>
+    <div class="fg"><label class="fl">Observaciones</label>
+      <textarea class="fi" id="ab-obs" rows="2" placeholder="Hallazgos, contexto, antecedentes…"></textarea>
+    </div>
+    <div class="fg"><label class="fl">📷 Adjuntar foto del feto</label>
+      <input class="fi" type="file" id="ab-foto" accept="image/*" capture="environment" onchange="abPreviewFoto(this)">
+      <div style="font-size:10px;color:var(--text3);margin-top:3px">Opcional pero recomendada como evidencia clínica</div>
+      <div id="ab-foto-preview" style="display:none;margin-top:6px">
+        <img id="ab-foto-img" style="max-height:80px;border-radius:6px;border:1px solid var(--border)" alt="preview">
+        <span id="ab-foto-nombre" style="font-size:10px;color:var(--text2);margin-left:6px"></span>
+      </div>
+    </div>
+    <div id="ab-subiendo" style="display:none;font-size:11px;color:var(--amber);margin-top:8px">⏳ Subiendo foto… no cierres la ventana.</div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-aborto')">Cancelar</button>
+    <button class="btn btn-wine btn-sm" id="ab-btn-guardar" onclick="saveAborto()">Guardar aborto</button>
   </div>
 </div>
 </div>
@@ -1272,6 +1373,158 @@ function saveEco(){
   toast('Ecografía registrada · Estado de #'+animalId+' → '+resultado);
 }
 
+// ═══ ABORTOS ═══
+var ABORTOS = [];
+function abrirModalAborto(){
+  var sel=document.getElementById('ab-animal');
+  if(sel){
+    var AS=window.AppState;
+    var hembras=(AS&&AS.animales||[]).filter(function(a){return a.sexo==='hembra'&&a.estado==='activo';});
+    sel.innerHTML='<option value="">— Selecciona la hembra —</option>'+hembras.map(function(h){
+      return '<option value="'+(h.codigo||h.id)+'">'+(h.codigo||h.id)+(h.nombre?' — '+h.nombre:'')+'</option>';
+    }).join('');
+  }
+  var f=document.getElementById('ab-fecha'); if(f) f.value=new Date().toISOString().slice(0,10);
+  ['ab-dias','ab-obs'].forEach(function(id){var e=document.getElementById(id); if(e)e.value='';});
+  var causa=document.getElementById('ab-causa'); if(causa) causa.value='';
+  var feto=document.getElementById('ab-feto'); if(feto) feto.value='Fresco';
+  var foto=document.getElementById('ab-foto'); if(foto) foto.value='';
+  var prev=document.getElementById('ab-foto-preview'); if(prev) prev.style.display='none';
+  var info=document.getElementById('ab-monta-info'); if(info) info.textContent='';
+  var al=document.getElementById('ab-brucelosis-alert'); if(al) al.style.display='none';
+  var subiendo=document.getElementById('ab-subiendo'); if(subiendo) subiendo.style.display='none';
+  openModal('modal-aborto');
+}
+function abOnAnimalChange(){
+  var cod=document.getElementById('ab-animal')?.value;
+  var info=document.getElementById('ab-monta-info');
+  if(!cod){ if(info)info.textContent=''; return; }
+  var ctx=(typeof getMontaContext!=='undefined')?(getMontaContext(cod,{soloActiva:true})||getMontaContext(cod,{soloActiva:false})):null;
+  if(ctx&&ctx.fecha){
+    var fm=new Date(ctx.fecha);
+    var ref=document.getElementById('ab-fecha')?.value;
+    var hasta=ref?new Date(ref):new Date();
+    var dias=Math.max(0,Math.round((hasta-fm)/86400000));
+    if(info) info.textContent='Última monta: '+fm.toLocaleDateString('es-CO')+' · ~'+dias+' días de gestación estimados';
+    var dEl=document.getElementById('ab-dias'); if(dEl&&!dEl.value) dEl.value=dias;
+  } else {
+    if(info) info.textContent='Sin monta registrada para esta hembra.';
+  }
+}
+function abRecalcDias(){ abOnAnimalChange(); }
+function abOnCausaChange(){
+  var v=document.getElementById('ab-causa')?.value||'';
+  var al=document.getElementById('ab-brucelosis-alert');
+  if(al) al.style.display=(v==='Brucelosis')?'block':'none';
+}
+function abPreviewFoto(input){
+  var file=input.files&&input.files[0]; if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=document.getElementById('ab-foto-img'); if(img) img.src=e.target.result;
+    var nom=document.getElementById('ab-foto-nombre'); if(nom) nom.textContent=file.name;
+    var prev=document.getElementById('ab-foto-preview'); if(prev) prev.style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+async function saveAborto(){
+  var cod=document.getElementById('ab-animal')?.value||'';
+  var fecha=document.getElementById('ab-fecha')?.value||'';
+  var causa=document.getElementById('ab-causa')?.value||'';
+  var diasRaw=document.getElementById('ab-dias')?.value;
+  var dias=(diasRaw!==''&&diasRaw!=null)?parseInt(diasRaw,10):null;
+  var feto=document.getElementById('ab-feto')?.value||'';
+  var obs=document.getElementById('ab-obs')?.value?.trim()||'';
+  if(!cod){toast('Selecciona la hembra','err');return;}
+  if(!fecha){toast('Selecciona la fecha del aborto','err');return;}
+  if(!causa){toast('Selecciona la causa del aborto','err');return;}
+  var animal=(typeof _findAnimalRepro!=='undefined')?_findAnimalRepro(cod):null;
+  if(!animal){toast('No se encontró el animal en el hato','err');return;}
+  var btn=document.getElementById('ab-btn-guardar'); if(btn) btn.disabled=true;
+
+  // Foto opcional — no bloquea el guardado.
+  var fotoUrl=null;
+  var fotoFile=document.getElementById('ab-foto')?.files[0];
+  if(fotoFile && window.DB && window.DB.uploadEvidencia){
+    var subiendo=document.getElementById('ab-subiendo'); if(subiendo) subiendo.style.display='block';
+    try{
+      var path='abortos/a1b2c3d4-0000-0000-0000-000000000001/'+animal.id+'_'+Date.now()+'.jpg';
+      fotoUrl=await window.DB.uploadEvidencia(fotoFile,path);
+    }catch(err){ console.warn('[Repro] aborto foto:',err&&err.message); toast('No se pudo subir la foto; se guarda el aborto sin ella','info'); }
+    if(subiendo) subiendo.style.display='none';
+  }
+
+  var brucelosis=(causa==='Brucelosis');
+  var datos={ dias_gestacion:dias, causa:causa, estado_feto:feto, observaciones:obs, brucelosis_sospecha:brucelosis, foto_url:fotoUrl };
+  if(window.DB && window.DB.saveEventoReproductivo){
+    try{
+      await window.DB.saveEventoReproductivo({
+        finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+        hembra_id:animal.id, macho_id:null,
+        tipo:'aborto', fecha:fecha, resultado:causa,
+        notas:obs, datos:datos, foto_url:fotoUrl
+      });
+      // Cerrar gestación activa → la hembra queda vacía y disponible.
+      if(window.DB.updateEstadoReproductivo) await window.DB.updateEstadoReproductivo(animal.id,'vacia',null,null);
+      if(window.DB.marcarMontaFallida) window.DB.marcarMontaFallida(animal.id).catch(function(){});
+    }catch(err){ console.warn('[Repro] saveAborto:',err&&err.message); if(window.logError)logError('saveAborto',err); }
+  }
+
+  ABORTOS.unshift({ fecha:fecha, animal:(animal.codigo||cod), dias:dias, causa:causa, feto:feto, foto_url:fotoUrl });
+  renderAbortos();
+  if(btn) btn.disabled=false;
+  closeModal('modal-aborto');
+  toast('Aborto registrado. La hembra queda disponible para nuevo ciclo reproductivo.');
+  if(brucelosis) toast('🚨 Brucelosis: notifica al ICA (Resolución 3714/2015) y realiza pruebas serológicas al hato.','err');
+}
+// Lightbox compartido (también definido en bajas.html)
+function abrirLightbox(url, titulo){
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;cursor:pointer;';
+  overlay.innerHTML='<p style="color:white;font-size:0.9rem;opacity:0.8">'+(titulo||'')+'</p><img src="'+url+'" style="max-width:90vw;max-height:80vh;border-radius:8px;object-fit:contain;"><p style="color:white;opacity:0.6;font-size:0.8rem">Toca para cerrar</p>';
+  overlay.onclick=function(){overlay.remove();};
+  document.body.appendChild(overlay);
+}
+function renderAbortos(){
+  var tb=document.getElementById('abortos-tbody');
+  if(!tb) return;
+  var hoy=new Date(), anio=hoy.getFullYear();
+  var nAnio=ABORTOS.filter(function(a){ return a.fecha && new Date(a.fecha).getFullYear()===anio; }).length;
+  var kAnio=document.getElementById('ab-kpi-anio'); if(kAnio) kAnio.textContent=nAnio;
+  var eventos=(window.AppState&&window.AppState.eventosReproductivos)||[];
+  var gestConfirm=eventos.filter(function(e){return e.tipo==='ecografia'&&e.resultado==='gestante';}).length;
+  var baseGest=gestConfirm+ABORTOS.length;
+  var kTasa=document.getElementById('ab-kpi-tasa'); if(kTasa) kTasa.innerHTML=baseGest?(Math.round(ABORTOS.length/baseGest*100)+'<span class="kpi-unit">%</span>'):'--';
+  var counts={}; ABORTOS.forEach(function(a){var c=a.causa||'—'; counts[c]=(counts[c]||0)+1;});
+  var topCausa='--', topN=0;
+  Object.keys(counts).forEach(function(c){ if(counts[c]>topN){topN=counts[c];topCausa=c;} });
+  var kCausa=document.getElementById('ab-kpi-causa'); if(kCausa) kCausa.textContent=ABORTOS.length?topCausa:'--';
+  var kPerd=document.getElementById('ab-kpi-perdida'); if(kPerd) kPerd.textContent=ABORTOS.length?('$'+Math.round(ABORTOS.length*350000/1000)+'K'):'--';
+  var lbl=document.getElementById('ab-count-label'); if(lbl) lbl.textContent=ABORTOS.length?(ABORTOS.length+' aborto(s) registrado(s)'):'Sin abortos registrados';
+
+  if(!ABORTOS.length){
+    tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--text2);padding:24px">Sin abortos registrados — usa "Registrar aborto" para añadir el primero.</td></tr>';
+    return;
+  }
+  var ordered=ABORTOS.slice().sort(function(a,b){ return String(b.fecha).localeCompare(String(a.fecha)); });
+  tb.innerHTML=ordered.map(function(a){
+    var fTxt=a.fecha?String(a.fecha).split('-').reverse().join('/'):'—';
+    var causaBadge=(a.causa==='Brucelosis')?'<span class="badge b-red">'+a.causa+' 🚨</span>':'<span class="badge b-wine">'+(a.causa||'—')+'</span>';
+    var safeUrl=a.foto_url?String(a.foto_url).replace(/'/g,"%27"):'';
+    var fotoCell=a.foto_url?('<img src="'+a.foto_url+'" onclick="abrirLightbox(\''+safeUrl+'\',\'Aborto · #'+(a.animal||'')+'\')" style="width:36px;height:36px;object-fit:cover;border-radius:5px;cursor:pointer;border:1px solid var(--border)">'):'<span style="color:var(--text3);font-size:11px">—</span>';
+    var accion=a.foto_url?('<button class="btn btn-ghost btn-sm" onclick="abrirLightbox(\''+safeUrl+'\',\'Aborto · #'+(a.animal||'')+'\')">Ver foto</button>'):'<span style="color:var(--text3);font-size:11px">—</span>';
+    return '<tr>'
+      +'<td class="td-muted">'+fTxt+'</td>'
+      +'<td class="td-mono">#'+(a.animal||'—')+'</td>'
+      +'<td class="td-muted">'+(a.dias!=null&&a.dias!==''?a.dias:'—')+'</td>'
+      +'<td>'+causaBadge+'</td>'
+      +'<td class="td-muted">'+(a.feto||'—')+'</td>'
+      +'<td>'+fotoCell+'</td>'
+      +'<td>'+accion+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
 // ═══ CARGAR DESDE APPDATA ═══
 function loadReproFromAppData(){
   if(window.AppState && window.AppState._loaded) return; // AppState (Supabase) ya tomó control
@@ -1686,8 +1939,22 @@ function loadReproFromSupabase(){
     }
   }
 
+  // ── Abortos desde eventos_reproductivos (tipo='aborto') ──
+  ABORTOS.length = 0;
+  (eventos||[]).filter(function(e){return e.tipo==='aborto';}).forEach(function(e){
+    var h=e.hembra||{}; var d=e.datos||{};
+    ABORTOS.push({
+      fecha:e.fecha||'', animal:(h.codigo||e.hembra_id||'—'),
+      dias:(d.dias_gestacion!=null?d.dias_gestacion:null),
+      causa:d.causa||e.resultado||'—',
+      feto:d.estado_feto||'—',
+      foto_url:e.foto_url||d.foto_url||null
+    });
+  });
+  renderAbortos();
+
   renderGestaciones(); renderMontas(MONTAS); renderPartos(PARTOS);
-  console.log('[Reproducción] Supabase —', gestantes.length, 'gestantes,', montasEv.length, 'montas,', partosEv.length, 'partos');
+  console.log('[Reproducción] Supabase —', gestantes.length, 'gestantes,', montasEv.length, 'montas,', partosEv.length, 'partos,', ABORTOS.length, 'abortos');
 }
 document.addEventListener('appstate:ready', loadReproFromSupabase);
 // Si AppState ya terminó de cargar antes de registrar el listener, ejecutar ya
