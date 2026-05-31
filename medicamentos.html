@@ -178,7 +178,41 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
   .content{padding:16px 16px 48px}
   .med-grid{grid-template-columns:1fr}
   .form-grid{grid-template-columns:1fr}
+  .calc-inputs{grid-template-columns:1fr!important}
 }
+
+/* ── VIEW TABS (Inventario / Compras / Métricas) ── */
+.view-tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.view-tab{padding:9px 16px;border:none;background:transparent;color:var(--text3);font-family:'Changa',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim)}
+.view-tab:hover{color:var(--text)}
+.view-tab.active{color:var(--teal);border-bottom-color:var(--teal)}
+/* ── CALCULADORA ── */
+.calc-card{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:16px;margin-bottom:16px}
+.calc-inputs{display:grid;grid-template-columns:1fr 170px;gap:12px;align-items:end}
+.calc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.calc-tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px}
+.calc-tile .ct-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.calc-tile .ct-value{font-size:18px;font-weight:700;color:var(--text);line-height:1.2}
+.calc-tile .ct-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.calc-tile.hi{background:var(--teal-bg);border-color:var(--border2)}
+.calc-tile.hi .ct-value{color:var(--teal)}
+/* ── KARDEX / TABLAS ── */
+.ktable{width:100%;border-collapse:collapse;font-size:12px}
+.ktable th{text-align:left;padding:8px 10px;color:var(--text3);font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid var(--border2);font-weight:700;white-space:nowrap}
+.ktable td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text2)}
+.ktable tr:hover td{background:var(--surface)}
+.ktable .num{text-align:right;font-variant-numeric:tabular-nums}
+/* ── MÉTRICAS ── */
+.metric-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px}
+.metric-card{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px}
+.metric-card .m-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px}
+.metric-card .m-value{font-size:22px;font-weight:700;color:var(--text);margin-top:4px;line-height:1.1}
+.metric-card .m-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.panel{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r2);padding:16px;margin-bottom:12px}
+.panel-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.repo-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;background:var(--surface)}
+.repo-row.low{border-left:3px solid var(--orange)}
+.repo-row.venc{border-left:3px solid var(--red)}
 </style>
 <!-- Supabase JS SDK -->
 <!-- Sentry: monitoreo de errores -->
@@ -197,7 +231,7 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=26"></script>
+<script src="js/db.js?v=27"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
@@ -280,6 +314,7 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
     <div class="ph-actions">
       <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar inventario<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importMeds(this)"></label>
       <button class="btn btn-ghost btn-sm" onclick="exportMeds()">↓ Excel inventario</button>
+      <button class="btn btn-ghost btn-sm" onclick="abrirCompra()">+ Registrar compra</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('modal-add')">+ Agregar medicamento</button>
     </div>
   </div>
@@ -307,8 +342,55 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
   </div>
 
   <div class="content">
-    <div id="alertas-venc" style="margin-bottom:14px"></div>
-    <div class="med-grid" id="meds-grid"></div>
+    <div class="view-tabs">
+      <button class="view-tab active" id="vt-inventario" onclick="setView('inventario')">Inventario</button>
+      <button class="view-tab" id="vt-compras" onclick="setView('compras')">Compras · Kardex</button>
+      <button class="view-tab" id="vt-metricas" onclick="setView('metricas')">Métricas</button>
+    </div>
+
+    <!-- VISTA INVENTARIO -->
+    <div id="view-inventario">
+      <!-- Calculadora de dosis (consulta, no registra) -->
+      <div class="calc-card">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:12px">
+          <span style="font-size:20px">🧮</span>
+          <div>
+            <div style="font-family:'Sigmar',cursive;font-size:15px;color:var(--text)">Calculadora de dosis</div>
+            <div style="font-size:11px;color:var(--text3)">Consulta rápida — no registra nada. El registro va en Salud &amp; Tratamientos.</div>
+          </div>
+        </div>
+        <div class="calc-inputs">
+          <div><label class="fl">Medicamento (con stock)</label><select class="fi fi-full" id="calc-med" onchange="renderCalc()"></select></div>
+          <div><label class="fl">Peso del animal (kg)</label><input class="fi fi-full" type="number" min="0" step="0.5" id="calc-peso" placeholder="30" oninput="renderCalc()"></div>
+        </div>
+        <div id="calc-result" style="margin-top:14px"></div>
+      </div>
+      <div id="alertas-venc" style="margin-bottom:14px"></div>
+      <div class="med-grid" id="meds-grid"></div>
+    </div>
+
+    <!-- VISTA COMPRAS / KARDEX -->
+    <div id="view-compras" style="display:none">
+      <div class="panel">
+        <div class="panel-title">📒 Historial de compras (Kardex)
+          <button class="btn btn-primary btn-sm" style="margin-left:auto" onclick="abrirCompra()">+ Registrar compra</button>
+        </div>
+        <div id="kardex-body" style="overflow-x:auto"></div>
+      </div>
+    </div>
+
+    <!-- VISTA MÉTRICAS -->
+    <div id="view-metricas" style="display:none">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:600;color:var(--text3)">Período de gasto:</span>
+        <select class="fi" id="met-periodo" style="width:160px" onchange="renderMetricas()">
+          <option value="mes">Este mes</option>
+          <option value="3meses" selected>Últimos 3 meses</option>
+          <option value="anio">Último año</option>
+        </select>
+      </div>
+      <div id="metricas-body"></div>
+    </div>
   </div>
 </div>
 </div>
@@ -340,6 +422,35 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
     <div class="modal-foot">
       <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-add')">Cancelar</button>
       <button class="btn btn-primary btn-sm" onclick="saveMed()">Guardar medicamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL REGISTRAR COMPRA -->
+<div class="overlay" id="modal-compra" onclick="if(event.target===this)closeModal('modal-compra')">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Registrar compra de medicamento</div>
+      <button class="modal-close" onclick="closeModal('modal-compra')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="fg" style="grid-column:1/-1"><label class="fl">Medicamento *</label><select class="fi fi-full" id="c-med" onchange="onCompraMedChange()"></select><div id="c-venc-actual" style="font-size:10px;color:var(--text3);margin-top:4px"></div></div>
+        <div class="fg"><label class="fl">Fecha de compra *</label><input class="fi fi-full" type="date" id="c-fecha"></div>
+        <div class="fg"><label class="fl">Cantidad *</label><input class="fi fi-full" type="number" min="0" step="any" id="c-cant" placeholder="500" oninput="calcCostoUnit()"></div>
+        <div class="fg"><label class="fl">Unidad *</label><select class="fi fi-full" id="c-unidad" onchange="calcCostoUnit()"><option>mL</option><option>g</option><option>unidades</option><option>dosis</option></select></div>
+        <div class="fg"><label class="fl">Costo total (COP)</label><input class="fi fi-full" type="number" min="0" id="c-costo" placeholder="450000" oninput="calcCostoUnit()"><div id="c-costo-unit" style="font-size:10px;color:var(--teal);margin-top:4px"></div></div>
+        <div class="fg"><label class="fl">Proveedor</label><input class="fi fi-full" id="c-proveedor" placeholder="Agroveterinaria…"></div>
+        <div class="fg"><label class="fl">Lote del proveedor</label><input class="fi fi-full" id="c-lote" placeholder="LP-2026-001"></div>
+        <div class="fg"><label class="fl">Fecha de vencimiento</label><input class="fi fi-full" type="date" id="c-venc"></div>
+        <div class="fg"><label class="fl">N° de factura</label><input class="fi fi-full" id="c-factura" placeholder="FV-1234"></div>
+      </div>
+      <div class="fg"><label class="fl">Notas</label><textarea class="fi fi-full" id="c-notas" placeholder="Observaciones de la compra…" rows="2" style="resize:vertical"></textarea></div>
+      <div style="background:var(--teal-bg);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--text2)">El stock del medicamento se <strong style="color:var(--teal)">sumará</strong> a la cantidad actual. Si la fecha de vencimiento es nueva, se actualizará en el inventario.</div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-compra')">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="saveCompra()">Registrar compra</button>
     </div>
   </div>
 </div>
@@ -413,6 +524,9 @@ function renderMeds(){
   setEl('sb-count', MEDS.length);
   setEl('ph-sub', MEDS.length + ' productos · ' + MEDS.filter(m=>vencStatus(m.venc)==='urgente').length + ' por vencer · ' + MEDS.filter(m=>m.stock/m.max<0.2).length + ' con stock bajo');
   renderAlertas();
+  if(typeof fillCalcSelect==='function') fillCalcSelect();
+  if(typeof renderKardex==='function') renderKardex();
+  if(typeof renderMetricas==='function') renderMetricas();
 }
 
 function renderAlertas(){
@@ -618,6 +732,372 @@ function toast(msg, type='ok'){
   t.innerHTML = (ic[type]||ic.ok) + ' ' + msg;
   c.appendChild(t);
   setTimeout(()=>t.remove(), 3500);
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  VISTAS (Inventario / Compras / Métricas)
+// ════════════════════════════════════════════════════════════════════════════
+function setView(v){
+  ['inventario','compras','metricas'].forEach(function(name){
+    var sec = document.getElementById('view-'+name);
+    var tab = document.getElementById('vt-'+name);
+    if(sec) sec.style.display = (name===v) ? '' : 'none';
+    if(tab) tab.classList.toggle('active', name===v);
+  });
+  if(v==='compras') renderKardex();
+  if(v==='metricas') renderMetricas();
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  CALCULADORA DE DOSIS (consulta — no registra)
+// ════════════════════════════════════════════════════════════════════════════
+var VIA_LABEL = {SC:'Subcutánea (SC)',IM:'Intramuscular (IM)',IV:'Intravenosa (IV)',VO:'Oral (VO)',IN:'Intranasal (IN)'};
+function fmtFecha(d){
+  var dd=String(d.getDate()).padStart(2,'0'), mm=String(d.getMonth()+1).padStart(2,'0');
+  return dd+'/'+mm+'/'+d.getFullYear();
+}
+function fmtNum(n){
+  if(!isFinite(n)) return '0';
+  var r = Math.round(n*100)/100;
+  return r.toLocaleString('es-CO',{maximumFractionDigits:2});
+}
+// Parsea la dosis estándar (texto libre) → {num, unit, per, perWeight, via}
+function parseDosis(str){
+  if(!str) return null;
+  var res = {raw:str, via:'', num:null, unit:'', per:0, perWeight:false};
+  var rm = str.match(/\b(SC|IM|IV|VO|IN)\b/i);
+  if(rm) res.via = VIA_LABEL[rm[1].toUpperCase()] || rm[1].toUpperCase();
+  var m = str.match(/([\d.,]+)\s*(mL|ml|cc|mg|g|UI|ui)\b\s*(?:\/\s*(\d+)?\s*(kg)?)?/i);
+  if(!m) return res;
+  var raw = m[1], num;
+  if(/^\d{1,3}(,\d{3})+$/.test(raw)) num = parseFloat(raw.replace(/,/g,''));   // 22,000 → 22000
+  else num = parseFloat(raw.replace(',', '.'));                                  // 0,2 → 0.2
+  res.num = num;
+  var u = m[2].toLowerCase();
+  res.unit = (u==='ml'||u==='cc') ? 'mL' : (u==='ui' ? 'UI' : u);
+  if(m[3]) res.per = parseInt(m[3]);     // /10kg → 10
+  else if(m[4]) res.per = 1;             // /kg → 1
+  else res.per = 0;                      // dosis fija
+  res.perWeight = res.per > 0;
+  return res;
+}
+function calcMedsDisponibles(){
+  var hoy = new Date(); hoy.setHours(0,0,0,0);
+  return MEDS.filter(function(m){ return m.stock>0 && new Date(m.venc) >= hoy; });
+}
+function fillCalcSelect(){
+  var sel = document.getElementById('calc-med'); if(!sel) return;
+  var prev = sel.value;
+  var list = calcMedsDisponibles();
+  if(!list.length){ sel.innerHTML = '<option value="">— Sin medicamentos con stock disponible —</option>'; renderCalc(); return; }
+  sel.innerHTML = list.map(function(m){
+    var idx = MEDS.indexOf(m);
+    var low = (m.stock/m.max) < 0.2;
+    return '<option value="'+idx+'">'+m.nombre+' — '+fmtNum(m.stock)+' disp.'+(low?' ⚠ bajo':'')+'</option>';
+  }).join('');
+  if(prev!=='' && sel.querySelector('option[value="'+prev+'"]')) sel.value = prev;
+  renderCalc();
+}
+function renderCalc(){
+  var box = document.getElementById('calc-result'); if(!box) return;
+  var sel = document.getElementById('calc-med');
+  var pesoEl = document.getElementById('calc-peso');
+  var peso = parseFloat(pesoEl ? pesoEl.value : '');
+  var idx = sel ? parseInt(sel.value) : NaN;
+  var med = MEDS[idx];
+  if(!med){ box.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0">Selecciona un medicamento con stock disponible.</div>'; return; }
+  if(!peso || peso<=0){ box.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:8px 0">Ingresa el peso del animal (kg) para calcular la dosis.</div>'; return; }
+  var p = parseDosis(med.dosis);
+  var dosisHtml, alcanzaHtml;
+  if(!p || p.num===null){
+    dosisHtml = '<div class="calc-tile hi"><div class="ct-label">Dosis a aplicar</div><div class="ct-value" style="font-size:14px">'+(med.dosis||'—')+'</div><div class="ct-sub">No se pudo interpretar — revisar dosis estándar</div></div>';
+    alcanzaHtml = '<div class="calc-tile"><div class="ct-label">Alcanza para</div><div class="ct-value" style="font-size:14px">—</div></div>';
+  } else {
+    var dosisVal, suffix;
+    if(p.perWeight){ dosisVal = (peso/p.per)*p.num; suffix=''; }
+    else { dosisVal = p.num; suffix=' · dosis fija'; }
+    dosisHtml = '<div class="calc-tile hi"><div class="ct-label">Dosis a aplicar</div><div class="ct-value">'+fmtNum(dosisVal)+' '+p.unit+'</div><div class="ct-sub">para '+fmtNum(peso)+' kg'+suffix+'</div></div>';
+    if(p.unit==='mL' && dosisVal>0){
+      var n = Math.floor(med.stock/dosisVal);
+      alcanzaHtml = '<div class="calc-tile"><div class="ct-label">Alcanza para</div><div class="ct-value">'+n+'</div><div class="ct-sub">animales de '+fmtNum(peso)+' kg</div></div>';
+    } else {
+      alcanzaHtml = '<div class="calc-tile"><div class="ct-label">Alcanza para</div><div class="ct-value" style="font-size:14px">—</div><div class="ct-sub">dosis en '+p.unit+', no comparable con stock en mL</div></div>';
+    }
+  }
+  var viaHtml = '<div class="calc-tile"><div class="ct-label">Vía</div><div class="ct-value" style="font-size:14px">'+((p&&p.via)?p.via:'—')+'</div></div>';
+  var retiroHtml;
+  if(med.retiro>0){
+    var apta = new Date(); apta.setHours(0,0,0,0); apta.setDate(apta.getDate()+med.retiro);
+    retiroHtml = '<div class="calc-tile"><div class="ct-label">Período de retiro</div><div class="ct-value">'+med.retiro+' días</div><div class="ct-sub">Apto sacrificio: '+fmtFecha(apta)+'</div></div>';
+  } else {
+    retiroHtml = '<div class="calc-tile"><div class="ct-label">Período de retiro</div><div class="ct-value" style="font-size:14px">Sin retiro</div><div class="ct-sub">Apto a sacrificio</div></div>';
+  }
+  var low = (med.stock/med.max) < 0.2;
+  var stockHtml = '<div class="calc-tile"><div class="ct-label">Stock disponible</div><div class="ct-value" style="color:'+(low?'var(--orange)':'var(--text)')+'">'+fmtNum(med.stock)+'</div><div class="ct-sub">'+(low?'⚠ stock bajo':'de '+fmtNum(med.max))+'</div></div>';
+  box.innerHTML = '<div class="calc-grid">'+dosisHtml+viaHtml+retiroHtml+stockHtml+alcanzaHtml+'</div>'
+    +'<div style="margin-top:10px;background:var(--amber-bg);border:1px solid rgba(245,158,11,.25);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--text2)"><strong style="color:var(--amber)">⚠ Recordar:</strong> registrar la aplicación en <a href="salud.html" style="color:var(--teal);font-weight:600;text-decoration:none">Salud &amp; Tratamientos</a>. Esta calculadora es solo de consulta.</div>';
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  COMPRAS / KARDEX
+// ════════════════════════════════════════════════════════════════════════════
+function getCompras(){ try{ return JSON.parse(localStorage.getItem('laaamb-compras-med')||'[]'); }catch(e){ return []; } }
+function setComprasLS(a){ try{ localStorage.setItem('laaamb-compras-med', JSON.stringify(a)); }catch(e){} }
+function isUUID(s){ return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s||''); }
+
+function abrirCompra(preMedIdx){
+  fillCompraSelect();
+  var f = document.getElementById('c-fecha'); if(f) f.value = new Date().toISOString().slice(0,10);
+  ['c-cant','c-costo','c-proveedor','c-lote','c-venc','c-factura','c-notas'].forEach(function(id){ var e=document.getElementById(id); if(e) e.value=''; });
+  document.getElementById('c-costo-unit').textContent='';
+  if(typeof preMedIdx==='number'){ document.getElementById('c-med').value=String(preMedIdx); }
+  onCompraMedChange();
+  openModal('modal-compra');
+}
+function fillCompraSelect(){
+  var sel = document.getElementById('c-med'); if(!sel) return;
+  sel.innerHTML = '<option value="">Selecciona…</option>' + MEDS.map(function(m,i){ return '<option value="'+i+'">'+m.nombre+'</option>'; }).join('');
+}
+function onCompraMedChange(){
+  var i = parseInt(document.getElementById('c-med').value);
+  var m = MEDS[i];
+  var vEl = document.getElementById('c-venc-actual');
+  if(vEl) vEl.textContent = (m && m.venc) ? ('Vencimiento actual en inventario: '+m.venc) : '';
+  calcCostoUnit();
+}
+function calcCostoUnit(){
+  var cant = parseFloat(document.getElementById('c-cant').value)||0;
+  var total = parseFloat(document.getElementById('c-costo').value)||0;
+  var u = document.getElementById('c-unidad').value;
+  var out = document.getElementById('c-costo-unit');
+  if(out) out.textContent = (cant>0) ? ('Costo unitario: $'+fmtNum(total/cant)+' / '+u) : '';
+}
+function saveCompra(){
+  var i = parseInt(document.getElementById('c-med').value);
+  var med = MEDS[i];
+  if(!med){ toast('Selecciona un medicamento','err'); return; }
+  var cant = parseFloat(document.getElementById('c-cant').value);
+  if(!cant || cant<=0){ toast('Ingresa una cantidad válida','err'); return; }
+  var fecha = document.getElementById('c-fecha').value || new Date().toISOString().slice(0,10);
+  var unidad = document.getElementById('c-unidad').value;
+  var total = parseFloat(document.getElementById('c-costo').value)||0;
+  var proveedor = document.getElementById('c-proveedor').value.trim();
+  var lote = document.getElementById('c-lote').value.trim();
+  var venc = document.getElementById('c-venc').value;
+  var factura = document.getElementById('c-factura').value.trim();
+  var notas = document.getElementById('c-notas').value.trim();
+
+  // 1) Guardar compra localmente (kardex)
+  var compra = {
+    id:'COMP-'+Date.now(),
+    medicamento_nombre:med.nombre,
+    medicamento_local_id:med._id||null,
+    cat:med.cat,
+    fecha_compra:fecha, cantidad:cant, unidad:unidad,
+    costo_total_cop:total, costo_unitario:cant>0?total/cant:0,
+    proveedor:proveedor, lote_proveedor:lote,
+    fecha_vencimiento:venc||null, factura_numero:factura, notas:notas
+  };
+  var arr = getCompras(); arr.unshift(compra); setComprasLS(arr);
+
+  // 2) Stock ADITIVO en AppData (o en MEDS si es demo)
+  if(typeof AppData!=='undefined' && med._id){
+    var actual = AppData.list('medicamentos').find(function(x){ return x.id===med._id; });
+    if(actual){
+      var changes = {
+        stock_actual:(parseFloat(actual.stock_actual)||0)+cant,
+        total_comprado_unidades:(parseFloat(actual.total_comprado_unidades)||0)+cant
+      };
+      if(venc) changes.fecha_vencimiento = venc;
+      AppData.update('medicamentos', med._id, changes);
+    }
+  } else {
+    med.stock += cant; if(venc) med.venc = venc;
+  }
+
+  // 3) Supabase best-effort
+  if(window.DB && typeof window.DB.saveCompraMedicamento==='function'){
+    window.DB.saveCompraMedicamento({
+      finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+      medicamento_id:isUUID(med._id)?med._id:null,
+      medicamento_nombre:med.nombre,
+      fecha_compra:fecha, cantidad:cant, unidad:unidad,
+      costo_total_cop:total,
+      proveedor:proveedor||null, lote_proveedor:lote||null,
+      fecha_vencimiento:venc||null, factura_numero:factura||null, notas:notas||null
+    }).then(function(r){ if(r&&r.error) console.warn('[Compra] Supabase:', r.error.message); })
+      .catch(function(e){ console.warn('[Compra]', e&&e.message); });
+  }
+
+  closeModal('modal-compra');
+  loadMedsFromAppData();   // recarga stock + re-render grid/calc/kardex/metricas
+  toast('Compra registrada. Stock actualizado.');
+}
+function renderKardex(){
+  var body = document.getElementById('kardex-body'); if(!body) return;
+  var compras = getCompras();
+  if(!compras.length){
+    body.innerHTML = '<div style="font-size:12px;color:var(--text3);padding:16px 4px">Aún no hay compras registradas. Usa <strong>+ Registrar compra</strong> para empezar el kardex.</div>';
+    return;
+  }
+  var total = compras.reduce(function(s,c){ return s+(parseFloat(c.costo_total_cop)||0); }, 0);
+  body.innerHTML = '<table class="ktable"><thead><tr>'
+    +'<th>Fecha</th><th>Medicamento</th><th class="num">Cantidad</th><th class="num">Costo total</th><th class="num">Costo/unidad</th><th>Proveedor</th><th>Lote</th><th>Factura</th>'
+    +'</tr></thead><tbody>'
+    + compras.map(function(c){
+        return '<tr>'
+          +'<td>'+(c.fecha_compra||'—')+'</td>'
+          +'<td><strong style="color:var(--text)">'+c.medicamento_nombre+'</strong></td>'
+          +'<td class="num">'+fmtNum(c.cantidad)+' '+(c.unidad||'')+'</td>'
+          +'<td class="num">$'+fmtNum(c.costo_total_cop||0)+'</td>'
+          +'<td class="num">$'+fmtNum(c.costo_unitario||0)+'</td>'
+          +'<td>'+(c.proveedor||'—')+'</td>'
+          +'<td>'+(c.lote_proveedor||'—')+'</td>'
+          +'<td>'+(c.factura_numero||'—')+'</td>'
+          +'</tr>';
+      }).join('')
+    + '</tbody><tfoot><tr><td colspan="3" style="font-weight:700;color:var(--text)">Total invertido</td><td class="num" style="font-weight:700;color:var(--teal)">$'+fmtNum(total)+'</td><td colspan="4"></td></tr></tfoot></table>';
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  MÉTRICAS (gasto + uso) · gráficos SVG inline (sin librerías)
+// ════════════════════════════════════════════════════════════════════════════
+function getTratamientos(){ try{ return (typeof AppData!=='undefined') ? AppData.list('tratamientos') : []; }catch(e){ return []; } }
+function periodoInicio(periodo){
+  var d = new Date(); d.setHours(0,0,0,0);
+  if(periodo==='mes') d.setMonth(d.getMonth()-1);
+  else if(periodo==='anio') d.setFullYear(d.getFullYear()-1);
+  else d.setMonth(d.getMonth()-3);
+  return d;
+}
+function svgBars(data, opts){
+  opts = opts||{};
+  var W = opts.w||560, H = opts.h||150, padB=26, padL=4, padT=12;
+  if(!data.length) return '<div style="font-size:12px;color:var(--text3)">Sin datos.</div>';
+  var max = Math.max(1, Math.max.apply(null, data.map(function(d){ return d.value; })));
+  var n = data.length, gap=10;
+  var bw = (W - padL*2 - gap*(n-1)) / n;
+  var bars = data.map(function(d, i){
+    var bh = (d.value/max) * (H - padB - padT);
+    var x = padL + i*(bw+gap);
+    var y = H - padB - bh;
+    var lbl = d.value>0 ? ('$'+(d.value>=1000?Math.round(d.value/1000)+'k':Math.round(d.value))) : '';
+    return '<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0,bh).toFixed(1)+'" rx="3" fill="var(--teal)" opacity="0.85"/>'
+      +'<text x="'+(x+bw/2).toFixed(1)+'" y="'+(y-4).toFixed(1)+'" text-anchor="middle" font-size="9" fill="var(--text2)">'+lbl+'</text>'
+      +'<text x="'+(x+bw/2).toFixed(1)+'" y="'+(H-10)+'" text-anchor="middle" font-size="9" fill="var(--text3)">'+d.label+'</text>';
+  }).join('');
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="'+H+'" preserveAspectRatio="xMidYMid meet">'+bars+'</svg>';
+}
+function renderMetricas(){
+  var body = document.getElementById('metricas-body'); if(!body) return;
+  var compras = getCompras();
+  var trats = getTratamientos();
+  var periodo = (document.getElementById('met-periodo')||{}).value || '3meses';
+  var inicio = periodoInicio(periodo);
+
+  // ── Gasto en el período ──
+  var enRango = compras.filter(function(c){ return c.fecha_compra && new Date(c.fecha_compra) >= inicio; });
+  var gastoTotal = enRango.reduce(function(s,c){ return s+(parseFloat(c.costo_total_cop)||0); }, 0);
+  var gastoHist = compras.reduce(function(s,c){ return s+(parseFloat(c.costo_total_cop)||0); }, 0);
+
+  // ── Gasto por categoría ──
+  var porCat = {};
+  enRango.forEach(function(c){ var k=c.cat||'Sin categoría'; porCat[k]=(porCat[k]||0)+(parseFloat(c.costo_total_cop)||0); });
+  var catArr = Object.keys(porCat).map(function(k){ return {label:k, value:porCat[k]}; }).sort(function(a,b){ return b.value-a.value; });
+
+  // ── Top 5 medicamentos por gasto ──
+  var porMed = {};
+  enRango.forEach(function(c){ var k=c.medicamento_nombre||'—'; porMed[k]=(porMed[k]||0)+(parseFloat(c.costo_total_cop)||0); });
+  var topMed = Object.keys(porMed).map(function(k){ return {label:k, value:porMed[k]}; }).sort(function(a,b){ return b.value-a.value; }).slice(0,5);
+
+  // ── Costo promedio por animal tratado ──
+  var animalesSet = {};
+  trats.forEach(function(t){ (t.animales_ids||[]).forEach(function(a){ animalesSet[a]=1; }); });
+  var nAnimales = Object.keys(animalesSet).length;
+  var costoPorAnimal = nAnimales>0 ? (gastoHist/nAnimales) : 0;
+
+  // ── Medicamentos más aplicados (por nº de tratamientos) ──
+  var aplic = {};
+  trats.forEach(function(t){ var k=t.medicamento_nombre||'—'; aplic[k]=(aplic[k]||0)+1; });
+  var topAplic = Object.keys(aplic).map(function(k){ return {label:k, value:aplic[k]}; }).sort(function(a,b){ return b.value-a.value; }).slice(0,5);
+
+  // ── Tendencia mensual de gasto (últimos 6 meses) ──
+  var meses = [];
+  var ahora = new Date(); ahora.setDate(1); ahora.setHours(0,0,0,0);
+  var MES_ABBR = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  for(var k=5;k>=0;k--){
+    var dref = new Date(ahora.getFullYear(), ahora.getMonth()-k, 1);
+    var key = dref.getFullYear()+'-'+String(dref.getMonth()+1).padStart(2,'0');
+    var sum = compras.filter(function(c){ return (c.fecha_compra||'').slice(0,7)===key; }).reduce(function(s,c){ return s+(parseFloat(c.costo_total_cop)||0); }, 0);
+    meses.push({label:MES_ABBR[dref.getMonth()], value:sum});
+  }
+
+  // ── Stock promedio restante (% del máximo) ──
+  var stockPcts = MEDS.filter(function(m){ return m.max>0; }).map(function(m){ return Math.min(100, (m.stock/m.max)*100); });
+  var stockProm = stockPcts.length ? Math.round(stockPcts.reduce(function(a,b){return a+b;},0)/stockPcts.length) : 0;
+
+  // ── Alertas de reposición (stock<20% del máx O vence en <15 días) ──
+  var hoy0 = new Date(); hoy0.setHours(0,0,0,0);
+  var repos = MEDS.filter(function(m){
+    var low = m.max>0 && (m.stock/m.max) < 0.2;
+    var dv = Math.round((new Date(m.venc) - hoy0)/86400000);
+    return low || dv < 15;
+  });
+
+  // ── RENDER ──
+  var periodoTxt = periodo==='mes'?'este mes':(periodo==='anio'?'último año':'últimos 3 meses');
+  var html = '';
+  html += '<div class="metric-row">'
+    +'<div class="metric-card"><div class="m-label">Gasto · '+periodoTxt+'</div><div class="m-value">$'+fmtNum(gastoTotal)+'</div><div class="m-sub">'+enRango.length+' compra(s)</div></div>'
+    +'<div class="metric-card"><div class="m-label">Gasto histórico total</div><div class="m-value">$'+fmtNum(gastoHist)+'</div><div class="m-sub">'+compras.length+' compra(s)</div></div>'
+    +'<div class="metric-card"><div class="m-label">Costo prom. / animal tratado</div><div class="m-value">$'+fmtNum(costoPorAnimal)+'</div><div class="m-sub">'+nAnimales+' animales tratados</div></div>'
+    +'<div class="metric-card"><div class="m-label">Stock promedio restante</div><div class="m-value">'+stockProm+'%</div><div class="m-sub">'+MEDS.length+' productos</div></div>'
+    +'</div>';
+
+  // Tendencia mensual (SVG)
+  html += '<div class="panel"><div class="panel-title">📈 Tendencia de gasto · últimos 6 meses</div>'+svgBars(meses,{h:160})+'</div>';
+
+  // Gasto por categoría + Top 5 gasto
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px">';
+  html += '<div class="panel"><div class="panel-title">🏷️ Gasto por categoría ('+periodoTxt+')</div>'+ (catArr.length? barList(catArr,'$') : '<div style="font-size:12px;color:var(--text3)">Sin compras en el período.</div>') +'</div>';
+  html += '<div class="panel"><div class="panel-title">🥇 Top 5 medicamentos por gasto</div>'+ (topMed.length? barList(topMed,'$') : '<div style="font-size:12px;color:var(--text3)">Sin compras en el período.</div>') +'</div>';
+  html += '</div>';
+
+  // Medicamentos más aplicados
+  html += '<div class="panel"><div class="panel-title">💉 Medicamentos más aplicados (por nº de tratamientos)</div>'+ (topAplic.length? barList(topAplic,'') : '<div style="font-size:12px;color:var(--text3)">Aún no hay tratamientos registrados en Salud.</div>') +'</div>';
+
+  // Alertas de reposición
+  var reposHtml = '';
+  if(repos.length){
+    reposHtml = repos.map(function(m){
+      var idx = MEDS.indexOf(m);
+      var dv = Math.round((new Date(m.venc) - hoy0)/86400000);
+      var low = m.max>0 && (m.stock/m.max) < 0.2;
+      var cls = low ? 'low' : 'venc';
+      var motivo = low ? ('Stock bajo: '+fmtNum(m.stock)+' / '+fmtNum(m.max)+' ('+Math.round((m.stock/m.max)*100)+'%)') : ('Vence en '+dv+' día(s)');
+      return '<div class="repo-row '+cls+'">'
+        +'<div style="flex:1"><div style="font-size:13px;font-weight:600;color:var(--text)">'+m.nombre+'</div><div style="font-size:11px;color:var(--text3)">'+motivo+'</div></div>'
+        +'<button class="btn btn-primary btn-sm" onclick="abrirCompra('+idx+')">Registrar compra</button>'
+        +'</div>';
+    }).join('');
+  } else {
+    reposHtml = '<div style="font-size:12px;color:var(--green)">✓ Sin alertas de reposición. Inventario en buen nivel.</div>';
+  }
+  html += '<div class="panel"><div class="panel-title">🔔 Alertas de reposición</div>'+reposHtml+'</div>';
+
+  body.innerHTML = html;
+}
+// Mini-barra horizontal proporcional para rankings
+function barList(arr, prefix){
+  var max = Math.max.apply(null, arr.map(function(d){ return d.value; }));
+  return arr.map(function(d){
+    var pct = max>0 ? (d.value/max)*100 : 0;
+    var val = prefix==='$' ? ('$'+fmtNum(d.value)) : fmtNum(d.value);
+    return '<div style="margin-bottom:9px">'
+      +'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:var(--text2)">'+d.label+'</span><span style="color:var(--text);font-weight:600">'+val+'</span></div>'
+      +'<div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden"><div style="height:100%;width:'+pct.toFixed(1)+'%;background:var(--teal);border-radius:3px"></div></div>'
+      +'</div>';
+  }).join('');
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────────

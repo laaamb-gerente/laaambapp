@@ -497,6 +497,23 @@ window.DB = {
     return data?.signedUrl || null;
   },
 
+  // ── COMPRAS DE MEDICAMENTOS (kardex) ─────────────────
+  async getComprasMedicamentos(finca_id) {
+    return await window._sb.from('compras_medicamentos')
+      .select('*').eq('finca_id', finca_id)
+      .order('fecha_compra', { ascending: false });
+  },
+  async saveCompraMedicamento(data) {
+    return await window._sb.from('compras_medicamentos')
+      .insert(data).select().single();
+  },
+  async getTratamientosPorMedicamento(finca_id, medicamento_id) {
+    return await window._sb.from('tratamientos')
+      .select('*').eq('finca_id', finca_id)
+      .eq('medicamento_id', medicamento_id)
+      .order('fecha_inicio', { ascending: false });
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();
