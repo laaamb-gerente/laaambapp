@@ -2,7 +2,7 @@
 // Cache-first para assets estáticos. NUNCA intercepta peticiones
 // a Supabase ni a /api/ (auth y datos deben ir siempre a la red).
 
-const CACHE_NAME = 'laaambapp-v1';
+const CACHE_NAME = 'laaambapp-v2';
 
 // Paths relativos: resuelven contra la ubicación del SW en cada host
 // (raíz en Vercel, /laaambapp/ en GitHub Pages).
@@ -11,6 +11,7 @@ const STATIC_ASSETS = [
   './hoy.html',
   './animales.html',
   './reproduccion.html',
+  './nutricion.html',
   './lotes.html',
   './salud.html',
   './medicamentos.html',
@@ -68,7 +69,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   event.respondWith(
-    caches.match(req).then((cached) => {
+    caches.match(req, { ignoreSearch: false }).then((cached) => {
       if (cached) return cached;
       return fetch(req).then((res) => {
         // Cachear copias de respuestas válidas del mismo origen
