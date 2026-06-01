@@ -431,6 +431,19 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
       </div>
     </div>
 
+    <!-- MODAL: ELIMINAR COLABORADOR (irreversible) -->
+    <div id="del-colab-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(2px);z-index:10000;align-items:center;justify-content:center;padding:18px">
+      <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);max-width:420px;width:100%;padding:22px">
+        <div style="font-size:15px;font-weight:700;color:var(--red);margin-bottom:10px">⚠️ Eliminar colaborador</div>
+        <div id="del-colab-msg" style="font-size:13px;color:var(--text2);line-height:1.55;margin-bottom:14px"></div>
+        <input class="fi" id="del-colab-confirm" placeholder="Escribe ELIMINAR" autocomplete="off" style="margin-bottom:14px">
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn btn-ghost btn-sm" onclick="closeDeleteColab()">Cancelar</button>
+          <button class="btn btn-sm" id="del-colab-btn" disabled style="background:var(--red);color:#fff;opacity:.5" onclick="confirmDeleteColab()">Eliminar definitivamente</button>
+        </div>
+      </div>
+    </div>
+
     <!-- IMPORTAR / EXPORTAR -->
     <div class="section-label">💾 Datos</div>
     <div class="card">
@@ -564,19 +577,98 @@ async function cargarEquipo(){
 function renderColabs(){
   const tb = document.getElementById('colab-tbody');
   if(!EQUIPO.length){ tb.innerHTML = '<tr><td colspan="6" class="td-muted" style="text-align:center;padding:18px">Sin usuarios todavía.</td></tr>'; return; }
+  var esGerente = window.AUTH_ROL === 'gerente';
+  var miId = (window.AUTH_SESSION && window.AUTH_SESSION.user && window.AUTH_SESSION.user.id) || null;
   tb.innerHTML = EQUIPO.map(function(c){
     var activo = c.activo !== false;
     var opciones = ROLES.map(function(r){ return '<option value="'+r+'"'+(r===c.rol?' selected':'')+'>'+rolLabel(r)+'</option>'; }).join('');
     var conexion = fmtConexion(c.last_sign_in_at || c.ultima_conexion);
-    return '<tr>'
+    // Botón Eliminar: solo gerente, y nunca sobre su propia fila (no auto-eliminación)
+    var btnEliminar = (esGerente && c.id !== miId)
+      ? '<button class="btn btn-ghost" style="padding:3px 10px;font-size:11px;color:var(--red)" onclick="openDeleteColab(\''+c.id+'\')">Eliminar</button>'
+      : '';
+    return '<tr id="colab-row-'+escq(c.id)+'">'
       +'<td style="font-weight:600">'+escq(c.nombre)+'</td>'
       +'<td class="td-muted">'+escq(c.email||'—')+'</td>'
       +'<td><select class="fi" style="padding:4px 8px;font-size:12px;min-width:120px" onchange="cambiarRol(\''+c.id+'\',this.value)">'+opciones+'</select></td>'
       +'<td><span class="badge '+(activo?'b-green':'b-red')+'">'+(activo?'✓ Activo':'Inactivo')+'</span></td>'
       +'<td class="td-muted" style="font-size:11px">'+conexion+'</td>'
-      +'<td><button class="btn btn-ghost" style="padding:3px 10px;font-size:11px" onclick="toggleActivo(\''+c.id+'\','+activo+')">'+(activo?'Desactivar':'Activar')+'</button></td>'
+      +'<td><div style="display:flex;gap:6px;flex-wrap:wrap">'
+        +'<button class="btn btn-ghost" style="padding:3px 10px;font-size:11px" onclick="toggleActivo(\''+c.id+'\','+activo+')">'+(activo?'Desactivar':'Activar')+'</button>'
+        +btnEliminar
+      +'</div></td>'
       +'</tr>';
   }).join('');
+}
+
+// ── ELIMINAR COLABORADOR (irreversible, solo gerente) ────────────────────────
+var _delColabId = null;
+function openDeleteColab(userId){
+  if(window.AUTH_ROL !== 'gerente'){ toast('Solo el gerente puede eliminar usuarios','err'); return; }
+  var c = EQUIPO.find(function(x){ return x.id === userId; });
+  if(!c) return;
+  _delColabId = userId;
+  document.getElementById('del-colab-msg').innerHTML =
+    '¿Eliminar a <b>'+escq(c.nombre)+'</b>?<br><br>'
+    +'Esta acción es <b>irreversible</b>. El usuario perderá acceso inmediatamente. '
+    +'Sus registros en el historial de auditoría se conservan.<br><br>'
+    +'Escribe <b>ELIMINAR</b> para confirmar.';
+  var inp = document.getElementById('del-colab-confirm');
+  var btn = document.getElementById('del-colab-btn');
+  inp.value = '';
+  btn.disabled = true; btn.style.opacity = '.5';
+  inp.oninput = function(){
+    var ok = inp.value.trim() === 'ELIMINAR';
+    btn.disabled = !ok;
+    btn.style.opacity = ok ? '1' : '.5';
+  };
+  document.getElementById('del-colab-overlay').style.display = 'flex';
+  setTimeout(function(){ inp.focus(); }, 50);
+}
+function closeDeleteColab(){
+  _delColabId = null;
+  document.getElementById('del-colab-overlay').style.display = 'none';
+}
+async function confirmDeleteColab(){
+  if(!_delColabId) return;
+  var inp = document.getElementById('del-colab-confirm');
+  if(inp.value.trim() !== 'ELIMINAR'){ return; }
+  var btn = document.getElementById('del-colab-btn');
+  var userId = _delColabId;
+  var c = EQUIPO.find(function(x){ return x.id === userId; }) || {};
+  btn.disabled = true; btn.textContent = 'Eliminando…';
+  try{
+    const { data:{ session } } = await window._sb.auth.getSession();
+    if(!session){ throw new Error('Sesión expirada. Vuelve a iniciar sesión.'); }
+    const resp = await fetch(apiBase()+'/api/delete-user', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization': 'Bearer '+session.access_token
+      },
+      body: JSON.stringify({ user_id: userId })
+    });
+    const data = await resp.json();
+    if(!resp.ok || data.error) throw new Error(data.error || 'Error eliminando usuario');
+    // Remover la fila del DOM y del estado en memoria
+    var row = document.getElementById('colab-row-'+userId);
+    if(row) row.remove();
+    EQUIPO = EQUIPO.filter(function(x){ return x.id !== userId; });
+    // Auditoría (si está disponible)
+    if(window.DB && typeof window.DB.logAudit === 'function'){
+      var fincaId = (window.AppState && window.AppState._finca_id) || null;
+      try{ await window.DB.logAudit(fincaId, 'eliminar', 'colaboradores', userId,
+        { nombre:c.nombre, email:c.email, rol:c.rol }, null,
+        'Usuario eliminado de Supabase Auth'); }catch(e){}
+    }
+    closeDeleteColab();
+    toast('Usuario eliminado. Ya no tiene acceso.');
+  }catch(e){
+    toast('No se pudo eliminar: '+e.message, 'err');
+    btn.disabled = false;
+  }finally{
+    btn.textContent = 'Eliminar definitivamente';
+  }
 }
 
 function openAddColab(){ document.getElementById('add-colab-form').style.display='block'; document.getElementById('nc-result').textContent=''; }

@@ -382,7 +382,7 @@ tr:last-child td{border-bottom:none}
 // ═══ BENEFICIO & TRAZABILIDAD ═══
 (function(){
   var FINCA_ID = (window.AppState && window.AppState._finca_id) || 'a1b2c3d4-0000-0000-0000-000000000001';
-  var BASE_PUBLICA = 'https://laaambapp.vercel.app';
+  var BASE_PUBLICA = 'https://app.laaambcorderos.com';
   var TIPO_LABEL = {canal_completa:'Canal completa',cuarto_delantero:'Cuarto delantero',cuarto_trasero:'Cuarto trasero',rack:'Rack',paleta:'Paleta',pierna:'Pierna',costillar:'Costillar',lomo:'Lomo',cuello:'Cuello',menudencias:'Menudencias',otro:'Otro'};
 
   // Estado de la sesión de trabajo
@@ -518,7 +518,7 @@ tr:last-child td{border-bottom:none}
     }catch(e){ msg('e-msg','Error: '+e.message, false); }
   };
   function mostrarQR(emp){
-    var url = BASE_PUBLICA+'/qr/'+emp.qr_code;
+    var url = BASE_PUBLICA+'/qr.html?code='+emp.qr_code;
     var cont = document.getElementById('qr-result');
     cont.innerHTML =
       '<div class="qr-result">'+
@@ -538,7 +538,7 @@ tr:last-child td{border-bottom:none}
 
   // ── Etiqueta imprimible (modal) ──
   window.abrirEtiqueta = function(emp){
-    var url = BASE_PUBLICA+'/qr/'+emp.qr_code;
+    var url = BASE_PUBLICA+'/qr.html?code='+emp.qr_code;
     var tipo = (emp.cortes && (TIPO_LABEL[emp.cortes.tipo_corte]||emp.cortes.tipo_corte)) || 'Corte';
     var peso = (emp.peso_neto!=null && emp.peso_neto!=='') ? (' · '+emp.peso_neto+' kg') : '';
     document.getElementById('etq-corte').textContent = tipo + peso;

@@ -54,6 +54,7 @@ setInterval(() => {
 }, 300000);
 
 export const ALLOWED_ORIGINS = [
+  'https://app.laaambcorderos.com',
   'https://laaambapp.vercel.app',
   'https://laaamb-gerente.github.io',
   'http://localhost:3000'

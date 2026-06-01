@@ -1,16 +1,21 @@
 // ─────────────────────────────────────────────────────────────
-// api/invite-user.js — proxy serverless (Vercel)
-// Crea un usuario en Supabase Auth + su perfil, usando la
+// api/delete-user.js — proxy serverless (Vercel)
+// Elimina DEFINITIVAMENTE un usuario de Supabase Auth usando la
 // service_role key (NUNCA expuesta al cliente).
 //
-// 🔒 SEGURIDAD (Sprint 0 — Acción 2):
+// 🔒 SEGURIDAD (mismo patrón que invite-user.js):
 //   Este endpoint usa la service_role key (permisos de admin). Antes de
 //   ejecutar cualquier acción exige:
 //     1. Header Authorization: Bearer <access_token de la sesión>.
 //     2. Que ese token sea válido (GET /auth/v1/user).
-//     3. Que el llamador tenga rol 'gerente' o 'administrador'.
+//     3. Que el llamador tenga rol 'gerente'.
+//     4. Que NO se esté eliminando a sí mismo (user_id !== caller.id).
 //   Además solo acepta orígenes de la allowlist. Sin esto, cualquiera en
-//   internet podría POST {rol:'gerente'} y crearse un admin.
+//   internet podría POST {user_id:'...'} y borrar usuarios.
+//
+//   El borrado en Auth NO elimina los registros del historial de
+//   auditoría (audit_log guarda usuario_email/usuario_rol como texto):
+//   la trazabilidad se conserva.
 //
 // ⚙️  CONFIGURAR EN VERCEL (Project Settings → Environment Variables):
 //   - SUPABASE_SERVICE_KEY  → Supabase: Project Settings → API → service_role key
@@ -20,7 +25,6 @@
 // SOLO en el servidor (Vercel), jamás en el navegador.
 // ─────────────────────────────────────────────────────────────
 
-import crypto from 'crypto';
 import { checkRateLimit } from './_auth.js';
 
 const ALLOWED_ORIGINS = [
@@ -50,7 +54,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Rate limiting por IP (5 req/min — estricto: crea usuarios admin)
+  // Rate limiting por IP (5 req/min — estricto: borra usuarios)
   const rl = checkRateLimit(req, 5, 60000);
   if (rl.limited) {
     res.setHeader('Retry-After', rl.retryAfter);
@@ -89,7 +93,7 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Token inválido' });
     }
 
-    // ── 3. Verificar que el llamador sea gerente o administrador ─
+    // ── 3. Verificar que el llamador sea gerente ───────────────
     const rolResp = await fetch(
       `${supabaseUrl}/rest/v1/perfiles?id=eq.${caller.id}&select=rol`,
       {
@@ -104,82 +108,35 @@ export default async function handler(req, res) {
     }
     const perfiles = await rolResp.json();
     const callerRol = Array.isArray(perfiles) && perfiles[0] ? perfiles[0].rol : null;
-    if (callerRol !== 'gerente' && callerRol !== 'administrador') {
-      return res.status(403).json({ error: 'No autorizado: se requiere rol gerente o administrador' });
+    if (callerRol !== 'gerente') {
+      return res.status(403).json({ error: 'No autorizado: se requiere rol gerente' });
     }
 
     // ── 4. Validar el payload ──────────────────────────────────
-    const { email, nombre, rol } = req.body || {};
-    if (!email || !nombre || !rol) {
-      return res.status(400).json({ error: 'Faltan datos: email, nombre y rol son obligatorios' });
+    const { user_id } = req.body || {};
+    if (!user_id) {
+      return res.status(400).json({ error: 'Falta user_id' });
     }
 
-    // ── 5. Lógica de creación (solo si pasó 1-4) ───────────────
-    // Contraseña temporal aleatoria (el usuario la cambiará luego)
-    const tempPassword = crypto.randomUUID().slice(0, 12) + '!A1';
+    // El gerente no puede eliminarse a sí mismo
+    if (user_id === caller.id) {
+      return res.status(400).json({ error: 'No puedes eliminarte a ti mismo' });
+    }
 
-    // 5a. Crear el usuario en Supabase Auth (admin API)
-    const resp = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
-      method: 'POST',
+    // ── 5. Eliminar el usuario en Supabase Auth (admin API) ────
+    const delResp = await fetch(`${supabaseUrl}/auth/v1/admin/users/${user_id}`, {
+      method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json',
         'apikey': serviceKey,
         'Authorization': `Bearer ${serviceKey}`
-      },
-      body: JSON.stringify({
-        email,
-        password: tempPassword,
-        email_confirm: true,
-        user_metadata: { nombre, rol }
-      })
-    });
-
-    const user = await resp.json();
-    if (!resp.ok) throw new Error(user.message || user.msg || 'Error creando usuario');
-
-    // 5b. Crear/actualizar el perfil asociado en la tabla perfiles.
-    // El trigger on_auth_user_created (0008) ya crea un perfil al crear el
-    // usuario en Auth, así que hacemos upsert (merge sobre id) para no
-    // chocar con esa fila y respetar el rol enviado.
-    const perfilResp = await fetch(
-      `${supabaseUrl}/rest/v1/perfiles?on_conflict=id`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': serviceKey,
-          'Authorization': `Bearer ${serviceKey}`,
-          'Prefer': 'resolution=merge-duplicates,return=minimal'
-        },
-        body: JSON.stringify({ id: user.id, nombre, email, rol, activo: true })
       }
-    );
-    if (!perfilResp.ok) {
-      // revertir el auth user huérfano para no dejar basura
-      await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
-        method: 'DELETE',
-        headers: { 'apikey': serviceKey, 'Authorization': `Bearer ${serviceKey}` }
-      });
-      const err = await perfilResp.json().catch(() => ({}));
-      throw new Error(err.message || 'No se pudo crear el perfil; usuario revertido');
+    });
+    if (!delResp.ok) {
+      const err = await delResp.json().catch(() => ({}));
+      throw new Error(err.message || err.msg || 'No se pudo eliminar el usuario');
     }
 
-    // 5c. Confirmar email (asegura que pueda iniciar sesión de inmediato)
-    await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': serviceKey,
-        'Authorization': `Bearer ${serviceKey}`
-      },
-      body: JSON.stringify({ email_confirm: true })
-    });
-
-    return res.status(200).json({
-      ok: true,
-      password: tempPassword,
-      mensaje: `Usuario ${nombre} creado. Comparte la contraseña temporal con el usuario.`
-    });
+    return res.status(200).json({ ok: true });
   } catch (e) {
     return res.status(500).json({ error: e.message });
   }
