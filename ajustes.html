@@ -697,10 +697,10 @@ async function saveColab(){
       body: JSON.stringify({ nombre, email, rol })
     });
     const data = await resp.json();
-    if(!resp.ok || data.error) throw new Error(data.error || 'Error creando usuario');
+    if(!resp.ok || data.error) throw new Error(data.error || 'Error enviando invitación');
     result.style.color = 'var(--green)';
-    result.innerHTML = '✓ '+escq(data.mensaje||'Usuario creado.')+(data.password?'<br><b>Contraseña temporal:</b> <code>'+escq(data.password)+'</code>':'');
-    toast('Usuario '+nombre+' creado');
+    result.innerHTML = '✉️ '+escq(data.message||('Invitación enviada a '+email+'.'));
+    toast('✉️ Invitación enviada a '+escq(email)+'.<br>Recibirá un correo para establecer su contraseña.');
     document.getElementById('nc-nombre').value='';
     document.getElementById('nc-email').value='';
     cargarEquipo();

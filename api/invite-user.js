@@ -1,7 +1,8 @@
 // ─────────────────────────────────────────────────────────────
 // api/invite-user.js — proxy serverless (Vercel)
-// Crea un usuario en Supabase Auth + su perfil, usando la
-// service_role key (NUNCA expuesta al cliente).
+// Invita a un usuario vía Supabase Auth (/admin/invite, envía email)
+// y crea su perfil, usando la service_role key (NUNCA expuesta al
+// cliente).
 //
 // 🔒 SEGURIDAD (Sprint 0 — Acción 2):
 //   Este endpoint usa la service_role key (permisos de admin). Antes de
@@ -20,7 +21,6 @@
 // SOLO en el servidor (Vercel), jamás en el navegador.
 // ─────────────────────────────────────────────────────────────
 
-import crypto from 'crypto';
 import { checkRateLimit } from './_auth.js';
 
 const ALLOWED_ORIGINS = [
@@ -114,28 +114,33 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Faltan datos: email, nombre y rol son obligatorios' });
     }
 
-    // ── 5. Lógica de creación (solo si pasó 1-4) ───────────────
-    // Contraseña temporal aleatoria (el usuario la cambiará luego)
-    const tempPassword = crypto.randomUUID().slice(0, 12) + '!A1';
-
-    // 5a. Crear el usuario en Supabase Auth (admin API)
-    const resp = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': serviceKey,
-        'Authorization': `Bearer ${serviceKey}`
-      },
-      body: JSON.stringify({
-        email,
-        password: tempPassword,
-        email_confirm: true,
-        user_metadata: { nombre, rol }
-      })
-    });
+    // ── 5. Lógica de invitación (solo si pasó 1-4) ─────────────
+    // 5a. Invitar vía endpoint oficial (envía email automático)
+    // El endpoint /auth/v1/admin/invite crea el usuario Y dispara el
+    // correo de invitación con link de acceso, usando el SMTP
+    // configurado (Resend + laaambcorderos.com). El usuario establece
+    // su propia contraseña al abrir el link: no se genera ninguna
+    // contraseña temporal del lado servidor.
+    const resp = await fetch(
+      `${supabaseUrl}/auth/v1/admin/invite`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': serviceKey,
+          'Authorization': `Bearer ${serviceKey}`
+        },
+        body: JSON.stringify({
+          email,
+          data: { nombre, rol }
+        })
+      }
+    );
 
     const user = await resp.json();
-    if (!resp.ok) throw new Error(user.message || user.msg || 'Error creando usuario');
+    if (!resp.ok) throw new Error(
+      user.message || user.msg || 'Error enviando invitación'
+    );
 
     // 5b. Crear/actualizar el perfil asociado en la tabla perfiles.
     // El trigger on_auth_user_created (0008) ya crea un perfil al crear el
@@ -164,21 +169,11 @@ export default async function handler(req, res) {
       throw new Error(err.message || 'No se pudo crear el perfil; usuario revertido');
     }
 
-    // 5c. Confirmar email (asegura que pueda iniciar sesión de inmediato)
-    await fetch(`${supabaseUrl}/auth/v1/admin/users/${user.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': serviceKey,
-        'Authorization': `Bearer ${serviceKey}`
-      },
-      body: JSON.stringify({ email_confirm: true })
-    });
-
     return res.status(200).json({
       ok: true,
-      password: tempPassword,
-      mensaje: `Usuario ${nombre} creado. Comparte la contraseña temporal con el usuario.`
+      message: 'Invitación enviada. ' + email +
+        ' recibirá un email para establecer su contraseña.',
+      userId: user.id
     });
   } catch (e) {
     return res.status(500).json({ error: e.message });
