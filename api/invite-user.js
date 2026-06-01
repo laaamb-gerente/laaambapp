@@ -115,48 +115,31 @@ export default async function handler(req, res) {
     }
 
     // ── 5. Lógica de invitación (solo si pasó 1-4) ─────────────
-    // 5a. Invitar vía endpoint oficial (envía email automático)
-    // El endpoint /auth/v1/admin/invite crea el usuario Y dispara el
-    // correo de invitación con link de acceso, usando el SMTP
-    // configurado (Resend + laaambcorderos.com). El usuario establece
-    // su propia contraseña al abrir el link: no se genera ninguna
-    // contraseña temporal del lado servidor.
-    const resp = await fetch(
-      `${supabaseUrl}/auth/v1/admin/invite`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': serviceKey,
-          'Authorization': `Bearer ${serviceKey}`
-        },
-        body: JSON.stringify({
-          email,
-          data: { nombre, rol }
-        })
-      }
+    // 5a. Invitar vía SDK oficial de Supabase
+    // (maneja internamente el endpoint correcto)
+    const { createClient } = await import(
+      '@supabase/supabase-js'
     );
-
-    const respText = await resp.text();
-    let user = {};
-    try {
-      user = JSON.parse(respText);
-    } catch(e) {
+    const supabaseAdmin = createClient(
+      supabaseUrl, serviceKey,
+      { auth: { autoRefreshToken: false,
+                persistSession: false } }
+    );
+    const { data: inviteData, error: inviteError } =
+      await supabaseAdmin.auth.admin.inviteUserByEmail(
+        email,
+        {
+          data: { nombre, rol },
+          redirectTo: 'https://app.laaambcorderos.com'
+        }
+      );
+    if (inviteError) {
       throw new Error(
-        'Error del servidor de autenticación (' +
-        resp.status + '). Detalle: ' +
-        respText.substring(0, 300)
+        inviteError.message ||
+        'Error enviando invitación'
       );
     }
-    if (!resp.ok) {
-      throw new Error(
-        user.message ||
-        user.error_description ||
-        user.msg ||
-        user.error ||
-        'Error enviando invitación (' + resp.status + ')'
-      );
-    }
+    const user = inviteData.user;
 
     // 5b. Crear/actualizar el perfil asociado en la tabla perfiles.
     // El trigger on_auth_user_created (0008) ya crea un perfil al crear el

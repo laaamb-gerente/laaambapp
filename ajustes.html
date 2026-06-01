@@ -101,6 +101,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .card-body{padding:20px}
 .section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);display:flex;align-items:center;gap:8px;margin:24px 0 14px}
 .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+/* ── Tabs (mismo patrón que reproduccion.html / salud.html) ── */
+.tab-nav{display:flex;gap:2px;padding:0 4px;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;margin-bottom:22px}
+.tn{padding:10px 18px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim);white-space:nowrap}
+.tn:hover{color:var(--text)}.tn.active{color:var(--teal);border-bottom-color:var(--teal)}
 .fg{margin-bottom:16px}
 .fl{display:block;font-size:11px;font-weight:600;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
 .fi{width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:9px 12px;color:var(--text);font-size:13px;font-family:'Changa',sans-serif;outline:none;transition:border-color var(--anim)}
@@ -270,6 +274,18 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
 
   <div class="content">
 
+    <!-- NAV DE TABS -->
+    <div class="tab-nav">
+      <div class="tn active" data-tab="general" onclick="ajustesTab('general')">🎨 General</div>
+      <div class="tn" data-tab="produccion" onclick="ajustesTab('produccion')">⚙️ Producción</div>
+      <div class="tn" data-tab="equipo" onclick="ajustesTab('equipo')">👥 Equipo</div>
+      <div class="tn" data-tab="integraciones" onclick="ajustesTab('integraciones')">🔗 Integraciones</div>
+      <div class="tn" data-tab="datos" onclick="ajustesTab('datos')">💾 Datos</div>
+    </div>
+
+    <!-- ════ TAB 1 · GENERAL (tema + fincas) ════ -->
+    <div id="t-general" class="tab-pane">
+
     <!-- TEMAS -->
     <div class="section-label">🎨 Tema de color</div>
     <div class="card">
@@ -353,6 +369,11 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
       </div>
     </div>
 
+    </div><!-- /t-general -->
+
+    <!-- ════ TAB 2 · PRODUCCIÓN (config + OKR) ════ -->
+    <div id="t-produccion" class="tab-pane" style="display:none">
+
     <!-- CONFIGURACIÓN DE PRODUCCIÓN -->
     <div class="section-label" id="config-produccion">
       <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:5px"><path d="M10 2v2M10 16v2M2 10h2M16 10h2"/><circle cx="10" cy="10" r="4"/></svg>
@@ -394,6 +415,11 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
         <div style="color:var(--text3);font-size:12px;padding:8px">Cargando metas…</div>
       </div>
     </div>
+
+    </div><!-- /t-produccion -->
+
+    <!-- ════ TAB 3 · EQUIPO (colaboradores + modales) ════ -->
+    <div id="t-equipo" class="tab-pane" style="display:none">
 
     <!-- COLABORADORES -->
     <div class="section-label">👥 Colaboradores</div>
@@ -444,6 +470,11 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
       </div>
     </div>
 
+    </div><!-- /t-equipo -->
+
+    <!-- ════ TAB 5 · DATOS (importar/exportar + backup) ════ -->
+    <div id="t-datos" class="tab-pane" style="display:none">
+
     <!-- IMPORTAR / EXPORTAR -->
     <div class="section-label">💾 Datos</div>
     <div class="card">
@@ -471,6 +502,11 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
         </div>
       </div>
     </div>
+
+    </div><!-- /t-datos -->
+
+    <!-- ════ TAB 4 · INTEGRACIONES (Siigo) ════ -->
+    <div id="t-integraciones" class="tab-pane" style="display:none">
 
     <div class="section-label" id="siigo">🔗 Integración Siigo</div>
     <div class="card">
@@ -511,6 +547,8 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
         </div>
       </div>
     </div>
+
+    </div><!-- /t-integraciones -->
 
     <div style="text-align:center;font-size:11px;color:var(--text4);margin-top:24px">
       LAAAMBAPP v1.0 · La Marinilla, Ibagué, Tolima · 2025 · Desarrollado con Claude
@@ -1275,8 +1313,53 @@ async function guardarMetasOKR(){
   }
 }
 
+// ── TABS DE AJUSTES ──────────────────────────────────────────────────────────
+var AJUSTES_TABS = ['general','produccion','equipo','integraciones','datos'];
+// Alias de anclas legadas (#fincas, #siigo, …) → tab que las contiene
+var AJUSTES_TAB_ALIAS = {
+  fincas:'general',
+  'config-produccion':'produccion',
+  'metas-okr':'produccion',
+  siigo:'integraciones',
+  'seguridad-datos':'datos'
+};
+function ajustesTab(name, fromHash){
+  if(AJUSTES_TABS.indexOf(name) < 0) name = 'general';
+  document.querySelectorAll('.tab-nav .tn').forEach(function(t){
+    t.classList.toggle('active', t.getAttribute('data-tab') === name);
+  });
+  document.querySelectorAll('.content .tab-pane').forEach(function(p){ p.style.display = 'none'; });
+  var pane = document.getElementById('t-' + name);
+  if(pane) pane.style.display = 'block';
+  try{ localStorage.setItem('laaaamb-ajustes-tab', name); }catch(e){}
+  if(!fromHash){
+    try{ history.replaceState(null, '', '#' + name); }catch(e){ location.hash = name; }
+  }
+}
+// Resuelve el hash actual (tab directo o ancla legada) y lo aplica.
+function applyAjustesHash(){
+  var raw = (location.hash || '').replace(/^#/, '');
+  if(!raw) return false;
+  if(AJUSTES_TABS.indexOf(raw) >= 0){ ajustesTab(raw, true); return true; }
+  if(AJUSTES_TAB_ALIAS[raw]){
+    ajustesTab(AJUSTES_TAB_ALIAS[raw], true);
+    var el = document.getElementById(raw);
+    if(el) setTimeout(function(){ el.scrollIntoView({ behavior:'smooth', block:'start' }); }, 80);
+    return true;
+  }
+  return false;
+}
+function initAjustesTabs(){
+  if(applyAjustesHash()) return;               // 1º prioridad: hash en URL
+  var saved = null;
+  try{ saved = localStorage.getItem('laaaamb-ajustes-tab'); }catch(e){}
+  ajustesTab(AJUSTES_TABS.indexOf(saved) >= 0 ? saved : 'general');
+}
+window.addEventListener('hashchange', applyAjustesHash);
+
 // ── INIT ─────────────────────────────────────────────────────────────────────
 (function init(){
+  initAjustesTabs();
   initTheme();
   // Cargar equipo desde Supabase (perfiles)
   cargarEquipo();
