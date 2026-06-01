@@ -137,10 +137,26 @@ export default async function handler(req, res) {
       }
     );
 
-    const user = await resp.json();
-    if (!resp.ok) throw new Error(
-      user.message || user.msg || 'Error enviando invitación'
-    );
+    const respText = await resp.text();
+    let user = {};
+    try {
+      user = JSON.parse(respText);
+    } catch(e) {
+      throw new Error(
+        'Error del servidor de autenticación (' +
+        resp.status + '). Detalle: ' +
+        respText.substring(0, 300)
+      );
+    }
+    if (!resp.ok) {
+      throw new Error(
+        user.message ||
+        user.error_description ||
+        user.msg ||
+        user.error ||
+        'Error enviando invitación (' + resp.status + ')'
+      );
+    }
 
     // 5b. Crear/actualizar el perfil asociado en la tabla perfiles.
     // El trigger on_auth_user_created (0008) ya crea un perfil al crear el
