@@ -30,8 +30,9 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
+<script src="js/approval.js?v=28"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=27"></script>
+<script src="js/db.js?v=28"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/alertas-motor.js"></script>
 <script src="js/app-state.js"></script>
@@ -433,6 +434,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div class="nav-group">Gestión</div>
     <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
     <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
+    <a class="nav-link" href="historial.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h7l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M7 11h6M7 14h4"/></svg>📋 Historial</a>
     <a class="nav-link" href="beneficio.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>Beneficio &amp; QR</a>
     <a class="nav-link" href="b2b.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="9" height="14" rx="1"/><path d="M12 8h5v9h-5"/><path d="M6 6h3M6 9h3M6 12h3"/></svg>Clientes B2B</a>
     <a class="nav-link" href="nomina.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="6" r="3"/><path d="M2 17c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M14 8h4M14 11h4M14 14h2"/></svg>Nómina &amp; Asistencia</a>
@@ -1377,7 +1379,11 @@ function saveTratamiento(tipo){
       observaciones: document.querySelector('#modal-trat-individual textarea')?.value||''
     };
 
-    AppData.registrarTratamiento(tratData, medId, dosisNum);
+    // El descuento de stock (local) NO ocurre si la acción queda pendiente:
+    // el stock se descuenta al APROBAR en la bandeja del gerente.
+    if(!window.Approval.requiresApproval()){
+      AppData.registrarTratamiento(tratData, medId, dosisNum);
+    }
 
     // ── PARTE 1C — Registrar tratamiento en Supabase ──
     if(window.DB && window.AppState && typeof window.DB.saveTratamiento==='function'){
@@ -1388,7 +1394,7 @@ function saveTratamiento(tipo){
       let _ffr=_fi;
       if(retiroDias>0){const _dd=new Date(_fi);_dd.setDate(_dd.getDate()+retiroDias);_ffr=_dd.toISOString().slice(0,10);}
       if(_a){
-        window.DB.saveTratamiento({
+        const _tPayload={
           finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
           animal_id:_a.id,
           medicamento_id:_med?_med.id:null,
@@ -1398,13 +1404,23 @@ function saveTratamiento(tipo){
           dias_retiro:retiroDias,
           fecha_fin_retiro:_ffr,
           registrado_por:'Juan Arbelaez',
-          notas:dx
+          notas:dx,
+          estado_aprobacion: window.Approval.getEstadoInicial(),
+          ...window.Approval.getPropuestoPor()
+        };
+        window.DB.saveTratamiento(_tPayload).then(function(res){
+          if(res && !res.error && res.data){
+            window.DB.logAudit(_tPayload.finca_id,'INSERT','tratamientos',res.data.id,null,_tPayload,null);
+          }
         }).catch(err=>console.warn('[Salud] saveTratamiento Supabase:',err&&err.message));
       }
     }
 
     closeModal('modal-trat-individual');
-    toast(`Tratamiento registrado · #${animalId} en tratamiento · Retiro: ${retiroDias}d`);
+    window.Approval.toastAprobacion(
+      `Tratamiento registrado · #${animalId} en tratamiento · Retiro: ${retiroDias}d`,
+      `⏳ Tratamiento registrado · Pendiente de aprobación. El stock se descuenta al aprobar.`
+    );
     loadFromAppData();
 
   } else {

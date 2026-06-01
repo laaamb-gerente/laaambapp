@@ -29,9 +29,10 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
+<script src="js/approval.js?v=28"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=27"></script>
+<script src="js/db.js?v=28"></script>
 <script src="js/alertas-motor.js"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
@@ -185,6 +186,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     <div class="nav-group">Gestión</div>
     <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
     <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
+    <a class="nav-link" href="historial.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h7l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M7 11h6M7 14h4"/></svg>📋 Historial</a>
     <a class="nav-link" href="beneficio.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>Beneficio &amp; QR</a>
     <a class="nav-link" href="b2b.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="9" height="14" rx="1"/><path d="M12 8h5v9h-5"/><path d="M6 6h3M6 9h3M6 12h3"/></svg>Clientes B2B</a>
     <a class="nav-link" href="nomina.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="6" r="3"/><path d="M2 17c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M14 8h4M14 11h4M14 14h2"/></svg>Nómina &amp; Asistencia</a>
@@ -214,6 +216,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       <div class="alert-empty">Cargando alertas…</div>
     </div>
   </div>
+
+  <!-- BANDEJA DE APROBACIONES (solo gerente / administrador) -->
+  <section id="bandeja-aprobaciones" class="sec" style="display:none">
+    <div class="sec-title">
+      <span class="dot" style="background:#EF4444"></span>
+      ⏳ Pendiente de aprobación
+      <span id="badge-pendientes" style="background:#EF4444;color:white;border-radius:99px;padding:2px 10px;font-size:0.8rem;margin-left:8px">0</span>
+    </div>
+    <div id="bandeja-lista" style="display:flex;flex-direction:column;gap:10px;margin-top:10px"></div>
+  </section>
 
   <!-- B) AGENDA DEL DÍA -->
   <div class="sec">
@@ -576,9 +588,108 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     }catch(e){ msg('Error: '+e.message, false); }
   };
 
+  // ── BANDEJA DE APROBACIONES (solo gerente / administrador) ──
+  function _rolPuedeAprobar(){ var r = window.AUTH_ROL || (window.AUTH_PERFIL && window.AUTH_PERFIL.rol) || ''; return r==='gerente' || r==='administrador'; }
+  function _hace(ts){
+    if(!ts) return '';
+    var diff = Math.floor((Date.now() - new Date(ts).getTime())/60000);
+    if(diff < 1) return 'recién';
+    if(diff < 60) return 'hace '+diff+' min';
+    var h = Math.floor(diff/60); if(h < 24) return 'hace '+h+'h';
+    return 'hace '+Math.floor(h/24)+'d';
+  }
+  function _bandejaToast(txt, color){
+    var c = document.getElementById('_bandeja-toasts');
+    if(!c){ c=document.createElement('div'); c.id='_bandeja-toasts'; c.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:8px;align-items:center'; document.body.appendChild(c); }
+    var t=document.createElement('div'); t.style.cssText='background:'+(color||'#16A34A')+';color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.25)'; t.textContent=txt; c.appendChild(t); setTimeout(function(){ t.remove(); }, 3000);
+  }
+  function _card(modulo, tabla, id, color, titulo, detalle, created_at, propuesto_por, propuesto_por_rol, fotoUrl, extra){
+    var quien = esc(propuesto_por||'—') + (propuesto_por_rol?' ('+esc(propuesto_por_rol)+')':'');
+    var foto = fotoUrl ? '<a href="'+esc(fotoUrl)+'" target="_blank" rel="noopener" style="font-size:11px;color:var(--teal);text-decoration:none;margin-right:auto">📷 Ver foto</a>' : '<span style="margin-right:auto"></span>';
+    return '<div class="agenda-card" data-tabla="'+esc(tabla)+'" data-id="'+esc(id)+'" data-extra="'+esc(JSON.stringify(extra||{}))+'" style="border-left:4px solid '+color+'">'
+      + '<div style="font-size:12px;font-weight:700;color:var(--text)">'+esc(modulo)+' · '+titulo+'</div>'
+      + '<div style="font-size:11px;color:var(--text2);margin:3px 0 2px">'+quien+' · '+esc(_hace(created_at))+'</div>'
+      + '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">'+esc(detalle)+'</div>'
+      + '<div style="display:flex;align-items:center;gap:8px">'+foto
+      + '<button class="btn btn-sm" style="background:#16A34A;color:#fff" onclick="window._bandeja.aprobar(this)">✅ Aprobar</button>'
+      + '<button class="btn btn-sm" style="background:#EF4444;color:#fff" onclick="window._bandeja.rechazar(this)">❌ Rechazar</button>'
+      + '</div></div>';
+  }
+  async function renderBandeja(){
+    var sec = document.getElementById('bandeja-aprobaciones');
+    if(!sec) return;
+    if(!_rolPuedeAprobar()){ sec.style.display='none'; return; }
+    var data;
+    try{ data = await window.DB.getPendingApprovals(FINCA_ID); }catch(e){ sec.style.display='none'; return; }
+    var html = '';
+    (data.bajas||[]).forEach(function(b){
+      var cod = (b.animales && b.animales.codigo) || b.animal_id || '—';
+      html += _card('🔴 BAJA','bajas',b.id,'#EF4444',String(b.tipo||'baja').toUpperCase()+' · '+esc(cod),(b.causa||'—'),b.created_at,b.propuesto_por,b.propuesto_por_rol,b.foto_evidencia_url,{});
+    });
+    (data.tratamientos||[]).forEach(function(t){
+      var cod = (t.animales && t.animales.codigo) || t.animal_id || '—';
+      var med = (t.medicamentos && t.medicamentos.nombre) || '';
+      var det = (med?med+' · ':'')+(t.dosis!=null?t.dosis+' '+(t.unidad||''):'')+(t.notas?' · '+t.notas:'');
+      html += _card('🟡 TRATAMIENTO','tratamientos',t.id,'#F59E0B','TRATAMIENTO · '+esc(cod),det,t.created_at,t.propuesto_por,t.propuesto_por_rol,null,{medicamento_id:t.medicamento_id,dosis:t.dosis});
+    });
+    (data.pesajes||[]).forEach(function(p){
+      var cod = (p.animales && p.animales.codigo) || p.animal_id || '—';
+      html += _card('🔵 PESAJE','pesajes',p.id,'#3B82F6','PESAJE · '+esc(cod),(p.peso!=null?p.peso+' kg':'—')+' · '+(p.fecha||''),p.created_at,p.propuesto_por,p.propuesto_por_rol,null,{});
+    });
+    (data.eventos||[]).forEach(function(ev){
+      var cod = (ev.animales && ev.animales.codigo) || ev.hembra_id || '—';
+      var foto = (ev.datos && ev.datos.foto_url) ? ev.datos.foto_url : null;
+      html += _card('🟣 REPRODUCCIÓN','eventos_reproductivos',ev.id,'#A855F7',String(ev.tipo||'evento').toUpperCase()+' · '+esc(cod),(ev.resultado||'')+(ev.notas?' · '+ev.notas:''),ev.created_at,ev.propuesto_por,ev.propuesto_por_rol,foto,{hembra_id:ev.hembra_id});
+    });
+    var total = (data.bajas||[]).length+(data.tratamientos||[]).length+(data.pesajes||[]).length+(data.eventos||[]).length;
+    var badge = document.getElementById('badge-pendientes'); if(badge) badge.textContent = total;
+    var lista = document.getElementById('bandeja-lista'); if(lista) lista.innerHTML = html;
+    sec.style.display = total>0 ? '' : 'none';
+  }
+  function _refreshBadge(){
+    var lista = document.getElementById('bandeja-lista');
+    var n = lista ? lista.querySelectorAll('[data-tabla]').length : 0;
+    var badge = document.getElementById('badge-pendientes'); if(badge) badge.textContent = n;
+    var sec = document.getElementById('bandeja-aprobaciones'); if(sec && n===0) sec.style.display='none';
+  }
+  window._bandeja = {
+    aprobar: async function(btn){
+      var card = btn.closest('[data-tabla]'); if(!card) return;
+      var tabla = card.getAttribute('data-tabla'); var id = card.getAttribute('data-id');
+      var extra = {}; try{ extra = JSON.parse(card.getAttribute('data-extra')||'{}'); }catch(e){}
+      btn.disabled = true;
+      try{
+        var res = await window.DB.aprobarRegistro(tabla, id);
+        if(res.error) throw new Error(res.error.message||'Error');
+        // Efectos colaterales que SOLO ocurren al aprobar:
+        if(tabla==='tratamientos' && extra.medicamento_id){
+          await window.DB.descontarStockMedicamento(extra.medicamento_id, extra.dosis);
+        }
+        if(tabla==='eventos_reproductivos' && extra.hembra_id){
+          if(window.DB.updateEstadoReproductivo) await window.DB.updateEstadoReproductivo(extra.hembra_id,'vacia',null,null);
+          if(window.DB.marcarMontaFallida) window.DB.marcarMontaFallida(extra.hembra_id).catch(function(){});
+        }
+        card.remove(); _refreshBadge(); _bandejaToast('✅ Aprobado','#16A34A');
+      }catch(e){ btn.disabled=false; _bandejaToast('Error: '+e.message,'#EF4444'); }
+    },
+    rechazar: async function(btn){
+      var card = btn.closest('[data-tabla]'); if(!card) return;
+      var tabla = card.getAttribute('data-tabla'); var id = card.getAttribute('data-id');
+      var nota = window.prompt('Motivo del rechazo (queda en el audit trail):','');
+      if(nota===null) return;
+      btn.disabled = true;
+      try{
+        var res = await window.DB.rechazarRegistro(tabla, id, nota||'');
+        if(res.error) throw new Error(res.error.message||'Error');
+        card.remove(); _refreshBadge(); _bandejaToast('Rechazado','#EF4444');
+      }catch(e){ btn.disabled=false; _bandejaToast('Error: '+e.message,'#EF4444'); }
+    }
+  };
+
   // Disparar render cuando AppState esté listo
   if(window.AppState && window.AppState._loaded){ render(); }
   document.addEventListener('appstate:ready', render);
+  renderBandeja();
 })();
 </script>
 

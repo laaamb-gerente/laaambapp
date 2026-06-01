@@ -514,6 +514,133 @@ window.DB = {
       .order('fecha_inicio', { ascending: false });
   },
 
+  // ── AUDIT & APROBACIONES ─────────────────────────────
+
+  async logAudit(finca_id, accion, modulo,
+                 registro_id, datos_antes, datos_despues,
+                 nota) {
+    const email = window.AUTH_PERFIL?.email ||
+                  window.AUTH_PERFIL?.nombre || 'desconocido';
+    const rol = window.AUTH_ROL || 'desconocido';
+    return await window._sb.from('audit_log').insert({
+      finca_id, timestamp: new Date().toISOString(),
+      usuario_email: email, usuario_rol: rol,
+      accion, modulo, registro_id,
+      datos_antes: datos_antes || null,
+      datos_despues: datos_despues || null,
+      nota: nota || null
+    });
+  },
+
+  async getPendingApprovals(finca_id) {
+    // Trae todos los registros pendientes de todas las
+    // tablas críticas en una sola llamada usando Promise.all
+    const [bajas, tratos, pesajes, eventos] =
+      await Promise.all([
+        window._sb.from('bajas')
+          .select('id,animal_id,tipo,causa,fecha,peso_salida,' +
+                  'propuesto_por,propuesto_por_rol,' +
+                  'datos_clinicos,foto_evidencia_url,created_at,' +
+                  'animales(codigo)')
+          .eq('finca_id', finca_id)
+          .eq('estado_aprobacion', 'pendiente')
+          .order('created_at', { ascending: false }),
+        window._sb.from('tratamientos')
+          .select('id,animal_id,medicamento_id,dosis,unidad,' +
+                  'notas,fecha_inicio,propuesto_por,' +
+                  'propuesto_por_rol,created_at,' +
+                  'animales(codigo),medicamentos(nombre)')
+          .eq('finca_id', finca_id)
+          .eq('estado_aprobacion', 'pendiente')
+          .order('created_at', { ascending: false }),
+        window._sb.from('pesajes')
+          .select('id,animal_id,peso,fecha,' +
+                  'propuesto_por,propuesto_por_rol,' +
+                  'created_at,animales(codigo)')
+          .eq('finca_id', finca_id)
+          .eq('estado_aprobacion', 'pendiente')
+          .order('created_at', { ascending: false }),
+        window._sb.from('eventos_reproductivos')
+          .select('id,hembra_id,tipo,fecha,resultado,notas,' +
+                  'propuesto_por,propuesto_por_rol,' +
+                  'datos,created_at,animales:hembra_id(codigo)')
+          .eq('finca_id', finca_id)
+          .eq('estado_aprobacion', 'pendiente')
+          .order('created_at', { ascending: false })
+      ]);
+    return {
+      bajas: bajas.data || [],
+      tratamientos: tratos.data || [],
+      pesajes: pesajes.data || [],
+      eventos: eventos.data || []
+    };
+  },
+
+  async aprobarRegistro(tabla, id, nota) {
+    const email = window.AUTH_PERFIL?.email ||
+                  window.AUTH_PERFIL?.nombre || '';
+    const { data, error } = await window._sb
+      .from(tabla)
+      .update({
+        estado_aprobacion: 'aprobado',
+        aprobado_por: email,
+        fecha_aprobacion: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select().single();
+    if (!error) {
+      await this.logAudit(
+        data.finca_id, 'APPROVE', tabla, id,
+        null, { estado_aprobacion: 'aprobado' }, nota
+      );
+    }
+    return { data, error };
+  },
+
+  async rechazarRegistro(tabla, id, nota_rechazo) {
+    const email = window.AUTH_PERFIL?.email ||
+                  window.AUTH_PERFIL?.nombre || '';
+    const { data, error } = await window._sb
+      .from(tabla)
+      .update({
+        estado_aprobacion: 'rechazado',
+        aprobado_por: email,
+        fecha_aprobacion: new Date().toISOString(),
+        nota_rechazo
+      })
+      .eq('id', id)
+      .select().single();
+    if (!error) {
+      await this.logAudit(
+        data.finca_id, 'REJECT', tabla, id,
+        null, { estado_aprobacion: 'rechazado', nota_rechazo },
+        nota_rechazo
+      );
+    }
+    return { data, error };
+  },
+
+  async getAuditLog(finca_id, limit) {
+    return await window._sb.from('audit_log')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .order('timestamp', { ascending: false })
+      .limit(limit || 100);
+  },
+
+  // Descuenta `cantidad` del stock de un medicamento (medicamentos.stock_actual).
+  // Se invoca SOLO al aprobar un tratamiento — nunca al proponer.
+  async descontarStockMedicamento(medicamento_id, cantidad) {
+    if (!medicamento_id) return { data: null, error: null };
+    const cur = await window._sb.from('medicamentos')
+      .select('stock_actual').eq('id', medicamento_id).single();
+    const actual = (cur && cur.data && parseFloat(cur.data.stock_actual)) || 0;
+    const nuevo = Math.max(0, actual - (parseFloat(cantidad) || 0));
+    return await window._sb.from('medicamentos')
+      .update({ stock_actual: nuevo, updated_at: new Date() })
+      .eq('id', medicamento_id).select().single();
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();
