@@ -696,8 +696,16 @@ async function saveColab(){
       },
       body: JSON.stringify({ nombre, email, rol })
     });
-    const data = await resp.json();
-    if(!resp.ok || data.error) throw new Error(data.error || 'Error enviando invitación');
+    let data = {};
+    const contentType = resp.headers.get('content-type')||'';
+    if(contentType.includes('application/json')){
+      data = await resp.json();
+    } else {
+      const text = await resp.text();
+      throw new Error(text || 'Error del servidor ('+resp.status+')');
+    }
+    if(!resp.ok || data.error)
+      throw new Error(data.error || 'Error enviando invitación');
     result.style.color = 'var(--green)';
     result.innerHTML = '✉️ '+escq(data.message||('Invitación enviada a '+email+'.'));
     toast('✉️ Invitación enviada a '+escq(email)+'.<br>Recibirá un correo para establecer su contraseña.');
