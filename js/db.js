@@ -22,6 +22,13 @@ window.DB = {
   async getAnimal(id) {
     return await window._sb.from('animales').select('*').eq('id', id).single();
   },
+  // Crías de un animal: hijos donde figura como madre o como padre
+  async getCrias(animal_id) {
+    return await window._sb.from('animales')
+      .select('id, codigo, nombre, raza, fecha_nacimiento, peso_actual, estado, sexo')
+      .or('madre_id.eq.' + animal_id + ',padre_id.eq.' + animal_id)
+      .order('fecha_nacimiento', { ascending: false });
+  },
   async saveAnimal(animal) {
     const res = animal.id
       ? await window._sb.from('animales').update({...animal, updated_at: new Date()}).eq('id', animal.id).select().single()
@@ -100,6 +107,13 @@ window.DB = {
   },
   async saveTratamiento(t) {
     return await window._sb.from('tratamientos').insert(t).select().single();
+  },
+  // Tratamientos de un animal concreto (para su ficha individual)
+  async getTratamientosAnimal(animal_id) {
+    return await window._sb.from('tratamientos')
+      .select('*, medicamentos(nombre)')
+      .eq('animal_id', animal_id)
+      .order('fecha_inicio', { ascending: false });
   },
   async updateTratamiento(id, patch) {
     return await window._sb.from('tratamientos').update(patch).eq('id', id).select().single();

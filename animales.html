@@ -224,6 +224,39 @@ label.fl[for] + .fi:required,label.fl + .fi[required]{border-left:2px solid var(
 .sp-tab:hover{border-color:var(--border3);color:var(--text)}
 .sp-tab.active{background:var(--teal);border-color:var(--teal);color:#080f10}
 .sp-tab.active-bo{background:var(--amber);border-color:var(--amber);color:#080f10}
+
+/* ── FICHA INDIVIDUAL (Performance · Tratamientos · Linaje) ── */
+.ficha-head{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;margin-bottom:14px}
+.ficha-id{font-family:'Sigmar',cursive;font-size:20px;color:var(--text);margin-top:8px}
+.ficha-cat{font-size:13px;color:var(--text3);font-family:'Changa',sans-serif;font-weight:600}
+.ficha-meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 14px;margin-top:12px}
+.ficha-meta-grid>div{font-size:13px;color:var(--text)}
+.ficha-meta-grid>div span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:1px}
+.ficha-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);overflow-x:auto;margin-bottom:14px}
+.ftab{padding:9px 16px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim);white-space:nowrap}
+.ftab:hover{color:var(--text)}.ftab.active{color:var(--teal);border-bottom-color:var(--teal)}
+.fsubtab{padding:6px 14px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;border:1px solid var(--border2);border-radius:20px;white-space:nowrap;transition:all var(--anim)}
+.fsubtab.active{background:var(--teal);border-color:var(--teal);color:#fff}
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px}
+.kpi-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:3px}
+.kpi-val{font-size:17px;font-weight:700;color:var(--text)}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.ficha-skel{padding:24px;text-align:center;color:var(--text3);font-size:13px}
+.ficha-chart{background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px;margin-bottom:14px}
+.ficha-chart svg{width:100%;height:auto;display:block;overflow:visible}
+.ficha-pt{fill:var(--teal);stroke:var(--bg2);stroke-width:1.5}
+.lineage-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lineage-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px}
+.lineage-card h4{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);margin-bottom:8px}
+.lineage-row{font-size:12px;color:var(--text);margin-bottom:4px}
+.lineage-row b{color:var(--text3);font-weight:600}
+@media(max-width:768px){
+  .ficha-meta-grid{grid-template-columns:1fr 1fr}
+  .kpi-row{grid-template-columns:1fr}
+  .lineage-grid{grid-template-columns:1fr}
+  circle.ficha-pt{r:5.5}
+}
 </style>
 </head>
 <body>
@@ -687,6 +720,10 @@ function cambiarPagina(delta){
 
 // ── Perfil animal ─────────────────────────────────────────────────────────────
 function verPerfil(id){
+  // Nueva ficha estilo FlockFinder (Performance · Tratamientos · Linaje).
+  return verPerfilFicha(id);
+}
+function verPerfilLegacy(id){
   var a=allAnimales.find(function(x){return x.id===id;});
   if(!a) return;
   setEl('perfil-title', '#'+a.id+(a.nombre?' — '+a.nombre:''));
@@ -1179,6 +1216,303 @@ document.addEventListener('appstate:ready', function(e){
   console.log('[Animales] Cargados desde', e.detail.source, '—', activos.length, 'animales');
 });
 </script>
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+//  FICHA INDIVIDUAL — estilo FlockFinder (Performance · Tratamientos · Linaje)
+//  La ficha se abre con el MISMO mecanismo de hoy: modal #m-perfil (verPerfil).
+// ════════════════════════════════════════════════════════════════════════════
+var FICHA_PESO_META = 48; // kg objetivo de sacrificio (default)
+function _fichaFinca(){ return (window.AppState && window.AppState._finca_id) || 'a1b2c3d4-0000-0000-0000-000000000001'; }
+function _escF(s){ var d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
+function _diasEntre(f1,f2){ var a=new Date(f1),b=new Date(f2); return Math.round((b-a)/86400000); }
+function _semDesde(desde,hasta){ if(!desde) return null; var d=_diasEntre(desde,hasta||new Date()); return d<0?0:Math.floor(d/7); }
+function _fmtF(f){ if(!f) return '--'; var d=new Date(f); if(isNaN(d.getTime())) return String(f); var p=function(n){return (n<10?'0':'')+n;}; return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear(); }
+function _rawAnimal(a){ if(window.AppState && Array.isArray(window.AppState.animales) && a && a._uuid){ return window.AppState.animales.find(function(x){return x.id===a._uuid;})||null; } return null; }
+
+// ── PASO 4 — Cálculos de GDP ──
+function calcularGDP(pesajes){
+  // pesajes: [{fecha,peso}] ASC. Devuelve gdp por par consecutivo (g/día, 1 decimal).
+  if(!pesajes || pesajes.length<2) return [];
+  var out=[];
+  for(var i=1;i<pesajes.length;i++){
+    var dias=_diasEntre(pesajes[i-1].fecha,pesajes[i].fecha);
+    var gdp = dias>0 ? ((pesajes[i].peso-pesajes[i-1].peso)/dias)*1000 : null;
+    out.push(gdp==null?null:Math.round(gdp*10)/10);
+  }
+  return out;
+}
+function _gdpTotal(pesajes){
+  if(!pesajes || pesajes.length<2) return null;
+  var f=pesajes[0], l=pesajes[pesajes.length-1];
+  var dias=_diasEntre(f.fecha,l.fecha);
+  if(dias<=0) return null;
+  return Math.round(((l.peso-f.peso)/dias)*1000*10)/10;
+}
+function calcularEdadSacrificio(pesajes, pesoMeta, gdpActual){
+  pesoMeta = pesoMeta || FICHA_PESO_META;
+  if(!pesajes || !pesajes.length) return null;
+  var gdp = (gdpActual!=null && gdpActual>0) ? gdpActual : _gdpTotal(pesajes);
+  var ultimo = pesajes[pesajes.length-1].peso;
+  if(!gdp || gdp<=0) return null;
+  var kgRest = pesoMeta - ultimo;
+  if(kgRest<=0) return { dias_restantes:0, fecha_estimada:new Date() };
+  var diasRest = Math.ceil(kgRest/(gdp/1000));
+  return { dias_restantes:diasRest, fecha_estimada:new Date(Date.now()+diasRest*86400000) };
+}
+
+// ── PASO 5 — Gráfico SVG de pesos (generado por JS, sin librerías) ──
+function renderGraficoPesos(pesajes, pesoMeta, fechaNac){
+  pesoMeta = pesoMeta || FICHA_PESO_META;
+  if(!pesajes || !pesajes.length) return '<div class="ficha-skel">Sin pesajes registrados</div>';
+  var W=400,H=200,padL=42,padR=14,padT=12,padB=26;
+  var plotW=W-padL-padR, plotH=H-padT-padB;
+  var base = fechaNac || pesajes[0].fecha;
+  var weeks = pesajes.map(function(p){ var d=_diasEntre(base,p.fecha); return d<0?0:d/7; });
+  var xMax = Math.max.apply(null, weeks.concat([1]));
+  var pesos = pesajes.map(function(p){ return p.peso; });
+  var yMax = Math.max(pesoMeta, Math.max.apply(null,pesos)) * 1.12;
+  if(!(yMax>0)) yMax=pesoMeta*1.2;
+  var X=function(w){ return padL + (xMax>0?(w/xMax):0)*plotW; };
+  var Y=function(v){ return padT + plotH - (v/yMax)*plotH; };
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Curva de crecimiento">';
+  s+='<line x1="'+padL+'" y1="'+(padT+plotH)+'" x2="'+(W-padR)+'" y2="'+(padT+plotH)+'" stroke="var(--border2)" stroke-width="1"/>';
+  s+='<line x1="'+padL+'" y1="'+padT+'" x2="'+padL+'" y2="'+(padT+plotH)+'" stroke="var(--border2)" stroke-width="1"/>';
+  [0,0.5,1].forEach(function(fr){
+    var v=yMax*fr, y=Y(v);
+    s+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="var(--border)" stroke-width="0.5"/>';
+    s+='<text x="'+(padL-5)+'" y="'+(y+3)+'" text-anchor="end" font-size="9" fill="var(--text3)">'+Math.round(v)+'</text>';
+  });
+  [0,0.5,1].forEach(function(fr){
+    var w=xMax*fr, x=X(w);
+    s+='<text x="'+x+'" y="'+(padT+plotH+14)+'" text-anchor="middle" font-size="9" fill="var(--text3)">'+Math.round(w)+'</text>';
+  });
+  s+='<text x="'+(padL-5)+'" y="'+(padT-3)+'" text-anchor="end" font-size="8" fill="var(--text3)">kg</text>';
+  s+='<text x="'+(W-padR)+'" y="'+(padT+plotH+22)+'" text-anchor="end" font-size="8" fill="var(--text3)">semanas</text>';
+  // Línea meta punteada (naranja)
+  var ym=Y(pesoMeta);
+  s+='<line x1="'+padL+'" y1="'+ym+'" x2="'+(W-padR)+'" y2="'+ym+'" stroke="#F18F22" stroke-width="1.5" stroke-dasharray="5 4"/>';
+  s+='<text x="'+(W-padR)+'" y="'+(ym-4)+'" text-anchor="end" font-size="9" fill="#F18F22">meta '+pesoMeta+' kg</text>';
+  // Línea real de progreso (solo si ≥2 puntos)
+  if(pesajes.length>=2){
+    var pts=pesajes.map(function(p,i){ return X(weeks[i])+','+Y(p.peso); }).join(' ');
+    s+='<polyline points="'+pts+'" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linejoin="round"/>';
+  }
+  // Puntos con tooltip nativo (<title>)
+  pesajes.forEach(function(p,i){
+    s+='<circle class="ficha-pt" cx="'+X(weeks[i])+'" cy="'+Y(p.peso)+'" r="3.5"><title>'+p.peso+' kg · sem '+Math.round(weeks[i])+' · '+_fmtF(p.fecha)+'</title></circle>';
+  });
+  s+='</svg>';
+  if(pesajes.length<2){
+    s+='<div style="font-size:11px;color:var(--text3);text-align:center;margin-top:6px">Registra más pesajes para ver la curva de crecimiento</div>';
+  }
+  return s;
+}
+
+// ── Apertura de la ficha ──
+async function verPerfilFicha(id){
+  var a=allAnimales.find(function(x){return x.id===id;});
+  if(!a) return;
+  var raw=_rawAnimal(a)||{};
+  setEl('perfil-title', '#'+a.id+(a.nombre?' — '+a.nombre:''));
+  var estadoRaw = raw.estado || a.estado || '';
+  var estBadge = /activ/i.test(estadoRaw)?'b-green':(STATUS_BADGE[estadoRaw]||'b-gray');
+  var categoria = raw.categoria || a.categoria || (a.especie==='bovino'?'Bovino':'Ovino');
+  var sexoTxt = (a.sexo==='M'||raw.sexo==='macho')?'Macho':'Hembra';
+  var especieTxt = (a.especie==='bovino')?'Bovino':'Ovino';
+  var fechaNac = raw.fecha_nacimiento || a.fecha_nacimiento || null;
+  var sem = _semDesde(fechaNac);
+  var pesoAct = (raw.peso_actual!=null?raw.peso_actual:(a.peso_actual!=null?a.peso_actual:AppData.pesoActual(id)));
+  var header =
+    '<div class="ficha-head">'
+    +'<span class="badge '+estBadge+'">'+_escF(estadoRaw?estadoRaw.toUpperCase():'—')+'</span>'
+    +'<div class="ficha-id">'+_escF(a.codigo||a.id)+' <span class="ficha-cat">· '+_escF(categoria)+'</span></div>'
+    +'<div class="ficha-meta-grid">'
+      +'<div><span>Tipo</span>'+especieTxt+'</div>'
+      +'<div><span>Sexo</span>'+sexoTxt+'</div>'
+      +'<div><span>Raza</span>'+_escF(a.raza||raw.raza||'--')+'</div>'
+      +'<div><span>Edad</span>'+(sem!=null?sem+' sem':'--')+(fechaNac?' ('+_fmtF(fechaNac)+')':'')+'</div>'
+      +'<div><span>Lote</span>'+_escF(a.lote||'--')+'</div>'
+      +'<div><span>Peso actual</span>'+(pesoAct!=null&&pesoAct!==''?_escF(pesoAct)+' kg':'--')+'</div>'
+    +'</div></div>';
+  var tabs =
+    '<div class="ficha-tabs">'
+    +'<div class="ftab active" id="ftab-performance" onclick="fichaTab(\'performance\')">Performance</div>'
+    +'<div class="ftab" id="ftab-tratamientos" onclick="fichaTab(\'tratamientos\')">Tratamientos</div>'
+    +'<div class="ftab" id="ftab-linaje" onclick="fichaTab(\'linaje\')">Linaje</div>'
+    +'</div>'
+    +'<div id="fp-performance" class="ficha-pane"><div id="ficha-perf" class="ficha-skel">⏳ Cargando performance…</div></div>'
+    +'<div id="fp-tratamientos" class="ficha-pane" style="display:none"><div id="ficha-trts" class="ficha-skel">⏳ Cargando tratamientos…</div></div>'
+    +'<div id="fp-linaje" class="ficha-pane" style="display:none"><div id="ficha-linaje" class="ficha-skel">⏳ Cargando linaje…</div></div>';
+  setElHTML('perfil-body', header+tabs);
+  document.getElementById('btn-edit').onclick=function(){closeModal('m-perfil');abrirEditar(id);};
+  document.getElementById('btn-baja').onclick=function(){
+    if(confirm('¿Confirmar baja de #'+id+'? El animal saldrá del inventario activo.')){
+      AppData.registrarBaja({animal_id:id,tipo_baja:'muerte',fecha:new Date().toISOString().slice(0,10),colaborador:'Juan García'});
+      cargarDatos();closeModal('m-perfil');toast('Baja de #'+id+' registrada');
+    }
+  };
+  openModal('m-perfil');
+  _fichaLoadPerformance(a, raw, fechaNac);
+  _fichaLoadTratamientos(a);
+  _fichaLoadLinaje(a);
+}
+
+function fichaTab(name){
+  ['performance','tratamientos','linaje'].forEach(function(n){
+    var b=document.getElementById('ftab-'+n), p=document.getElementById('fp-'+n);
+    if(b) b.classList.toggle('active', n===name);
+    if(p) p.style.display = (n===name)?'block':'none';
+  });
+}
+function fichaSub(name){
+  ['padres','crias'].forEach(function(n){
+    var b=document.getElementById('fsub-'+n), p=document.getElementById('flz-'+n);
+    if(b) b.classList.toggle('active', n===name);
+    if(p) p.style.display=(n===name)?'block':'none';
+  });
+}
+function fichaRegistrarPesaje(cod){
+  closeModal('m-perfil');
+  var w=document.getElementById('w-animal');
+  if(w){ w.value=cod; if(typeof autoFillPesaje==='function') autoFillPesaje(cod); }
+  openModal('modal-pesaje');
+}
+function fichaVerPorUuid(uuid){
+  if(!uuid) return;
+  var t=allAnimales.find(function(x){return x._uuid===uuid;});
+  if(t){ verPerfilFicha(t.id); }
+  else { toast('Ese animal no está en el inventario activo','info'); }
+}
+
+// ── Cargas de datos (PASO 3) ──
+async function _fichaGetPesajes(a){
+  var rows=[];
+  try{
+    if(a._uuid && window.DB && typeof window.DB.getPesajes==='function'){
+      var res=await window.DB.getPesajes(_fichaFinca(), a._uuid);
+      if(res && !res.error && res.data){
+        rows=res.data.map(function(p){ return {fecha:p.fecha, peso:Number(p.peso)}; });
+      }
+    }
+  }catch(e){ console.warn('[Ficha] getPesajes:', e&&e.message); }
+  if(!rows.length && typeof AppData!=='undefined'){
+    var d=AppData.get();
+    rows=(d.pesajes||[]).filter(function(p){return p.animal_id===a.id;})
+      .map(function(p){ return {fecha:p.fecha, peso:Number(p.peso_kg!=null?p.peso_kg:p.peso)}; });
+  }
+  rows=rows.filter(function(p){ return p.fecha && !isNaN(p.peso); });
+  rows.sort(function(x,y){ return new Date(x.fecha)-new Date(y.fecha); });
+  return rows;
+}
+async function _fichaLoadPerformance(a, raw, fechaNac){
+  var cont=document.getElementById('ficha-perf'); if(!cont) return;
+  var pesajes;
+  try{ pesajes=await _fichaGetPesajes(a); }
+  catch(e){ cont.innerHTML='<div class="ficha-skel">No se pudieron cargar los pesajes (--)</div>'; return; }
+  var btnHTML='<div style="text-align:center"><button class="btn btn-primary btn-xs" onclick="fichaRegistrarPesaje(\''+_escF(a.codigo||a.id)+'\')">+ Registrar pesaje</button></div>';
+  if(!pesajes.length){
+    cont.innerHTML='<div class="ficha-skel">Sin pesajes registrados</div>'+btnHTML;
+    return;
+  }
+  var gdps=calcularGDP(pesajes);
+  var gdpAct = gdps.length?gdps[gdps.length-1]:null;
+  var gdpTot=_gdpTotal(pesajes);
+  var ultimo=pesajes[pesajes.length-1];
+  var sac=calcularEdadSacrificio(pesajes, FICHA_PESO_META, gdpAct);
+  var kpis='<div class="kpi-row">'
+    +'<div class="kpi-card"><div class="kpi-label">Último peso</div><div class="kpi-val">'+ultimo.peso+' kg</div><div class="kpi-sub">'+_fmtF(ultimo.fecha)+'</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">GDP total</div><div class="kpi-val">'+(gdpTot!=null?Math.round(gdpTot)+' g/día':'--')+'</div><div class="kpi-sub">desde nacimiento</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">Edad a sacrificio est.</div><div class="kpi-val">'+(sac?sac.dias_restantes+' días':'--')+'</div><div class="kpi-sub">'+(sac?'~'+_fmtF(sac.fecha_estimada)+' · '+FICHA_PESO_META+' kg':'meta '+FICHA_PESO_META+' kg')+'</div></div>'
+    +'</div>';
+  var chart='<div class="ficha-chart">'+renderGraficoPesos(pesajes, FICHA_PESO_META, fechaNac)+'</div>';
+  var rowsHtml=pesajes.map(function(p,i){
+    var edad=fechaNac?_semDesde(fechaNac,p.fecha):_semDesde(pesajes[0].fecha,p.fecha);
+    var gdpCell = i===0 ? '<span class="td-m">N/A</span>' : (gdps[i-1]!=null?Math.round(gdps[i-1]):'--');
+    var isLast=i===pesajes.length-1;
+    return '<tr'+(isLast?' style="background:var(--teal-bg)"':'')+'><td class="td-m">'+_fmtF(p.fecha)+'</td>'
+      +'<td style="font-weight:600;color:var(--teal)">'+p.peso+'</td>'
+      +'<td class="td-m">'+(edad!=null?edad+' sem':'--')+'</td>'
+      +'<td class="td-m">'+gdpCell+'</td></tr>';
+  }).join('');
+  var tabla='<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px"><table><thead><tr><th>Fecha</th><th>Peso (kg)</th><th>Edad</th><th>GDP (g/día)</th></tr></thead><tbody>'+rowsHtml+'</tbody></table></div>';
+  cont.innerHTML=kpis+chart+tabla+btnHTML;
+}
+async function _fichaLoadTratamientos(a){
+  var cont=document.getElementById('ficha-trts'); if(!cont) return;
+  var trts=[];
+  try{
+    if(a._uuid && window.DB && typeof window.DB.getTratamientosAnimal==='function'){
+      var res=await window.DB.getTratamientosAnimal(a._uuid);
+      if(res && !res.error && res.data) trts=res.data;
+    }
+  }catch(e){ console.warn('[Ficha] tratamientos:', e&&e.message); }
+  var linkBtn='<div style="text-align:center"><a class="btn btn-ghost btn-xs" href="salud.html">+ Registrar tratamiento</a></div>';
+  if(!trts.length){
+    cont.innerHTML='<div class="ficha-skel">Sin tratamientos registrados</div>'+linkBtn;
+    return;
+  }
+  var hoy=new Date().toISOString().slice(0,10);
+  var rows=trts.map(function(t){
+    var med=(t.medicamentos&&t.medicamentos.nombre)||t.medicamento_nombre||'--';
+    var dosis=(t.dosis!=null?t.dosis:'')+(t.unidad?(' '+t.unidad):'');
+    var via=t.via||'--';
+    var retiro=(t.dias_retiro!=null?t.dias_retiro:'--');
+    var estado,eb;
+    if(t.fecha_fin_retiro){
+      if(t.fecha_fin_retiro>=hoy){ estado='En retiro'; eb='b-amber'; }
+      else { estado='Finalizado'; eb='b-green'; }
+    } else { estado=t.estado||t.estado_aprobacion||'--'; eb='b-gray'; }
+    return '<tr><td class="td-m">'+_fmtF(t.fecha_inicio)+'</td><td>'+_escF(med)+'</td>'
+      +'<td class="td-m">'+_escF((dosis||'').trim()||'--')+'</td><td class="td-m">'+_escF(via)+'</td>'
+      +'<td class="td-m">'+_escF(retiro)+'</td><td><span class="badge '+eb+'">'+_escF(estado)+'</span></td>'
+      +'<td class="td-m">'+_escF(t.notas||'--')+'</td></tr>';
+  }).join('');
+  cont.innerHTML='<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);overflow:auto;margin-bottom:12px"><table><thead><tr><th>Fecha</th><th>Medicamento</th><th>Dosis</th><th>Vía</th><th>Retiro (días)</th><th>Estado</th><th>Notas</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+linkBtn;
+}
+async function _fichaLoadLinaje(a){
+  var cont=document.getElementById('ficha-linaje'); if(!cont) return;
+  var madre=null,padre=null,crias=[];
+  try{ if(a.madre_id && window.DB && window.DB.getAnimal){ var rm=await window.DB.getAnimal(a.madre_id); if(rm && !rm.error) madre=rm.data; } }catch(e){}
+  try{ if(a.padre_id && window.DB && window.DB.getAnimal){ var rp=await window.DB.getAnimal(a.padre_id); if(rp && !rp.error) padre=rp.data; } }catch(e){}
+  try{ if(a._uuid && window.DB && typeof window.DB.getCrias==='function'){ var rc=await window.DB.getCrias(a._uuid); if(rc && !rc.error && rc.data) crias=rc.data; } }catch(e){}
+  var razaCalc='';
+  if(madre&&padre&&madre.raza&&padre.raza&&madre.raza!==padre.raza){
+    razaCalc='<div style="font-size:12px;color:var(--text2);margin-bottom:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px">🧬 Raza calculada: <b style="color:var(--teal)">F1 '+_escF(padre.raza)+' x '+_escF(madre.raza)+'</b></div>';
+  }
+  function parentCard(titulo,p){
+    if(!p) return '<div class="lineage-card"><h4>'+titulo+'</h4><div class="lineage-row" style="font-size:18px;color:var(--text3)">--</div><div class="lineage-row" style="color:var(--text3)">No registrado</div></div>';
+    return '<div class="lineage-card"><h4>'+titulo+'</h4>'
+      +'<div class="lineage-row"><b>Código:</b> '+_escF(p.codigo||'--')+'</div>'
+      +'<div class="lineage-row"><b>Raza:</b> '+_escF(p.raza||'--')+'</div>'
+      +'<div class="lineage-row"><b>Estado:</b> '+_escF(p.estado||'--')+'</div>'
+      +'<button class="btn btn-ghost btn-xs" style="margin-top:6px" onclick="fichaVerPorUuid(\''+_escF(p.id)+'\')">Ver ficha</button>'
+      +'</div>';
+  }
+  var subPadres='<div class="lineage-grid">'+parentCard('Madre',madre)+parentCard('Padre',padre)+'</div>';
+  var esHembra=(a.sexo==='H');
+  var subCrias;
+  if(!crias.length){
+    subCrias='<div class="ficha-skel">'+(esHembra?'Sin crías registradas':'Sin descendencia registrada para este animal')+'</div>';
+  } else {
+    var cr=crias.map(function(c){
+      return '<tr><td class="td-id">#'+_escF(c.codigo||'--')+'</td><td class="td-m">'+_escF(c.raza||'--')+'</td>'
+        +'<td class="td-m">'+_fmtF(c.fecha_nacimiento)+'</td>'
+        +'<td class="td-m">'+(c.peso_actual!=null?_escF(c.peso_actual)+' kg':'--')+'</td>'
+        +'<td class="td-m">'+_escF(c.estado||'--')+'</td></tr>';
+    }).join('');
+    subCrias='<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);overflow:auto"><table><thead><tr><th>Código</th><th>Raza</th><th>Fecha nac.</th><th>Peso actual</th><th>Estado</th></tr></thead><tbody>'+cr+'</tbody></table></div>';
+  }
+  cont.innerHTML=
+    '<div style="display:flex;gap:6px;margin-bottom:12px">'
+    +'<div class="fsubtab active" id="fsub-padres" onclick="fichaSub(\'padres\')">Padres</div>'
+    +'<div class="fsubtab" id="fsub-crias" onclick="fichaSub(\'crias\')">Crías</div>'
+    +'</div>'
+    +razaCalc
+    +'<div id="flz-padres">'+subPadres+'</div>'
+    +'<div id="flz-crias" style="display:none">'+subCrias+'</div>';
+}
+</script>
+
 <!-- FAB pesaje rápido (solo móvil) -->
 <button id="pesaje-fab"
     onclick="openModal('modal-pesaje')"
