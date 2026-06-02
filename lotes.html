@@ -772,8 +772,8 @@ function initMap(){
   // Exponer el mapa para listeners externos (appstate:ready)
   window._map = MAP;
 
-  // Centro inicial — vereda San Bernardo, Ibagué, Tolima
-  MAP.setView([4.2339,-75.1982],15);
+  // Centro inicial — vereda San Bernardo, Ibagué, Tolima (La Marinilla)
+  MAP.setView([4.3574,-75.0822],16);
 
   // Click handler para dibujo
   MAP.on('click',function(e){
@@ -1052,6 +1052,24 @@ function loadGeometries(){
     if(!geo[key]&&l.geometry&&l.geometry.length>=3){geo[key]={type:'Polygon',coordinates:[l.geometry.map(function(p){return[p.lng,p.lat];})]}; geo[key].coordinates[0].push(geo[key].coordinates[0][0]);}
     if(geo[key]) renderLoteLayer(l.id, l, geo[key]);
   });
+
+  // Al terminar de cargar todas las geometrías, si hay polígonos con bounds,
+  // ajustar el mapa para mostrarlos todos (sin importar dónde estén).
+  var allBounds = [];
+  [fincaLayers, loteLayers].forEach(function(store){
+    Object.keys(store||{}).forEach(function(k){
+      try {
+        var layer = store[k];
+        var poly = (layer && layer.poly) ? layer.poly : layer; // loteLayers={poly,label}; fincaLayers=poly
+        if (poly && typeof poly.getBounds === 'function') allBounds.push(poly.getBounds());
+      } catch(e) {}
+    });
+  });
+  if (allBounds.length > 0) {
+    var combined = allBounds[0];
+    allBounds.forEach(function(b){ combined.extend(b); });
+    MAP.fitBounds(combined, { padding: [40, 40] });
+  }
 }
 
 function renderFincaLayer(fincaId, geojson){
