@@ -257,6 +257,7 @@ label.fl[for] + .fi:required,label.fl + .fi[required]{border-left:2px solid var(
   .lineage-grid{grid-template-columns:1fr}
   circle.ficha-pt{r:5.5}
 }
+.retiro-banner{background:#DC2626;color:#fff;padding:10px 14px;border-radius:var(--r,8px);font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
 </style>
 </head>
 <body>
@@ -1331,7 +1332,8 @@ async function verPerfilFicha(id){
       +'<div><span>Sexo</span>'+sexoTxt+'</div>'
       +'<div><span>Raza</span>'+_escF(a.raza||raw.raza||'--')+'</div>'
       +'<div><span>Edad</span>'+(sem!=null?sem+' sem':'--')+(fechaNac?' ('+_fmtF(fechaNac)+')':'')+'</div>'
-      +'<div><span>Lote</span>'+_escF(a.lote||'--')+'</div>'
+      +'<div><span>Grupo</span>'+_escF(raw.categoria||a.categoria||'--')+'</div>'
+      +'<div><span>Potrero</span>'+_escF(a.lote||'--')+'</div>'
       +'<div><span>Peso actual</span>'+(pesoAct!=null&&pesoAct!==''?_escF(pesoAct)+' kg':'--')+'</div>'
     +'</div></div>';
   var tabs =
@@ -1343,7 +1345,7 @@ async function verPerfilFicha(id){
     +'<div id="fp-performance" class="ficha-pane"><div id="ficha-perf" class="ficha-skel">⏳ Cargando performance…</div></div>'
     +'<div id="fp-tratamientos" class="ficha-pane" style="display:none"><div id="ficha-trts" class="ficha-skel">⏳ Cargando tratamientos…</div></div>'
     +'<div id="fp-linaje" class="ficha-pane" style="display:none"><div id="ficha-linaje" class="ficha-skel">⏳ Cargando linaje…</div></div>';
-  setElHTML('perfil-body', header+tabs);
+  setElHTML('perfil-body', header+'<div id="ficha-retiro-banner"></div>'+tabs);
   document.getElementById('btn-edit').onclick=function(){closeModal('m-perfil');abrirEditar(id);};
   document.getElementById('btn-baja').onclick=function(){
     if(confirm('¿Confirmar baja de #'+id+'? El animal saldrá del inventario activo.')){
@@ -1446,6 +1448,18 @@ async function _fichaLoadTratamientos(a){
       if(res && !res.error && res.data) trts=res.data;
     }
   }catch(e){ console.warn('[Ficha] tratamientos:', e&&e.message); }
+  // Banner de RETIRO (entre header y tabs): tratamiento con fecha_fin_retiro futura
+  (function(){
+    var bn=document.getElementById('ficha-retiro-banner');
+    if(!bn) return;
+    var hoyB=new Date().toISOString().slice(0,10);
+    var activos=trts.filter(function(t){ return t.fecha_fin_retiro && t.fecha_fin_retiro > hoyB; });
+    if(!activos.length){ bn.innerHTML=''; return; }
+    activos.sort(function(x,y){ return (x.fecha_fin_retiro<y.fecha_fin_retiro)?1:-1; });
+    var top=activos[0];
+    var medR=(top.medicamentos&&top.medicamentos.nombre)||top.medicamento_nombre||'medicamento';
+    bn.innerHTML='<div class="retiro-banner">⚠️ EN PERÍODO DE RETIRO · hasta '+_fmtF(top.fecha_fin_retiro)+' · '+_escF(medR)+' · No apto para sacrificio</div>';
+  })();
   var linkBtn='<div style="text-align:center"><a class="btn btn-ghost btn-xs" href="salud.html">+ Registrar tratamiento</a></div>';
   if(!trts.length){
     cont.innerHTML='<div class="ficha-skel">Sin tratamientos registrados</div>'+linkBtn;
