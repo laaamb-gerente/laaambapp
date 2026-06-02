@@ -20,8 +20,9 @@ window.Auth = {
     const { data: { session } } = await window._sb.auth.getSession();
 
     if (!session) {
-      // No hay sesión — redirigir a login
-      window.location.href = this._base() + 'login.html';
+      // No hay sesión — redirigir a login (preservando el #access_token del
+      // invite si llegó primero a otra página).
+      window.location.href = this._base() + 'login.html' + window.location.hash;
       return false;
     }
 

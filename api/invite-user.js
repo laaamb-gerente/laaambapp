@@ -130,7 +130,7 @@ export default async function handler(req, res) {
         email,
         {
           data: { nombre, rol },
-          redirectTo: 'https://app.laaambcorderos.com'
+          redirectTo: 'https://app.laaambcorderos.com/login.html'
         }
       );
     if (inviteError) {
