@@ -283,7 +283,7 @@ textarea.fi{resize:vertical;min-height:60px}
   <!-- ══ TAB 2 · INVENTARIO ══ -->
   <div id="t-inventario" class="tab-pane" style="display:none">
     <div class="card">
-      <div class="card-h"><div class="card-title">Suplementos</div><div class="card-sub">Grano y sal · stock, consumo y costo</div></div>
+      <div class="card-h"><div><div class="card-title">Suplementos</div><div class="card-sub">Insumos y mezclas · stock, consumo y costo</div></div><button class="btn btn-primary btn-sm" onclick="openProducirMezcla()">⚙ Producir mezcla</button></div>
       <div class="card-body tbl-wrap" id="tbl-suplementos"><div class="empty">Cargando…</div></div>
     </div>
     <div class="card">
@@ -340,6 +340,30 @@ textarea.fi{resize:vertical;min-height:60px}
   <div class="modal-foot">
     <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-compra')">Cancelar</button>
     <button class="btn btn-primary btn-sm" onclick="registrarCompra()">Guardar compra</button>
+  </div>
+</div></div>
+
+<!-- ══ MODAL PRODUCIR MEZCLA ══ -->
+<div class="overlay" id="modal-producir" onclick="if(event.target===this)closeModal('modal-producir')">
+<div class="modal modal-sm">
+  <div class="modal-head"><div class="modal-title">⚙ Producir mezcla</div><button class="modal-close" onclick="closeModal('modal-producir')">✕</button></div>
+  <div class="modal-body">
+    <div class="fg"><label class="fl">Tipo de mezcla</label>
+      <select class="fi" id="prod-tipo" onchange="renderProdIngredientes()">
+        <option value="Mezcla de Grano">Mezcla de Grano</option>
+        <option value="Mezcla de Sal Ovina">Mezcla de Sal</option>
+      </select>
+    </div>
+    <div class="fl" style="margin-top:10px">Ingredientes a usar</div>
+    <div id="prod-ingredientes"></div>
+    <div style="display:flex;justify-content:space-between;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:14px">
+      <span style="color:var(--text3)">Total mezcla</span>
+      <strong id="prod-total" style="color:var(--teal)">0 kg</strong>
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-producir')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" onclick="producirMezcla()">Producir mezcla →</button>
   </div>
 </div></div>
 
@@ -489,12 +513,27 @@ async function loadNutricion(){
     renderHoy(); renderInventario(); renderRecetas(); renderRaciones(); fillCalcSelect(); window.renderCalc();
   }catch(e){ console.error('[nutricion] load',e); toast('Error cargando datos','error'); }
 }
+// Ingredientes individuales (insumos que se compran) — el usuario puede agregar más.
+const INGREDIENTES_BASE = [
+  {ingrediente:'Maíz molido',           tipo:'grano', stock_kg:0, unidad:'kg', kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:50},
+  {ingrediente:'Sorgo de grano',        tipo:'grano', stock_kg:0, unidad:'kg', kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:30},
+  {ingrediente:'Torta de soya',         tipo:'grano', stock_kg:0, unidad:'kg', kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:20},
+  {ingrediente:'Sal mineralizada ovina',tipo:'sal',  stock_kg:0, unidad:'kg', kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:10},
+  {ingrediente:'Heno',                  tipo:'heno', stock_kg:0, unidad:'fardos', kg_por_unidad:20, costo_por_kg:0, stock_minimo_kg:100},
+];
+// Mezclas (lo que se ENTREGA a los animales) — su stock se abastece produciendo.
+const MEZCLAS_BASE = [
+  {ingrediente:'Mezcla de Grano',     tipo:'grano', stock_kg:0, unidad:'kg', kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:50},
+  {ingrediente:'Mezcla de Sal Ovina', tipo:'sal',   stock_kg:0, unidad:'kg', kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:10},
+];
+const MEZCLA_NOMBRES = ['Mezcla de Grano','Mezcla de Sal Ovina'];
+function _esMezcla(i){ return MEZCLA_NOMBRES.indexOf(i.ingrediente)>=0; }
 async function ensureBaseInventario(){
-  const have={}; INVENTARIO.forEach(function(i){ have[i.tipo]=true; });
+  const names={}; INVENTARIO.forEach(function(i){ names[(i.ingrediente||'').toLowerCase()]=true; });
   const base=[];
-  if(!have.grano)base.push({finca_id:FINCA,ingrediente:'Mezcla de Grano',tipo:'grano',stock_kg:0,unidad:'kg',kg_por_unidad:1,costo_por_kg:0,stock_minimo_kg:50});
-  if(!have.sal)base.push({finca_id:FINCA,ingrediente:'Mezcla de Sal Ovina',tipo:'sal',stock_kg:0,unidad:'kg',kg_por_unidad:1,costo_por_kg:0,stock_minimo_kg:10});
-  if(!have.heno)base.push({finca_id:FINCA,ingrediente:'Heno',tipo:'heno',stock_kg:0,unidad:'fardos',kg_por_unidad:20,costo_por_kg:0,stock_minimo_kg:100});
+  INGREDIENTES_BASE.concat(MEZCLAS_BASE).forEach(function(b){
+    if(!names[b.ingrediente.toLowerCase()]) base.push(Object.assign({finca_id:FINCA}, b));
+  });
   if(base.length){
     try{ const res=await window._sb.from('inventario_nutricion').insert(base).select(); if(res&&res.data)INVENTARIO=INVENTARIO.concat(res.data); }
     catch(e){ console.warn('ensureBaseInventario',e); }
@@ -624,6 +663,67 @@ function estadoBadge(i,cons){
   if(dias<7)return '<span class="badge b-amber">🟡 Bajo</span>';
   return '<span class="badge b-green">🟢 OK</span>';
 }
+
+// ── PRODUCIR MEZCLA (desde ingredientes individuales) ──
+function _tipoDeMezcla(nombre){ return nombre==='Mezcla de Sal Ovina' ? 'sal' : 'grano'; }
+function openProducirMezcla(){
+  var sel=document.getElementById('prod-tipo'); if(sel) sel.value='Mezcla de Grano';
+  renderProdIngredientes();
+  openModal('modal-producir');
+}
+function renderProdIngredientes(){
+  var mezcla=document.getElementById('prod-tipo').value;
+  var tipo=_tipoDeMezcla(mezcla);
+  var ings=INVENTARIO.filter(function(i){ return i.tipo===tipo && !_esMezcla(i) && (+i.stock_kg||0)>0; });
+  var cont=document.getElementById('prod-ingredientes');
+  if(!ings.length){ cont.innerHTML='<div class="empty" style="font-size:12px;padding:10px">Sin ingredientes con stock para este tipo. Registra compras primero.</div>'; calcMezclaTotal(); return; }
+  cont.innerHTML=ings.map(function(i){
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">'
+      +'<span style="flex:1;font-size:13px">'+esc(i.ingrediente)+'</span>'
+      +'<input class="fi" type="number" min="0" step="0.1" style="width:90px" data-ing-id="'+i.id+'" data-stock="'+(+i.stock_kg||0)+'" placeholder="0" oninput="calcMezclaTotal()">'
+      +'<span style="font-size:11px;color:var(--text3);white-space:nowrap">de '+fmtNum(i.stock_kg,1)+' kg</span>'
+      +'</div>';
+  }).join('');
+  calcMezclaTotal();
+}
+function calcMezclaTotal(){
+  var total=0;
+  document.querySelectorAll('#prod-ingredientes input[data-ing-id]').forEach(function(inp){ total+=parseFloat(inp.value)||0; });
+  var el=document.getElementById('prod-total'); if(el) el.textContent=fmtNum(total,1)+' kg';
+  return total;
+}
+async function producirMezcla(){
+  var mezclaNombre=document.getElementById('prod-tipo').value;
+  var inputs=Array.prototype.slice.call(document.querySelectorAll('#prod-ingredientes input[data-ing-id]'));
+  var usos=[]; var total=0;
+  for(var k=0;k<inputs.length;k++){
+    var v=parseFloat(inputs[k].value)||0; if(v<=0) continue;
+    var stock=parseFloat(inputs[k].getAttribute('data-stock'))||0;
+    if(v>stock){ toast('No hay suficiente stock de un ingrediente','error'); return; }
+    usos.push({id:inputs[k].getAttribute('data-ing-id'), kg:v, stock:stock}); total+=v;
+  }
+  if(total<=0){ toast('Indica cuánto usar de cada ingrediente','error'); return; }
+  var mezcla=INVENTARIO.find(function(i){ return i.ingrediente===mezclaNombre; });
+  if(!mezcla){ toast('No se encontró la mezcla destino','error'); return; }
+  try{
+    // 1) descontar cada ingrediente usado
+    for(var u=0;u<usos.length;u++){
+      var nuevo=Math.max(0, usos[u].stock - usos[u].kg);
+      await window._sb.from('inventario_nutricion').update({stock_kg:nuevo, updated_at:new Date()}).eq('id', usos[u].id);
+      var loc=INVENTARIO.find(function(x){ return x.id===usos[u].id; }); if(loc) loc.stock_kg=nuevo;
+    }
+    // 2) sumar el total a la mezcla destino
+    var nuevoMezcla=(+mezcla.stock_kg||0)+total;
+    await window._sb.from('inventario_nutricion').update({stock_kg:nuevoMezcla, updated_at:new Date()}).eq('id', mezcla.id);
+    mezcla.stock_kg=nuevoMezcla;
+    // 3) log (best-effort, no rompe si la columna no existe)
+    try{ await window._sb.from('registros_alimentacion').insert({finca_id:FINCA, fecha:new Date().toISOString().slice(0,10), notas:'Producción de '+mezclaNombre+': '+fmtNum(total,1)+' kg'}); }catch(e){}
+    closeModal('modal-producir');
+    renderInventario();
+    toast(fmtNum(total,1)+' kg de '+mezclaNombre+' producidos');
+  }catch(e){ console.warn('producirMezcla',e); toast('Error al producir mezcla','error'); }
+}
+
 function renderInventario(){
   const sup=INVENTARIO.filter(function(i){ return i.tipo==='grano'||i.tipo==='sal'; });
   const heno=INVENTARIO.filter(function(i){ return i.tipo==='heno'; });
