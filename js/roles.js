@@ -16,14 +16,15 @@
     administrador: '*',
     veterinario: ['animales', 'reproduccion', 'salud', 'lotes', 'hoy', 'reportes'],
     auxiliar: ['animales', 'hoy', 'salud', 'reproduccion'],
-    socio: ['index', 'okr', 'reportes', 'finanzas']
+    // Socio: solo Dashboard, OKRs y Reportes ejecutivos (sin Finanzas).
+    socio: ['index', 'okr', 'reportes']
   };
 
   // Páginas donde el rol es SOLO LECTURA (se ocultan acciones de escritura).
   var READONLY_PAGES = {
     veterinario: ['reportes'],
     auxiliar: ['reproduccion'],
-    socio: ['index', 'okr', 'reportes', 'finanzas']
+    socio: ['index', 'okr', 'reportes']
   };
 
   // A dónde mandar al usuario si entra a una página no autorizada.

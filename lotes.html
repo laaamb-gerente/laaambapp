@@ -1845,6 +1845,32 @@ function guardarLote(){
     toast(nombre+' creado — dibuja su polígono en el mapa para visualizarlo');
   }
   AppData.save(d);
+  // ── Upsert a Supabase (tabla lotes) con pivote_id incluido ──
+  if(window.DB && typeof window.DB.saveLote==='function'){
+    var _isUuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(_editingLoteId||'');
+    var _fincaUuid=(window.AppState && window.AppState.finca && window.AppState.finca.id) || 'a1b2c3d4-0000-0000-0000-000000000001';
+    var _payload={
+      finca_id:_fincaUuid,
+      nombre:data.nombre,
+      hectareas:data.area_ha||null,
+      capacidad_animal:data.capacidad_max||null,
+      tipo_pastura:data.tipo_pasto||null,
+      dias_descanso_objetivo:data.dias_descanso_obj||null,
+      dias_pastoreo_objetivo:data.dias_pastoreo_obj||null,
+      pivote_id:data.pivote_id||null
+    };
+    if(_isUuid) _payload.id=_editingLoteId; // editar lote existente de Supabase
+    try{
+      window.DB.saveLote(_payload).then(function(res){
+        if(res && res.error){ console.warn('[Lotes] saveLote Supabase:', res.error.message); return; }
+        if(res && res.data && window.AppState && Array.isArray(window.AppState.lotes)){
+          var ex=window.AppState.lotes.find(function(x){ return x.id===res.data.id; });
+          if(ex){ Object.assign(ex,res.data); } else { window.AppState.lotes.push(res.data); }
+          renderLotesTab();
+        }
+      }).catch(function(e){ console.warn('[Lotes] saveLote:', e&&e.message); });
+    }catch(e){ console.warn('[Lotes] saveLote:', e&&e.message); }
+  }
   closeModal('modal-nuevo-lote');
   renderLotesTab();
   _editingLoteId=null;
