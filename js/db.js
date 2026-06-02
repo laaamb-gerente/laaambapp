@@ -239,6 +239,23 @@ window.DB = {
     return await window._sb.from('eventos_reproductivos')
       .insert(evento).select().single();
   },
+
+  // ── GRUPOS DE MONTA (un macho + N hembras, período conjunto) (0037) ──
+  async getGruposMonta(finca_id) {
+    return await window._sb.from('grupos_monta')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .order('fecha_inicio', { ascending: false });
+  },
+  async saveGrupoMonta(data) {
+    return await window._sb.from('grupos_monta')
+      .insert({ ...data, finca_id: 'a1b2c3d4-0000-0000-0000-000000000001' })
+      .select().single();
+  },
+  async updateGrupoMonta(id, updates) {
+    return await window._sb.from('grupos_monta')
+      .update({ ...updates, updated_at: new Date().toISOString() }).eq('id', id);
+  },
   async updateEventoReproductivo(id, patch) {
     return await window._sb.from('eventos_reproductivos')
       .update(patch).eq('id', id).select().single();
