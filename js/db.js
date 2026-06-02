@@ -10,6 +10,20 @@ window.DB = {
     }
     return await window._sb.from('fincas').insert(finca).select().single();
   },
+  // Perímetro de finca persistente (migración 0034). Fuente de verdad.
+  async getFincaPerimetro(finca_id) {
+    return await window._sb.from('fincas')
+      .select('perimetro_geojson, perimetro_area_ha, perimetro_centro_lat, perimetro_centro_lng')
+      .eq('id', finca_id).single();
+  },
+  async saveFincaPerimetro(finca_id, geojson, area_ha, centro_lat, centro_lng) {
+    return await window._sb.from('fincas').update({
+      perimetro_geojson: geojson,
+      perimetro_area_ha: area_ha,
+      perimetro_centro_lat: centro_lat,
+      perimetro_centro_lng: centro_lng
+    }).eq('id', finca_id);
+  },
 
   // ── ANIMALES ─────────────────────────────────────────
   async getAnimales(finca_id, filters = {}) {
