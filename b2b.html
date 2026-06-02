@@ -155,6 +155,15 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
 .item-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:8px}
 .item-row .fl{margin-bottom:4px}
 
+/* Cortes del pedido (checklist con precio/kg) */
+.corte-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.corte-row:last-child{border-bottom:none}
+.corte-check{display:flex;gap:8px;align-items:center;cursor:pointer;font-size:14px;flex:1}
+.corte-precio{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--text2)}
+.corte-precio input{width:90px;text-align:right;padding:4px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg2);color:var(--text);font-family:'Changa',sans-serif}
+.corte-precio input:disabled{opacity:0.4}
+.corte-precio input:not(:disabled){border-color:var(--teal)}
+
 /* KPI mini */
 .kpi-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px}
 .kpi-mini{flex:1;min-width:140px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px}
@@ -365,18 +374,32 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
         </div>
         <div class="fg"><label class="fl">Fecha de entrega</label><input class="fi" id="pe-entrega" type="date"></div>
       </div>
-      <div class="section-label" style="margin:8px 0 10px">Items del pedido</div>
-      <div id="pe-items"></div>
-      <button class="btn btn-ghost btn-sm" onclick="addItemRow()" style="margin-top:4px">+ Agregar item</button>
-      <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:14px">
-        <span style="color:var(--text3)">Total estimado</span>
-        <span style="font-weight:700;color:var(--teal)" id="pe-total">$0 · 0 kg</span>
-      </div>
+      <div class="section-label" style="margin:8px 0 10px">Cortes del pedido</div>
+      <div id="pe-cortes"></div>
       <div class="fg" style="margin-top:14px"><label class="fl">Notas</label><textarea class="fi" id="pe-notas" rows="2" placeholder="Observaciones del pedido"></textarea></div>
     </div>
     <div class="modal-f">
       <button class="btn btn-ghost" onclick="closeModal('modal-pedido')">Cancelar</button>
       <button class="btn btn-primary" onclick="savePedido()">Confirmar pedido</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL DETALLE PEDIDO ── -->
+<div class="modal-ov" id="modal-pedido-detalle">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-h">
+      <div class="modal-title">Detalle del pedido</div>
+      <button class="modal-x" onclick="closeModal('modal-pedido-detalle')">&times;</button>
+    </div>
+    <div class="modal-b">
+      <div class="fg"><label class="fl">Cliente</label><div id="det-cliente" style="font-weight:600;color:var(--text)"></div></div>
+      <div class="fg"><label class="fl">Datos</label><div id="det-meta" style="font-size:13px;color:var(--text2)"></div></div>
+      <div class="section-label" style="margin:8px 0 10px">Cortes del pedido</div>
+      <div id="det-cortes"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-ghost" onclick="closeModal('modal-pedido-detalle')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -416,6 +439,21 @@ function toast(msg,type){ var c=document.getElementById('toasts'); var t=documen
 var TIPO_LABEL = { restaurante:'Restaurante', hotel:'Hotel', supermercado:'Supermercado', distribuidor:'Distribuidor', exportador:'Exportador', otro:'Otro' };
 var COND_LABEL = { contado:'Contado', '15_dias':'15 días', '30_dias':'30 días', '45_dias':'45 días', '60_dias':'60 días' };
 var COND_DIAS = { contado:0, '15_dias':15, '30_dias':30, '45_dias':45, '60_dias':60 };
+
+// Cortes de La Marinilla (PASO 2)
+var CORTES_LAAAMB = [
+  { id: 'pernil',     nombre: 'Pernil' },
+  { id: 'paleta',     nombre: 'Paleta' },
+  { id: 'rack',       nombre: 'Rack Francés' },
+  { id: 'costillar',  nombre: 'Costillar' },
+  { id: 'tbone',      nombre: 'T-Bone' },
+  { id: 'tomahawk',   nombre: 'Tomahawk' },
+  { id: 'espinazo',   nombre: 'Espinazo' },
+  { id: 'cogote',     nombre: 'Cogote' },
+  { id: 'molida',     nombre: 'Molida' },
+  { id: 'rinon',      nombre: 'Riñón' },
+  { id: 'corazon',    nombre: 'Corazón' }
+];
 
 var _clientes = [];
 var _pedidos = [];
@@ -525,16 +563,33 @@ async function renderPedidos(){
   var estPill = { pendiente:'amber', confirmado:'sky', despachado:'sky', entregado:'green', cancelado:'red' };
   var rows = _pedidos.map(function(p){
     var cli = (p.clientes_b2b && p.clientes_b2b.razon_social) || '—';
-    return '<tr>'
+    var nCortes = Array.isArray(p.cortes) ? p.cortes.length : 0;
+    return '<tr style="cursor:pointer" onclick="openPedidoDetalle(\''+p.id+'\')">'
       +'<td><b>'+esc(cli)+'</b></td>'
       +'<td>'+fmtFecha(p.fecha_pedido)+'</td>'
       +'<td>'+fmtFecha(p.fecha_entrega)+'</td>'
-      +'<td>'+fmtKg(p.total_kg)+'</td>'
-      +'<td>'+fmtCOP(p.total_valor)+'</td>'
+      +'<td>'+(nCortes?nCortes+' corte'+(nCortes>1?'s':''):'<span class="td-muted">—</span>')+'</td>'
       +'<td><span class="pill '+(estPill[p.estado]||'')+'">'+esc(p.estado)+'</span></td>'
       +'</tr>';
   }).join('');
-  cont.innerHTML = '<table><thead><tr><th>Cliente</th><th>Pedido</th><th>Entrega</th><th>Kg</th><th>Valor</th><th>Estado</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  cont.innerHTML = '<table><thead><tr><th>Cliente</th><th>Pedido</th><th>Entrega</th><th>Cortes</th><th>Estado</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+
+// Detalle de un pedido — muestra cliente, datos y la tabla de cortes (PASO 5)
+function openPedidoDetalle(id){
+  var p = _pedidos.find(function(x){ return x.id===id; });
+  if(!p) return;
+  var cli = (p.clientes_b2b && p.clientes_b2b.razon_social) || '—';
+  var cortes = Array.isArray(p.cortes) ? p.cortes : [];
+  var cortesTbl = cortes.length
+    ? '<table><thead><tr><th>Corte</th><th style="text-align:right">Precio/kg</th></tr></thead><tbody>'
+      + cortes.map(function(c){ return '<tr><td>'+esc(c.nombre||c.corte)+'</td><td style="text-align:right">'+fmtCOP(c.precio_kg)+'</td></tr>'; }).join('')
+      + '</tbody></table>'
+    : '<div class="empty">Sin cortes registrados en este pedido.</div>';
+  document.getElementById('det-cliente').textContent = cli;
+  document.getElementById('det-meta').innerHTML = 'Pedido '+fmtFecha(p.fecha_pedido)+' · Entrega '+fmtFecha(p.fecha_entrega)+' · <span class="pill">'+esc(p.estado)+'</span>';
+  document.getElementById('det-cortes').innerHTML = cortesTbl;
+  document.getElementById('modal-pedido-detalle').classList.add('on');
 }
 
 function openPedidoModal(){
@@ -543,9 +598,7 @@ function openPedidoModal(){
   document.getElementById('pe-cliente').value = '';
   document.getElementById('pe-entrega').value = '';
   document.getElementById('pe-notas').value = '';
-  document.getElementById('pe-items').innerHTML = '';
-  addItemRow();
-  recalcPedidoTotal();
+  renderCortesChecklist();
   document.getElementById('modal-pedido').classList.add('on');
 }
 function precioClienteSel(){
@@ -553,76 +606,75 @@ function precioClienteSel(){
   var opt = sel.options[sel.selectedIndex];
   return opt ? (parseFloat(opt.dataset.precio)||0) : 0;
 }
+// Render del checklist de cortes (PASO 3)
+function renderCortesChecklist(){
+  var cont = document.getElementById('pe-cortes');
+  cont.innerHTML = CORTES_LAAAMB.map(function(c){
+    return '<div class="corte-row">'
+      +'<label class="corte-check">'
+        +'<input type="checkbox" data-corte="'+c.id+'" onchange="onCorteToggle(\''+c.id+'\')">'
+        +'<span>'+esc(c.nombre)+'</span>'
+      +'</label>'
+      +'<div class="corte-precio">'
+        +'<span>$</span>'
+        +'<input type="number" inputmode="numeric" placeholder="0" data-precio-corte="'+c.id+'" disabled min="0" step="1000">'
+        +'<span>/kg</span>'
+      +'</div>'
+    +'</div>';
+  }).join('');
+}
+// Al marcar/desmarcar un corte: habilita su precio, pre-llena y enfoca
+function onCorteToggle(id){
+  var chk = document.querySelector('[data-corte="'+id+'"]');
+  var inp = document.querySelector('[data-precio-corte="'+id+'"]');
+  if(!chk || !inp) return;
+  if(chk.checked){
+    inp.disabled = false;
+    var pc = precioClienteSel();
+    if((!inp.value || parseFloat(inp.value)===0) && pc) inp.value = pc;
+    inp.focus();
+  } else {
+    inp.disabled = true;
+  }
+}
 function onPedidoClienteChange(){
-  // Pre-llenar precios vacíos con el precio negociado del cliente
+  // Pre-llenar el precio de los cortes marcados que estén vacíos
   var precio = precioClienteSel();
   if(!precio) return;
-  document.querySelectorAll('#pe-items .item-precio').forEach(function(inp){
-    if(!inp.value || parseFloat(inp.value)===0) inp.value = precio;
+  document.querySelectorAll('#pe-cortes input[data-precio-corte]').forEach(function(inp){
+    if(!inp.disabled && (!inp.value || parseFloat(inp.value)===0)) inp.value = precio;
   });
-  recalcPedidoTotal();
-}
-function addItemRow(){
-  var precio = precioClienteSel();
-  var div = document.createElement('div');
-  div.className = 'item-row';
-  div.innerHTML =
-    '<div><label class="fl">Tipo de corte</label><input class="fi item-corte" placeholder="Ej: Pierna, Costillar"></div>'
-    +'<div><label class="fl">Kg</label><input class="fi item-kg" type="number" min="0" step="0.1" oninput="recalcPedidoTotal()" placeholder="0"></div>'
-    +'<div><label class="fl">$/kg</label><input class="fi item-precio" type="number" min="0" value="'+(precio||'')+'" oninput="recalcPedidoTotal()" placeholder="0"></div>'
-    +'<button class="btn btn-ghost btn-sm" onclick="this.parentNode.remove();recalcPedidoTotal()" style="height:37px">✕</button>';
-  document.getElementById('pe-items').appendChild(div);
-}
-function recalcPedidoTotal(){
-  var totalKg=0, totalValor=0;
-  document.querySelectorAll('#pe-items .item-row').forEach(function(row){
-    var kg = parseFloat(row.querySelector('.item-kg').value)||0;
-    var pr = parseFloat(row.querySelector('.item-precio').value)||0;
-    totalKg += kg; totalValor += kg*pr;
-  });
-  document.getElementById('pe-total').textContent = fmtCOP(totalValor)+' · '+fmtKg(totalKg);
 }
 async function savePedido(){
   var clienteId = document.getElementById('pe-cliente').value;
   if(!clienteId){ toast('Selecciona un cliente','err'); return; }
-  var items = [];
-  document.querySelectorAll('#pe-items .item-row').forEach(function(row){
-    var corte = (row.querySelector('.item-corte').value||'').trim();
-    var kg = parseFloat(row.querySelector('.item-kg').value)||0;
-    var pr = parseFloat(row.querySelector('.item-precio').value)||0;
-    if(corte && kg>0) items.push({ tipo_corte:corte, kg_solicitados:kg, precio_kg:pr });
+  // Validación: cada corte marcado necesita precio > 0
+  var precioFaltante = CORTES_LAAAMB.some(function(c){
+    var chk = document.querySelector('[data-corte="'+c.id+'"]');
+    if(!chk || !chk.checked) return false;
+    var pr = Number(document.querySelector('[data-precio-corte="'+c.id+'"]').value);
+    return !(pr > 0);
   });
-  if(!items.length){ toast('Agrega al menos un item válido','err'); return; }
-  var totalKg = items.reduce(function(s,i){ return s+i.kg_solicitados; },0);
-  var totalValor = items.reduce(function(s,i){ return s+i.kg_solicitados*i.precio_kg; },0);
+  if(precioFaltante){ toast('Cada corte marcado necesita un precio mayor a 0','err'); return; }
+  // Construir cortes seleccionados (PASO 4)
+  var cortes_pedido = CORTES_LAAAMB
+    .filter(function(c){ return document.querySelector('[data-corte="'+c.id+'"]').checked; })
+    .map(function(c){ return { corte:c.id, nombre:c.nombre, precio_kg:Number(document.querySelector('[data-precio-corte="'+c.id+'"]').value) }; });
+  if(cortes_pedido.length === 0){ toast('Selecciona al menos un corte','err'); return; }
   var pedido = {
     finca_id: FINCA_ID,
     cliente_id: clienteId,
     fecha_pedido: hoyISO(),
     fecha_entrega: document.getElementById('pe-entrega').value || null,
     estado: 'confirmado',
-    total_kg: totalKg,
-    total_valor: totalValor,
+    cortes: cortes_pedido,
     notas: document.getElementById('pe-notas').value.trim() || null
   };
   try{
     var r = await window.DB.savePedidoB2B(pedido);
     if(r.error) throw r.error;
-    var pedidoId = r.data && r.data.id;
-    // Insertar items
-    if(pedidoId){
-      var itemsPayload = items.map(function(i){ return { pedido_id:pedidoId, tipo_corte:i.tipo_corte, kg_solicitados:i.kg_solicitados, precio_kg:i.precio_kg }; });
-      try{ await window._sb.from('items_pedido').insert(itemsPayload); }catch(e){}
-    }
-    // Sumar a cartera del cliente (según condición de pago, salvo contado)
-    var cli = _clientes.find(function(x){ return x.id===clienteId; });
-    if(cli && cli.condicion_pago !== 'contado'){
-      var nuevoSaldo = (parseFloat(cli.saldo_cartera)||0) + totalValor;
-      try{ await window.DB.saveClienteB2B({ id: cli.id, saldo_cartera: nuevoSaldo }); }catch(e){}
-    }
-    toast('Pedido confirmado · '+fmtCOP(totalValor));
+    toast('Pedido confirmado · '+cortes_pedido.length+' corte'+(cortes_pedido.length>1?'s':''));
     closeModal('modal-pedido');
-    await loadClientes();
     renderPedidos();
   }catch(e){ toast('Error: '+(e.message||e),'err'); }
 }
