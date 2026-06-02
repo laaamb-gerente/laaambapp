@@ -1333,7 +1333,7 @@ async function verPerfilFicha(id){
       +'<div><span>Raza</span>'+_escF(a.raza||raw.raza||'--')+'</div>'
       +'<div><span>Edad</span>'+(sem!=null?sem+' sem':'--')+(fechaNac?' ('+_fmtF(fechaNac)+')':'')+'</div>'
       +'<div><span>Grupo</span>'+_escF(raw.categoria||a.categoria||'--')+'</div>'
-      +'<div><span>Potrero</span>'+_escF(a.lote||'--')+'</div>'
+      +'<div><span>Potrero</span><span id="ficha-potrero">'+_escF(a.lote||'--')+'</span></div>'
       +'<div><span>Peso actual</span>'+(pesoAct!=null&&pesoAct!==''?_escF(pesoAct)+' kg':'--')+'</div>'
     +'</div></div>';
   var tabs =
@@ -1357,6 +1357,28 @@ async function verPerfilFicha(id){
   _fichaLoadPerformance(a, raw, fechaNac);
   _fichaLoadTratamientos(a);
   _fichaLoadLinaje(a);
+  _fichaResolverPivote(a);
+}
+// Breadcrumb "Pivote › Potrero" en el header (async, defensivo)
+async function _fichaResolverPivote(a){
+  try{
+    var el=document.getElementById('ficha-potrero'); if(!el) return;
+    var raw=_rawAnimal(a)||{};
+    var loteId=raw.lote_actual_id; if(!loteId) return;
+    var lote=(window.AppState && Array.isArray(window.AppState.lotes))
+      ? window.AppState.lotes.find(function(x){ return x.id===loteId; }) : null;
+    var pivId=lote && lote.pivote_id; if(!pivId) return;
+    if(!window._fichaPivotesCache){
+      window._fichaPivotesCache=[];
+      if(window.DB && typeof window.DB.getPivotes==='function'){
+        var fid=(window.AppState && window.AppState.finca && window.AppState.finca.id) || 'a1b2c3d4-0000-0000-0000-000000000001';
+        var r=await window.DB.getPivotes(fid);
+        if(r && !r.error && Array.isArray(r.data)) window._fichaPivotesCache=r.data;
+      }
+    }
+    var piv=window._fichaPivotesCache.find(function(p){ return p.id===pivId; });
+    if(piv && piv.nombre) el.textContent = piv.nombre+' › '+(a.lote||'--');
+  }catch(e){}
 }
 
 function fichaTab(name){

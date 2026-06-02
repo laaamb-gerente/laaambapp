@@ -56,6 +56,22 @@ window.DB = {
       .eq('estado', 'activo');
   },
 
+  // ── PIVOTES (división física permanente; nivel superior del potrero) ──
+  async getPivotes(finca_id) {
+    return await window._sb.from('pivotes')
+      .select('*').eq('finca_id', finca_id).eq('activo', true).order('nombre');
+  },
+  async savePivote(pivote) {
+    if (pivote.id) {
+      return await window._sb.from('pivotes')
+        .update(pivote).eq('id', pivote.id).select().single();
+    }
+    return await window._sb.from('pivotes').insert(pivote).select().single();
+  },
+  async deletePivote(id) {
+    return await window._sb.from('pivotes').update({ activo: false }).eq('id', id);
+  },
+
   // ── LOTES ────────────────────────────────────────────
   async getLotes(finca_id) {
     return await window._sb.from('lotes').select('*').eq('finca_id', finca_id).order('nombre');
