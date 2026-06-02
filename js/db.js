@@ -773,6 +773,148 @@ window.DB = {
       .eq('id', medicamento_id).select().single();
   },
 
+  // ── SALA CUNA · crianza artificial (migración 0040) ──────────────────
+
+  // Corderos en crianza artificial. soloActivos=true → solo estado='activo'.
+  async getCorderosCrianza(soloActivos = true) {
+    let q = window._sb.from('corderos_crianza')
+      .select('*, cordero:cordero_id(codigo, nombre, sexo, fecha_nacimiento), madre:madre_id(codigo, nombre)');
+    if (soloActivos) q = q.eq('estado', 'activo');
+    return await q.order('fecha_inicio', { ascending: false });
+  },
+  // datos = { cordero_id, madre_id?, motivo, metodo, peso_inicio_kg?,
+  //           responsable_default?, finca_id?, notas? }
+  async createCorderoCrianza(datos) {
+    return await window._sb.from('corderos_crianza')
+      .insert(datos).select().single();
+  },
+  async updateCorderoCrianza(id, cambios) {
+    return await window._sb.from('corderos_crianza')
+      .update({ ...cambios, updated_at: new Date() })
+      .eq('id', id).select().single();
+  },
+
+  // Eventos de calostro de un cordero, ordenados por fecha_hora ascendente.
+  async getEventosCalostro(corderoId) {
+    return await window._sb.from('eventos_calostro')
+      .select('*')
+      .eq('cordero_id', corderoId)
+      .order('fecha_hora', { ascending: true });
+  },
+  // datos = { cordero_id, corderos_crianza_id?, fuente, cantidad_ml,
+  //           via, responsable?, observacion? }
+  async createEventoCalostro(datos) {
+    return await window._sb.from('eventos_calostro')
+      .insert(datos).select().single();
+  },
+
+  // Tomas programadas pendientes. filtros = { corderosCrianzaId, desde, hasta }.
+  async getTomasPendientes(filtros = {}) {
+    let q = window._sb.from('tomas_programadas')
+      .select('*')
+      .eq('estado', 'pendiente');
+    if (filtros.corderosCrianzaId) q = q.eq('corderos_crianza_id', filtros.corderosCrianzaId);
+    if (filtros.desde) q = q.gte('fecha_hora_programada', filtros.desde);
+    if (filtros.hasta) q = q.lte('fecha_hora_programada', filtros.hasta);
+    return await q.order('fecha_hora_programada', { ascending: true });
+  },
+  // Tomas pendientes cuya ventana ya venció: (programada + ventana_min) < ahora.
+  // La ventana es por fila, así que se filtra en cliente.
+  async getTomasVencidas() {
+    const { data, error } = await window._sb.from('tomas_programadas')
+      .select('*')
+      .eq('estado', 'pendiente')
+      .order('fecha_hora_programada', { ascending: true });
+    if (error) return { data: null, error };
+    const ahora = Date.now();
+    const vencidas = (data || []).filter(t => {
+      const limite = new Date(t.fecha_hora_programada).getTime() + (Number(t.ventana_min) || 0) * 60000;
+      return limite < ahora;
+    });
+    return { data: vencidas, error: null };
+  },
+  // Insert en lote de varias tomas (crea el protocolo completo de golpe).
+  async createTomasProgramadas(tomasArray) {
+    return await window._sb.from('tomas_programadas')
+      .insert(tomasArray).select();
+  },
+  // estado: 'cumplida' | 'perdida'. tomaRealId opcional para enlazar la real.
+  async marcarTomaEstado(id, estado, tomaRealId = null) {
+    const patch = { estado, updated_at: new Date() };
+    if (tomaRealId) patch.toma_real_id = tomaRealId;
+    return await window._sb.from('tomas_programadas')
+      .update(patch).eq('id', id).select().single();
+  },
+
+  // Toma realizada. Online → insert; offline → cola IndexedDB (patrón existente).
+  // datos = { corderos_crianza_id, tipo, cantidad_ml, temperatura_ok?,
+  //           responsable?, observacion? }
+  async createTomaRealizada(datos) {
+    const payload = { ...datos, sincronizado: true };
+    const res = await window._sb.from('tomas_realizadas')
+      .insert(payload).select().single();
+    if (res.error && !navigator.onLine && window.OfflineDB) {
+      await window.OfflineDB.encolar({
+        tabla: 'tomas_realizadas',
+        accion: 'insert',
+        datos: { ...datos, sincronizado: false }
+      });
+      return { data: { ...datos, sincronizado: false }, error: null, offline: true };
+    }
+    return res;
+  },
+  async getTomasRealizadas(corderosCrianzaId) {
+    return await window._sb.from('tomas_realizadas')
+      .select('*')
+      .eq('corderos_crianza_id', corderosCrianzaId)
+      .order('fecha_hora', { ascending: false });
+  },
+
+  // Pesajes de corderos.
+  // datos = { cordero_id, corderos_crianza_id?, fecha?, peso_kg, responsable?, notas? }
+  async createPesaje(datos) {
+    return await window._sb.from('pesajes_corderos')
+      .insert(datos).select().single();
+  },
+  // Nota: NO se llama getPesajes() para no colisionar con el getPesajes(finca_id,
+  // animal_id) existente del módulo de pesajes de animales (misma clave de objeto
+  // → la última ganaría y rompería el otro módulo). Por eso getPesajesCordero().
+  async getPesajesCordero(corderoId) {
+    return await window._sb.from('pesajes_corderos')
+      .select('*')
+      .eq('cordero_id', corderoId)
+      .order('fecha', { ascending: false });
+  },
+  // Ganancia media diaria (kg/día): (peso_actual - peso_inicio) / días.
+  // Retorna null si hay menos de 2 pesajes. Devuelve el número directamente.
+  async calcularGMD(corderoId) {
+    const { data, error } = await window._sb.from('pesajes_corderos')
+      .select('peso_kg, fecha')
+      .eq('cordero_id', corderoId)
+      .order('fecha', { ascending: true });
+    if (error || !data || data.length < 2) return null;
+    const primero = data[0];
+    const ultimo = data[data.length - 1];
+    const dias = (new Date(ultimo.fecha) - new Date(primero.fecha)) / 86400000;
+    if (!dias || dias <= 0) return null;
+    const gmd = (Number(ultimo.peso_kg) - Number(primero.peso_kg)) / dias;
+    return Math.round(gmd * 1000) / 1000;
+  },
+  // Calostro total (ml) recibido en las primeras 24h desde el primer evento.
+  // Devuelve el número directamente (0 si no hay eventos).
+  async getCalostroTotal24h(corderoId) {
+    const { data, error } = await window._sb.from('eventos_calostro')
+      .select('cantidad_ml, fecha_hora')
+      .eq('cordero_id', corderoId)
+      .order('fecha_hora', { ascending: true });
+    if (error || !data || !data.length) return 0;
+    const inicio = new Date(data[0].fecha_hora).getTime();
+    const corte = inicio + 24 * 3600 * 1000;
+    return data
+      .filter(e => new Date(e.fecha_hora).getTime() <= corte)
+      .reduce((sum, e) => sum + (Number(e.cantidad_ml) || 0), 0);
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();
