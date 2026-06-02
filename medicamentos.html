@@ -596,29 +596,42 @@ function initEspecieTabs(){
 }
 
 // ── AppData integration ─────────────────────────────────────────────────────
-function loadMedsFromAppData(){
-  if(typeof AppData === 'undefined'){ renderMeds(); return; }
-  const d = AppData.get();
-  if(!d.medicamentos || !d.medicamentos.length){ renderMeds(); return; }
-  MEDS.length = 0;
-  d.medicamentos.filter(m => m.activo !== false).forEach(function(m){
-    MEDS.push({
-      _id: m.id,
-      nombre: m.nombre || 'Sin nombre',
-      principio: m.principio_activo || '—',
-      cat: m.categoria || 'Medicamento veterinario',
-      pres: m.presentacion || 'Inyectable',
-      lote: m.nro_lote || '—',
-      stock: parseFloat(m.stock_actual) || 0,
-      max: parseFloat(m.stock_maximo) || parseFloat(m.stock_actual)*2 || 100,
-      dosis: m.dosis_estandar || 'Según indicación',
-      retiro: parseInt(m.dias_retiro) || 0,
-      venc: m.fecha_vencimiento || '2099-01-01',
-      costo: parseFloat(m.costo_por_unidad) || 0,
+// Fuente de verdad: Supabase (igual que salud/animales). Mapea columnas
+// tipo→cat, unidad→pres, notas→principio, stock_actual→stock,
+// dias_retiro→retiro, precio_unitario→costo. La estructura de MEDS se
+// mantiene para que renderMeds() funcione sin cambios.
+async function loadMedsFromSupabase(){
+  try{
+    if(!window.DB || !window.DB.getMedicamentos){ renderMeds(); return; }
+    const FINCA_ID = 'a1b2c3d4-0000-0000-0000-000000000001';
+    const res = await window.DB.getMedicamentos(FINCA_ID);
+    const rows = (res && res.data) || [];
+    MEDS.length = 0;
+    rows.forEach(function(m){
+      MEDS.push({
+        _id: m.id,
+        _uuid: m.id,
+        nombre: m.nombre || 'Sin nombre',
+        principio: m.notas || '—',
+        cat: m.tipo || 'Medicamento',
+        pres: m.unidad || 'Inyectable',
+        lote: '—',
+        stock: parseFloat(m.stock_actual) || 0,
+        max: parseFloat(m.stock_actual) * 2 || 100,
+        dosis: '—',
+        retiro: parseInt(m.dias_retiro) || 0,
+        venc: '2099-01-01',
+        costo: parseFloat(m.precio_unitario) || 0,
+      });
     });
-  });
-  filteredMeds = [...MEDS];
-  renderMeds();
+    filteredMeds = [...MEDS];
+    renderMeds();
+    const badge = document.querySelector('a[href*="medicamentos"] .nav-badge');
+    if(badge) badge.textContent = MEDS.length;
+  }catch(e){
+    console.warn('[Medicamentos] Error cargando:', e);
+    renderMeds();
+  }
 }
 
 // ── CRUD ────────────────────────────────────────────────────────────────────
@@ -638,31 +651,7 @@ function saveMed(){
     venc: document.getElementById('m-venc').value || '2026-12-31',
     costo: parseInt(document.getElementById('m-costo').value) || 0,
   };
-  if(typeof AppData !== 'undefined'){
-    AppData.add('medicamentos', {
-      id: AppData.uid('MED'),
-      nombre: med.nombre,
-      principio_activo: med.principio,
-      categoria: med.cat,
-      presentacion: med.pres,
-      nro_lote: med.lote,
-      stock_actual: med.stock,
-      stock_maximo: med.max,
-      dosis_estandar: med.dosis,
-      dias_retiro: med.retiro,
-      fecha_vencimiento: med.venc,
-      costo_por_unidad: med.costo,
-      observaciones: document.getElementById('m-obs').value || '',
-      activo: true
-    });
-    loadMedsFromAppData();
-  } else {
-    MEDS.unshift(med);
-    filteredMeds = [...MEDS];
-    renderMeds();
-  }
-
-  // ── PARTE 1D — Agregar medicamento en Supabase ──
+  // Guardar en Supabase (fuente de verdad) y recargar la lista desde ahí.
   if(window.DB && typeof window.DB.saveMedicamento==='function'){
     window.DB.saveMedicamento({
       finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
@@ -675,13 +664,11 @@ function saveMed(){
       precio_unitario:med.costo,
       notas:document.getElementById('m-obs').value||null
     }).then(function(res){
-      if(res && !res.error && res.data && window.AppState && Array.isArray(window.AppState.medicamentos)){
-        window.AppState.medicamentos.push(res.data);
-        window.AppState._loaded=false;
-      } else if(res && res.error){
-        console.warn('[Medicamentos] saveMedicamento Supabase:',res.error.message);
-      }
+      if(res && res.error){ console.warn('[Medicamentos] saveMedicamento Supabase:',res.error.message); toast('Error guardando: '+res.error.message,'err'); return; }
+      loadMedsFromSupabase();
     }).catch(function(err){console.warn('[Medicamentos] saveMedicamento:',err&&err.message);});
+  } else {
+    MEDS.unshift(med); filteredMeds = [...MEDS]; renderMeds();
   }
 
   closeModal('modal-add');
@@ -727,7 +714,7 @@ function importMeds(input){
             activo: true
           });
         });
-        loadMedsFromAppData();
+        loadMedsFromSupabase();
       }
       toast('✓ '+d.length+' medicamentos importados');
       input.value='';
@@ -932,11 +919,12 @@ function saveCompra(){
     med.stock += cant; if(venc) med.venc = venc;
   }
 
-  // 3) Supabase best-effort
+  // 3) Supabase: registrar la compra (kardex) y SUMAR stock al medicamento.
+  var medUuid = med._uuid || (isUUID(med._id)?med._id:null);
   if(window.DB && typeof window.DB.saveCompraMedicamento==='function'){
     window.DB.saveCompraMedicamento({
       finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
-      medicamento_id:isUUID(med._id)?med._id:null,
+      medicamento_id:medUuid,
       medicamento_nombre:med.nombre,
       fecha_compra:fecha, cantidad:cant, unidad:unidad,
       costo_total_cop:total,
@@ -945,9 +933,14 @@ function saveCompra(){
     }).then(function(r){ if(r&&r.error) console.warn('[Compra] Supabase:', r.error.message); })
       .catch(function(e){ console.warn('[Compra]', e&&e.message); });
   }
+  // Stock aditivo en Supabase (fuente de verdad) → luego recargar.
+  function _reload(){ loadMedsFromSupabase(); }
+  if(medUuid && window.DB && typeof window.DB.saveMedicamento==='function'){
+    window.DB.saveMedicamento({ id: medUuid, stock_actual: (parseFloat(med.stock)||0) + cant })
+      .then(_reload).catch(_reload);
+  } else { _reload(); }
 
   closeModal('modal-compra');
-  loadMedsFromAppData();   // recarga stock + re-render grid/calc/kardex/metricas
   toast('Compra registrada. Stock actualizado.');
 }
 function renderKardex(){
@@ -1119,7 +1112,14 @@ function barList(arr, prefix){
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 document.getElementById('m-venc').value = new Date(Date.now()+365*86400000).toISOString().slice(0,10);
-loadMedsFromAppData();
+// Cargar desde Supabase cuando esté listo
+if (window.DB && window.DB.getMedicamentos) {
+  loadMedsFromSupabase();
+} else {
+  document.addEventListener('appstate:ready', function(){ loadMedsFromSupabase(); });
+  // Fallback: intentar en 2s si el evento no llega
+  setTimeout(function(){ if (MEDS.length === 0) loadMedsFromSupabase(); }, 2000);
+}
 initEspecieTabs();
 </script>
 
@@ -1151,7 +1151,7 @@ initEspecieTabs();
     document.querySelectorAll('.nav-badge').forEach(function(b){
       const link = b.closest('a');
       if(link && link.href && link.href.includes('animales')) b.textContent = s.total;
-      if(link && link.href && link.href.includes('medicamentos')) b.textContent = d.medicamentos.filter(function(m){return m.activo!==false;}).length;
+      // El badge de medicamentos lo fija updateMedBadge()/loadMedsFromSupabase() (Supabase).
     });
     // Sidebar farm pill — leer área de AppData, fallback 50
     const farmSub = document.getElementById('sb-farm-sub');
@@ -1161,6 +1161,20 @@ initEspecieTabs();
     if(typeof FarmSelector !== 'undefined') FarmSelector.updateBtn();
   }catch(e){}
 })();
+
+// ── Badge de medicamentos desde Supabase (fuente de verdad) ──
+async function updateMedBadge(){
+  try{
+    const FINCA_ID = 'a1b2c3d4-0000-0000-0000-000000000001';
+    if(!window.DB) return;
+    const res = await window.DB.getMedicamentos(FINCA_ID);
+    const count = (res && res.data && res.data.length) || 0;
+    const badge = document.querySelector('a[href*="medicamentos"] .nav-badge');
+    if(badge) badge.textContent = count;
+  }catch(e){}
+}
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', updateMedBadge); }
+else { updateMedBadge(); }
 </script>
 
 </body>

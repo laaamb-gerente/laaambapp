@@ -431,7 +431,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <a class="nav-link" href="lotes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>Lotes &amp; Potreros</a>
     <div class="nav-group">Salud</div>
     <a class="nav-link active" href="salud.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>Salud &amp; Tratamientos</a>
-    <a class="nav-link" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos<span class="nav-badge" id="sb-meds">28</span></a>
+    <a class="nav-link" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos<span class="nav-badge" id="sb-meds">0</span></a>
     <div class="nav-group">Gestión</div>
     <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
     <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
@@ -1698,7 +1698,7 @@ document.addEventListener('appstate:ready', loadFromSupabase);
     document.querySelectorAll('.nav-badge').forEach(function(b){
       const link=b.closest('a');
       if(link&&link.href&&link.href.includes('animales')) b.textContent=s.total;
-      if(link&&link.href&&link.href.includes('medicamentos')) b.textContent=d.medicamentos.filter(m=>m.activo!==false).length;
+      // Badge de medicamentos lo fija updateMedBadge() (Supabase), no AppData.
     });
     // Farm sub
     const farmSub=document.querySelector('.farm-sub');
@@ -1706,6 +1706,20 @@ document.addEventListener('appstate:ready', loadFromSupabase);
     if(farmSub) farmSub.textContent=(finca.area_ha||76.2)+' ha · '+s.total+' animales';
   }catch(e){}
 })();
+
+// ── Badge de medicamentos desde Supabase (fuente de verdad) ──
+async function updateMedBadge(){
+  try{
+    const FINCA_ID = 'a1b2c3d4-0000-0000-0000-000000000001';
+    if(!window.DB) return;
+    const res = await window.DB.getMedicamentos(FINCA_ID);
+    const count = (res && res.data && res.data.length) || 0;
+    const badge = document.querySelector('a[href*="medicamentos"] .nav-badge');
+    if(badge) badge.textContent = count;
+  }catch(e){}
+}
+if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', updateMedBadge); }
+else { updateMedBadge(); }
 
 // ═══ Utilidad de validación UI ═══
 function validateForm(fields) {
