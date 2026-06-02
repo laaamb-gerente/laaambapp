@@ -23,8 +23,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="js/supabase-client.js"></script>
 <script>
-  // Cliente Supabase global (página pública — NO incluye auth.js)
-  window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+  // Cliente Supabase global (página pública — NO incluye auth.js).
+  // detectSessionInUrl:false → manejamos el token de invitación manualmente
+  // (si no, el SDK consume el hash y redirige antes de pedir la contraseña).
+  window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY, {
+    auth: { detectSessionInUrl: false, persistSession: true, autoRefreshToken: true }
+  });
 </script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -92,8 +96,38 @@ input::placeholder{color:var(--text3)}
       <div class="logo-text">LAAAMB</div>
       <div class="logo-sub">Corderos de Especialidad Cárnica</div>
     </div>
-    <div class="title">Plataforma de gestión operacional</div>
-    <div class="subtitle">Ingresa con tu correo y contraseña</div>
+    <div class="title" id="login-title">Plataforma de gestión operacional</div>
+    <div class="subtitle" id="login-subtitle">Ingresa con tu correo y contraseña</div>
+
+    <!-- ── INVITACIÓN: crear contraseña (oculto hasta detectar token) ── -->
+    <div id="invite-card" style="display:none">
+      <div style="text-align:center;margin-bottom:6px">
+        <span style="display:inline-block;background:rgba(46,199,122,.12);border:1px solid rgba(46,199,122,.35);color:var(--green);font-size:12px;font-weight:700;padding:6px 14px;border-radius:999px">✅ Invitación aceptada</span>
+      </div>
+      <div class="title" style="margin-top:18px">Crea tu contraseña de acceso</div>
+      <div class="subtitle" id="invite-email" style="margin-bottom:22px">—</div>
+      <form id="invite-form" autocomplete="on">
+        <div class="field">
+          <label for="inv-pass">Nueva contraseña</label>
+          <div class="pw-wrap">
+            <input type="password" id="inv-pass" placeholder="Mínimo 8 caracteres" required autocomplete="new-password">
+            <button type="button" class="pw-eye" data-target="inv-pass" aria-label="Mostrar contraseña">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" width="18" height="18"><path d="M1.5 10S4.5 4 10 4s8.5 6 8.5 6-3 6-8.5 6-8.5-6-8.5-6z"/><circle cx="10" cy="10" r="2.5"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="inv-pass2">Confirmar contraseña</label>
+          <div class="pw-wrap">
+            <input type="password" id="inv-pass2" placeholder="Repite la contraseña" required autocomplete="new-password">
+            <button type="button" class="pw-eye" data-target="inv-pass2" aria-label="Mostrar contraseña">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" width="18" height="18"><path d="M1.5 10S4.5 4 10 4s8.5 6 8.5 6-3 6-8.5 6-8.5-6-8.5-6z"/><circle cx="10" cy="10" r="2.5"/></svg>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn" id="inv-btn"><span id="inv-btn-label">Crear contraseña y entrar →</span></button>
+      </form>
+    </div>
 
     <form id="login-form" autocomplete="on">
       <div class="field">
@@ -116,7 +150,7 @@ input::placeholder{color:var(--text3)}
 
     <div class="msg" id="msg"></div>
 
-    <a class="forgot" href="#" onclick="return false">¿Olvidaste tu contraseña? Contacta al administrador</a>
+    <a class="forgot" id="login-forgot" href="#" onclick="return false">¿Olvidaste tu contraseña? Contacta al administrador</a>
 
     <div class="foot">LAAAMBAPP · La Marinilla · Ibagué, Tolima</div>
   </div>
@@ -158,11 +192,91 @@ input::placeholder{color:var(--text3)}
     showMsg('Tu cuenta no tiene acceso autorizado. Contacta a Juan Manuel Arbelaez.', 'err');
   }
 
-  // Si ya hay sesión activa, ir directo al dashboard
-  window._sb.auth.getSession().then(function(res){
-    if(res && res.data && res.data.session){
-      window.location.href = basePath() + 'index.html';
+  // ── Eye toggles del formulario de invitación ──
+  document.querySelectorAll('#invite-card .pw-eye').forEach(function(b){
+    b.addEventListener('click', function(){
+      var inp = document.getElementById(b.getAttribute('data-target'));
+      if(!inp) return;
+      var show = inp.type === 'password';
+      inp.type = show ? 'text' : 'password';
+      var svg = b.querySelector('svg'); if(svg) svg.innerHTML = show ? EYE_OFF : EYE;
+    });
+  });
+
+  // ── PASO 1: detectar token de invitación / recuperación en la URL ──
+  async function detectarInvite(){
+    var hash = window.location.hash.substring(1);
+    var params = new URLSearchParams(hash);
+    var queryParams = new URLSearchParams(window.location.search);
+    var type = params.get('type') || queryParams.get('type');
+    var accessToken = params.get('access_token') || queryParams.get('access_token');
+    var refreshToken = params.get('refresh_token') || queryParams.get('refresh_token');
+    if((type === 'invite' || type === 'recovery') && accessToken){
+      try{
+        var res = await window._sb.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken || ''
+        });
+        if(!res.error && res.data && res.data.session){
+          mostrarFormularioContrasena(res.data.session.user);
+          return true;
+        }
+      }catch(e){}
     }
+    return false;
+  }
+
+  // ── PASO 2: mostrar el formulario de nueva contraseña ──
+  function mostrarFormularioContrasena(user){
+    ['login-form','login-title','login-subtitle','login-forgot'].forEach(function(id){
+      var el = document.getElementById(id); if(el) el.style.display = 'none';
+    });
+    var card = document.getElementById('invite-card'); if(card) card.style.display = 'block';
+    var em = document.getElementById('invite-email');
+    if(em && user) em.textContent = 'Bienvenido, ' + (user.email || '');
+    var p = document.getElementById('inv-pass'); if(p) p.focus();
+  }
+
+  // ── PASO 3: guardar la contraseña y entrar ──
+  async function crearContrasena(password, confirmPassword){
+    if((password||'').length < 8){ showMsg('La contraseña debe tener mínimo 8 caracteres', 'err'); return; }
+    if(password !== confirmPassword){ showMsg('Las contraseñas no coinciden', 'err'); return; }
+    var ib = document.getElementById('inv-btn'), il = document.getElementById('inv-btn-label');
+    if(ib){ ib.disabled = true; ib.insertAdjacentHTML('afterbegin','<span class="spinner" id="inv-spin"></span>'); }
+    if(il) il.textContent = 'Guardando contraseña…';
+    function resetInv(){ var s=document.getElementById('inv-spin'); if(s) s.remove(); if(ib) ib.disabled=false; if(il) il.textContent='Crear contraseña y entrar →'; }
+    try{
+      var up = await window._sb.auth.updateUser({ password: password });
+      if(up.error){ resetInv(); showMsg('Error: ' + up.error.message, 'err'); return; }
+      var ures = await window._sb.auth.getUser();
+      var user = ures && ures.data && ures.data.user;
+      var pr = await window._sb.from('perfiles').select('rol, nombre, activo').eq('id', user.id).single();
+      var perfil = pr && pr.data;
+      if(!perfil || !perfil.activo){ resetInv(); showMsg('Tu perfil no está activo. Contacta al administrador.', 'err'); return; }
+      // Limpiar el hash de la URL (seguridad)
+      history.replaceState(null, '', window.location.pathname);
+      showMsg('✅ Contraseña creada. Entrando…', 'ok');
+      window.location.href = basePath() + 'index.html';
+    }catch(err){ resetInv(); showMsg('Error de conexión. Intenta de nuevo.', 'err'); }
+  }
+
+  var invForm = document.getElementById('invite-form');
+  if(invForm){
+    invForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      crearContrasena(document.getElementById('inv-pass').value, document.getElementById('inv-pass2').value);
+    });
+  }
+
+  // ── PASO 4: flujo de carga — invite primero; si no, login normal ──
+  detectarInvite().then(function(isInvite){
+    if(isInvite) return; // mostrando "crea tu contraseña"
+    // Si ya hay sesión activa, ir directo al dashboard
+    window._sb.auth.getSession().then(function(res){
+      if(res && res.data && res.data.session){
+        window.location.href = basePath() + 'index.html';
+      }
+    });
   });
 
   form.addEventListener('submit', async function(e){
