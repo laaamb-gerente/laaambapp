@@ -814,7 +814,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="modal-head"><div class="modal-title"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><circle cx="10" cy="10" r="7"/><path d="M10 4v12M7 7h5a2 2 0 010 4H7"/></svg> Registrar venta</div><button class="modal-close" onclick="closeModal('modal-venta')">✕</button></div>
   <div class="modal-body">
     <div class="form-grid">
-      <div class="fg"><label class="fl">Animal(es) *</label><input class="fi" placeholder="OV-1341 o 'Lote B - 5 animales'"></div>
+      <div class="fg"><label class="fl">Animal(es) *</label><input class="fi" id="v-animal" placeholder="OV-1341 o 'Lote B - 5 animales'"></div>
       <div class="fg"><label class="fl">Tipo *</label>
         <select class="fi"><option>Sacrificio</option><option>Pie de cría</option><option>Reproductor</option></select>
       </div>
@@ -1501,6 +1501,32 @@ document.addEventListener('DOMContentLoaded', initEspecieTabs);
     document.getElementById('lov').onclick=hide;
     document.querySelectorAll('#sidebar a.nav-link').forEach(function(a){a.addEventListener('click',function(){if(window.innerWidth<=768)hide();});});
   });
+})();
+</script>
+
+<script>
+// Contexto de venta desde la ficha del animal (animales.html → botón Vender).
+(function(){
+  function abrirVentaDesdeFicha(){
+    try{
+      var params = new URLSearchParams(window.location.search);
+      if(params.get('tipo') !== 'venta') return;
+      var raw = sessionStorage.getItem('venta_animal');
+      if(!raw) return;
+      var ctx = JSON.parse(raw);
+      sessionStorage.removeItem('venta_animal');
+      var av = document.getElementById('v-animal');
+      if(av) av.value = ctx.codigo || ctx.id || '';
+      var vp = document.getElementById('v-peso');
+      if(vp && ctx.peso!=null && ctx.peso!=='') { vp.value = ctx.peso; }
+      if(typeof openModal==='function') openModal('modal-venta');
+      if(typeof calcVenta==='function') calcVenta();
+      // Limpiar el query de la URL (no reabrir al refrescar)
+      history.replaceState(null,'',window.location.pathname);
+    }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', abrirVentaDesdeFicha);
+  else abrirVentaDesdeFicha();
 })();
 </script>
 </body>

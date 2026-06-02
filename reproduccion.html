@@ -776,8 +776,8 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="modal-body">
     <div class="form-section">Datos de la monta</div>
     <div class="form-grid">
-      <div class="fg"><label class="fl">Hembra (ID) *</label><input class="fi" placeholder="OV-0445"/></div>
-      <div class="fg"><label class="fl">Reproductor *</label><select class="fi"><option value="desconocido">Desconocido</option></select></div>
+      <div class="fg"><label class="fl">Hembra (ID) *</label><input class="fi" id="m-hembra" placeholder="OV-0445" onchange="detectarGrupoMonta(this.value)"/></div>
+      <div class="fg"><label class="fl">Reproductor *</label><select class="fi" id="m-macho"><option value="desconocido">Desconocido</option></select></div>
       <div class="fg"><label class="fl">Fecha monta *</label><input class="fi" type="date" id="m-fecha"/></div>
       <div class="fg"><label class="fl">Ciclo N° *</label><select class="fi"><option>1</option><option>2</option><option>3</option></select></div>
       <div class="fg"><label class="fl">Tipo</label><select class="fi"><option>Natural</option><option>Inseminación artificial</option></select></div>
@@ -2406,6 +2406,52 @@ async function cerrarGrupo(grupoId){
   renderGruposTab();
   toast('Grupo cerrado');
 }
+
+// ── EXTRA: en "Registrar monta" individual, auto-detectar el reproductor del
+// grupo de monta activo al escribir el código de la hembra ──
+async function detectarGrupoMonta(hembraId){
+  if(!hembraId || !window.DB) return;
+  try{
+    const FINCA_ID='a1b2c3d4-0000-0000-0000-000000000001';
+    const res=await window.DB.getGruposMonta(FINCA_ID);
+    const grupos=(res && res.data) || [];
+    const grupo=grupos.find(function(g){
+      if(g.estado!=='activo') return false;
+      const ids=g.hembras_ids||[]; const codigos=g.hembras_codigos||[];
+      return ids.includes(hembraId) || codigos.includes(hembraId) || codigos.map(String).includes(String(hembraId));
+    });
+    if(grupo && grupo.macho_codigo) setMachoDesdeGrupo(grupo);
+  }catch(e){ console.warn('detectarGrupoMonta:', e); }
+}
+function setMachoDesdeGrupo(grupo){
+  const machoField=document.getElementById('m-macho');
+  let chip=document.getElementById('macho-grupo-chip');
+  if(!chip){
+    chip=document.createElement('div'); chip.id='macho-grupo-chip';
+    chip.style.cssText='display:inline-flex;align-items:center;gap:6px;background:var(--teal-bg);border:1px solid var(--teal-d);border-radius:20px;padding:4px 10px;font-size:12px;color:var(--teal);margin-top:4px';
+    if(machoField && machoField.parentNode) machoField.parentNode.insertBefore(chip, machoField.nextSibling);
+  }
+  chip.innerHTML='🐏 '+(grupo.macho_codigo)+' <span style="color:var(--text3);font-size:10px">(del grupo '+(grupo.nombre||'')+')</span> '
+    +'<button onclick="clearMachoGrupo()" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:14px;line-height:1;padding:0 2px" title="Cambiar macho">✕</button>';
+  chip.dataset.machoId=grupo.macho_id||'';
+  chip.dataset.macho=grupo.macho_codigo;
+  // Fijar el valor en el select (oculto) para que saveMonta lo lea normalmente.
+  if(machoField){
+    var exists=Array.prototype.some.call(machoField.options,function(o){ return o.value===grupo.macho_codigo; });
+    if(!exists){ var op=document.createElement('option'); op.value=grupo.macho_codigo; op.textContent=grupo.macho_codigo; machoField.appendChild(op); }
+    machoField.value=grupo.macho_codigo;
+    machoField.style.display='none';
+  }
+}
+function clearMachoGrupo(){
+  const chip=document.getElementById('macho-grupo-chip'); if(chip) chip.remove();
+  const machoField=document.getElementById('m-macho'); if(machoField) machoField.style.display='';
+}
+// El chip se elimina al cerrar el modal de monta.
+(function(){
+  var _origClose=window.closeModal;
+  window.closeModal=function(id){ if(id==='modal-monta'){ try{ clearMachoGrupo(); }catch(e){} } return _origClose.apply(this, arguments); };
+})();
 
 document.addEventListener('appstate:ready', loadGruposMonta);
 document.addEventListener('DOMContentLoaded', function(){ if(window.AppState && window.AppState._loaded) loadGruposMonta(); });
