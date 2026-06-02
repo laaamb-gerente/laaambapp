@@ -56,6 +56,18 @@ window.DB = {
       .eq('estado', 'activo');
   },
 
+  // ── COLABORADORES (equipo, tabla perfiles) ──────────
+  // Nota: 'perfiles' es de finca única (no tiene columna finca_id); se listan
+  // los perfiles activos. RLS limita: gerente/admin ven todos; otros roles ven
+  // solo su propio perfil (política rls_perfiles_rol).
+  async getColaboradores(finca_id) {
+    return await window._sb
+      .from('perfiles')
+      .select('id, nombre, email, rol')
+      .eq('activo', true)
+      .order('nombre');
+  },
+
   // ── PIVOTES (división física permanente; nivel superior del potrero) ──
   async getPivotes(finca_id) {
     return await window._sb.from('pivotes')

@@ -33,6 +33,7 @@
 <script src="js/approval.js?v=28"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/db.js?v=28"></script>
+<script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/alertas-motor.js"></script>
 <script src="js/app-state.js"></script>
@@ -446,7 +447,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="sb-foot">
     <div class="user-row">
       <div class="avatar">JG</div>
-      <div><div class="user-name">Juan García</div><div class="user-role">Administrador</div></div>
+      <div><div class="user-name">…</div><div class="user-role">Administrador</div></div>
     </div>
     <button onclick="Auth.signOut()" style="width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;background:transparent;border:1px solid var(--border);border-radius:var(--r,8px);color:var(--text3);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:border-color .15s,color .15s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M13 14l3-4-3-4M16 10H7M9 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h4"/></svg>Cerrar sesión</button>
   </div>
@@ -686,7 +687,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
             </div>
             <div class="form-grid">
               <div class="fg"><label class="fl">Fecha programada</label><input class="fi" type="date"></div>
-              <div class="fg"><label class="fl">Responsable</label><select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option><option>Dr. Veterinario</option></select></div>
+              <div class="fg"><label class="fl">Responsable</label><select class="fi colab-select" data-colab-ph="— Seleccionar responsable —"><option value="">Cargando…</option></select></div>
             </div>
             <div class="fg"><label class="fl">Medicamento / Protocolo</label><input class="fi" placeholder="Ivermectina 1% — desparasitación rutinaria"></div>
             <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:4px" onclick="saveEvento()">Guardar evento</button>
@@ -821,7 +822,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div class="form-section">Registro</div>
     <div class="form-grid">
       <div class="fg"><label class="fl">Fecha inicio *</label><input class="fi" type="date" id="ti-fecha"></div>
-      <div class="fg"><label class="fl">Colaborador *</label><select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select></div>
+      <div class="fg"><label class="fl">Colaborador *</label><select class="fi colab-select" data-colab-ph="— Seleccionar colaborador —"><option value="">Cargando…</option></select></div>
     </div>
     <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" placeholder="Notas del tratamiento, evolución…"></textarea></div>
     <div style="background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2);margin-top:8px">
@@ -884,7 +885,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     </div>
     <div class="form-grid">
       <div class="fg"><label class="fl">Fecha aplicación *</label><input class="fi" type="date" id="tg-fecha"></div>
-      <div class="fg"><label class="fl">Colaborador *</label><select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select></div>
+      <div class="fg"><label class="fl">Colaborador *</label><select class="fi colab-select" data-colab-ph="— Seleccionar colaborador —"><option value="">Cargando…</option></select></div>
     </div>
     <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" placeholder="Protocolo seguido, condiciones del día…"></textarea></div>
     <div style="background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-radius:var(--r);padding:10px 12px;font-size:11px;color:var(--text2);margin-top:8px">
@@ -1316,7 +1317,7 @@ function saveTratamiento(tipo){
     const dur=document.getElementById('ti-dur')?.value?.trim();
     const fecha=document.getElementById('ti-fecha')?.value;
     const colabEl=document.querySelectorAll('#modal-trat-individual select')[1];
-    const colab=colabEl?.value||'Juan García';
+    const colab=colabEl?.value||(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—';
     const loteEl=document.querySelectorAll('#modal-trat-individual select')[0];
     const lote=loteEl?.value||'';
 
@@ -1407,7 +1408,7 @@ function saveTratamiento(tipo){
     const nAnimales=parseInt(loteParts[1])||0;
     const fecha=document.getElementById('tg-fecha')?.value;
     const colabEl=document.querySelectorAll('#modal-trat-grupal select')[1];
-    const colab=colabEl?.value||'Juan García';
+    const colab=colabEl?.value||(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—';
     const motivo=document.querySelector('#modal-trat-grupal input.fi')?.value||'Tratamiento grupal';
 
     const medSel=document.getElementById('tg-med')?.value||'';
@@ -1482,7 +1483,7 @@ function saveEvento(){
     AppData.add('tratamientos',{
       tipo:'Programado',diagnostico:tipo,
       animales_ids:animales,fecha_inicio:fecha,estado:'Programado',
-      colaborador:document.querySelectorAll('#modal-evento select')[2]?.value||'Juan García',
+      colaborador:document.querySelectorAll('#modal-evento select')[2]?.value||(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—',
       observaciones:document.querySelector('#modal-evento textarea')?.value||''
     });
   }

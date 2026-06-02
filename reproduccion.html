@@ -33,6 +33,7 @@
 <script src="js/approval.js?v=28"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/db.js?v=28"></script>
+<script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
 <script src="js/copiloto.js"></script>
@@ -421,7 +422,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="sb-foot">
     <div class="user-row">
       <div class="avatar">JG</div>
-      <div><div class="user-name">Juan García</div><div class="user-role">Administrador</div></div>
+      <div><div class="user-name">…</div><div class="user-role">Administrador</div></div>
     </div>
     <button onclick="Auth.signOut()" style="width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;background:transparent;border:1px solid var(--border);border-radius:var(--r,8px);color:var(--text3);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;transition:border-color .15s,color .15s" onmouseover="this.style.borderColor='var(--red)';this.style.color='var(--red)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text3)'"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M13 14l3-4-3-4M16 10H7M9 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h4"/></svg>Cerrar sesión</button>
   </div>
@@ -726,7 +727,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div id="crias-form"></div>
     <div class="form-section">Registro</div>
     <div class="form-grid">
-      <div class="fg"><label class="fl">Colaborador *</label><select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select></div>
+      <div class="fg"><label class="fl">Colaborador *</label><select class="fi colab-select" data-colab-ph="— Seleccionar colaborador —"><option value="">Cargando…</option></select></div>
       <div class="fg"><label class="fl">Hora</label><input class="fi" type="time" id="p-hora"/></div>
     </div>
     <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" placeholder="Complicaciones, notas veterinarias…"></textarea></div>
@@ -757,7 +758,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     </div>
     <div class="form-grid">
       <div class="fg"><label class="fl">Condición corporal (1-5)</label><input class="fi" type="number" min="1" max="5" step="0.5" placeholder="3.5"/></div>
-      <div class="fg"><label class="fl">Colaborador *</label><select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select></div>
+      <div class="fg"><label class="fl">Colaborador *</label><select class="fi colab-select" data-colab-ph="— Seleccionar colaborador —"><option value="">Cargando…</option></select></div>
     </div>
     <div class="fg"><label class="fl">Fecha ecografía programada</label><input class="fi" type="date" id="m-eco" title="30 días después de la monta"/></div>
     <div class="fg"><label class="fl">Observaciones</label><textarea class="fi" placeholder="Notas…"></textarea></div>
@@ -1132,7 +1133,7 @@ function saveParto(){
   const lote    = document.querySelector('#modal-parto select[onchange*="lote"], #modal-parto .fi:nth-of-type(5)')?.value||'Lote A';
   const obs     = document.querySelector('#modal-parto textarea')?.value||'';
   const colabs  = document.querySelectorAll('#modal-parto select');
-  const colab   = colabs[colabs.length-1]?.value||'Juan García';
+  const colab   = colabs[colabs.length-1]?.value||(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—';
 
   var errs=typeof validateForm!=='undefined'?validateForm([
     {el:'p-madre',label:'ID Madre',required:true},
@@ -1245,7 +1246,7 @@ function saveMonta(){
   const ciclo  = parseInt(sels[0]?.value)||1;
   const tipo   = sels[1]?.value||'Natural';
   const lote   = sels[2]?.value||'Lote A';
-  const colab  = sels[sels.length-1]?.value||'Juan García';
+  const colab  = sels[sels.length-1]?.value||(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—';
   const obs    = document.querySelector('#modal-monta textarea')?.value||'';
   const cc     = parseFloat(document.querySelector('#modal-monta input[type="number"]')?.value)||0;
 
