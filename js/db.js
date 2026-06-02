@@ -240,6 +240,26 @@ window.DB = {
       .insert(evento).select().single();
   },
 
+  // ── TAREAS (crear, asignar, finalizar) (0039) ──
+  async getTareas(finca_id, filters = {}) {
+    let q = window._sb.from('tareas').select('*').eq('finca_id', finca_id);
+    if (filters.asignado_a) q = q.eq('asignado_a', filters.asignado_a);
+    if (filters.fecha) q = q.eq('fecha_vencimiento', filters.fecha);
+    if (filters.estado) q = q.eq('estado', filters.estado);
+    if (filters.vencidas_hasta) q = q.lte('fecha_vencimiento', filters.vencidas_hasta);
+    return await q.order('fecha_vencimiento', { ascending: true });
+  },
+  async saveTarea(data) {
+    return await window._sb.from('tareas')
+      .insert({ ...data, finca_id: 'a1b2c3d4-0000-0000-0000-000000000001' })
+      .select().single();
+  },
+  async updateTarea(id, updates) {
+    return await window._sb.from('tareas')
+      .update({ ...updates, updated_at: new Date() })
+      .eq('id', id).select().single();
+  },
+
   // ── GRUPOS DE MONTA (un macho + N hembras, período conjunto) (0037) ──
   async getGruposMonta(finca_id) {
     return await window._sb.from('grupos_monta')

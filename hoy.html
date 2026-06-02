@@ -229,6 +229,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 
   <!-- B) AGENDA DEL DÍA -->
   <div class="sec">
+    <div class="sec-title"><span class="dot" style="background:var(--orange)"></span>Mis tareas de hoy</div>
+    <div id="mis-tareas-list"><div style="font-size:13px;color:var(--text3)">Cargando…</div></div>
+  </div>
+
+  <div class="sec">
     <div class="sec-title"><span class="dot"></span>Agenda del día</div>
     <div class="agenda-grid">
       <div class="agenda-card">
@@ -716,6 +721,57 @@ navigator.serviceWorker?.addEventListener('message', function(e){
     document.body.prepend(banner);
   }
 });
+</script>
+
+<script>
+// ── Mis tareas de hoy (módulo de tareas) ──
+(function(){
+  var FINCA_ID = 'a1b2c3d4-0000-0000-0000-000000000001';
+  function _esc(s){ var d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
+  function _hoyISO(){ return new Date().toISOString().slice(0,10); }
+  var AREA_LBL={reproduccion:'Reproducción',salud:'Salud',lotes:'Lotes',nutricion:'Nutrición',animales:'Animales',finanzas:'Finanzas',general:'General',mantenimiento:'Mantenimiento'};
+  var PRIO={urgente:{l:'🔴 URGENTE',c:'var(--red)'},alta:{l:'🟠 ALTA',c:'var(--orange)'},normal:{l:'NORMAL',c:'var(--text3)'},baja:{l:'BAJA',c:'var(--text4)'}};
+
+  async function renderMisTareas(){
+    var cont=document.getElementById('mis-tareas-list'); if(!cont) return;
+    var uid=(window.AUTH_PERFIL && window.AUTH_PERFIL.id) || null;
+    if(!(window.DB && window.DB.getTareas)){ cont.innerHTML='<div style="font-size:13px;color:var(--text3)">Sin tareas asignadas para hoy</div>'; return; }
+    var tareas=[];
+    try{
+      // Tareas asignadas a mí, vencidas hasta hoy (incluye días anteriores no finalizados).
+      var filtros={ vencidas_hasta:_hoyISO() };
+      if(uid) filtros.asignado_a=uid;
+      var r=await window.DB.getTareas(FINCA_ID, filtros);
+      tareas=((r&&r.data)||[]).filter(function(t){ return t.estado!=='finalizada'; });
+    }catch(e){}
+    if(!tareas.length){ cont.innerHTML='<div style="font-size:13px;color:var(--text3)">Sin tareas asignadas para hoy</div>'; return; }
+    cont.innerHTML=tareas.map(function(t){
+      var p=PRIO[t.prioridad]||{l:_esc(t.prioridad),c:'var(--text3)'};
+      var venc=(t.fecha_vencimiento < _hoyISO());
+      return '<div style="border:1px solid var(--border);border-left:3px solid '+p.c+';border-radius:8px;padding:12px 14px;margin-bottom:8px;background:var(--bg2)">'
+        +'<div style="font-size:11px;font-weight:700;color:'+p.c+'">'+p.l+' · '+_esc(AREA_LBL[t.area]||t.area)+(venc?' · <span style="color:var(--red)">⚠ vencida</span>':'')+(t.estado==='en_progreso'?' · <span style="color:var(--sky)">en progreso</span>':'')+'</div>'
+        +'<div style="font-size:14px;font-weight:600;color:var(--text);margin:3px 0">'+_esc(t.titulo)+'</div>'
+        +(t.descripcion?'<div style="font-size:12px;color:var(--text2)">'+_esc(t.descripcion)+'</div>':'')
+        +'<div style="margin-top:8px"><button onclick="finalizarMiTarea(\''+t.id+'\')" style="font-size:12px;font-weight:600;padding:5px 12px;border-radius:6px;background:var(--teal);color:#04181a;border:none;cursor:pointer;font-family:inherit">✓ Finalizar</button></div>'
+        +'</div>';
+    }).join('');
+  }
+  window.renderMisTareas = renderMisTareas;
+  window.finalizarMiTarea = async function(id){
+    var comentario=prompt('Comentario de finalización (opcional):','');
+    if(comentario===null) return;
+    try{
+      if(window.DB && window.DB.updateTarea){
+        var r=await window.DB.updateTarea(id,{ estado:'finalizada', fecha_finalizacion:new Date().toISOString(), comentario_finalizacion:(comentario||'').trim()||null });
+        if(r && r.error) throw r.error;
+      }
+      renderMisTareas();
+    }catch(e){ alert('Error: '+(e.message||e)); }
+  };
+  document.addEventListener('appstate:ready', renderMisTareas);
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(renderMisTareas, 600); });
+  else setTimeout(renderMisTareas, 600);
+})();
 </script>
 </body>
 </html>

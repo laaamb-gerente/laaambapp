@@ -21,6 +21,7 @@
 <script src="js/approval.js?v=28"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/db.js?v=28"></script>
+<script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
@@ -128,6 +129,47 @@ tr.row-update{background:var(--amber-bg)}
       <div class="ph-sub">Registro inmutable de todas las acciones</div>
     </div>
     <div class="content">
+      <div style="display:flex;gap:6px;border-bottom:1px solid var(--border);margin-bottom:16px">
+        <button id="htab-audit" onclick="histTab('audit')" style="padding:9px 16px;font-size:13px;font-weight:600;color:var(--teal);cursor:pointer;border:none;background:none;border-bottom:2px solid var(--teal);font-family:inherit">Auditoría</button>
+        <button id="htab-tareas" onclick="histTab('tareas')" style="padding:9px 16px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;font-family:inherit">Tareas</button>
+      </div>
+
+      <!-- ═══ TAREAS ═══ -->
+      <div id="hist-tareas" style="display:none">
+        <div style="margin-bottom:14px"><button class="btn primary" onclick="toggleNuevaTarea()">+ Nueva tarea</button></div>
+        <div id="nueva-tarea-form" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:16px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div style="grid-column:1/-1"><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Título *</label><input id="t-titulo" maxlength="80" placeholder="Ej: Vacunar grupo de monta antes de la eco" style="width:100%;padding:9px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-family:inherit"></div>
+            <div style="grid-column:1/-1"><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Descripción</label><textarea id="t-desc" rows="2" placeholder="Opcional" style="width:100%;padding:9px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-family:inherit"></textarea></div>
+            <div><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Área *</label>
+              <select id="t-area" style="width:100%;padding:9px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-family:inherit">
+                <option value="reproduccion">Reproducción</option><option value="salud">Salud</option><option value="lotes">Lotes &amp; Potreros</option><option value="nutricion">Nutrición</option><option value="animales">Animales</option><option value="finanzas">Finanzas</option><option value="general" selected>General</option><option value="mantenimiento">Mantenimiento</option>
+              </select>
+            </div>
+            <div><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Asignar a *</label>
+              <select id="t-asignado" class="colab-select" data-colab-ph="— Seleccionar colaborador —" style="width:100%;padding:9px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-family:inherit"><option value="">Cargando…</option></select>
+            </div>
+            <div><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Fecha límite *</label><input id="t-fecha" type="date" style="width:100%;padding:9px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-family:inherit"></div>
+            <div><label style="font-size:11px;color:var(--text3);display:block;margin-bottom:4px">Prioridad</label>
+              <select id="t-prioridad" style="width:100%;padding:9px;border:1px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-family:inherit"><option value="urgente">Urgente</option><option value="alta">Alta</option><option value="normal" selected>Normal</option><option value="baja">Baja</option></select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+            <button class="btn" onclick="toggleNuevaTarea()">Cancelar</button>
+            <button class="btn primary" onclick="crearTarea()">Crear tarea →</button>
+          </div>
+        </div>
+        <div class="filters" style="margin-bottom:12px">
+          <div class="filt"><label>Área</label><select id="tf-area"><option value="">Todas</option><option value="reproduccion">Reproducción</option><option value="salud">Salud</option><option value="lotes">Lotes</option><option value="nutricion">Nutrición</option><option value="animales">Animales</option><option value="finanzas">Finanzas</option><option value="general">General</option><option value="mantenimiento">Mantenimiento</option></select></div>
+          <div class="filt"><label>Estado</label><select id="tf-estado"><option value="">Todos</option><option value="pendiente">Pendiente</option><option value="en_progreso">En progreso</option><option value="finalizada">Finalizada</option></select></div>
+          <div class="filt"><label>Rango</label><select id="tf-rango"><option value="semana">Esta semana</option><option value="vencidas">Vencidas</option><option value="todas" selected>Todas</option></select></div>
+          <button class="btn" onclick="renderTareas()">Filtrar</button>
+        </div>
+        <div id="tareas-list"><div class="empty">Cargando…</div></div>
+      </div>
+
+      <!-- ═══ AUDITORÍA ═══ -->
+      <div id="hist-audit">
       <div class="filters">
         <div class="filt">
           <label>Módulo</label>
@@ -168,6 +210,7 @@ tr.row-update{background:var(--amber-bg)}
           <tbody id="hist-tbody"><tr><td colspan="8" class="empty">Cargando…</td></tr></tbody>
         </table>
       </div>
+      </div><!-- /hist-audit -->
     </div>
   </div>
 </div>
@@ -271,6 +314,141 @@ tr.row-update{background:var(--amber-bg)}
   window.Hist = { aplicar: render, exportCSV: exportCSV };
   if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', load); } else { load(); }
 })();
+</script>
+
+<script>
+// ════════════════════════════════════════════════════════════════════════════
+//  MÓDULO DE TAREAS (crear/asignar/finalizar) — historial.html (gerente/admin)
+// ════════════════════════════════════════════════════════════════════════════
+var FINCA_TAREAS='a1b2c3d4-0000-0000-0000-000000000001';
+window._tareas = window._tareas || [];
+function _tEsc(s){ var d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
+function _tToast(msg){
+  var c=document.getElementById('t-toasts');
+  if(!c){ c=document.createElement('div'); c.id='t-toasts'; c.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:6px'; document.body.appendChild(c); }
+  var t=document.createElement('div'); t.style.cssText='background:var(--bg2);border:1px solid var(--border2);border-left:3px solid var(--teal);border-radius:8px;padding:10px 14px;font-size:12px;color:var(--text);box-shadow:0 4px 20px rgba(0,0,0,.4)'; t.textContent='✓ '+msg;
+  c.appendChild(t); setTimeout(function(){ t.remove(); },3000);
+}
+var AREA_LBL={reproduccion:'Reproducción',salud:'Salud',lotes:'Lotes & Potreros',nutricion:'Nutrición',animales:'Animales',finanzas:'Finanzas',general:'General',mantenimiento:'Mantenimiento'};
+function _fmtTarea(iso){ if(!iso) return '—'; try{ var d=new Date(iso+'T00:00:00'); var p=function(n){return (n<10?'0':'')+n;}; var M=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']; return p(d.getDate())+'/'+M[d.getMonth()]+'/'+d.getFullYear(); }catch(e){ return iso; } }
+
+function histTab(t){
+  var isT = t==='tareas';
+  document.getElementById('hist-audit').style.display = isT?'none':'block';
+  document.getElementById('hist-tareas').style.display = isT?'block':'none';
+  var a=document.getElementById('htab-audit'), b=document.getElementById('htab-tareas');
+  a.style.color=isT?'var(--text3)':'var(--teal)'; a.style.borderBottomColor=isT?'transparent':'var(--teal)';
+  b.style.color=isT?'var(--teal)':'var(--text3)'; b.style.borderBottomColor=isT?'var(--teal)':'transparent';
+  if(isT) loadTareas();
+}
+function toggleNuevaTarea(){
+  var f=document.getElementById('nueva-tarea-form');
+  var show=f.style.display==='none';
+  f.style.display=show?'block':'none';
+  if(show){
+    document.getElementById('t-titulo').value='';
+    document.getElementById('t-desc').value='';
+    document.getElementById('t-area').value='general';
+    document.getElementById('t-prioridad').value='normal';
+    var man=new Date(); man.setDate(man.getDate()+1);
+    document.getElementById('t-fecha').value=man.toISOString().slice(0,10);
+    if(window.fillColabSelect) fillColabSelect('t-asignado','— Seleccionar colaborador —');
+  }
+}
+async function crearTarea(){
+  var titulo=(document.getElementById('t-titulo').value||'').trim();
+  if(!titulo){ alert('El título es obligatorio'); return; }
+  var asigSel=document.getElementById('t-asignado');
+  var asigNombre=asigSel.value;
+  if(!asigNombre){ alert('Asigna la tarea a un colaborador'); return; }
+  var fecha=document.getElementById('t-fecha').value;
+  if(!fecha){ alert('Selecciona la fecha límite'); return; }
+  // Resolver el uuid del colaborador (asignado_a) para que case con hoy.html
+  var asigUuid=null;
+  try{
+    if(window.DB && window.DB.getColaboradores){
+      var rc=await window.DB.getColaboradores(FINCA_TAREAS);
+      var match=((rc&&rc.data)||[]).find(function(c){ return (c.nombre||c.email)===asigNombre || c.email===asigNombre; });
+      if(match) asigUuid=match.id;
+    }
+  }catch(e){}
+  var payload={
+    titulo:titulo, descripcion:(document.getElementById('t-desc').value||'').trim()||null,
+    area:document.getElementById('t-area').value, fecha_vencimiento:fecha,
+    prioridad:document.getElementById('t-prioridad').value,
+    asignado_a:asigUuid, asignado_nombre:asigNombre,
+    creado_por:(window.AUTH_PERFIL&&window.AUTH_PERFIL.id)||null,
+    creado_nombre:(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—',
+    estado:'pendiente'
+  };
+  try{
+    if(!(window.DB&&window.DB.saveTarea)) throw new Error('DB no disponible');
+    var r=await window.DB.saveTarea(payload);
+    if(r.error) throw r.error;
+    window._tareas.unshift(r.data||payload);
+    toggleNuevaTarea();
+    renderTareas();
+    _tToast('Tarea creada y asignada a '+asigNombre);
+  }catch(e){ alert('Error: '+(e.message||e)); }
+}
+async function loadTareas(){
+  try{
+    if(window.DB && window.DB.getTareas){
+      var r=await window.DB.getTareas(FINCA_TAREAS);
+      if(r && !r.error && Array.isArray(r.data)) window._tareas=r.data;
+    }
+  }catch(e){}
+  renderTareas();
+}
+function renderTareas(){
+  var cont=document.getElementById('tareas-list'); if(!cont) return;
+  var area=document.getElementById('tf-area').value;
+  var estado=document.getElementById('tf-estado').value;
+  var rango=document.getElementById('tf-rango').value;
+  var hoyISO=new Date().toISOString().slice(0,10);
+  var fs=new Date(); fs.setDate(fs.getDate()+7); var finSemISO=fs.toISOString().slice(0,10);
+  var list=(window._tareas||[]).filter(function(t){
+    if(area && t.area!==area) return false;
+    if(estado && t.estado!==estado) return false;
+    if(rango==='semana' && !(t.fecha_vencimiento>=hoyISO && t.fecha_vencimiento<=finSemISO)) return false;
+    if(rango==='vencidas' && !(t.fecha_vencimiento<hoyISO && t.estado!=='finalizada')) return false;
+    return true;
+  });
+  if(!list.length){ cont.innerHTML='<div class="empty" style="padding:24px;text-align:center;color:var(--text3)">Sin tareas para este filtro.</div>'; return; }
+  cont.innerHTML=list.map(tareaCard).join('');
+}
+function tareaCard(t){
+  var prio={urgente:{l:'🔴 URGENTE',c:'var(--red)'},alta:{l:'🟠 ALTA',c:'var(--orange)'},normal:{l:'NORMAL',c:'var(--text3)'},baja:{l:'BAJA',c:'var(--text4)'}}[t.prioridad]||{l:_tEsc(t.prioridad),c:'var(--text3)'};
+  var done=t.estado==='finalizada';
+  var estadoTxt = done?' · <span style="color:var(--green)">✓ Finalizada</span>':(t.estado==='en_progreso'?' · <span style="color:var(--sky)">En progreso</span>':'');
+  return '<div style="border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;background:var(--bg2);'+(done?'opacity:.6;':'')+'">'
+    +'<div style="font-size:11px;font-weight:700;color:'+prio.c+'">'+prio.l+' · '+_tEsc(AREA_LBL[t.area]||t.area)+estadoTxt+'</div>'
+    +'<div style="font-size:14px;font-weight:600;margin:4px 0;color:var(--text)">'+_tEsc(t.titulo)+'</div>'
+    +(t.descripcion?'<div style="font-size:12px;color:var(--text2);margin-bottom:4px">'+_tEsc(t.descripcion)+'</div>':'')
+    +'<div style="font-size:12px;color:var(--text3)">para: '+_tEsc(t.asignado_nombre||'—')+' · hasta: '+_fmtTarea(t.fecha_vencimiento)+'</div>'
+    +(t.comentario_finalizacion?'<div style="font-size:11px;color:var(--text3);margin-top:4px">💬 '+_tEsc(t.comentario_finalizacion)+'</div>':'')
+    +(done?'':'<div style="display:flex;gap:8px;margin-top:10px">'
+      +(t.estado!=='en_progreso'?'<button class="btn" onclick="marcarProgreso(\''+t.id+'\')">Marcar en progreso</button>':'')
+      +'<button class="btn primary" onclick="finalizarTarea(\''+t.id+'\')">Finalizar</button></div>')
+    +'</div>';
+}
+async function marcarProgreso(id){
+  try{ var r=await window.DB.updateTarea(id,{estado:'en_progreso'}); if(r.error) throw r.error;
+    var t=(window._tareas||[]).find(function(x){return x.id===id;}); if(t) t.estado='en_progreso';
+    renderTareas(); _tToast('Tarea en progreso');
+  }catch(e){ alert('Error: '+(e.message||e)); }
+}
+async function finalizarTarea(id){
+  var comentario=prompt('Comentario de finalización (opcional):','');
+  if(comentario===null) return; // cancelado
+  try{
+    var r=await window.DB.updateTarea(id,{ estado:'finalizada', fecha_finalizacion:new Date().toISOString(), comentario_finalizacion:(comentario||'').trim()||null });
+    if(r.error) throw r.error;
+    var t=(window._tareas||[]).find(function(x){return x.id===id;});
+    if(t){ t.estado='finalizada'; t.comentario_finalizacion=(comentario||'').trim()||null; }
+    renderTareas(); _tToast('Tarea finalizada');
+  }catch(e){ alert('Error: '+(e.message||e)); }
+}
 </script>
 </body>
 </html>
