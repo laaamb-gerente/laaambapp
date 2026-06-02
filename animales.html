@@ -34,6 +34,7 @@
 <script src="js/approval.js?v=28"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/db.js?v=28"></script>
+<script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
@@ -504,7 +505,7 @@ label.fl[for] + .fi:required,label.fl + .fi[required]{border-left:2px solid var(
       <div class="fg"><label class="fl">ID / Arete *</label><input class="fi" id="w-animal" placeholder="OV-0234" oninput="autoFillPesaje(this.value)"></div>
       <div class="fg"><label class="fl">Peso actual (kg) *</label><input class="fi" type="number" id="w-peso" step="0.1" placeholder="48.5" oninput="calcGDP()"></div>
       <div class="fg"><label class="fl">Fecha pesaje *</label><input class="fi" type="date" id="w-fecha"></div>
-      <div class="fg"><label class="fl">Colaborador</label><select class="fi" id="w-colab"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select></div>
+      <div class="fg"><label class="fl">Colaborador</label><select class="fi colab-select" id="w-colab" data-colab-ph="— Seleccionar colaborador —"><option value="">— Seleccionar —</option></select></div>
     </div>
     <div class="fgrid" id="w-gdp-row" style="display:none">
       <div class="fg"><label class="fl">Peso anterior</label><input class="fi" id="w-peso-ant" readonly style="background:var(--bg3);color:var(--text3)"></div>
@@ -542,7 +543,7 @@ label.fl[for] + .fi:required,label.fl + .fi[required]{border-left:2px solid var(
       <tbody id="wg-tbody"></tbody></table>
     </div>
     <div class="fg" style="margin-top:12px"><label class="fl">Colaborador</label>
-      <select class="fi" id="wg-colab"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select>
+      <select class="fi colab-select" id="wg-colab" data-colab-ph="— Seleccionar colaborador —"><option value="">— Seleccionar —</option></select>
     </div>
   </div>
   <div class="modal-foot">
@@ -777,7 +778,7 @@ function verPerfilLegacy(id){
   document.getElementById('btn-edit').onclick=function(){closeModal('m-perfil');abrirEditar(id);};
   document.getElementById('btn-baja').onclick=function(){
     if(confirm('¿Confirmar baja de #'+id+'? El animal saldrá del inventario activo.')){
-      AppData.registrarBaja({animal_id:id,tipo_baja:'muerte',fecha:new Date().toISOString().slice(0,10),colaborador:'Juan García'});
+      AppData.registrarBaja({animal_id:id,tipo_baja:'muerte',fecha:new Date().toISOString().slice(0,10),colaborador:(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—'});
       cargarDatos();closeModal('m-perfil');toast('Baja de #'+id+' registrada');
     }
   };
@@ -1008,7 +1009,7 @@ function savePesaje(){
   var animalId=document.getElementById('w-animal').value.trim();
   var peso=parseFloat(document.getElementById('w-peso').value);
   var fecha=document.getElementById('w-fecha').value;
-  var colab=document.getElementById('w-colab').value||'Juan García';
+  var colab=document.getElementById('w-colab').value||(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—';
   var obs=document.getElementById('w-obs').value||'';
   if(!animalId||!peso||!fecha){toast('Animal, peso y fecha son requeridos','err');return;}
   var gdpStr=document.getElementById('w-gdp').value||'';
@@ -1072,7 +1073,7 @@ function updatePesajeLote(){
 }
 function savePesajeGrupal(){
   var fecha=document.getElementById('wg-fecha').value;
-  var colab=document.getElementById('wg-colab').value||'Juan García';
+  var colab=document.getElementById('wg-colab').value||(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—';
   if(!fecha){toast('Fecha requerida','err');return;}
   var inputs=document.querySelectorAll('#wg-tbody input[type="number"]');
   var guardados=0;
@@ -1349,7 +1350,7 @@ async function verPerfilFicha(id){
   document.getElementById('btn-edit').onclick=function(){closeModal('m-perfil');abrirEditar(id);};
   document.getElementById('btn-baja').onclick=function(){
     if(confirm('¿Confirmar baja de #'+id+'? El animal saldrá del inventario activo.')){
-      AppData.registrarBaja({animal_id:id,tipo_baja:'muerte',fecha:new Date().toISOString().slice(0,10),colaborador:'Juan García'});
+      AppData.registrarBaja({animal_id:id,tipo_baja:'muerte',fecha:new Date().toISOString().slice(0,10),colaborador:(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—'});
       cargarDatos();closeModal('m-perfil');toast('Baja de #'+id+' registrada');
     }
   };

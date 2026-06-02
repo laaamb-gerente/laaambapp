@@ -36,6 +36,7 @@
 <script src="js/approval.js?v=28"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/db.js?v=28"></script>
+<script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
@@ -502,6 +503,8 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
   <div class="tab-content" id="t-lotes">
     <div class="lotes-scroll">
       <div class="lote-grid" id="lote-grid"></div>
+      <!-- #5 · Historial de rotación / descanso -->
+      <div id="historial-rotacion" style="margin-top:24px"></div>
     </div>
   </div>
 
@@ -587,7 +590,7 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
         </select>
       </div>
       <div class="fg"><label class="fl">Colaborador</label>
-        <select class="fi" id="mov-colab" id="mov-colab"></select>
+        <select class="fi colab-select" id="mov-colab" data-colab-ph="— Seleccionar colaborador —"><option value="">— Seleccionar —</option></select>
       </div>
       <div class="fg"><label class="fl">Observaciones</label>
         <input class="fi" id="mov-obs" placeholder="Opcional…">
@@ -659,6 +662,7 @@ function switchTab(btn, tabId){
   document.getElementById(tabId).classList.add('active');
   if(tabId==='t-mapa') setTimeout(function(){if(MAP)MAP.invalidateSize();},50);
   if(tabId==='t-pivotes' && typeof renderPivotesTab==='function') renderPivotesTab();
+  if(tabId==='t-lotes' && typeof renderHistorialRotacion==='function') renderHistorialRotacion();
 }
 
 // ══════════════════════════════════════════════════════
@@ -702,7 +706,7 @@ function getColabs(){
   if(d.colabs&&d.colabs.length) return d.colabs.map(function(c){return c.nombre;});
   var saved=localStorage.getItem('laaamb-colabs');
   if(saved){ try{return JSON.parse(saved).map(function(c){return c.nombre;});}catch(e){} }
-  return ['Juan García','Carlos Ríos','María López'];
+  return [];
 }
 
 // ══════════════════════════════════════════════════════
@@ -1949,9 +1953,8 @@ function initModalMover(){
   var selFD=document.getElementById('mov-finca-destino');
   selFO.innerHTML=fincas.map(function(f){return '<option value="'+f.id+'">'+f.nombre+'</option>';}).join('');
   selFD.innerHTML=fincas.map(function(f){return '<option value="'+f.id+'">'+f.nombre+'</option>';}).join('');
-  // Colaboradores
-  var selC=document.getElementById('mov-colab');
-  selC.innerHTML=colabs.map(function(c){return '<option>'+c+'</option>';}).join('');
+  // Colaboradores: reales desde Supabase (colabs.js). Sin nombres hardcodeados.
+  if(window.fillColabSelect){ fillColabSelect('mov-colab','— Seleccionar colaborador —'); }
   // Fecha
   document.getElementById('mov-fecha').value=new Date().toISOString().slice(0,10);
   updateMovOrigen();
@@ -2141,9 +2144,51 @@ function confirmarMovimiento(){
   d.movimientos.unshift(mov);
   AppData.save(d);
 
+  // ── #5: historial de rotación en Supabase (movimientos_potrero) ──
+  try{
+    if(window.DB){
+      var loteDest=d.lotes.find(function(l){return l.nombre===ld;});
+      var loteOrig=d.lotes.find(function(l){return l.nombre===lo;});
+      var pivNombre=function(pid){ var p=(window._pivotes||[]).find(function(x){return x.id===pid;}); return p?p.nombre:null; };
+      // ORIGEN: animales salen → potrero pasa a descanso
+      if(loteOrig && lo!==ld && typeof window.DB.updateMovimientoPotrero==='function'){
+        window.DB.updateMovimientoPotrero(loteOrig.id, {
+          fecha_salida: fecha,
+          dias_ocupacion: (loteOrig.dias_pastoreo_real!=null?loteOrig.dias_pastoreo_real:null),
+          fecha_inicio_descanso: fecha,
+          estado: 'en_descanso',
+          _estado_buscar: 'ocupado'
+        }).catch(function(){});
+      }
+      // DESTINO: completar descanso previo (si volvían) + nueva ocupación
+      if(loteDest && typeof window.DB.saveMovimientoPotrero==='function'){
+        window.DB.updateMovimientoPotrero(loteDest.id, {
+          fecha_fin_descanso: fecha,
+          estado: 'completado',
+          _estado_buscar: 'en_descanso'
+        }).catch(function(){});
+        var animalesDest=d.animales.filter(function(a){return a.lote===ld&&a.activo;});
+        var kgT=animalesDest.reduce(function(s,a){return s+(parseFloat(a.peso_actual)||0);},0);
+        var haD=parseFloat(loteDest.area_ha)||0;
+        window.DB.saveMovimientoPotrero({
+          lote_id: loteDest.id, lote_nombre: ld,
+          pivote_id: loteDest.pivote_id||null, pivote_nombre: pivNombre(loteDest.pivote_id),
+          fecha_entrada: fecha,
+          num_animales: animalesDest.length,
+          peso_total_kg: Math.round(kgT),
+          kg_ha: haD>0?Math.round(kgT/haD):null,
+          dias_descanso_proyectado: loteDest.dias_descanso_obj||45,
+          estado: 'ocupado',
+          registrado_por: colab||null
+        }).catch(function(){});
+      }
+    }
+  }catch(e){ console.warn('[Movimientos potrero]', e&&e.message); }
+
   closeModal('modal-mover');
   renderLotesTab();
   renderMovimientosTab();
+  if(typeof renderHistorialRotacion==='function') renderHistorialRotacion();
   // Re-render map layers
   loadGeometries();
   toast(ids.length+' animal'+(ids.length>1?'es':'')+' movido'+(ids.length>1?'s':'')+' a '+ld+(fo!==fd?' ('+getFincaById(fd).nombre+')':''));
@@ -2307,6 +2352,12 @@ async function loadPivotes(){
       if(r && !r.error && Array.isArray(r.data)) window._pivotes = r.data;
     }
   }catch(e){ console.warn('[Pivotes] load:', e&&e.message); }
+  try{
+    if(window.DB && typeof window.DB.getPivotesEliminados==='function'){
+      var re=await window.DB.getPivotesEliminados(_pivoteFinca());
+      if(re && !re.error && Array.isArray(re.data)) window._pivotesEliminados = re.data;
+    }
+  }catch(e){}
   fillPivoteSelect();
   var pane=document.getElementById('t-pivotes');
   if(pane && pane.classList.contains('active')) renderPivotesTab();
@@ -2323,22 +2374,50 @@ function _countPotreros(pivoteId){
   return _lotesDeFinca().filter(function(l){ return l.pivote_id===pivoteId; }).length;
 }
 
-// PARTE 3 — Tab Pivotes simplificada: nombre, área, N° potreros, Ver en mapa.
+// PARTE 3 — Tab Pivotes simplificada + sección de eliminados (historial).
 function renderPivotesTab(){
   var grid=document.getElementById('pivote-grid'); if(!grid) return;
   var pivs=window._pivotes||[];
   if(!pivs.length){
     grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text3)"><div style="font-size:36px;margin-bottom:12px;opacity:.4">▦</div><div>Sin pivotes — dibuja el primero en el <strong>Mapa</strong> con la herramienta de pivote (⊞)</div></div>';
-    return;
+  } else {
+    grid.innerHTML=pivs.map(function(p){
+      var nPot=_countPotreros(p.id);
+      return '<div class="lote-card" onclick="verPivoteEnMapa(\''+p.id+'\')">'
+        +'<div class="lc-header"><div><div class="lc-name">'+_escPv(p.nombre)+'</div><div class="lc-finca">'+nPot+' potrero'+(nPot===1?'':'s')+'</div></div>'
+        +'<span class="badge b-teal">'+(p.area_ha!=null?p.area_ha+' ha':'— ha')+'</span></div>'
+        +'<div class="lc-actions" style="margin-top:8px"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();verPivoteEnMapa(\''+p.id+'\')">Ver en mapa</button></div>'
+        +'</div>';
+    }).join('');
   }
-  grid.innerHTML=pivs.map(function(p){
-    var nPot=_countPotreros(p.id);
-    return '<div class="lote-card" onclick="verPivoteEnMapa(\''+p.id+'\')">'
-      +'<div class="lc-header"><div><div class="lc-name">'+_escPv(p.nombre)+'</div><div class="lc-finca">'+nPot+' potrero'+(nPot===1?'':'s')+'</div></div>'
-      +'<span class="badge b-teal">'+(p.area_ha!=null?p.area_ha+' ha':'— ha')+'</span></div>'
-      +'<div class="lc-actions" style="margin-top:8px"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();verPivoteEnMapa(\''+p.id+'\')">Ver en mapa</button></div>'
-      +'</div>';
-  }).join('');
+  renderPivotesEliminados();
+}
+function _fmtFechaCorta(iso){ if(!iso) return '—'; try{ return new Date(iso).toLocaleDateString('es-CO'); }catch(e){ return '—'; } }
+function renderPivotesEliminados(){
+  var host=document.getElementById('pivotes-eliminados');
+  if(!host){
+    var grid=document.getElementById('pivote-grid'); if(!grid||!grid.parentElement) return;
+    host=document.createElement('div'); host.id='pivotes-eliminados'; host.style.marginTop='24px';
+    grid.parentElement.appendChild(host);
+  }
+  var elim=window._pivotesEliminados||[];
+  if(!elim.length){ host.innerHTML=''; return; }
+  host.innerHTML='<div class="section-label" style="margin-bottom:10px;color:var(--text3)">🗑 Pivotes eliminados (historial)</div>'
+    +elim.map(function(p){
+      var snap=Array.isArray(p.potreros_snapshot)?p.potreros_snapshot:[];
+      var n=snap.length;
+      return '<div class="lote-card" style="opacity:.65" onclick="verSnapshotPivote(\''+p.id+'\')">'
+        +'<div class="lc-header"><div><div class="lc-name" style="color:var(--text2)">'+_escPv(p.nombre)+' <span style="font-size:11px;font-weight:400;color:var(--text3)">(eliminado)</span></div>'
+        +'<div class="lc-finca">Eliminado '+_fmtFechaCorta(p.fecha_eliminacion)+' · '+n+' potrero'+(n===1?'':'s')+'</div></div></div>'
+        +(p.motivo_eliminacion?'<div style="font-size:11px;color:var(--text3);margin-top:4px">Motivo: '+_escPv(p.motivo_eliminacion)+'</div>':'')
+        +'</div>';
+    }).join('');
+}
+function verSnapshotPivote(id){
+  var p=(window._pivotesEliminados||[]).find(function(x){return x.id===id;}); if(!p) return;
+  var snap=Array.isArray(p.potreros_snapshot)?p.potreros_snapshot:[];
+  var lista=snap.length?snap.map(function(s){return '• '+(s.nombre||s.id)+(s.area_ha!=null?' ('+s.area_ha+' ha)':'');}).join('\n'):'(sin potreros registrados)';
+  alert('Pivote “'+(p.nombre||'')+'” (eliminado)\nFecha: '+_fmtFechaCorta(p.fecha_eliminacion)+(p.motivo_eliminacion?'\nMotivo: '+p.motivo_eliminacion:'')+'\n\nPotreros que tenía:\n'+lista);
 }
 
 function fillPivoteSelect(){
@@ -2485,14 +2564,33 @@ function renderPivoteLayer(pivote, geojson){
   window.pivoteLayers[pivote.id]={poly:poly,label:label};
 }
 function abrirPopupPivote(pivote, poly){
+  var tienePotreros=(AppData.get().lotes||[]).some(function(l){ return l.pivote_id===pivote.id; });
+  var subLabel = tienePotreros ? '☀ Reconfigurar potreros' : '⊞ Subdividir en potreros';
   var html='<div style="font-family:Changa,sans-serif;min-width:160px">'
     +'<div style="font-weight:700;color:#22C55E;margin-bottom:6px">⊞ '+_escPv(pivote.nombre)+'</div>'
     +'<div style="display:flex;flex-direction:column;gap:4px">'
     +'<button onclick="renombrarPivote(\''+pivote.id+'\')" style="font-size:12px;padding:5px 8px;border-radius:6px;background:rgba(0,175,182,.12);border:1px solid rgba(0,175,182,.3);color:#00AFB6;cursor:pointer;font-family:inherit;text-align:left">✎ Renombrar</button>'
-    +'<button onclick="iniciarSubdivision(\''+pivote.id+'\')" style="font-size:12px;padding:5px 8px;border-radius:6px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.35);color:#22C55E;cursor:pointer;font-family:inherit;text-align:left">⊞ Subdividir en potreros</button>'
+    +'<button onclick="iniciarSubdivision(\''+pivote.id+'\')" style="font-size:12px;padding:5px 8px;border-radius:6px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.35);color:#22C55E;cursor:pointer;font-family:inherit;text-align:left">'+subLabel+'</button>'
     +'<button onclick="eliminarPivote(\''+pivote.id+'\')" style="font-size:12px;padding:5px 8px;border-radius:6px;background:rgba(224,82,82,.12);border:1px solid rgba(224,82,82,.3);color:#e05252;cursor:pointer;font-family:inherit;text-align:left">🗑 Eliminar</button>'
     +'</div></div>';
   poly.bindPopup(html,{maxWidth:220,minWidth:170}).openPopup();
+}
+// Borra los potreros de un pivote (AppData + Supabase + capas). Devuelve snapshot.
+function _borrarPotreros(pivoteId){
+  var d=AppData.get();
+  var existentes=(d.lotes||[]).filter(function(l){ return l.pivote_id===pivoteId; });
+  var snapshot=existentes.map(function(l){ return {id:l.id,nombre:l.nombre,area_ha:l.area_ha}; });
+  existentes.forEach(function(l){
+    var ll=loteLayers[l.id];
+    if(ll){ if(ll.poly)MAP.removeLayer(ll.poly); if(ll.label)MAP.removeLayer(ll.label); delete loteLayers[l.id]; }
+    if(d.geo) delete d.geo['lote_'+l.id];
+  });
+  d.lotes=(d.lotes||[]).filter(function(l){ return l.pivote_id!==pivoteId; });
+  AppData.save(d);
+  if(window.DB && typeof window.DB.deleteLotesByPivote==='function'){
+    try{ window.DB.deleteLotesByPivote(pivoteId).catch(function(){}); }catch(e){}
+  }
+  return snapshot;
 }
 async function renombrarPivote(id){
   var p=(window._pivotes||[]).find(function(x){return x.id===id;}); if(!p) return;
@@ -2503,17 +2601,39 @@ async function renombrarPivote(id){
   if(typeof renderPivotesTab==='function') renderPivotesTab();
   toast('Pivote renombrado');
 }
-async function eliminarPivote(id){
+function eliminarPivote(id){
   var p=(window._pivotes||[]).find(function(x){return x.id===id;}); if(!p) return;
-  if(!confirm('¿Eliminar el pivote “'+p.nombre+'”? Sus potreros subdivididos quedan sin pivote (no se borran).')) return;
-  try{ if(window.DB&&window.DB.deletePivote) await window.DB.deletePivote(id); }catch(e){}
   MAP.closePopup();
+  var nPot=(AppData.get().lotes||[]).filter(function(l){return l.pivote_id===id;}).length;
+  var ov=document.getElementById('pivote-del-ov'); if(ov) ov.remove();
+  ov=document.createElement('div'); ov.id='pivote-del-ov';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;font-family:Changa,sans-serif';
+  ov.innerHTML='<div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);max-width:420px;width:100%;padding:20px">'
+    +'<div style="font-size:15px;font-weight:700;color:var(--red);margin-bottom:10px">🗑 ¿Eliminar '+_escPv(p.nombre)+'?</div>'
+    +'<div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:12px">Esto eliminará visualmente el pivote y sus <strong>'+nPot+' potreros</strong> del mapa. El historial de animales que pastorearon en estos potreros se conserva permanentemente bajo "'+_escPv(p.nombre)+' (eliminado)".</div>'
+    +'<label class="fl" style="display:block;font-size:11px;color:var(--text3);margin-bottom:4px">Motivo (opcional)</label>'
+    +'<input class="fi" id="pivote-del-motivo" placeholder="Ej: reorganización de la finca" style="margin-bottom:14px">'
+    +'<div style="display:flex;gap:8px;justify-content:flex-end">'
+    +'<button class="btn btn-ghost btn-sm" onclick="var o=document.getElementById(\'pivote-del-ov\');if(o)o.remove();">Cancelar</button>'
+    +'<button class="btn btn-sm" style="background:var(--red);color:#fff" onclick="confirmarEliminarPivote(\''+id+'\')">Sí, eliminar</button>'
+    +'</div></div>';
+  document.body.appendChild(ov);
+}
+async function confirmarEliminarPivote(id){
+  var p=(window._pivotes||[]).find(function(x){return x.id===id;}); if(!p) return;
+  var motivo=((document.getElementById('pivote-del-motivo')||{}).value)||'';
+  var snapshot=_borrarPotreros(id);           // 1+2: snapshot + DELETE potreros (AppData+Supabase)
+  try{ if(window.DB&&window.DB.softDeletePivote) await window.DB.softDeletePivote(id, motivo, snapshot); }catch(e){}
   var l=window.pivoteLayers[id];
   if(l){ if(l.poly)MAP.removeLayer(l.poly); if(l.label)MAP.removeLayer(l.label); delete window.pivoteLayers[id]; }
   var d=AppData.get(); if(d.geo){ delete d.geo['pivote_'+id]; delete d.geo['descanso_'+id]; } AppData.save(d);
+  p.eliminado=true; p.fecha_eliminacion=new Date().toISOString(); p.motivo_eliminacion=motivo; p.potreros_snapshot=snapshot;
+  window._pivotesEliminados=window._pivotesEliminados||[]; window._pivotesEliminados.unshift(p);
   window._pivotes=(window._pivotes||[]).filter(function(x){return x.id!==id;});
+  var ov=document.getElementById('pivote-del-ov'); if(ov) ov.remove();
   if(typeof renderPivotesTab==='function') renderPivotesTab();
-  toast('Pivote eliminado');
+  if(typeof renderLotesTab==='function') renderLotesTab();
+  toast('Pivote eliminado. Historial conservado.');
 }
 function verPivoteEnMapa(id){
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
@@ -2698,6 +2818,12 @@ function cancelarSubdivision(){
 function confirmarSubdivision(){
   var s=window._subdiv; if(!s||!s.n){ toast('Selecciona el número de potreros','err'); return; }
   var piv=(window._pivotes||[]).find(function(x){return x.id===s.pivoteId;})||{nombre:'Pivote'};
+  // Reconfigurar: si el pivote ya tiene potreros, confirmar y borrarlos primero.
+  var existentes=(AppData.get().lotes||[]).filter(function(l){ return l.pivote_id===s.pivoteId; });
+  if(existentes.length){
+    if(!confirm('⚠️ Esto borrará los '+existentes.length+' potreros actuales. El historial de movimientos se conserva. ¿Continuar?')) return;
+    _borrarPotreros(s.pivoteId);
+  }
   var slices=_generarSlices(s.n);
   _clearPreview();
   var box=document.getElementById('subdiv-panel'); if(box) box.remove();
@@ -2732,6 +2858,54 @@ function confirmarSubdivision(){
   window._subdiv=null;
   hideMapStatus();
 }
+
+// ── #5: Card de historial de rotación / descanso ──
+async function renderHistorialRotacion(){
+  var cont=document.getElementById('historial-rotacion'); if(!cont) return;
+  var rows=[];
+  try{
+    if(window.DB && window.DB.getHistorialRotacion){
+      var r=await window.DB.getHistorialRotacion('a1b2c3d4-0000-0000-0000-000000000001');
+      if(r && !r.error && r.data) rows=r.data;
+    }
+  }catch(e){}
+  var compl=rows.filter(function(m){return m.estado==='completado';});
+  var head='<div class="section-label" style="margin-bottom:10px">📊 Historial de rotación</div>';
+  if(!compl.length){
+    cont.innerHTML=head+'<div style="text-align:center;color:var(--text3);font-size:13px;padding:24px;border:1px solid var(--border);border-radius:var(--r2);background:var(--bg2)">Registra movimientos de animales para ver el historial de rotación.</div>';
+    return;
+  }
+  function diasDescanso(m){
+    if(m.dias_descanso_real!=null) return m.dias_descanso_real;
+    if(m.fecha_inicio_descanso && m.fecha_fin_descanso) return Math.round((new Date(m.fecha_fin_descanso)-new Date(m.fecha_inicio_descanso))/864e5);
+    return null;
+  }
+  var grupos={};
+  compl.forEach(function(m){
+    var k=m.lote_id||m.lote_nombre;
+    if(!grupos[k]) grupos[k]={nombre:m.lote_nombre||k,sumD:0,nD:0,sumMeta:0,ciclos:0};
+    var dd=diasDescanso(m);
+    if(dd!=null){ grupos[k].sumD+=dd; grupos[k].nD++; }
+    grupos[k].sumMeta+=(m.dias_descanso_proyectado||45);
+    grupos[k].ciclos++;
+  });
+  var filas=Object.keys(grupos).map(function(k){
+    var g=grupos[k];
+    var prom=g.nD?Math.round(g.sumD/g.nD):null;
+    var meta=g.ciclos?Math.round(g.sumMeta/g.ciclos):45;
+    var estado,badge;
+    if(prom==null){ estado='--'; badge='b-gray'; }
+    else if(prom>=meta){ estado='✅ Meta: '+meta+' días'; badge='b-green'; }
+    else { estado='⚠️ Bajo meta ('+meta+')'; badge='b-amber'; }
+    var reco=(g.ciclos>6 && prom!=null && prom<meta) ? '<div style="font-size:11px;color:var(--amber);margin-top:3px">💡 Recomendado: 1 ciclo de descanso extendido (90 días)</div>' : '';
+    return '<tr><td>'+_escPv(g.nombre)+'</td><td>'+(prom!=null?prom+' días':'--')+'</td><td><span class="badge '+badge+'">'+estado+'</span>'+reco+'</td></tr>';
+  }).join('');
+  cont.innerHTML=head
+    +'<div style="overflow-x:auto;border:1px solid var(--border);border-radius:var(--r2);background:var(--bg2)"><table>'
+    +'<thead><tr><th>Potrero</th><th>Descanso promedio</th><th>vs. Proyectado</th></tr></thead>'
+    +'<tbody>'+filas+'</tbody></table></div>';
+}
+document.addEventListener('appstate:ready', function(){ if(typeof renderHistorialRotacion==='function') renderHistorialRotacion(); });
 </script>
 </body>
 </html>

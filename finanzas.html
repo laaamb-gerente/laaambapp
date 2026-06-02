@@ -33,6 +33,7 @@
 <script src="js/approval.js?v=28"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/db.js?v=28"></script>
+<script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/alertas-motor.js"></script>
 <script src="js/app-state.js"></script>
@@ -764,7 +765,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <div class="fg"><label class="fl">Animal / Lote (si aplica)</label>
         <input class="fi" placeholder="OV-0001 o Lote o General"></div>
       <div class="fg"><label class="fl">Colaborador</label>
-        <select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select>
+        <select class="fi colab-select" data-colab-ph="— Seleccionar colaborador —"><option value="">— Seleccionar —</option></select>
       </div>
     </div>
     <div class="fg"><label class="fl">Descripción *</label><input class="fi" placeholder="Descripción del gasto…"></div>
@@ -802,7 +803,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       </div>
     </div>
     <div class="fg"><label class="fl">Colaborador</label>
-      <select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select>
+      <select class="fi colab-select" data-colab-ph="— Seleccionar colaborador —"><option value="">— Seleccionar —</option></select>
     </div>
   </div>
   <div class="modal-foot">
@@ -974,7 +975,7 @@ function saveGasto(){
   const pago=document.querySelectorAll('#modal-gasto select')[2]?.value||'Efectivo';
   const fecha=document.getElementById('g-fecha')?.value||new Date().toISOString().slice(0,10);
   const sels=document.querySelectorAll('#modal-gasto select');
-  const colab=sels[sels.length-1]?.value||'Juan García';
+  const colab=sels[sels.length-1]?.value||(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—';
   const obs=document.querySelector('#modal-gasto textarea')?.value||'';
   if(typeof validateForm!=='undefined'){
     validateForm([{el:'g-valor',label:'Valor del gasto',required:true,type:'number',min:1}]);
@@ -1022,7 +1023,7 @@ function saveIngreso(){
   const comprador=document.querySelectorAll('#modal-ingreso input.fi')[3]?.value||'—';
   const fecha=document.getElementById('i-fecha')?.value||new Date().toISOString().slice(0,10);
   const sels=document.querySelectorAll('#modal-ingreso select');
-  const colab=sels[sels.length-1]?.value||'Juan García';
+  const colab=sels[sels.length-1]?.value||(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—';
   const total=peso*precio;
   if(typeof AppData!=='undefined'){
     AppData.add('ingresos',{tipo,animales_ids:animales,peso_total_kg:peso,precio_por_kg:precio,total_cop:total,comprador,canal_venta:'Directo',fecha,colaborador:colab});
@@ -1061,7 +1062,7 @@ function exportPorAnimal(){exportFinanzas();}
 function downloadTemplate(tipo){
   const wb=XLSX.utils.book_new();
   const T={costos:[['ID Animal*','Categoría*','Descripción*','Valor COP*','Fecha (YYYY-MM-DD)*','Método pago','Colaborador'],
-    ['OV-0234','Alimentación / Pasto','Concentrado proteico',250000,'2025-04-10','Efectivo','Juan García']]};
+    ['OV-0001','Alimentación / Pasto','Concentrado proteico',250000,'2025-04-10','Efectivo','']]};
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(T[tipo]||[]),tipo);
   XLSX.writeFile(wb,'plantilla-'+tipo+'.xlsx');
   toast('Plantilla descargada');

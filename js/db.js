@@ -87,6 +87,15 @@ window.DB = {
     return await window._sb.from('pivotes')
       .select('*').eq('finca_id', finca_id).eq('activo', true).order('nombre');
   },
+  async getPivotesEliminados(finca_id) {
+    return await window._sb.from('pivotes')
+      .select('*').eq('finca_id', finca_id).eq('eliminado', true)
+      .order('fecha_eliminacion', { ascending: false });
+  },
+  // Borra los potreros (lotes) de un pivote — usado al reconfigurar/eliminar.
+  async deleteLotesByPivote(pivote_id) {
+    return await window._sb.from('lotes').delete().eq('pivote_id', pivote_id);
+  },
   async savePivote(pivote) {
     if (pivote.id) {
       return await window._sb.from('pivotes')
@@ -96,6 +105,36 @@ window.DB = {
   },
   async deletePivote(id) {
     return await window._sb.from('pivotes').update({ activo: false }).eq('id', id);
+  },
+  // Soft-delete con historial: marca eliminado + snapshot de potreros (0035).
+  async softDeletePivote(id, motivo, potreros_snapshot) {
+    return await window._sb.from('pivotes').update({
+      eliminado: true,
+      fecha_eliminacion: new Date().toISOString(),
+      motivo_eliminacion: motivo || null,
+      potreros_snapshot: potreros_snapshot || [],
+      activo: false
+    }).eq('id', id);
+  },
+
+  // ── MOVIMIENTOS DE POTRERO (rotación: ocupación + descanso) (0036) ──
+  async saveMovimientoPotrero(data) {
+    return await window._sb.from('movimientos_potrero')
+      .insert({ ...data, finca_id: 'a1b2c3d4-0000-0000-0000-000000000001' });
+  },
+  async updateMovimientoPotrero(lote_id, updates) {
+    var buscar = updates._estado_buscar || 'ocupado';
+    var patch = { ...updates }; delete patch._estado_buscar;
+    return await window._sb.from('movimientos_potrero')
+      .update(patch)
+      .eq('lote_id', lote_id)
+      .eq('estado', buscar);
+  },
+  async getHistorialRotacion(finca_id) {
+    return await window._sb.from('movimientos_potrero')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .order('fecha_entrada', { ascending: false });
   },
 
   // ── LOTES ────────────────────────────────────────────
