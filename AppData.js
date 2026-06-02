@@ -174,38 +174,25 @@ const AppData = (function() {
     bovino: ['Vaca', 'Toro'],
   };
 
-  // ── Datos de ejemplo (solo si no hay datos reales) ───────────────────────────
+  // ── Estado inicial (SIN demo data) ───────────────────────────────────────────
+  // Los datos reales viven en Supabase (AppState). Estos arreglos arrancan
+  // vacíos para que NUNCA aparezcan registros falsos: animales, medicamentos,
+  // lotes, tratamientos, costos, etc. se muestran solo cuando existen de verdad.
+  // 'finca' conserva los datos reales de La Marinilla (no es demo).
   const EJEMPLO = {
-    animales: [
-      {id:'OV-0234',nombre:'Bella',especie:'ovino',sexo:'H',categoria:'Reproductora',raza:'Dorper',fecha_nacimiento:'2022-01-15',peso_inicial:35,lote:'Lote A',costo_adquisicion:380000,madre_id:'',padre_id:'RE-001',estado:'Gestante',origen:'Nacido en finca',observaciones:'Top madre hato',fecha_ingreso:'2022-01-15',activo:true,created_at:new Date().toISOString()},
-      {id:'OV-1102',nombre:'Luna',especie:'ovino',sexo:'H',categoria:'Reproductora',raza:'Dorper',fecha_nacimiento:'2021-03-08',peso_inicial:38,lote:'Lote B',costo_adquisicion:420000,madre_id:'',padre_id:'RE-001',estado:'Activa',origen:'Nacido en finca',observaciones:'',fecha_ingreso:'2021-03-08',activo:true,created_at:new Date().toISOString()},
-      {id:'OV-0788',nombre:'Rosa',especie:'ovino',sexo:'H',categoria:'Reproductora',raza:'Katahdin',fecha_nacimiento:'2022-06-20',peso_inicial:32,lote:'Lote A',costo_adquisicion:350000,madre_id:'',padre_id:'RE-003',estado:'Activa',origen:'Comprado',observaciones:'',fecha_ingreso:'2022-07-01',activo:true,created_at:new Date().toISOString()},
-      {id:'OV-2341',nombre:'',especie:'ovino',sexo:'H',categoria:'Reproductora',raza:'Dorper',fecha_nacimiento:'2020-04-10',peso_inicial:40,lote:'Lote C',costo_adquisicion:360000,madre_id:'',padre_id:'RE-001',estado:'En tratamiento',origen:'Nacido en finca',observaciones:'Tratamiento activo neumonía',fecha_ingreso:'2020-04-10',activo:true,created_at:new Date().toISOString()},
-      {id:'OV-0441',nombre:'',especie:'ovino',sexo:'H',categoria:'Reproductora',raza:'Katahdin',fecha_nacimiento:'2021-01-05',peso_inicial:30,lote:'Lote A',costo_adquisicion:350000,madre_id:'',padre_id:'RE-001',estado:'Vacía',origen:'Comprado',observaciones:'3 ciclos vacía',fecha_ingreso:'2021-01-10',activo:true,created_at:new Date().toISOString()},
-      {id:'RE-003',nombre:'Príncipe',especie:'ovino',sexo:'M',categoria:'Reproductor',raza:'Dorper',fecha_nacimiento:'2021-08-14',peso_inicial:55,lote:'Lote B',costo_adquisicion:1200000,madre_id:'',padre_id:'',estado:'Reproductor',origen:'Comprado',observaciones:'Fertilidad 96%',fecha_ingreso:'2021-09-01',activo:true,created_at:new Date().toISOString()},
-      {id:'RE-007',nombre:'Zeus',especie:'ovino',sexo:'M',categoria:'Reproductor',raza:'Dorper',fecha_nacimiento:'2023-02-20',peso_inicial:50,lote:'Lote C',costo_adquisicion:1100000,madre_id:'',padre_id:'',estado:'Reproductor',origen:'Comprado',observaciones:'Fertilidad 92%',fecha_ingreso:'2023-03-01',activo:true,created_at:new Date().toISOString()},
-      {id:'RE-001',nombre:'Titan',especie:'ovino',sexo:'M',categoria:'Reproductor',raza:'Dorper',fecha_nacimiento:'2020-05-10',peso_inicial:60,lote:'Lote A',costo_adquisicion:1300000,madre_id:'',padre_id:'',estado:'Reproductor',origen:'Comprado',observaciones:'Fertilidad 89%',fecha_ingreso:'2020-06-01',activo:true,created_at:new Date().toISOString()},
-    ],
+    animales: [],
     pesajes: [],
     montas: [],
     partos: [],
     crias_parto: [],
     ecografias: [],
     tratamientos: [],
-    medicamentos: [
-      {id:'MED-001',nombre:'Ivermectina 1%',principio_activo:'Ivermectina',categoria:'Antiparasitario',presentacion:'Inyectable',nro_lote:'IV-2024-341',stock_actual:340,stock_maximo:500,dosis_estandar:'0.2 mL/10kg SC',dias_retiro:14,fecha_vencimiento:'2026-08-12',costo_por_unidad:85000,proveedor:'Agroveterinaria',temperatura_almacenamiento:'Temperatura ambiente',observaciones:'',activo:true,created_at:new Date().toISOString()},
-      {id:'MED-002',nombre:'Oxitetraciclina 20%',principio_activo:'Oxitetraciclina',categoria:'Antibiótico',presentacion:'Inyectable',nro_lote:'OX-A2341',stock_actual:180,stock_maximo:250,dosis_estandar:'5 mL/10kg IM',dias_retiro:28,fecha_vencimiento:'2025-04-18',costo_por_unidad:42000,proveedor:'Agroveterinaria',temperatura_almacenamiento:'Refrigeración 2-8°C',observaciones:'',activo:true,created_at:new Date().toISOString()},
-    ],
+    medicamentos: [],
     costos: [],
     ingresos: [],
     bajas: [],
     movimientos: [],
-    lotes: [
-      {id:'L-A',nombre:'Lote A',area_ha:18.4,capacidad_max:147,tipo_pasto:'Kikuyo',condicion_pasto:72,fuente_agua:'Bebedero',descripcion:'Zona norte',activo:true,created_at:new Date().toISOString()},
-      {id:'L-B',nombre:'Lote B',area_ha:24.1,capacidad_max:193,tipo_pasto:'Brachiaria',condicion_pasto:48,fuente_agua:'Nacimiento',descripcion:'Zona central',activo:true,created_at:new Date().toISOString()},
-      {id:'L-C',nombre:'Lote C',area_ha:19.7,capacidad_max:158,tipo_pasto:'Mixto',condicion_pasto:61,fuente_agua:'Quebrada',descripcion:'Zona sur',activo:true,created_at:new Date().toISOString()},
-      {id:'L-D',nombre:'Lote D',area_ha:14.0,capacidad_max:112,tipo_pasto:'Kikuyo',condicion_pasto:22,fuente_agua:'Bebedero',descripcion:'Zona oriente',activo:true,created_at:new Date().toISOString()},
-    ],
+    lotes: [],
     finca: {nombre:'La Marinilla',empresa:'LAAAMB',municipio:'Ibagué',departamento:'Tolima',vereda:'San Bernardo',ubicacion:'vereda San Bernardo, Ibagué, Tolima',area_ha:76.2},
     meta: {version:VERSION,creado:new Date().toISOString(),actualizado:new Date().toISOString()}
   };
@@ -523,34 +510,34 @@ const AppData = (function() {
   const TEMPLATES = {
     animales: [
       ['ID/Arete*','Nombre','Especie (ovino/bovino)*','Sexo (H/M)*','Categoría*','Raza*','Fecha nacimiento (YYYY-MM-DD)','Peso inicial kg','Lote*','Costo adquisición COP','Madre ID','Padre ID','Estado','Origen','Observaciones'],
-      ['OV-0471','Bella','ovino','H','Reproductora','Dorper','2022-01-15',35,'Lote A',380000,'','RE-001','Activa','Nacido en finca',''],
-      ['OV-0472','','ovino','M','Reproductor','Dorper','2021-08-14',55,'Lote B',1200000,'','','Reproductor','Comprado',''],
+      ['OV-0001','','ovino','H','Reproductora','Dorper','2022-01-15',35,'Lote A',380000,'','','Activa','Nacido en finca',''],
+      ['OV-0002','','ovino','M','Reproductor','Dorper','2021-08-14',55,'Lote B',1200000,'','','Reproductor','Comprado',''],
       ['BO-0101','','bovino','M','Novillo','Brahman','2023-06-01',250,'Lote A',0,'','','Levante','Nacido en finca',''],
     ],
     pesajes: [
       ['ID Animal*','Fecha pesaje (YYYY-MM-DD)*','Peso kg*','Colaborador','Observaciones'],
-      ['OV-0234','2025-04-10',48,'Juan García',''],
+      ['OV-0001','2025-04-10',48,'',''],
     ],
     montas: [
       ['ID Hembra*','ID Macho*','Fecha monta (YYYY-MM-DD)*','Ciclo N°','Tipo (Natural/IA)','Lote','Condición corporal 1-5','Colaborador','Observaciones'],
-      ['OV-0234','RE-003','2025-04-15',1,'Natural','Lote A',3.5,'Juan García',''],
+      ['OV-0001','RE-0001','2025-04-15',1,'Natural','Lote A',3.5,'',''],
     ],
     ecografias: [
       ['ID Animal*','Fecha eco (YYYY-MM-DD)*','Resultado (Gestante/Vacía/No apta)*','Días gestación','N° fetos','Veterinario','Observaciones'],
-      ['OV-1102','2025-04-10','Gestante',45,2,'Dr. Martínez','Mellizos confirmados'],
-      ['OV-0441','2025-04-10','Vacía','','','Dr. Martínez','3er ciclo vacía'],
+      ['OV-0001','2025-04-10','Gestante',45,2,'',''],
+      ['OV-0002','2025-04-10','Vacía','','','',''],
     ],
     tratamientos: [
       ['ID/Lote Animal*','Diagnóstico/Motivo*','Medicamento*','Dosis aplicada','Vía (IM/SC/IV/VO)','Duración días','Fecha inicio (YYYY-MM-DD)*','Días retiro','Costo COP','Colaborador','Observaciones'],
-      ['OV-2341','Neumonía bacteriana','Oxitetraciclina 20%','21 mL','IM',5,'2025-04-08',28,18500,'Juan García',''],
+      ['OV-0001','Neumonía bacteriana','Oxitetraciclina 20%','21 mL','IM',5,'2025-04-08',28,18500,'',''],
     ],
     costos: [
       ['Categoría*','Descripción*','ID Animal (opcional)','Lote','Valor COP*','Método pago','Fecha (YYYY-MM-DD)*','Colaborador','Observaciones'],
-      ['Alimentación / Pasto','Concentrado proteico Lote B','','Lote B',1800000,'Efectivo','2025-04-10','Juan García',''],
+      ['Alimentación / Pasto','Concentrado proteico','','Lote B',1800000,'Efectivo','2025-04-10','',''],
     ],
     bajas: [
       ['ID Animal*','Tipo baja*','Fecha (YYYY-MM-DD)*','Peso kg','Causa muerte','Valor venta COP','Comprador','Colaborador','Observaciones'],
-      ['OV-1892','muerte','2025-04-10',12,'Neumonía','','','Juan García',''],
+      ['OV-0001','muerte','2025-04-10',12,'Neumonía','','','',''],
     ],
   };
 

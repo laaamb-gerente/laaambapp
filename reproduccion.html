@@ -710,10 +710,10 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="modal-body">
     <div class="form-section">Datos del parto</div>
     <div class="form-grid">
-      <div class="fg"><label class="fl">Madre (ID) *</label><input class="fi" placeholder="OV-2341" id="p-madre" oninput="autoFillMadre(this.value)"/></div>
+      <div class="fg"><label class="fl">Madre (ID) *</label><input class="fi" placeholder="OV-0001" id="p-madre" oninput="autoFillMadre(this.value)"/></div>
       <div class="fg"><label class="fl">Fecha parto *</label><input class="fi" type="date" id="p-fecha"/></div>
       <div class="fg"><label class="fl">N° de parto de esta oveja</label><input class="fi" type="number" id="p-nro" placeholder="3" min="1"/></div>
-      <div class="fg"><label class="fl">Padre (reproductor)</label><select class="fi" id="p-padre"><option value="RE-003">RE-003 — Príncipe (Dorper)</option><option value="RE-007">RE-007 — Zeus (Dorper)</option><option value="RE-001">RE-001 — Titan (Dorper)</option><option value="desconocido">Desconocido</option></select></div>
+      <div class="fg"><label class="fl">Padre (reproductor)</label><select class="fi" id="p-padre"><option value="desconocido">Desconocido</option></select></div>
       <div class="fg"><label class="fl">Tipo de parto *</label><select class="fi" id="p-tipo"><option>Normal</option><option>Asistido</option><option>Distócico</option><option>Cesárea</option></select></div>
       <div class="fg"><label class="fl">Lote</label><select class="fi"><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select></div>
     </div>
@@ -749,7 +749,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div class="form-section">Datos de la monta</div>
     <div class="form-grid">
       <div class="fg"><label class="fl">Hembra (ID) *</label><input class="fi" placeholder="OV-0445"/></div>
-      <div class="fg"><label class="fl">Reproductor *</label><select class="fi"><option>RE-003 — Príncipe (Dorper)</option><option>RE-007 — Zeus (Dorper)</option><option>RE-001 — Titan (Dorper)</option></select></div>
+      <div class="fg"><label class="fl">Reproductor *</label><select class="fi"><option value="desconocido">Desconocido</option></select></div>
       <div class="fg"><label class="fl">Fecha monta *</label><input class="fi" type="date" id="m-fecha"/></div>
       <div class="fg"><label class="fl">Ciclo N° *</label><select class="fi"><option>1</option><option>2</option><option>3</option></select></div>
       <div class="fg"><label class="fl">Tipo</label><select class="fi"><option>Natural</option><option>Inseminación artificial</option></select></div>
@@ -1657,10 +1657,9 @@ function downloadTemplate(tipo){
   const wb=XLSX.utils.book_new();
   const T={
     montas:[['ID Hembra*','ID Macho*','Fecha monta (YYYY-MM-DD)*','Ciclo N°','Tipo (Natural/IA)','Lote','Condición corporal 1-5','Colaborador','Observaciones'],
-            ['OV-0234','RE-003','2025-04-15',1,'Natural','Lote A',3.5,'Juan García','']],
+            ['OV-0001','RE-0001','2025-04-15',1,'Natural','Lote A',3.5,'','']],
     ecografias:[['ID Animal*','Fecha eco (YYYY-MM-DD)*','Resultado (Gestante/Vacía/No apta)*','Días gestación','N° fetos','Veterinario','Observaciones'],
-                ['OV-1102','2025-04-10','Gestante',45,2,'Dr. Martínez','Mellizos confirmados'],
-                ['OV-0441','2025-04-10','Vacía',0,0,'Dr. Martínez','3er ciclo vacía']],
+                ['OV-0001','2025-04-10','Gestante',45,2,'','']],
   };
   XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(T[tipo]||[['Sin plantilla']]),tipo);
   XLSX.writeFile(wb,'plantilla-'+tipo+'.xlsx');

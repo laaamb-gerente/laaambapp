@@ -501,7 +501,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <div class="g2">
         <!-- Alertas sanitarias -->
         <div>
-          <div class="alert-box red"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="10" cy="10" r="7"/><path d="M10 6v5M10 14h.01"/></svg></div><div><div class="alert-title" style="color:var(--red)">Closantel Lote #CL-1102 — vence en 3 días</div><div class="alert-text">Usar o desechar. 62 mL restantes · Contactar proveedor para reposición.</div></div></div>
+          <!-- Las alertas de vencimiento se generan desde los medicamentos reales (Supabase). Sin datos → sin alertas. -->
           <div class="alert-box amber"><div class="alert-ico">⚠️</div><div><div class="alert-title" style="color:var(--amber)">Oxitetraciclina — 8 días para vencer</div><div class="alert-text">Lote #OX-A2341 · 180 mL restantes · Revisar si hay tratamientos pendientes.</div></div></div>
           <div class="alert-box amber"><div class="alert-ico">⏱</div><div><div class="alert-title" style="color:var(--amber)">Lote D en período de retiro — 11 días</div><div class="alert-text">193 animales no aptos para sacrificio. Post-Ivermectina grupal.</div></div></div>
           <div class="alert-box sky"><div class="alert-ico"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 9h14M7 3v3M13 3v3"/></svg></div><div><div class="alert-title" style="color:var(--sky)">Desparasitación Lote B programada en 12 días</div><div class="alert-text">132 animales · Oxfendazol 10% · Confirmar stock disponible.</div></div></div>
@@ -794,7 +794,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="modal-body">
     <div class="form-section">Animal</div>
     <div class="form-grid">
-      <div class="fg"><label class="fl">Animal (ID) *</label><input class="fi" id="ti-animal" placeholder="OV-2341" oninput="autoFillAnimal(this.value)"></div>
+      <div class="fg"><label class="fl">Animal (ID) *</label><input class="fi" id="ti-animal" placeholder="OV-0001" oninput="autoFillAnimal(this.value)"></div>
       <div class="fg"><label class="fl">Peso actual (kg) *</label><input class="fi" type="number" id="ti-peso" placeholder="42" step="0.5" oninput="calcDosisTrat()"></div>
       <div class="fg"><label class="fl">Diagnóstico / Motivo *</label><input class="fi" id="ti-dx" placeholder="Neumonía bacteriana"></div>
       <div class="fg"><label class="fl">Lote</label><select class="fi"><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select></div>
@@ -930,38 +930,15 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 
 <script>
 // ═══════ DATA ═══════
-const TRATAMIENTOS = [
-  {id:'T001',fecha:'08/04/2025',tipo:'Individual',animales:'#OV-2341',dx:'Neumonía bacteriana',med:'Oxitetraciclina 20%',dosis:'21 mL IM',via:'IM',dur:'5 días',dia:3,totalDias:5,retiro:28,costo:18500,colaborador:'Juan García',estado:'En curso'},
-  {id:'T002',fecha:'10/04/2025',tipo:'Grupal',animales:'Lote D (193)',dx:'Desparasitación preventiva',med:'Ivermectina 1%',dosis:'0.2 mL/10kg SC',via:'SC',dur:'1 dosis',dia:1,totalDias:1,retiro:14,costo:285000,colaborador:'María López',estado:'Completado'},
-  {id:'T003',fecha:'07/04/2025',tipo:'Individual',animales:'#OV-1892',dx:'Enteritis',med:'Florfenicol 30%',dosis:'8.4 mL SC',via:'SC',dur:'3 días',dia:3,totalDias:3,retiro:0,costo:12400,colaborador:'Carlos Ríos',estado:'Completado'},
-  {id:'T004',fecha:'09/04/2025',tipo:'Individual',animales:'#OV-0788',dx:'Dolor postparto',med:'Meloxicam',dosis:'19 mL SC',via:'SC',dur:'2 días',dia:2,totalDias:2,retiro:0,costo:9800,colaborador:'Juan García',estado:'Completado'},
-  {id:'T005',fecha:'05/04/2025',tipo:'Grupal',animales:'Lote B (132)',dx:'Desparasitación',med:'Oxfendazol 10%',dosis:'5 mg/kg VO',via:'VO',dur:'1 dosis',dia:1,totalDias:1,retiro:7,costo:195000,colaborador:'Carlos Ríos',estado:'En retiro'},
-];
+// Sin demo data: estos arreglos se llenan SOLO desde Supabase (DB.getTratamientos,
+// DB.getMedicamentos). Si están vacíos, se muestran estados vacíos honestos.
+const TRATAMIENTOS = [];
 
-const MEDICAMENTOS = [
-  {nombre:'Ivermectina 1%',principio:'Ivermectina',cat:'Antiparasitario',lote:'IV-2024-341',pres:'Inyectable',stock:340,stockMax:500,dosis:'0.2 mL/10kg SC',retiro:14,venc:'2026-08-12',costo:85000,ico:'💉'},
-  {nombre:'Oxitetraciclina 20%',principio:'Oxitetraciclina',cat:'Antibiótico',lote:'OX-A2341',pres:'Inyectable',stock:180,stockMax:250,dosis:'5 mL/10kg IM',retiro:28,venc:'2025-04-18',costo:42000,ico:'💉'},
-  {nombre:'Closantel 10%',principio:'Closantel',cat:'Antiparasitario',lote:'CL-1102',pres:'Oral',stock:62,stockMax:100,dosis:'5 mg/kg VO',retiro:42,venc:'2025-04-13',costo:28000,ico:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>'},
-  {nombre:'Florfenicol 30%',principio:'Florfenicol',cat:'Antibiótico',lote:'FL-0887',pres:'Inyectable',stock:420,stockMax:500,dosis:'0.67 mL/10kg SC',retiro:0,venc:'2027-01-20',costo:65000,ico:'💉'},
-  {nombre:'Vitamina ADE',principio:'Vit. A/D/E',cat:'Vitamina',lote:'VIT-B0921',pres:'Inyectable',stock:195,stockMax:250,dosis:'0.05 mL/kg IM',retiro:0,venc:'2025-04-24',costo:18000,ico:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>'},
-  {nombre:'Oxfendazol 10%',principio:'Oxfendazol',cat:'Antiparasitario',lote:'OXF-4421',pres:'Oral',stock:850,stockMax:1000,dosis:'5 mg/kg VO',retiro:7,venc:'2026-11-30',costo:32000,ico:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>'},
-  {nombre:'Meloxicam 5%',principio:'Meloxicam',cat:'Antiinflamatorio',lote:'MEL-2201',pres:'Inyectable',stock:280,stockMax:500,dosis:'0.5 mg/kg SC',retiro:0,venc:'2026-06-15',costo:55000,ico:'💉'},
-  {nombre:'Vitamina B12',principio:'Cianocobalamina',cat:'Vitamina',lote:'B12-0341',pres:'Inyectable',stock:340,stockMax:500,dosis:'0.2 mL/10kg IM',retiro:0,venc:'2027-03-10',costo:12000,ico:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>'},
-];
+const MEDICAMENTOS = [];
 
-const RETIRO_ACTIVOS = [
-  {animal:'Lote D (193 animales)',med:'Ivermectina 1%',fechaFin:new Date(Date.now()+11*86400000),diasRestantes:11,critico:false,colaborador:'María López'},
-  {animal:'#OV-2341',med:'Oxitetraciclina 20%',fechaFin:new Date(Date.now()+25*86400000),diasRestantes:25,critico:false,colaborador:'Juan García'},
-  {animal:'Lote B (132 animales)',med:'Oxfendazol 10%',fechaFin:new Date(Date.now()+2*86400000),diasRestantes:2,critico:true,colaborador:'Carlos Ríos'},
-];
+const RETIRO_ACTIVOS = [];
 
-const CAL_EVENTOS = [
-  {fecha:'2025-04-23',tipo:'Desparasitación',animales:'Lote B (132)',med:'Ivermectina',responsable:'Carlos Ríos',urgencia:'pronto'},
-  {fecha:'2025-04-28',tipo:'Vacunación',animales:'Todo el hato',med:'Clostridial',responsable:'Dr. Martínez',urgencia:'normal'},
-  {fecha:'2025-05-05',tipo:'Vitaminas',animales:'Crías 0-3m',med:'Vitamina ADE',responsable:'María López',urgencia:'normal'},
-  {fecha:'2025-05-12',tipo:'Pesaje grupal',animales:'Lote A',med:'—',responsable:'Juan García',urgencia:'normal'},
-  {fecha:'2025-05-20',tipo:'Revisión veterinaria',animales:'Todo el hato',med:'—',responsable:'Dr. Martínez',urgencia:'normal'},
-];
+const CAL_EVENTOS = [];
 
 // ═══════ TABS ═══════
 function switchTab(el,id){

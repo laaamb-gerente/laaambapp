@@ -491,7 +491,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
             <div class="bar-row"><div class="bar-lbl">Venta reproductores</div><div class="bar-track"><div class="bar-fill" style="width:7%;background:var(--sky)"></div></div><div class="bar-val">$3.4M (7%)</div></div>
             <div style="margin-top:16px;padding:12px;background:var(--green-bg);border:1px solid rgba(46,199,122,.2);border-radius:var(--r)">
               <div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:4px"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:3px"><path d="M10 2a6 6 0 00-3 11.2V15h6v-1.8A6 6 0 0010 2z"/><path d="M8 15h4M9 18h2"/></svg> Oportunidad identificada</div>
-              <div style="font-size:12px;color:var(--text2)">Aumentar venta pie de cría. Dorper × Príncipe tiene demanda confirmada a $420K/animal. Potencial: $8.4M adicionales/mes con 20 crías más.</div>
+              <div style="font-size:12px;color:var(--text2)">Las oportunidades aparecerán aquí cuando haya datos de ventas e ingresos registrados.</div>
             </div>
           </div>
         </div>
@@ -762,7 +762,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
         <select class="fi"><option>Efectivo</option><option>Transferencia</option><option>Crédito</option><option>Cheque</option></select>
       </div>
       <div class="fg"><label class="fl">Animal / Lote (si aplica)</label>
-        <input class="fi" placeholder="OV-2341 o Lote D o General"></div>
+        <input class="fi" placeholder="OV-0001 o Lote o General"></div>
       <div class="fg"><label class="fl">Colaborador</label>
         <select class="fi"><option>Juan García</option><option>Carlos Ríos</option><option>María López</option></select>
       </div>
@@ -861,34 +861,14 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 
 <script>
 // ═══ DATA ═══
-const COSTOS_DATA = [
-  {fecha:'10/04/2025',cat:'Alimentación / Pasto',desc:'Concentrado proteico Lote B',animal:'Lote B',valor:1800000,pago:'Efectivo',colab:'Juan García'},
-  {fecha:'09/04/2025',cat:'Sanidad / Medicamentos',desc:'Ivermectina 1% — desparasitación grupal',animal:'Lote D',valor:285000,pago:'Transferencia',colab:'María López'},
-  {fecha:'08/04/2025',cat:'Sanidad / Medicamentos',desc:'Oxitetraciclina — tratamiento #OV-2341',animal:'OV-2341',valor:18500,pago:'Efectivo',colab:'Juan García'},
-  {fecha:'07/04/2025',cat:'Mano de obra',desc:'Jornales semana 1 abril',animal:'General',valor:1200000,pago:'Transferencia',colab:'Juan García'},
-  {fecha:'05/04/2025',cat:'Infraestructura',desc:'Mantenimiento manga y corrales',animal:'General',valor:320000,pago:'Efectivo',colab:'Carlos Ríos'},
-  {fecha:'03/04/2025',cat:'Alimentación / Pasto',desc:'Sal mineralizada todo el hato',animal:'General',valor:480000,pago:'Efectivo',colab:'María López'},
-  {fecha:'01/04/2025',cat:'Servicios (agua/luz)',desc:'Factura servicios finca',animal:'General',valor:95000,pago:'Transferencia',colab:'Juan García'},
-];
+// Sin demo data: costos e ingresos se cargan SOLO desde Supabase
+// (loadFinanzasFromSupabase). ANIMALES_COSTO se calcula desde datos reales.
+// Si están vacíos, los KPIs muestran "--" y las tablas un estado vacío honesto.
+const COSTOS_DATA = [];
 
-const INGRESOS_DATA = [
-  {fecha:'09/04/2025',tipo:'Venta sacrificio',animales:'OV-1341, OV-0823',peso:84,precio:14500,total:1218000,comprador:'Carnes El Llano',canal:'Directo frigorífico',colab:'Juan García'},
-  {fecha:'07/04/2025',tipo:'Venta pie de cría',animales:'OV-0823 (levante H)',peso:31,precio:12000,total:372000,comprador:'Finca El Porvenir',canal:'Finca (pie)',colab:'Carlos Ríos'},
-  {fecha:'02/04/2025',tipo:'Venta sacrificio',animales:'5 animales Lote B',peso:210,precio:14500,total:3045000,comprador:'Frigorífico Antioquia',canal:'Directo frigorífico',colab:'Juan García'},
-  {fecha:'28/03/2025',tipo:'Venta reproductor',animales:'RE-010 (Dorper joven)',peso:68,precio:18000,total:1224000,comprador:'Finca La Esperanza',canal:'Finca (pie)',colab:'Juan García'},
-  {fecha:'25/03/2025',tipo:'Venta sacrificio',animales:'3 animales Lote C',peso:126,precio:14000,total:1764000,comprador:'Carnes El Llano',canal:'Directo frigorífico',colab:'María López'},
-];
+const INGRESOS_DATA = [];
 
-const ANIMALES_COSTO = [
-  {id:'OV-0234',name:'Bella',lote:'A',compra:380000,alim:520000,san:180000,otros:160000,gdp:195,retorno:1380000},
-  {id:'OV-1102',name:'Luna',lote:'B',compra:420000,alim:580000,san:210000,otros:140000,gdp:188,retorno:1480000},
-  {id:'OV-0441',name:'—',lote:'A',compra:350000,alim:480000,san:260000,otros:150000,gdp:141,retorno:620000},
-  {id:'RE-003',name:'Príncipe',lote:'B',compra:1200000,alim:680000,san:90000,otros:80000,gdp:null,retorno:4800000},
-  {id:'OV-2341',name:'—',lote:'C',compra:360000,alim:580000,san:280000,otros:100000,gdp:175,retorno:1240000},
-  {id:'OV-0892',name:'—',lote:'C',compra:380000,alim:720000,san:240000,otros:240000,gdp:165,retorno:1380000},
-  {id:'OV-2087',name:'—',lote:'D',compra:350000,alim:860000,san:220000,otros:210000,gdp:162,retorno:980000},
-  {id:'OV-1109',name:'—',lote:'D',compra:320000,alim:440000,san:160000,otros:60000,gdp:155,retorno:720000},
-];
+const ANIMALES_COSTO = [];
 
 // ═══ TABS ═══
 function switchTab(el,id){

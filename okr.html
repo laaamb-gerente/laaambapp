@@ -589,16 +589,16 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
           <div class="card-body">
             <div style="background:var(--red-bg);border:1px solid rgba(224,82,82,.2);border-radius:var(--r);padding:14px;margin-bottom:10px">
               <div style="font-size:12px;font-weight:700;color:var(--red);margin-bottom:8px"><svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12" style="vertical-align:middle;margin-right:2px;color:var(--red)"><circle cx="10" cy="10" r="5"/></svg> 3+ ciclos — Culling inmediato</div>
-              <div style="font-size:24px;font-weight:700;color:var(--text)">7 <span style="font-size:14px;color:var(--text3);font-weight:400">animales</span></div>
-              <div style="font-size:11px;color:var(--text3);margin-top:4px">#OV-0441 · #OV-1109 · #OV-0823 · y 4 más</div>
+              <div style="font-size:24px;font-weight:700;color:var(--text)">-- <span style="font-size:14px;color:var(--text3);font-weight:400">animales</span></div>
+              <div style="font-size:11px;color:var(--text3);margin-top:4px">Se calcula desde eventos reproductivos reales.</div>
             </div>
             <div style="background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-radius:var(--r);padding:14px;margin-bottom:10px">
               <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:8px"><svg viewBox="0 0 20 20" fill="currentColor" width="12" height="12" style="vertical-align:middle;margin-right:2px;color:var(--amber)"><circle cx="10" cy="10" r="5"/></svg> 2 ciclos — Evaluar</div>
-              <div style="font-size:24px;font-weight:700;color:var(--text)">12 <span style="font-size:14px;color:var(--text3);font-weight:400">animales</span></div>
+              <div style="font-size:24px;font-weight:700;color:var(--text)">-- <span style="font-size:14px;color:var(--text3);font-weight:400">animales</span></div>
             </div>
             <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px">
               <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12" style="vertical-align:middle;margin-right:2px"><circle cx="10" cy="10" r="5"/></svg> 1 ciclo — Monitorear</div>
-              <div style="font-size:24px;font-weight:700;color:var(--text)">18 <span style="font-size:14px;color:var(--text3);font-weight:400">animales</span></div>
+              <div style="font-size:24px;font-weight:700;color:var(--text)">-- <span style="font-size:14px;color:var(--text3);font-weight:400">animales</span></div>
             </div>
           </div>
         </div>
@@ -662,12 +662,8 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
         <div style="overflow-x:auto">
           <table>
             <thead><tr><th>Fecha</th><th>Animal</th><th>Categoría</th><th>Causa</th><th>Edad</th><th>Peso est.</th><th>Lote</th><th>Colaborador</th></tr></thead>
-            <tbody>
-              <tr><td>10/04/2025</td><td class="td-mono">#OV-1892</td><td>Levante</td><td><span class="badge b-red">Neumonía</span></td><td>2.4m</td><td>12kg</td><td>Lote D</td><td>Juan García</td></tr>
-              <tr><td>02/04/2025</td><td class="td-mono">#OV-2901</td><td>Neonato</td><td><span class="badge b-amber">Diarrea</span></td><td>4 días</td><td>4kg</td><td>Lote A</td><td>María López</td></tr>
-              <tr><td>15/03/2025</td><td class="td-mono">#OV-1203</td><td>Adulto</td><td><span class="badge b-wine">Distócico</span></td><td>3.2a</td><td>42kg</td><td>Lote C</td><td>Carlos Ríos</td></tr>
-              <tr><td>02/02/2025</td><td class="td-mono">#OV-0714</td><td>Levante</td><td><span class="badge b-red">Neumonía</span></td><td>1.8m</td><td>10kg</td><td>Lote D</td><td>Juan García</td></tr>
-              <tr><td>18/01/2025</td><td class="td-mono">#OV-3019</td><td>Neonato</td><td><span class="badge b-sky">Enterotox.</span></td><td>2 días</td><td>3kg</td><td>Lote B</td><td>María López</td></tr>
+            <tbody id="okr-muertes-tbody">
+              <tr><td colspan="8" style="text-align:center;color:var(--text3);padding:24px">Sin muertes registradas en el período.</td></tr>
             </tbody>
           </table>
         </div>
@@ -830,11 +826,13 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 
 <script>
 // ═══ DATA (shared state - in production this comes from localStorage/API) ═══
+// Sin demo data: los KPIs se calculan desde Supabase (loadOKRFromSupabase).
+// Arrancan en 0 / vacío para no mostrar cifras falsas.
 const DATA = {
   animales: JSON.parse(localStorage.getItem('laaamb_animales') || '[]'),
-  total: 470, hembras: 420, machos: 8, levante: 87, gestantes: 43,
-  gdp: 182, fertilidad: 87, natalidad: 94, mortalidad: 2.1,
-  crias_parto: 1.72
+  total: 0, hembras: 0, machos: 0, levante: 0, gestantes: 0,
+  gdp: 0, fertilidad: 0, natalidad: 0, mortalidad: 0,
+  crias_parto: 0
 };
 
 // ═══ TABS ═══
@@ -874,24 +872,15 @@ function renderMiniChart(containerId, monthsId, data, color){
   c.innerHTML = data.map(d=>`<div class="mini-bar" style="height:${Math.round((d.v/max)*56)+4}px;background:${color};opacity:${0.5+0.5*(d.v/max)}" data-tip="${d.l}: ${d.v}"></div>`).join('');
   m.innerHTML = data.map(d=>`<div class="mini-month">${d.l.substring(0,3)}</div>`).join('');
 }
-renderMiniChart('gdp-bars','gdp-months',[
-  {l:'Nov',v:168},{l:'Dic',v:172},{l:'Ene',v:175},{l:'Feb',v:179},{l:'Mar',v:182},{l:'Abr',v:185}
-],'#00AFB6');
-renderMiniChart('crias-bars','crias-months',[
-  {l:'Nov',v:32},{l:'Dic',v:26},{l:'Ene',v:29},{l:'Feb',v:36},{l:'Mar',v:39},{l:'Abr',v:18}
-],'#2ec77a');
+// Sin demo data: los mini-charts de GDP y crías por mes se rellenan desde
+// Supabase (pesajes y partos reales). Sin datos → contenedores vacíos.
 
 // ═══ AI ═══
 const AI_CONTEXT = `Eres un zootecnista experto en producción ovina de carne en Colombia.
-La finca "La Marinilla" (vereda San Bernardo, Ibagué, Tolima) tiene:
-- 470 ovejas: 420 hembras, 8 machos reproductores, 87 en levante, 43 gestantes
-- Razas: Dorper principalmente, Katahdin, Hampshire, Pelibuey
-- GDP promedio: 182 g/día (meta 200). Fertilidad: 87% (meta 90%). Natalidad: 94%. Mortalidad: 2.1%
-- Crías/parto: 1.72. Intervalo entre partos: 7.4 meses
-- Lotes: A(18.4ha/47), B(24.1ha/132), C(19.7ha/98), D(14ha/193-SOBRECARGA CRÍTICA 13.8ov/ha)
-- Reproductores top: RE-003 Príncipe (96% fertilidad), RE-007 Zeus (92%), RE-001 Titan (89%)
-- 7 ovejas con 3+ ciclos vacíos, 12 con 2 ciclos. Causa #1 mortalidad: Neumonía (35%)
-Responde en español. Sé directo, práctico y da recomendaciones específicas con números.`;
+Asesoras la finca "La Marinilla" (vereda San Bernardo, Ibagué, Tolima), de ganadería
+ovina regenerativa en pastoreo adaptativo. NO inventes cifras del hato: usa únicamente
+los datos reales que el usuario te comparta o los que estén cargados en la app.
+Responde en español. Sé directo, práctico y da recomendaciones específicas.`;
 
 async function askAI(q){
   const input = document.getElementById('ai-q');
@@ -925,32 +914,28 @@ async function askAI(q){
 function exportExcel(){
   const wb = XLSX.utils.book_new();
   // KPIs sheet
+  var M = window.OKR_METAS || {};
   const kpis = [
     ['Indicador','Valor','Meta','Estado'],
-    ['GDP promedio (g/d)',182,200,'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Bajo meta'],
-    ['Fertilidad (%)',87,90,'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Bajo meta'],
-    ['Natalidad (%)',94,95,'✓ Casi en meta'],
-    ['Mortalidad (%)',2.1,2,'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Sobre meta'],
-    ['Crías/parto',1.72,1.8,'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> Bajo meta'],
-    ['Total animales',470,'—','OK'],
-    ['En levante',87,'—','OK'],
-    ['Gestantes',43,'—','OK'],
+    ['GDP promedio (g/d)',DATA.gdp||'--',M.gdp_diario||'--',''],
+    ['Fertilidad (%)',DATA.fertilidad||'--',M.fertilidad||'--',''],
+    ['Natalidad (%)',DATA.natalidad||'--','--',''],
+    ['Mortalidad (%)',DATA.mortalidad||'--',M.mortalidad_total||'--',''],
+    ['Crías/parto',DATA.crias_parto||'--',M.prolificidad||'--',''],
+    ['Total animales',DATA.total||'--','—',''],
+    ['En levante',DATA.levante||'--','—',''],
+    ['Gestantes',DATA.gestantes||'--','—',''],
   ];
   const ws1 = XLSX.utils.aoa_to_sheet(kpis);
   XLSX.utils.book_append_sheet(wb, ws1, 'KPIs');
   // Mortalidad sheet
   const mort = [
-    ['Causa','Porcentaje','N° muertes'],
-    ['Neumonía','35%',4],['Diarrea neonatal','22%',2],
-    ['Predación','15%',2],['Parto distócico','12%',1],['Otras','16%',1]
+    ['Causa','Porcentaje','N° muertes']
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(mort), 'Mortalidad');
   // Culling sheet
   const culling = [
-    ['ID','Ciclos vacía','GDP crías','Partos','Costo','Puntuación','Recomendación'],
-    ['#OV-0441',3,141,2,1240000,21,'CULLING YA'],
-    ['#OV-1109',2,155,1,980000,34,'EVALUAR'],
-    ['#OV-2087',2,162,3,1640000,38,'EVALUAR'],
+    ['ID','Ciclos vacía','GDP crías','Partos','Costo','Puntuación','Recomendación']
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(culling), 'Culling');
   XLSX.writeFile(wb, 'laaamb-okr-analisis.xlsx');
@@ -960,12 +945,7 @@ function exportExcel(){
 function exportMuertes(){
   const wb = XLSX.utils.book_new();
   const data = [
-    ['Fecha','ID Animal','Categoría','Causa','Edad','Peso kg','Lote','Colaborador'],
-    ['10/04/2025','#OV-1892','Levante','Neumonía',72,12,'Lote D','Juan García'],
-    ['02/04/2025','#OV-2901','Neonato','Diarrea neonatal',4,4,'Lote A','María López'],
-    ['15/03/2025','#OV-1203','Adulto','Parto distócico',38.4,42,'Lote C','Carlos Ríos'],
-    ['02/02/2025','#OV-0714','Levante','Neumonía',54,10,'Lote D','Juan García'],
-    ['18/01/2025','#OV-3019','Neonato','Enterotoxemia',2,3,'Lote B','María López'],
+    ['Fecha','ID Animal','Categoría','Causa','Edad','Peso kg','Lote','Colaborador']
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'Mortalidad');
   XLSX.writeFile(wb, 'laaamb-mortalidad.xlsx');
@@ -975,11 +955,7 @@ function exportMuertes(){
 function exportCulling(){
   const wb = XLSX.utils.book_new();
   const data = [
-    ['ID','Edad años','Partos','Crías/parto','GDP crías g/d','Ciclos vacía','Costo COP','Retorno est. COP','Puntuación 0-100','Recomendación'],
-    ['#OV-0441',5.3,2,1.0,141,3,1240000,480000,21,'CULLING YA'],
-    ['#OV-1109',4.8,1,1.0,155,2,980000,360000,34,'EVALUAR'],
-    ['#OV-2087',5.4,3,1.33,162,2,1640000,620000,38,'EVALUAR'],
-    ['#OV-0892',6.8,4,1.75,168,0,1580000,840000,52,'MONITOREAR'],
+    ['ID','Edad años','Partos','Crías/parto','GDP crías g/d','Ciclos vacía','Costo COP','Retorno est. COP','Puntuación 0-100','Recomendación']
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(data), 'Culling');
   XLSX.writeFile(wb, 'laaamb-culling.xlsx');
@@ -996,12 +972,8 @@ function exportInforme(){
     ['INFORME LAAAMBAPP — LA MARINILLA',''],
     ['Generado',new Date().toLocaleDateString('es-CO')],['',''],
     ['INDICADORES PRINCIPALES',''],
-    ['Total animales',470],['GDP promedio',182],['Fertilidad',87+'%'],
-    ['Natalidad',94+'%'],['Mortalidad',2.1+'%'],['Crías/parto',1.72],
-    ['',''],['ALERTAS',''],
-    ['Ovejas vacías 3+ ciclos',7],['Ovejas vacías 2 ciclos',12],
-    ['Lote D sobrecarga','13.8 ov/ha — CRÍTICO'],
-    ['Causa mortalidad #1','Neumonía (35%)'],
+    ['Total animales',DATA.total||'--'],['GDP promedio',DATA.gdp||'--'],['Fertilidad',(DATA.fertilidad||'--')+'%'],
+    ['Natalidad',(DATA.natalidad||'--')+'%'],['Mortalidad',(DATA.mortalidad||'--')+'%'],['Crías/parto',DATA.crias_parto||'--'],
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumen), 'Resumen');
   XLSX.writeFile(wb, 'laaamb-informe-'+new Date().toISOString().slice(0,10)+'.xlsx');
@@ -1013,13 +985,13 @@ function downloadTemplate(tipo){
   const wb = XLSX.utils.book_new();
   const templates = {
     animales:[['ID/Arete*','Nombre','Sexo (H/M)*','Categoría*','Raza*','Fecha nac. (YYYY-MM-DD)*','Peso inicial kg','Lote*','Costo adquisición COP','Madre ID','Padre ID','Observaciones'],
-              ['OV-0471','','H','Reproductora','Dorper','2022-01-15',35,'Lote A',350000,'OV-1234','RE-003','']],
+              ['OV-0001','','H','Reproductora','Dorper','2022-01-15',35,'Lote A',350000,'','','']],
     pesajes:[['ID Animal*','Fecha pesaje*','Peso kg*','Colaborador','Observaciones'],
-             ['OV-0234','2025-04-10',48,'Juan García','']],
+             ['OV-0001','2025-04-10',48,'','']],
     ecografias:[['ID Animal*','Fecha ecografía*','Resultado (Gestante/Vacía/No apta)*','Días gestación','Colaborador','Observaciones'],
-                ['OV-1102','2025-04-10','Gestante',45,'María López','']],
+                ['OV-0001','2025-04-10','Gestante',45,'','']],
     montas:[['ID Hembra*','ID Macho*','Fecha monta*','Ciclo N°','Tipo (Natural/IA)','Lote','Colaborador'],
-            ['OV-0234','RE-003','2025-04-10',1,'Natural','Lote A','Juan García']],
+            ['OV-0001','RE-0001','2025-04-10',1,'Natural','Lote A','']],
   };
   const ws = XLSX.utils.aoa_to_sheet(templates[tipo]||[['Sin plantilla']]);
   XLSX.utils.book_append_sheet(wb, ws, tipo);
