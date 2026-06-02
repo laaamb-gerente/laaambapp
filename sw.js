@@ -2,7 +2,7 @@
 // Cache-first para assets estáticos. NUNCA intercepta peticiones
 // a Supabase ni a /api/ (auth y datos deben ir siempre a la red).
 
-const CACHE_NAME = 'laaambapp-v2';
+const CACHE_NAME = 'laaambapp-v3';
 
 // Paths relativos: resuelven contra la ubicación del SW en cada host
 // (raíz en Vercel, /laaambapp/ en GitHub Pages).
@@ -53,6 +53,14 @@ self.addEventListener('activate', (event) => {
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
     ).then(() => self.clients.claim())
+     .then(() =>
+       // Notificar a las pestañas abiertas que hay nueva versión
+       self.clients.matchAll().then((clients) => {
+         clients.forEach((client) => {
+           client.postMessage({ type: 'SW_UPDATED' });
+         });
+       })
+     )
   );
 });
 

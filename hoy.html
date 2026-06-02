@@ -699,5 +699,23 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     window.OfflineDB.init().then(() => { window.OfflineDB.setupAutoSync(); });
   }
 </script>
+
+<script>
+// Banner automático de nueva versión (mensaje del Service Worker)
+navigator.serviceWorker?.addEventListener('message', function(e){
+  if (e.data?.type === 'SW_UPDATED') {
+    if (document.getElementById('sw-update-banner')) return;
+    var banner = document.createElement('div');
+    banner.id = 'sw-update-banner';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:var(--teal);color:#fff;padding:10px 16px;text-align:center;z-index:99999;font-size:13px;font-family:Changa,sans-serif;display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap';
+    banner.innerHTML =
+      '🆕 Hay una nueva versión disponible ' +
+      '<button onclick="window.location.reload(true)" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.5);color:#fff;padding:4px 12px;border-radius:4px;cursor:pointer;font-family:inherit">Actualizar</button>' +
+      '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:16px">✕</button>' +
+      '<span style="font-size:11px;opacity:.85;width:100%">📱 iPhone: mantén pulsado Safari → Recargar · Android: menú ⋮ → Actualizar página</span>';
+    document.body.prepend(banner);
+  }
+});
+</script>
 </body>
 </html>

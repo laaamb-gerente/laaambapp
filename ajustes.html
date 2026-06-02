@@ -475,6 +475,17 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
     <!-- ════ TAB 5 · DATOS (importar/exportar + backup) ════ -->
     <div id="t-datos" class="tab-pane" style="display:none">
 
+    <!-- ACTUALIZAR APLICACIÓN -->
+    <div class="update-card" style="background:linear-gradient(135deg,var(--teal-bg2),var(--bg2));border:1px solid var(--teal-d);border-radius:var(--r);padding:14px 16px;margin-bottom:16px">
+      <div style="font-weight:700;font-size:14px;color:var(--teal);margin-bottom:4px">🔄 Versión de la aplicación</div>
+      <div id="app-version-info" style="font-size:12px;color:var(--text3);margin-bottom:10px">Comprobando versión...</div>
+      <button onclick="actualizarApp()" class="btn btn-primary btn-sm">↺ Actualizar ahora</button>
+      <span style="font-size:11px;color:var(--text4);margin-left:10px">Útil si los cambios no aparecen en móvil</span>
+      <div style="font-size:11px;color:var(--text4);margin-top:10px;line-height:1.5">
+        📱 En iPhone: mantén pulsado el ícono de Safari → "Recargar". En Android: menú ⋮ → "Actualizar página".
+      </div>
+    </div>
+
     <!-- IMPORTAR / EXPORTAR -->
     <div class="section-label">💾 Datos</div>
     <div class="card">
@@ -1007,6 +1018,51 @@ function toast(msg, type='ok'){
   t.innerHTML = '<span style="color:var(--teal)">✓</span> ' + msg;
   c.appendChild(t);
   setTimeout(function(){ t.remove(); }, 3000);
+}
+
+// ── ACTUALIZAR APLICACIÓN (limpiar SW + caches) ──────────────────────────────
+async function actualizarApp() {
+  const btn = document.querySelector('[onclick="actualizarApp()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Actualizando...'; }
+  try {
+    // 1. Desregistrar el Service Worker
+    if ('serviceWorker' in navigator) {
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      for (const reg of registrations) { await reg.unregister(); }
+    }
+    // 2. Limpiar todos los caches
+    if ('caches' in window) {
+      const cacheNames = await caches.keys();
+      await Promise.all(cacheNames.map(name => caches.delete(name)));
+    }
+    // 3. NO limpiar localStorage — tiene datos de usuario.
+    toast('✅ Cache limpiado. Recargando...', 'ok');
+    setTimeout(function(){ window.location.reload(true); }, 1500);
+  } catch (e) {
+    toast('Error al actualizar: ' + e.message, 'err');
+    if (btn) { btn.disabled = false; btn.textContent = '↺ Actualizar ahora'; }
+  }
+}
+
+// ── MOSTRAR VERSIÓN / ESTADO DEL SERVICE WORKER ──────────────────────────────
+async function checkAppVersion() {
+  const el = document.getElementById('app-version-info');
+  if (!el) return;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    if (reg && reg.active) {
+      el.textContent = 'Service Worker activo · Si no ves cambios recientes, pulsa "Actualizar ahora".';
+    } else {
+      el.textContent = 'Sin Service Worker · Los cambios se aplican de inmediato.';
+    }
+  } catch (e) {
+    el.textContent = 'Estado desconocido.';
+  }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', checkAppVersion);
+} else {
+  checkAppVersion();
 }
 
 // ── Badges sidebar (local, para actualizar después de guardar finca) ──────────
