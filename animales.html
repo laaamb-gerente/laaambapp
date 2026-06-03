@@ -234,7 +234,7 @@ label.fl[for] + .fi:required,label.fl + .fi[required]{border-left:2px solid var(
 .ficha-meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 14px;margin-top:12px}
 .ficha-meta-grid>div{font-size:13px;color:var(--text)}
 .ficha-meta-grid>div span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:1px}
-.ficha-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);overflow-x:auto;margin-bottom:14px}
+.ficha-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);overflow-x:auto;margin-bottom:14px;touch-action:pan-x;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
 .ftab{padding:9px 16px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim);white-space:nowrap}
 .ftab:hover{color:var(--text)}.ftab.active{color:var(--teal);border-bottom-color:var(--teal)}
 .fsubtab{padding:6px 14px;font-size:12px;font-weight:600;color:var(--text3);cursor:pointer;border:1px solid var(--border2);border-radius:20px;white-space:nowrap;transition:all var(--anim)}
@@ -310,8 +310,8 @@ label.fl[for] + .fi:required,label.fl + .fi[required]{border-left:2px solid var(
       <div class="ph-sub" id="ph-sub">Cargando…</div>
       <div class="species-tabs" id="species-tabs">
         <button class="sp-tab" id="sp-todas" onclick="setEspecie('todas')">Todas</button>
-        <button class="sp-tab" id="sp-ovino" onclick="setEspecie('ovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/></svg> Ovinos</button>
-        <button class="sp-tab" id="sp-bovino" onclick="setEspecie('bovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="12" rx="6" ry="4"/><circle cx="14" cy="8" r="2.5"/></svg> Bovinos</button>
+        <button class="sp-tab" id="sp-ovino" onclick="setEspecie('ovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="9" cy="11.5" rx="5.5" ry="4"/><circle cx="15" cy="9" r="2.4"/><path d="M14 7.4q1-1.6 2.8-.8"/><line x1="7.5" y1="15" x2="7" y2="18"/><line x1="11" y1="15.2" x2="11.5" y2="18"/></svg> Ovinos</button>
+        <button class="sp-tab" id="sp-bovino" onclick="setEspecie('bovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><rect x="3.5" y="9.5" width="10" height="6" rx="1.5"/><rect x="12.5" y="7.5" width="4" height="4.5" rx="1"/><path d="M12.8 7.4q-.8-2.2-2.6-1.4"/><path d="M16.2 7.4q.8-2.2 2.6-1.4"/><line x1="5.5" y1="15.5" x2="5.5" y2="18.3"/><line x1="11.5" y1="15.5" x2="11.5" y2="18.3"/></svg> Bovinos</button>
       </div>
     </div>
     <div class="ph-actions">
@@ -664,7 +664,7 @@ function renderTabla(){
     return '<tr onclick="verPerfil(\''+a.id+'\')" style="'+op+'">'
       +'<td class="td-id">#'+a.id+'</td>'
       +'<td><div class="td-animal"><div class="a-ico '+(a.sexo||'H')+'">'+(a.sexo==='H'?'🐑':'🐏')+'</div>'
-      +'<div><div style="font-weight:600">'+(a.nombre||'—')+(typeof _scoreBadge==='function'?_scoreBadge(a):'')+'</div><div class="td-m">'+(a.especie==='bovino'?'🐄 ':'🐑 ')+(a.categoria||'')+'</div></div></div></td>'
+      +'<div><div style="font-weight:600">'+(a.nombre||'—')+(typeof _scoreBadge==='function'?_scoreBadge(a):'')+'</div><div class="td-m">'+(a.categoria||'')+'</div></div></div></td>'
       +'<td class="td-m">'+(a.raza||'—')+'</td>'
       +'<td class="td-m">'+calcEdad(a.fecha_nacimiento)+'</td>'
       +'<td class="td-m">'+peso+'</td>'
@@ -1640,7 +1640,7 @@ async function _fichaLoadLinaje(a){
     + '#descarte-sec{margin:0 0 18px;background:var(--bg2);border:1px solid var(--red,#e05252);border-radius:var(--r2,14px);overflow:hidden}'
     + '#descarte-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;cursor:pointer;background:var(--red-bg,rgba(224,82,82,.08))}'
     + '#descarte-head .t{font-size:13px;font-weight:700;color:var(--red,#e05252);display:flex;align-items:center;gap:8px}'
-    + '#descarte-body{padding:14px 16px;display:none}#descarte-body.on{display:block}'
+    + '#descarte-body{max-height:0;overflow:hidden;padding:0 16px;transition:max-height .28s ease,padding .28s ease}#descarte-body.on{max-height:1400px;padding:14px 16px}'
     + '.desc-card{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;margin-bottom:10px}'
     + '.desc-top{display:flex;align-items:center;justify-content:space-between;gap:8px}'
     + '.desc-name{font-weight:700;color:var(--text)}'
@@ -1659,12 +1659,11 @@ async function _fichaLoadLinaje(a){
   // ── Badge de score (solo hembras) ──
   window._scoreBadge = function(a){
     if(a.sexo !== 'H') return '';
-    if(a.candidata_descarte) return '<span class="score-b sb-desc">⛔ Descarte</span>';
+    if(a.candidata_descarte) return '<span class="score-b sb-desc" title="Candidata a descarte">⛔ Descarte</span>';
     var s = a.score_materno;
     if(s == null) return '';
     var cls = s>=70?'sb-g':(s>=40?'sb-a':'sb-r');
-    var ico = s>=70?'♥':(s>=40?'⚠':'🔴');
-    return '<span class="score-b '+cls+'">'+ico+' '+s+'</span>';
+    return '<span class="score-b '+cls+'" title="Score materno '+s+'/100">Mat. '+s+'</span>';
   };
   // ── Botón de evaluación (solo hembras, solo creadores) ──
   window._evalBtn = function(a){
@@ -1743,8 +1742,16 @@ async function _fichaLoadLinaje(a){
     try{
       var r = await DB.getCandidatasDescarte();
       var cands = (r&&r.data)||[];
-      var cnt = document.getElementById('descarte-count'); if(cnt) cnt.textContent = cands.length;
+      var cnt = document.getElementById('descarte-count');
+      if(cnt){
+        cnt.textContent = cands.length;
+        if(cands.length){ cnt.className='score-b sb-r'; cnt.style.background=''; cnt.style.color=''; }
+        else { cnt.className='score-b'; cnt.style.background='var(--surface2)'; cnt.style.color='var(--text2)'; }
+      }
       if(!cands.length){
+        // 0 candidatas → colapsar y dejar no-expandible
+        var b0=document.getElementById('descarte-body'); if(b0) b0.classList.remove('on');
+        var ch0=document.getElementById('descarte-chev'); if(ch0) ch0.textContent='';
         body.innerHTML = '<div style="font-size:13px;color:var(--text3);text-align:center;padding:8px">No hay ovejas candidatas a descarte actualmente.</div>';
         return;
       }
@@ -1807,12 +1814,22 @@ async function _fichaLoadLinaje(a){
     var sec = document.createElement('div');
     sec.id = 'descarte-sec'; sec.style.display = 'none';
     sec.innerHTML =
-        '<div id="descarte-head" onclick="document.getElementById(\'descarte-body\').classList.toggle(\'on\')">'
-      +   '<div class="t">⛔ Candidatas a descarte <span class="score-b sb-r" id="descarte-count">0</span></div>'
-      +   '<div style="font-size:11px;color:var(--text3)">toca para ver/ocultar</div>'
+        '<div id="descarte-head" onclick="toggleDescarte()">'
+      +   '<div class="t">⛔ Candidatas a descarte <span class="score-b" id="descarte-count" style="background:var(--surface2);color:var(--text2)">0</span></div>'
+      +   '<div id="descarte-chev" style="font-size:13px;color:var(--text3)">▸</div>'
       + '</div><div id="descarte-body"></div>';
     anchor.parentNode.insertBefore(sec, anchor);
   }
+  // Toggle acordeón (no expande si no hay candidatas).
+  window.toggleDescarte = function(){
+    var cnt = document.getElementById('descarte-count');
+    var n = cnt ? (parseInt(cnt.textContent,10)||0) : 0;
+    if(n <= 0) return;
+    var body = document.getElementById('descarte-body');
+    var ch = document.getElementById('descarte-chev');
+    var open = body.classList.toggle('on');
+    if(ch) ch.textContent = open ? '▾' : '▸';
+  };
 
   function ready(cb){ if(window.AUTH_ROL){ cb(); return; } var n=0,iv=setInterval(function(){ if(window.AUTH_ROL||n>60){ clearInterval(iv); cb(); } n++; },100); }
   injectSection();
