@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00AFB6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LAAAMB">
+<link rel="apple-touch-icon" href="icons/icon-laaamb.jpg">
+<meta name="msapplication-TileImage" content="icons/icon-laaamb.jpg">
+<title>LAAAMBAPP · Leche</title>
+<script>(function(){var t=(function(){var _t=localStorage.getItem('laaamb-theme');return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute('data-theme',t);})();</script>
+<link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js" crossorigin="anonymous"></script>
+<script src="js/error-handler.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script>
+  window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+</script>
+<script src="js/auth.js"></script>
+<script src="js/roles.js"></script>
+<script src="js/mobile-nav.js"></script>
+<script src="js/offline-db.js"></script>
+<script src="js/db.js?v=28"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
+  --wine:#9C3F66;--wine-bg:rgba(156,63,102,.12);--orange:#F18F22;--orange-bg:rgba(241,143,34,.12);
+  --bg:#080f10;--bg2:#0c1517;--bg3:#101d1f;--bg4:#152224;--surface:#172628;--surface2:#1d3235;
+  --border:rgba(0,175,182,.10);--border2:rgba(0,175,182,.20);--border3:rgba(0,175,182,.35);
+  --green:#2ec77a;--green-bg:rgba(46,199,122,.10);--red:#e05252;--red-bg:rgba(224,82,82,.10);
+  --amber:#e8a030;--amber-bg:rgba(232,160,48,.10);--sky:#38b0d8;--sky-bg:rgba(56,176,216,.10);
+  --text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;
+  --r:8px;--r2:14px;--sidebar:236px;--anim:.16s cubic-bezier(.4,0,.2,1)}
+html[data-theme="light"]{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.05);--wine:#9C3F66;--wine-bg:rgba(156,63,102,.10);--orange:#F18F22;--orange-bg:rgba(241,143,34,.10);--bg:#F8F9FA;--bg2:#FFFFFF;--bg3:#F3F4F6;--bg4:#FAFAFA;--surface:#FFFFFF;--surface2:#F3F4F6;--border:#E5E7EB;--border2:#D1D5DB;--border3:#9CA3AF;--green:#10B981;--green-bg:rgba(16,185,129,.10);--red:#EF4444;--red-bg:rgba(239,68,68,.10);--amber:#F59E0B;--amber-bg:rgba(245,158,11,.10);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.10);--text:#1A1A2E;--text2:#6B7280;--text3:#9CA3AF;--text4:#C4C9D4}
+html[data-theme="dark"]{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.12);--teal-bg2:rgba(0,175,182,.06);--wine:#9C3F66;--wine-bg:rgba(156,63,102,.15);--orange:#F18F22;--orange-bg:rgba(241,143,34,.15);--bg:#0F172A;--bg2:#1E293B;--bg3:#1E293B;--bg4:#162032;--surface:#1E293B;--surface2:#162032;--border:#334155;--border2:#3E4C61;--border3:#475569;--green:#10B981;--green-bg:rgba(16,185,129,.14);--red:#EF4444;--red-bg:rgba(239,68,68,.14);--amber:#F59E0B;--amber-bg:rgba(245,158,11,.14);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.14);--text:#F1F5F9;--text2:#94A3B8;--text3:#64748B;--text4:#475569}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+.app{display:flex;height:100vh;width:100vw}
+.sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0}
+.sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:.5}
+.sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:4px}.sb-logo-img{height:40px;width:40px;border-radius:9px;flex-shrink:0}
+.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
+.sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
+.nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}
+.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;text-decoration:none;transition:all var(--anim);position:relative}
+.nav-link:hover{background:var(--surface);color:var(--text)}
+.nav-link.active{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
+.nav-link.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--teal);border-radius:2px}
+.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}.nav-link.active .nav-ico,.nav-link:hover .nav-ico{opacity:1}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:600;background:var(--surface2);color:var(--teal);padding:1px 7px;border-radius:10px;border:1px solid var(--border2)}
+.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border);background:var(--bg2)}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
+.user-name{font-size:12px;font-weight:600;color:var(--text)}.user-role{font-size:10px;color:var(--text3)}
+#lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);width:46px;height:46px;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 16px rgba(0,0,0,.45)}
+#lham svg{width:22px;height:22px;stroke:var(--text);stroke-width:2;fill:none;stroke-linecap:round}
+#lov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990}
+#lov.on{display:block}
+.main{flex:1;overflow-y:auto;padding:24px;background:var(--bg)}
+.page-head{margin-bottom:18px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ph-eyebrow{font-size:10px;font-weight:700;color:var(--teal-d);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px}
+.ph-title{font-family:'Sigmar',cursive;font-size:30px;color:var(--text);line-height:1.1}
+.ph-date{font-size:12px;color:var(--text3);margin-top:4px}
+.head-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.tbadge{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:99px;font-size:12px;font-weight:700;border:1px solid var(--border2);background:var(--surface2);color:var(--text2)}
+.tbadge .n{font-family:'Sigmar',cursive;font-size:15px;line-height:1}
+.sec{margin-bottom:22px}
+.sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sec-title .dot{width:8px;height:8px;border-radius:50%;background:var(--teal)}
+.empty-box{padding:22px;text-align:center;color:var(--text3);font-size:13px;background:var(--bg2);border:1px dashed var(--border2);border-radius:var(--r2);line-height:1.6}
+/* ── LACTANCIA CARDS ── */
+.lact-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.lact-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:16px}
+.lact-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.lact-name{font-size:15px;font-weight:700;color:var(--text);cursor:pointer;text-decoration:underline;text-decoration-color:var(--border2);text-underline-offset:3px}
+.lact-name:hover{color:var(--teal)}
+.lact-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.dest{font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;white-space:nowrap}
+.dest-cn{background:var(--green-bg);color:var(--green)}
+.dest-or{background:var(--amber-bg);color:var(--amber)}
+.dest-mx{background:var(--sky-bg);color:var(--sky)}
+.lact-rows{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+.lact-row{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--text2)}
+.lact-row b{color:var(--text);font-weight:700}
+.spark{margin-top:10px;height:38px;background:var(--bg3);border-radius:8px;padding:4px 6px;display:flex;align-items:center}
+.spark svg{width:100%;height:30px;display:block}
+.spark-empty{font-size:10px;color:var(--text3);font-style:italic}
+.lact-btn{margin-top:12px;width:100%;background:var(--teal);color:#fff;font-weight:700;border:none;border-radius:10px;padding:10px;font-family:inherit;font-size:13px;cursor:pointer}
+.lact-btn:hover{background:#1cc8d0}
+/* ── FICHA ── */
+#ficha-sec{display:none}
+.ficha-card{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:18px}
+.ficha-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.ficha-h h3{font-family:'Sigmar',cursive;font-size:19px;color:var(--text)}
+.curva{background:var(--bg3);border-radius:10px;padding:8px;margin-bottom:14px}
+.curva svg{width:100%;height:150px;display:block}
+.mtrx{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.mtr{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px}
+.mtr .v{font-family:'Sigmar',cursive;font-size:20px;color:var(--teal);line-height:1}
+.mtr .k{font-size:11px;color:var(--text3);margin-top:3px}
+.ctbl{width:100%;border-collapse:collapse;font-size:12px}
+.ctbl th{text-align:left;color:var(--text3);font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.5px;padding:6px 8px;border-bottom:1px solid var(--border)}
+.ctbl td{padding:7px 8px;border-bottom:1px solid var(--border);color:var(--text2)}
+.ctbl td b{color:var(--text)}
+.prev-box{margin-top:12px;font-size:12px;color:var(--text2);background:var(--surface2);border-radius:8px;padding:10px 12px}
+/* ── BUTTONS / MODAL / TOAST (compartido) ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:9px 14px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all var(--anim);text-decoration:none}
+.btn-primary{background:var(--teal);color:#fff}.btn-primary:hover{background:#1cc8d0}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}.btn-ghost:hover{background:var(--surface);color:var(--teal)}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;align-items:center;justify-content:center;padding:16px}
+.modal-ov.on{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);width:100%;max-width:440px;max-height:90vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.5)}
+.modal-h{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border)}
+.modal-h h3{font-family:'Sigmar',cursive;font-size:17px;color:var(--text)}
+.modal-x{background:transparent;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1}
+.modal-b{padding:20px}
+.fld{margin-bottom:14px}
+.fld label{display:block;font-size:11px;font-weight:600;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px}
+.fld input,.fld select,.fld textarea{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;color:var(--text);font-family:inherit;font-size:14px}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--teal)}
+.fld textarea{resize:vertical;min-height:56px}
+.fld-row{display:flex;gap:10px}.fld-row .fld{flex:1}
+.comp-toggle{width:100%;text-align:left;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;color:var(--text2);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:12px}
+.comp-body{display:none}
+.comp-body.on{display:block}
+.modal-msg{font-size:12px;margin-top:8px;min-height:16px}
+.modal-msg.ok{color:var(--green)}.modal-msg.err{color:var(--red)}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:11px 18px;border-radius:99px;font-size:13px;font-weight:600;z-index:10000;opacity:0;transition:opacity .2s;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.3)}
+#toast.on{opacity:1}#toast.err{background:var(--red);color:#fff}
+@media(max-width:768px){
+  #lham{display:flex}
+  #sidebar{position:fixed!important;top:0;left:0;height:100vh;transform:translateX(-100%);z-index:9995;transition:transform .28s ease}
+  #sidebar.on{transform:translateX(0)}
+  .main{padding:12px;padding-top:64px}
+  .lact-grid{grid-template-columns:1fr}
+  .ph-title{font-size:25px}
+  .mtrx{grid-template-columns:repeat(2,1fr)}
+  .btn{min-height:44px}
+  .fld input,.fld select,.fld textarea{font-size:16px}
+  .modal-ov{padding:0;align-items:flex-end}
+  .modal{max-width:100%;width:100%;border-radius:18px 18px 0 0;max-height:92vh}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<button id="lham" aria-label="Menú"><svg id="lico" viewBox="0 0 22 22"><line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/></svg></button>
+<div id="lov"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sb-head">
+    <a href="index.html" class="sb-logo"><img src="icons/icon.svg" alt="LAAAMB Corderos" class="sb-logo-img"><div><div class="sb-logo-text">LAAAMB</div><div class="sb-logo-sub">Corderos · App</div></div></a>
+  </div>
+  <nav class="nav-scroll">
+    <div class="nav-group">Principal</div>
+    <a class="nav-link" href="index.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a class="nav-link" href="hoy.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="14" height="14" rx="2"/><line x1="3" y1="8" x2="17" y2="8"/><line x1="7" y1="2" x2="7" y2="5"/><line x1="13" y1="2" x2="13" y2="5"/></svg>Hoy</a>
+    <a class="nav-link" href="sala-cuna.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 7h6v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V7z"/><path d="M8 7l.6-2.5h2.8L12 7"/><line x1="7" y1="10.5" x2="13" y2="10.5"/></svg>Sala Cuna</a>
+    <a class="nav-link active" href="leche.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2h8M7 2l-.5 4.5a4 4 0 0 0-.5 2V16a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V8.5a4 4 0 0 0-.5-2L13 2"/><line x1="6.2" y1="10" x2="13.8" y2="10"/></svg>Leche</a>
+    <a class="nav-link" href="okr.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>OKRs &amp; Análisis</a>
+    <div class="nav-group">Ganadería</div>
+    <a class="nav-link" href="animales.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Animales<span class="nav-badge" id="sb-count">—</span></a>
+    <a class="nav-link" href="reproduccion.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 3"/></svg>Reproducción</a>
+    <a class="nav-link" href="nutricion.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 17c4-1 7-4 7-9V4l-4 1c-3 .8-5 3-5 6v6z"/><path d="M10 17c-3-1-5-3-5-6"/></svg>Nutrición</a>
+    <a class="nav-link" href="lotes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>Lotes &amp; Potreros</a>
+    <div class="nav-group">Salud</div>
+    <a class="nav-link" href="salud.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3v14M3 10h14"/></svg>Salud &amp; Tratamientos</a>
+    <a class="nav-link" href="medicamentos.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>Medicamentos</a>
+    <div class="nav-group">Gestión</div>
+    <a class="nav-link" href="finanzas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>Costos &amp; Finanzas</a>
+    <a class="nav-link" href="bajas.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>Bajas &amp; Ventas</a>
+    <a class="nav-link" href="historial.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h7l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M7 11h6M7 14h4"/></svg>Historial</a>
+    <a class="nav-link" href="beneficio.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>Beneficio &amp; QR</a>
+    <a class="nav-link" href="b2b.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="9" height="14" rx="1"/><path d="M12 8h5v9h-5"/><path d="M6 6h3M6 9h3M6 12h3"/></svg>Clientes B2B</a>
+    <a class="nav-link" href="nomina.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="6" r="3"/><path d="M2 17c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M14 8h4M14 11h4M14 14h2"/></svg>Nómina &amp; Asistencia</a>
+    <a class="nav-link" href="ica.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-3 7 3v6l-7 3-7-3z"/><path d="M3 7l7 3 7-3M10 10v6"/></svg>ICA &amp; Movilización</a>
+    <a class="nav-link" href="reportes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h7l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M12 3v4h4M7 11h6M7 14h6"/></svg>Reportes</a>
+    <div class="nav-group">Sistema</div>
+    <a class="nav-link" href="ajustes.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.9 4.9l1.4 1.4M13.7 13.7l1.4 1.4M4.9 15.1l1.4-1.4M13.7 6.3l1.4-1.4"/></svg>Ajustes</a>
+  </nav>
+  <div class="sb-foot">
+    <div style="font-size:9px;color:var(--text4);text-align:center;margin-bottom:8px;letter-spacing:.5px">LAAAMBAPP v1.0 · 2025</div>
+    <div class="user-row"><div class="avatar">JA</div><div><div class="user-name">Usuario</div><div class="user-role">—</div></div></div>
+    <button onclick="Auth.signOut()" style="width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;background:transparent;border:1px solid var(--border);border-radius:var(--r,8px);color:var(--text3);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M13 14l3-4-3-4M16 10H7M9 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h4"/></svg>Cerrar sesión</button>
+  </div>
+</aside>
+
+<div class="main">
+  <!-- [A] HEADER -->
+  <div class="page-head">
+    <div>
+      <div class="ph-eyebrow">Producción de leche · lactancias y controles</div>
+      <div class="ph-title">Leche</div>
+      <div class="ph-date" id="ph-date"></div>
+    </div>
+    <div class="head-actions">
+      <span class="tbadge"><span class="n" id="n-activas">0</span> en producción</span>
+      <button class="btn btn-ghost" onclick="abrirNuevaLactancia()">＋ Nueva lactancia</button>
+      <button class="btn btn-primary" onclick="abrirOrdeno()">＋ Registrar ordeño</button>
+    </div>
+  </div>
+
+  <!-- [B] LACTANCIAS ACTIVAS -->
+  <div class="sec">
+    <div class="sec-title"><span class="dot"></span>Lactancias activas</div>
+    <div class="lact-grid" id="lact-list"></div>
+    <div id="lact-empty"><div class="empty-box">Cargando…</div></div>
+  </div>
+
+  <!-- [C] FICHA DE LACTANCIA -->
+  <div class="sec" id="ficha-sec">
+    <div class="sec-title"><span class="dot" style="background:var(--sky)"></span>Ficha de lactancia</div>
+    <div class="ficha-card" id="ficha-card"></div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ MODAL ═══ -->
+<div class="modal-ov" id="modal-ov">
+  <div class="modal">
+    <div class="modal-h"><h3 id="modal-title">Registrar</h3><button class="modal-x" onclick="cerrarModal()">&times;</button></div>
+    <div class="modal-b" id="modal-body"></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ═══ Hamburger ═══
+(function(){
+  var open=false;
+  var BARS='<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
+  var CROSS='<line x1="4" y1="4" x2="18" y2="18"/><line x1="18" y1="4" x2="4" y2="18"/>';
+  function show(){open=true;document.getElementById('sidebar').classList.add('on');document.getElementById('lov').classList.add('on');document.getElementById('lico').innerHTML=CROSS;}
+  function hide(){open=false;document.getElementById('sidebar').classList.remove('on');document.getElementById('lov').classList.remove('on');document.getElementById('lico').innerHTML=BARS;}
+  document.getElementById('lham').onclick=function(){open?hide():show();};
+  document.getElementById('lov').onclick=hide;
+})();
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  LECHE / LACTANCIAS — pantalla móvil (Fase 4). Solo métodos de db.js.
+// ═══════════════════════════════════════════════════════════════════
+(function(){
+  'use strict';
+  var DB = window.DB;
+  var FINCA = 'a1b2c3d4-0000-0000-0000-000000000001';
+  var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  var lactancias = [];
+  var lactMap = {};
+
+  function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function num(n,d){ d=(d==null?1:d); var f=Math.pow(10,d); return (Math.round((+n||0)*f)/f).toLocaleString('es-CO',{minimumFractionDigits:0,maximumFractionDigits:d}); }
+  function miPerfilId(){ return (window.AUTH_PERFIL && window.AUTH_PERFIL.id) || null; }
+  function esHembra(s){ return s==='H' || s==='hembra' || s==='f' || s==='F'; }
+  function hoyISO(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+  function diasLactancia(l){
+    var fin = l.fecha_secado ? new Date(l.fecha_secado) : new Date();
+    var ini = new Date(l.fecha_parto);
+    return Math.max(0, Math.floor((fin - ini)/86400000));
+  }
+  function destinoBadge(d){
+    if(d==='ordeño_100') return '<span class="dest dest-or">🧀 100% ordeño</span>';
+    if(d==='mixto') return '<span class="dest dest-mx">⚖️ Mixto</span>';
+    return '<span class="dest dest-cn">🐑 Cría natural</span>';
+  }
+  function toast(msg, err){
+    var t=document.getElementById('toast'); t.textContent=msg; t.className=err?'on err':'on';
+    clearTimeout(t._tm); t._tm=setTimeout(function(){ t.className=''; }, 2600);
+  }
+
+  // Mini-sparkline SVG a partir de un array de números (sin librerías).
+  function sparkline(vals, w, h){
+    vals = (vals||[]).map(Number).filter(function(v){ return !isNaN(v); });
+    if(vals.length < 2) return '<span class="spark-empty">Sin datos suficientes para la curva</span>';
+    var max=Math.max.apply(null,vals), min=Math.min.apply(null,vals), range=(max-min)||1, n=vals.length;
+    var pts = vals.map(function(v,i){
+      var x=(i/(n-1))*(w-4)+2;
+      var y=(h-2)-((v-min)/range)*(h-4);
+      return (Math.round(x*10)/10)+','+(Math.round(y*10)/10);
+    });
+    var last=pts[pts.length-1].split(',');
+    return '<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none">'
+      +'<polyline fill="none" stroke="var(--teal)" stroke-width="1.6" points="'+pts.join(' ')+'"/>'
+      +'<circle cx="'+last[0]+'" cy="'+last[1]+'" r="2.4" fill="var(--teal)"/></svg>';
+  }
+
+  // ── CARGA ──
+  async function cargar(){
+    var d=new Date();
+    document.getElementById('ph-date').textContent = d.getDate()+' de '+MESES[d.getMonth()]+' de '+d.getFullYear();
+    var r = await DB.getLactancias(true);
+    lactancias = (r && r.data) || [];
+    lactMap = {};
+    lactancias.forEach(function(l){ lactMap[l.id]=l; });
+    document.getElementById('n-activas').textContent = lactancias.length;
+    renderLactancias();
+  }
+
+  function renderLactancias(){
+    var cont = document.getElementById('lact-list');
+    var empty = document.getElementById('lact-empty');
+    if(!lactancias.length){
+      cont.innerHTML='';
+      empty.innerHTML='<div class="empty-box">No hay ovejas en producción actualmente.<br>Las lactancias se registran aquí o desde el módulo de partos.</div>';
+      return;
+    }
+    empty.innerHTML='';
+    cont.innerHTML = lactancias.map(function(l){
+      var a=l.animal||{};
+      var nombre = a.nombre || a.codigo || 'Oveja';
+      var arete = a.codigo ? (' · '+esc(a.codigo)) : '';
+      var raza = a.raza ? esc(a.raza) : '—';
+      var ctr = (l.controles||[]);
+      var ult = ctr.length ? ctr[ctr.length-1] : null;
+      var total = ctr.reduce(function(s,c){ return s+(Number(c.leche_dia_l)||0); }, 0);
+      var spark = sparkline(ctr.slice(-10).map(function(c){ return c.leche_dia_l; }), 120, 30);
+      return '<div class="lact-card">'
+        + '<div class="lact-top">'
+        +   '<div><div class="lact-name" onclick="abrirFicha(\''+l.id+'\')">'+esc(nombre)+arete+'</div>'
+        +   '<div class="lact-sub">'+raza+' · '+diasLactancia(l)+' días en leche</div></div>'
+        +   destinoBadge(l.destino)
+        + '</div>'
+        + '<div class="lact-rows">'
+        +   '<div class="lact-row"><span>Último control</span><b>'+(ult? (fmtFecha(ult.fecha)+' · '+num(ult.leche_dia_l,2)+' L'):'Sin controles')+'</b></div>'
+        +   '<div class="lact-row"><span>Producción acumulada</span><b>'+num(total,1)+' L</b></div>'
+        + '</div>'
+        + '<div class="spark">'+spark+'</div>'
+        + '<button class="lact-btn" onclick="abrirControl(\''+l.id+'\')">Registrar control →</button>'
+        + '</div>';
+    }).join('');
+  }
+
+  function fmtFecha(iso){
+    if(!iso) return '—';
+    var p=String(iso).split('-'); if(p.length<3) return esc(iso);
+    return p[2]+'/'+p[1];
+  }
+
+  // ── [C] FICHA ──
+  async function abrirFicha(id){
+    var sec=document.getElementById('ficha-sec');
+    var card=document.getElementById('ficha-card');
+    sec.style.display='';
+    card.innerHTML='<div class="empty-box">Cargando ficha…</div>';
+    sec.scrollIntoView({behavior:'smooth', block:'start'});
+    var r = await DB.getLactancia(id);
+    var l = r && r.data;
+    if(!l){ card.innerHTML='<div class="empty-box">No se pudo cargar la ficha.</div>'; return; }
+    var a=l.animal||{};
+    var nombre=a.nombre||a.codigo||'Oveja';
+    var ctr=(l.controles||[]);
+    // Cálculos (métodos db.js)
+    var total = await DB.calcularLecheTotal(id);
+    var pp = await DB.calcularPicoPersistencia(id);
+    var rq = await DB.rendimientoQueseroTeorico(id);
+    // Curva grande: litros vs días desde parto
+    var curva = curvaGrande(ctr, l.fecha_parto);
+    // Métricas
+    var mtr = '<div class="mtrx">'
+      + '<div class="mtr"><div class="v">'+(pp? num(pp.pico_l,2):'—')+'</div><div class="k">Pico (L/día)'+(pp&&pp.dia_al_pico!=null?(' · día '+pp.dia_al_pico):'')+'</div></div>'
+      + '<div class="mtr"><div class="v">'+(pp&&pp.persistencia_pct!=null? pp.persistencia_pct+'%':'—')+'</div><div class="k">Persistencia</div></div>'
+      + '<div class="mtr"><div class="v">'+num(total,1)+'</div><div class="k">Acumulado (L)</div></div>'
+      + '<div class="mtr"><div class="v">'+num(rq.rendimiento_l_kg,2)+'</div><div class="k">L/kg queso'+(rq.fuente==='referencia'?' (ref.)':'')+'</div></div>'
+      + '</div>';
+    // Tabla de controles: columnas dinámicas
+    var hayGrasa=ctr.some(function(c){return c.grasa_pct!=null;});
+    var hayProt=ctr.some(function(c){return c.proteina_pct!=null;});
+    var hayRcs=ctr.some(function(c){return c.rcs!=null;});
+    var th='<tr><th>Fecha</th><th>L/día</th>'+(hayGrasa?'<th>Grasa%</th>':'')+(hayProt?'<th>Prot%</th>':'')+(hayRcs?'<th>RCS</th>':'')+'</tr>';
+    var rows = ctr.slice().reverse().map(function(c){
+      return '<tr><td>'+esc(c.fecha)+'</td><td><b>'+num(c.leche_dia_l,2)+'</b></td>'
+        + (hayGrasa?('<td>'+(c.grasa_pct!=null?num(c.grasa_pct,2):'—')+'</td>'):'')
+        + (hayProt?('<td>'+(c.proteina_pct!=null?num(c.proteina_pct,2):'—')+'</td>'):'')
+        + (hayRcs?('<td>'+(c.rcs!=null?Number(c.rcs).toLocaleString('es-CO'):'—')+'</td>'):'')
+        + '</tr>';
+    }).join('');
+    var tabla = ctr.length ? ('<table class="ctbl"><thead>'+th+'</thead><tbody>'+rows+'</tbody></table>')
+                           : '<div class="lact-sub">Aún no hay controles registrados.</div>';
+    card.innerHTML = '<div class="ficha-h"><h3>'+esc(nombre)+(a.codigo?(' · '+esc(a.codigo)):'')+'</h3>'
+      + '<button class="btn btn-ghost" onclick="cerrarFicha()">Cerrar</button></div>'
+      + '<div class="curva">'+curva+'</div>' + mtr
+      + '<div class="sec-title" style="margin-top:4px"><span class="dot"></span>Controles</div>' + tabla
+      + '<div id="prev-box"></div>';
+    cargarLactanciaAnterior(l);
+  }
+
+  // Curva SVG (litros vs días desde parto) con ejes simples.
+  function curvaGrande(controles, fechaParto){
+    var pts = (controles||[]).filter(function(c){ return c.leche_dia_l!=null; }).map(function(c){
+      var dia = Math.max(0, Math.floor((new Date(c.fecha)-new Date(fechaParto))/86400000));
+      return { x: dia, y: Number(c.leche_dia_l) };
+    });
+    if(pts.length < 2) return '<div class="spark-empty" style="padding:20px;text-align:center">Se necesitan ≥2 controles para la curva.</div>';
+    var W=320,H=150,pad=22;
+    var maxX=Math.max.apply(null,pts.map(function(p){return p.x;}))||1;
+    var maxY=Math.max.apply(null,pts.map(function(p){return p.y;}))||1;
+    function sx(x){ return pad + (x/maxX)*(W-pad-6); }
+    function sy(y){ return (H-pad) - (y/maxY)*(H-pad-6); }
+    var poly = pts.map(function(p){ return (Math.round(sx(p.x)*10)/10)+','+(Math.round(sy(p.y)*10)/10); }).join(' ');
+    var dots = pts.map(function(p){ return '<circle cx="'+sx(p.x)+'" cy="'+sy(p.y)+'" r="2.2" fill="var(--teal)"/>'; }).join('');
+    return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none">'
+      + '<line x1="'+pad+'" y1="'+(H-pad)+'" x2="'+W+'" y2="'+(H-pad)+'" stroke="var(--border2)" stroke-width="1"/>'
+      + '<line x1="'+pad+'" y1="6" x2="'+pad+'" y2="'+(H-pad)+'" stroke="var(--border2)" stroke-width="1"/>'
+      + '<text x="'+pad+'" y="'+(H-6)+'" fill="var(--text3)" font-size="8">0</text>'
+      + '<text x="'+(W-18)+'" y="'+(H-6)+'" fill="var(--text3)" font-size="8">'+maxX+'d</text>'
+      + '<text x="2" y="12" fill="var(--text3)" font-size="8">'+num(maxY,1)+'L</text>'
+      + '<polyline fill="none" stroke="var(--teal)" stroke-width="1.8" points="'+poly+'"/>' + dots
+      + '</svg>';
+  }
+
+  // Lactancia anterior de la misma oveja (estado != activa), para comparar.
+  async function cargarLactanciaAnterior(l){
+    try{
+      var r = await DB.getLactancias(false);
+      var todas = (r && r.data) || [];
+      var prev = todas.filter(function(x){ return x.animal_id===l.animal_id && x.id!==l.id; })
+                      .sort(function(a,b){ return a.fecha_parto < b.fecha_parto ? 1 : -1; })[0];
+      if(!prev) return;
+      var totalPrev = await DB.calcularLecheTotal(prev.id);
+      var box=document.getElementById('prev-box');
+      if(box) box.innerHTML = '<div class="prev-box">📊 Lactancia anterior ('+esc(prev.fecha_parto)+'): <b>'+num(totalPrev,1)+' L</b> acumulados.</div>';
+    }catch(e){}
+  }
+  function cerrarFicha(){ document.getElementById('ficha-sec').style.display='none'; }
+
+  // ── MODALES ──
+  function abrirModal(titulo, html){
+    document.getElementById('modal-title').textContent=titulo;
+    document.getElementById('modal-body').innerHTML=html;
+    document.getElementById('modal-ov').classList.add('on');
+  }
+  function cerrarModal(){ document.getElementById('modal-ov').classList.remove('on'); }
+
+  // Nueva lactancia
+  async function abrirNuevaLactancia(){
+    abrirModal('Nueva lactancia', '<div class="empty-box">Cargando ovejas…</div>');
+    var opts='<option value="">— Seleccionar oveja —</option>';
+    try{
+      var r = await DB.getAnimales(FINCA, { estado:'activo' });
+      var animales = ((r && r.data) || []).filter(function(a){ return esHembra(a.sexo); });
+      opts += animales.map(function(a){
+        var et=(a.codigo||'')+(a.nombre?(' · '+a.nombre):'');
+        return '<option value="'+a.id+'">'+esc(et)+'</option>';
+      }).join('');
+    }catch(e){}
+    var html=''
+      + '<div class="fld"><label>Oveja</label><select id="l-animal">'+opts+'</select></div>'
+      + '<div class="fld"><label>Fecha de parto</label><input type="date" id="l-parto" value="'+hoyISO()+'"></div>'
+      + '<div class="fld"><label>Destino</label><select id="l-destino">'
+      +   '<option value="cria_natural">🐑 Cría natural</option>'
+      +   '<option value="ordeño_100">🧀 100% ordeño</option>'
+      +   '<option value="mixto">⚖️ Mixto</option></select></div>'
+      + '<div class="fld"><label>Observación (opcional)</label><textarea id="l-notas"></textarea></div>'
+      + '<div class="modal-msg" id="l-msg"></div>'
+      + '<button class="btn btn-primary" style="width:100%" id="l-save" onclick="guardarLactancia()">Guardar lactancia</button>';
+    abrirModal('Nueva lactancia', html);
+  }
+  async function guardarLactancia(){
+    var animal=document.getElementById('l-animal').value;
+    var parto=document.getElementById('l-parto').value;
+    var msg=document.getElementById('l-msg');
+    if(!animal){ msg.className='modal-msg err'; msg.textContent='Selecciona la oveja.'; return; }
+    if(!parto){ msg.className='modal-msg err'; msg.textContent='Indica la fecha de parto.'; return; }
+    var btn=document.getElementById('l-save'); btn.disabled=true; btn.textContent='Guardando…';
+    try{
+      var res = await DB.createLactancia({
+        animal_id: animal, finca_id: FINCA, fecha_parto: parto,
+        destino: document.getElementById('l-destino').value,
+        notas: document.getElementById('l-notas').value || null
+      });
+      if(res.error) throw res.error;
+      cerrarModal(); toast('Lactancia registrada ✓'); await cargar();
+    }catch(e){ btn.disabled=false; btn.textContent='Guardar lactancia'; msg.className='modal-msg err'; msg.textContent='Error al guardar.'; }
+  }
+
+  // Registrar ordeño (rebaño)
+  function abrirOrdeno(){
+    var html=''
+      + '<div class="fld"><label>Litros totales del rebaño</label><input type="number" id="o-litros" min="0" step="0.1" placeholder="Ej. 145.5"></div>'
+      + '<div class="fld"><label>Nº ovejas ordeñadas</label><input type="number" id="o-ovejas" min="0" step="1" placeholder="Ej. 40"></div>'
+      + '<div class="fld"><label>Observación (opcional)</label><textarea id="o-notas"></textarea></div>'
+      + '<div class="modal-msg" id="o-msg"></div>'
+      + '<button class="btn btn-primary" style="width:100%" id="o-save" onclick="guardarOrdeno()">Guardar ordeño</button>';
+    abrirModal('Registrar ordeño', html);
+  }
+  async function guardarOrdeno(){
+    var litros=parseFloat(document.getElementById('o-litros').value);
+    var msg=document.getElementById('o-msg');
+    if(isNaN(litros) || litros<0){ msg.className='modal-msg err'; msg.textContent='Indica los litros totales.'; return; }
+    var btn=document.getElementById('o-save'); btn.disabled=true; btn.textContent='Guardando…';
+    var ov=parseInt(document.getElementById('o-ovejas').value,10);
+    try{
+      var res = await DB.createOrdeno({
+        fecha: hoyISO(), leche_total_l: litros,
+        n_ovejas_ordenadas: isNaN(ov)?null:ov,
+        responsable: miPerfilId(),
+        notas: document.getElementById('o-notas').value || null
+      });
+      if(res.error) throw res.error;
+      cerrarModal(); toast('Ordeño registrado ✓');
+    }catch(e){ btn.disabled=false; btn.textContent='Guardar ordeño'; msg.className='modal-msg err'; msg.textContent='Error al guardar.'; }
+  }
+
+  // Registrar control lechero
+  function abrirControl(lactanciaId){
+    var l=lactMap[lactanciaId];
+    var a=l&&l.animal||{};
+    var nombre=a.nombre||a.codigo||'Oveja';
+    var html=''
+      + '<div style="font-size:13px;color:var(--text2);margin-bottom:14px">🥛 <b style="color:var(--text)">'+esc(nombre)+'</b></div>'
+      + '<div class="fld-row">'
+      +   '<div class="fld"><label>Litros del día</label><input type="number" id="c-litros" min="0" step="0.01" placeholder="Ej. 2.4"></div>'
+      +   '<div class="fld"><label>Nº ordeños</label><select id="c-ordenos"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></div>'
+      + '</div>'
+      + '<button class="comp-toggle" id="c-toggle" onclick="toggleComposicion()">▸ Composición (opcional)</button>'
+      + '<div class="comp-body" id="c-comp">'
+      +   '<div class="fld-row"><div class="fld"><label>Grasa %</label><input type="number" id="c-grasa" min="0" step="0.01"></div><div class="fld"><label>Proteína %</label><input type="number" id="c-prot" min="0" step="0.01"></div></div>'
+      +   '<div class="fld-row"><div class="fld"><label>Caseína %</label><input type="number" id="c-casa" min="0" step="0.01"></div><div class="fld"><label>Lactosa %</label><input type="number" id="c-lact" min="0" step="0.01"></div></div>'
+      +   '<div class="fld-row"><div class="fld"><label>Sólidos %</label><input type="number" id="c-sol" min="0" step="0.01"></div><div class="fld"><label>pH</label><input type="number" id="c-ph" min="0" step="0.01"></div></div>'
+      +   '<div class="fld"><label>RCS (céls/mL)</label><input type="number" id="c-rcs" min="0" step="1000"></div>'
+      + '</div>'
+      + '<div class="fld"><label>Observación (opcional)</label><textarea id="c-notas"></textarea></div>'
+      + '<div class="modal-msg" id="c-msg"></div>'
+      + '<button class="btn btn-primary" style="width:100%" id="c-save" onclick="guardarControl(\''+lactanciaId+'\')">Guardar control</button>';
+    abrirModal('Registrar control', html);
+  }
+  function toggleComposicion(){
+    var b=document.getElementById('c-comp'); var t=document.getElementById('c-toggle');
+    b.classList.toggle('on');
+    t.textContent=(b.classList.contains('on')?'▾':'▸')+' Composición (opcional)';
+  }
+  function numOrNull(id){ var v=parseFloat(document.getElementById(id).value); return isNaN(v)?null:v; }
+  async function guardarControl(lactanciaId){
+    var litros=parseFloat(document.getElementById('c-litros').value);
+    var msg=document.getElementById('c-msg');
+    if(isNaN(litros) || litros<0){ msg.className='modal-msg err'; msg.textContent='Indica los litros del día.'; return; }
+    var btn=document.getElementById('c-save'); btn.disabled=true; btn.textContent='Guardando…';
+    try{
+      var res = await DB.createControlLechero({
+        lactancia_id: lactanciaId, fecha: hoyISO(),
+        leche_dia_l: litros,
+        n_ordenos_dia: parseInt(document.getElementById('c-ordenos').value,10) || 2,
+        grasa_pct: numOrNull('c-grasa'), proteina_pct: numOrNull('c-prot'),
+        caseina_pct: numOrNull('c-casa'), lactosa_pct: numOrNull('c-lact'),
+        solidos_pct: numOrNull('c-sol'), ph: numOrNull('c-ph'),
+        rcs: (function(){ var v=parseInt(document.getElementById('c-rcs').value,10); return isNaN(v)?null:v; })(),
+        notas: document.getElementById('c-notas').value || null,
+        capturado_por: miPerfilId()
+      });
+      if(res.error) throw res.error;
+      cerrarModal(); toast('Control registrado ✓'); await cargar();
+    }catch(e){ btn.disabled=false; btn.textContent='Guardar control'; msg.className='modal-msg err'; msg.textContent='Error al guardar.'; }
+  }
+
+  // Exponer para onclick
+  window.abrirNuevaLactancia=abrirNuevaLactancia;
+  window.guardarLactancia=guardarLactancia;
+  window.abrirOrdeno=abrirOrdeno;
+  window.guardarOrdeno=guardarOrdeno;
+  window.abrirControl=abrirControl;
+  window.guardarControl=guardarControl;
+  window.toggleComposicion=toggleComposicion;
+  window.abrirFicha=abrirFicha;
+  window.cerrarFicha=cerrarFicha;
+  window.cerrarModal=cerrarModal;
+  window.recargarLeche=cargar;
+
+  // ── ARRANQUE ──
+  function whenReady(cb){
+    if(window.AUTH_ROL){ cb(); return; }
+    var n=0; var iv=setInterval(function(){ if(window.AUTH_ROL||n>50){ clearInterval(iv); cb(); } n++; }, 100);
+  }
+  document.addEventListener('DOMContentLoaded', function(){ whenReady(cargar); });
+})();
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

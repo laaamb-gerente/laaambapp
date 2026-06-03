@@ -915,6 +915,109 @@ window.DB = {
       .reduce((sum, e) => sum + (Number(e.cantidad_ml) || 0), 0);
   },
 
+  // ── LECHE / LACTANCIAS (migración 0042) ──────────────────────────────
+
+  // Lactancias con animal y sus controles embebidos (para último control +
+  // sparkline). soloActivas=true → solo estado='activa'.
+  async getLactancias(soloActivas = true) {
+    let q = window._sb.from('lactancias')
+      .select('*, animal:animal_id(codigo, nombre, raza), controles:controles_lecheros(id, fecha, leche_dia_l, grasa_pct, proteina_pct, caseina_pct, rcs)');
+    if (soloActivas) q = q.eq('estado', 'activa');
+    const res = await q.order('fecha_parto', { ascending: false });
+    // Ordenar los controles embebidos por fecha ASC en cada lactancia
+    if (res.data) res.data.forEach(l => {
+      if (Array.isArray(l.controles)) l.controles.sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+    });
+    return res;
+  },
+  // Una lactancia con TODOS sus controles, ordenados por fecha ASC.
+  async getLactancia(id) {
+    const res = await window._sb.from('lactancias')
+      .select('*, animal:animal_id(codigo, nombre, raza), controles:controles_lecheros(*)')
+      .eq('id', id).single();
+    if (res.data && Array.isArray(res.data.controles)) {
+      res.data.controles.sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+    }
+    return res;
+  },
+  // datos = { animal_id, parto_id?, finca_id?, fecha_parto, destino?, notas? }
+  async createLactancia(datos) {
+    return await window._sb.from('lactancias')
+      .insert({ ...datos, finca_id: datos.finca_id || 'a1b2c3d4-0000-0000-0000-000000000001' })
+      .select().single();
+  },
+  async updateLactancia(id, cambios) {
+    return await window._sb.from('lactancias')
+      .update({ ...cambios, updated_at: new Date() })
+      .eq('id', id).select().single();
+  },
+  // datos = { lactancia_id, fecha?, leche_dia_l, n_ordenos_dia?, grasa_pct?,
+  //           proteina_pct?, caseina_pct?, lactosa_pct?, solidos_pct?, rcs?,
+  //           ufc?, ph?, notas?, capturado_por? }
+  async createControlLechero(datos) {
+    return await window._sb.from('controles_lecheros')
+      .insert(datos).select().single();
+  },
+  // Todos los controles de una lactancia, fecha ASC (para la curva).
+  async getControlesLecheros(lactanciaId) {
+    return await window._sb.from('controles_lecheros')
+      .select('*')
+      .eq('lactancia_id', lactanciaId)
+      .order('fecha', { ascending: true });
+  },
+  // datos = { fecha?, leche_total_l, n_ovejas_ordenadas?, lote_id?, responsable?, notas? }
+  async createOrdeno(datos) {
+    return await window._sb.from('ordenos')
+      .insert(datos).select().single();
+  },
+  // Últimos N ordeños del rebaño, fecha DESC.
+  async getOrdenos(limite = 30) {
+    return await window._sb.from('ordenos')
+      .select('*')
+      .order('fecha', { ascending: false })
+      .limit(limite);
+  },
+
+  // ── Cálculos de lactancia (en cliente; devuelven el valor directo) ──
+
+  // Suma de leche_dia_l de todos los controles de la lactancia.
+  async calcularLecheTotal(lactanciaId) {
+    const cr = await this.getControlesLecheros(lactanciaId);
+    const controles = (cr && cr.data) || [];
+    const total = controles.reduce((s, c) => s + (Number(c.leche_dia_l) || 0), 0);
+    return Math.round(total * 100) / 100;
+  },
+  // { pico_l, dia_al_pico, persistencia_pct }. null si < 3 controles.
+  async calcularPicoPersistencia(lactanciaId) {
+    const cr = await this.getControlesLecheros(lactanciaId);
+    const controles = (cr && cr.data) || [];   // ya viene fecha ASC
+    if (controles.length < 3) return null;
+    let picoVal = 0, picoFecha = controles[0].fecha;
+    controles.forEach(c => { const v = Number(c.leche_dia_l) || 0; if (v > picoVal) { picoVal = v; picoFecha = c.fecha; } });
+    const lr = await window._sb.from('lactancias').select('fecha_parto').eq('id', lactanciaId).single();
+    const fp = lr && lr.data && lr.data.fecha_parto;
+    const dia_al_pico = fp ? Math.round((new Date(picoFecha) - new Date(fp)) / 86400000) : null;
+    // persistencia: promedio de la segunda mitad vs el pico
+    const mitad = Math.floor(controles.length / 2);
+    const segunda = controles.slice(mitad);
+    const promSegunda = segunda.reduce((s, c) => s + (Number(c.leche_dia_l) || 0), 0) / segunda.length;
+    const persistencia_pct = picoVal > 0 ? Math.round((promSegunda / picoVal) * 100) : null;
+    return { pico_l: Math.round(picoVal * 100) / 100, dia_al_pico, persistencia_pct };
+  },
+  // { rendimiento_l_kg, fuente }. Usa grasa+caseína del último control si existen.
+  async rendimientoQueseroTeorico(lactanciaId) {
+    const cr = await this.getControlesLecheros(lactanciaId);
+    const controles = (cr && cr.data) || [];
+    const ult = controles.length ? controles[controles.length - 1] : null;
+    const grasa = ult && ult.grasa_pct != null ? Number(ult.grasa_pct) : null;
+    const caseina = ult && ult.caseina_pct != null ? Number(ult.caseina_pct) : null;
+    const denom = (grasa || 0) * 1.2 + (caseina || 0) * 2.0;
+    if (grasa != null && caseina != null && denom > 0) {
+      return { rendimiento_l_kg: Math.round((100 / denom) * 100) / 100, fuente: 'calculado' };
+    }
+    return { rendimiento_l_kg: 3.9, fuente: 'referencia' };
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();

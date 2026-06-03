@@ -219,6 +219,9 @@ window.AlertasMotor = {
     // cargado en la página). Sus errores se loguean, no rompen el ciclo.
     await this._alertasSalaCuna(alertas, hoy);
 
+    // ── 11. LECHE — control lechero (Fase 4). Mismo patrón independiente.
+    await this._alertasLeche(alertas, hoy);
+
     // Ordenar por prioridad
     const orden = { critica: 0, alta: 1, media: 2, baja: 3 };
     alertas.sort((a, b) =>
@@ -337,6 +340,38 @@ window.AlertasMotor = {
       }
     } catch (e) {
       console.warn('[AlertasMotor] Sala Cuna:', e && e.message);
+    }
+  },
+
+  // ── 11. LECHE — alertas de control lechero (Fase 4) ──
+  // Independiente y defensivo: usa window._sb directo, no depende de window.DB.
+  async _alertasLeche(alertas, hoy) {
+    try {
+      const sb = window._sb;
+      if (!sb) return;
+      const { data: lacts } = await sb
+        .from('lactancias')
+        .select('id, animal:animal_id(codigo, nombre), controles:controles_lecheros(fecha, rcs)')
+        .eq('estado', 'activa');
+      (lacts || []).forEach(l => {
+        const ctr = (l.controles || []).filter(c => c.rcs != null);
+        if (!ctr.length) return;
+        ctr.sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+        const rcs = Number(ctr[ctr.length - 1].rcs) || 0;
+        // rcs_alto: umbral OVEJA (basal más alto que vaca). 1.000.000 = alerta.
+        if (rcs > 1000000) {
+          const nombre = (l.animal && (l.animal.nombre || l.animal.codigo)) || 'oveja';
+          alertas.push({
+            tipo: 'rcs_alto', prioridad: 'alta',
+            mensaje: `⚠️ RCS alto — ${nombre}: ${rcs.toLocaleString('es-CO')} céls/mL (posible mastitis subclínica)`,
+            accion_sugerida: 'Revisar la ubre y considerar cultivo / tratamiento',
+            accion_url: 'leche.html',
+            datos: { lactancia_id: l.id, rcs }
+          });
+        }
+      });
+    } catch (e) {
+      console.warn('[AlertasMotor] Leche:', e && e.message);
     }
   },
 
