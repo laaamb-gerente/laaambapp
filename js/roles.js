@@ -14,8 +14,8 @@
   var PAGE_ACCESS = {
     gerente: '*',
     administrador: '*',
-    veterinario: ['animales', 'reproduccion', 'salud', 'lotes', 'hoy', 'reportes'],
-    auxiliar: ['animales', 'hoy', 'salud', 'reproduccion'],
+    veterinario: ['animales', 'reproduccion', 'salud', 'lotes', 'hoy', 'reportes', 'sala-cuna'],
+    auxiliar: ['animales', 'hoy', 'salud', 'reproduccion', 'sala-cuna'],
     // Socio: solo Dashboard, OKRs y Reportes ejecutivos (sin Finanzas).
     socio: ['index', 'okr', 'reportes']
   };
