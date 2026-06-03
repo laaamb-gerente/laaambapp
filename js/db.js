@@ -1018,6 +1018,82 @@ window.DB = {
     return { rendimiento_l_kg: 3.9, fuente: 'referencia' };
   },
 
+  // ── QUESERÍA (migración 0043) ────────────────────────────────────────
+
+  // Últimos N lotes de queso, fecha DESC.
+  async getQuesosLotes(limite = 50) {
+    return await window._sb.from('quesos_lotes')
+      .select('*')
+      .order('fecha', { ascending: false })
+      .limit(limite);
+  },
+  async getQuesoLote(id) {
+    return await window._sb.from('quesos_lotes').select('*').eq('id', id).single();
+  },
+  // datos = { fecha?, tipo_queso, leche_usada_l, queso_kg, maduracion_dias?,
+  //           costo_leche?, costo_insumos?, costo_mano_obra?, precio_venta_kg?,
+  //           rendimiento_teorico_l_por_kg?, lote_pastoreo_id?, responsable?,
+  //           notas?, finca_id? }
+  // rendimiento_l_por_kg / costo_total / ingreso_total los calcula la BD.
+  async createQuesoLote(datos) {
+    return await window._sb.from('quesos_lotes')
+      .insert({ ...datos, finca_id: datos.finca_id || 'a1b2c3d4-0000-0000-0000-000000000001' })
+      .select().single();
+  },
+  async updateQuesoLote(id, cambios) {
+    return await window._sb.from('quesos_lotes')
+      .update({ ...cambios, updated_at: new Date() })
+      .eq('id', id).select().single();
+  },
+  // Rendimiento quesero teórico (L de leche por kg de queso) desde composición.
+  // composicionPromedio = { grasa_pct, caseina_pct }. Devuelve el objeto directo.
+  async calcularRendimientoTeorico(litros, composicionPromedio) {
+    const comp = composicionPromedio || {};
+    const grasa = comp.grasa_pct != null ? Number(comp.grasa_pct) : null;
+    const caseina = comp.caseina_pct != null ? Number(comp.caseina_pct) : null;
+    const denom = (grasa || 0) * 1.2 + (caseina || 0) * 2.0;
+    if (grasa != null && caseina != null && denom > 0) {
+      return { rendimiento_l_kg: Math.round((100 / denom) * 100) / 100, fuente: 'calculado', eficiencia_pct: null };
+    }
+    return { rendimiento_l_kg: 3.9, fuente: 'referencia', eficiencia_pct: null };
+  },
+  // Agrega los últimos N meses de quesos_lotes.
+  async getResumenQueseria(meses = 3) {
+    const desde = new Date();
+    desde.setMonth(desde.getMonth() - meses);
+    const desdeISO = desde.toISOString().split('T')[0];
+    const { data, error } = await window._sb.from('quesos_lotes')
+      .select('*')
+      .gte('fecha', desdeISO)
+      .order('fecha', { ascending: false });
+    if (error) return { data: null, error };
+    const lotes = data || [];
+    let total_leche_l = 0, total_queso_kg = 0, costo_total = 0, ingreso_total = 0;
+    let sumaRendReal = 0, nRendReal = 0, sumaRendTeo = 0, nRendTeo = 0;
+    const lotes_por_tipo = {};
+    lotes.forEach(l => {
+      total_leche_l += Number(l.leche_usada_l) || 0;
+      total_queso_kg += Number(l.queso_kg) || 0;
+      costo_total += Number(l.costo_total) || 0;
+      ingreso_total += Number(l.ingreso_total) || 0;
+      if (l.rendimiento_l_por_kg != null) { sumaRendReal += Number(l.rendimiento_l_por_kg); nRendReal++; }
+      if (l.rendimiento_teorico_l_por_kg != null) { sumaRendTeo += Number(l.rendimiento_teorico_l_por_kg); nRendTeo++; }
+      const t = l.tipo_queso || 'otro';
+      lotes_por_tipo[t] = (lotes_por_tipo[t] || 0) + 1;
+    });
+    return {
+      data: {
+        total_leche_l: Math.round(total_leche_l * 100) / 100,
+        total_queso_kg: Math.round(total_queso_kg * 1000) / 1000,
+        rendimiento_promedio_real: nRendReal ? Math.round((sumaRendReal / nRendReal) * 100) / 100 : null,
+        rendimiento_promedio_teorico: nRendTeo ? Math.round((sumaRendTeo / nRendTeo) * 100) / 100 : null,
+        margen_total_cop: Math.round(ingreso_total - costo_total),
+        lotes_por_tipo
+      },
+      error: null
+    };
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();

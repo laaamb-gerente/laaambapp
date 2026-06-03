@@ -164,6 +164,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     <a class="nav-link" href="hoy.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="14" height="14" rx="2"/><line x1="3" y1="8" x2="17" y2="8"/><line x1="7" y1="2" x2="7" y2="5"/><line x1="13" y1="2" x2="13" y2="5"/></svg>Hoy</a>
     <a class="nav-link" href="sala-cuna.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 7h6v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V7z"/><path d="M8 7l.6-2.5h2.8L12 7"/><line x1="7" y1="10.5" x2="13" y2="10.5"/></svg>Sala Cuna</a>
     <a class="nav-link active" href="leche.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2h8M7 2l-.5 4.5a4 4 0 0 0-.5 2V16a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V8.5a4 4 0 0 0-.5-2L13 2"/><line x1="6.2" y1="10" x2="13.8" y2="10"/></svg>Leche</a>
+    <a class="nav-link" href="queseria.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l7-4 7 4v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><circle cx="8" cy="13.5" r="1"/><circle cx="12.5" cy="13" r="1"/></svg>Quesería</a>
     <a class="nav-link" href="okr.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>OKRs &amp; Análisis</a>
     <div class="nav-group">Ganadería</div>
     <a class="nav-link" href="animales.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>Animales<span class="nav-badge" id="sb-count">—</span></a>
@@ -387,6 +388,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     card.innerHTML = '<div class="ficha-h"><h3>'+esc(nombre)+(a.codigo?(' · '+esc(a.codigo)):'')+'</h3>'
       + '<button class="btn btn-ghost" onclick="cerrarFicha()">Cerrar</button></div>'
       + '<div class="curva">'+curva+'</div>' + mtr
+      + '<a href="queseria.html" style="display:inline-block;margin-bottom:14px;font-size:12px;font-weight:600;color:var(--teal);text-decoration:none">→ Ver lotes de queso de este período</a>'
       + '<div class="sec-title" style="margin-top:4px"><span class="dot"></span>Controles</div>' + tabla
       + '<div id="prev-box"></div>';
     cargarLactanciaAnterior(l);
@@ -517,6 +519,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     var html=''
       + '<div style="font-size:13px;color:var(--text2);margin-bottom:14px">🥛 <b style="color:var(--text)">'+esc(nombre)+'</b></div>'
       + '<div class="fld-row">'
+      +   '<div class="fld"><label>Ordeño 1 (L) · opc.</label><input type="number" id="c-ord1" min="0" step="0.01" oninput="sumarOrdenos()" placeholder="—"></div>'
+      +   '<div class="fld"><label>Ordeño 2 (L) · opc.</label><input type="number" id="c-ord2" min="0" step="0.01" oninput="sumarOrdenos()" placeholder="—"></div>'
+      + '</div>'
+      + '<div class="fld-row">'
       +   '<div class="fld"><label>Litros del día</label><input type="number" id="c-litros" min="0" step="0.01" placeholder="Ej. 2.4"></div>'
       +   '<div class="fld"><label>Nº ordeños</label><select id="c-ordenos"><option value="1">1</option><option value="2" selected>2</option><option value="3">3</option></select></div>'
       + '</div>'
@@ -538,15 +544,26 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     t.textContent=(b.classList.contains('on')?'▾':'▸')+' Composición (opcional)';
   }
   function numOrNull(id){ var v=parseFloat(document.getElementById(id).value); return isNaN(v)?null:v; }
+  // Si se ingresan ordeño 1 y/o 2, leche_dia_l = suma de ambos (auto).
+  function sumarOrdenos(){
+    var o1=numOrNull('c-ord1'), o2=numOrNull('c-ord2');
+    if(o1!=null || o2!=null){
+      var s=(o1||0)+(o2||0);
+      document.getElementById('c-litros').value = Math.round(s*100)/100;
+    }
+  }
   async function guardarControl(lactanciaId){
+    var o1=numOrNull('c-ord1'), o2=numOrNull('c-ord2');
     var litros=parseFloat(document.getElementById('c-litros').value);
+    if(o1!=null || o2!=null) litros=(o1||0)+(o2||0);   // ordeños tienen prioridad
     var msg=document.getElementById('c-msg');
-    if(isNaN(litros) || litros<0){ msg.className='modal-msg err'; msg.textContent='Indica los litros del día.'; return; }
+    if(isNaN(litros) || litros<0){ msg.className='modal-msg err'; msg.textContent='Indica los litros del día (o los ordeños).'; return; }
     var btn=document.getElementById('c-save'); btn.disabled=true; btn.textContent='Guardando…';
     try{
       var res = await DB.createControlLechero({
         lactancia_id: lactanciaId, fecha: hoyISO(),
         leche_dia_l: litros,
+        leche_ordeno1_l: o1, leche_ordeno2_l: o2,
         n_ordenos_dia: parseInt(document.getElementById('c-ordenos').value,10) || 2,
         grasa_pct: numOrNull('c-grasa'), proteina_pct: numOrNull('c-prot'),
         caseina_pct: numOrNull('c-casa'), lactosa_pct: numOrNull('c-lact'),
@@ -568,6 +585,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
   window.abrirControl=abrirControl;
   window.guardarControl=guardarControl;
   window.toggleComposicion=toggleComposicion;
+  window.sumarOrdenos=sumarOrdenos;
   window.abrirFicha=abrirFicha;
   window.cerrarFicha=cerrarFicha;
   window.cerrarModal=cerrarModal;
