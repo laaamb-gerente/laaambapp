@@ -1371,7 +1371,8 @@ async function verPerfilFicha(id){
         + '＋ Registrar evaluación materna</button>'
       + '</div>';
   }
-  setElHTML('perfil-body', header+'<div id="ficha-retiro-banner"></div>'+tabs+evalBlock);
+  var partosBlock = (a.sexo==='H') ? '<div id="ficha-partos" style="margin-top:14px"></div>' : '';
+  setElHTML('perfil-body', header+'<div id="ficha-retiro-banner"></div>'+tabs+evalBlock+partosBlock);
   document.getElementById('btn-edit').onclick=function(){closeModal('m-perfil');abrirEditar(id);};
   document.getElementById('btn-baja').onclick=function(){
     if(confirm('¿Confirmar baja de #'+id+'? El animal saldrá del inventario activo.')){
@@ -1396,6 +1397,7 @@ async function verPerfilFicha(id){
   _fichaLoadTratamientos(a);
   _fichaLoadLinaje(a);
   _fichaResolverPivote(a);
+  if(a.sexo==='H') _fichaLoadPartos(a);
 }
 // Breadcrumb "Pivote › Potrero" en el header (async, defensivo)
 async function _fichaResolverPivote(a){
@@ -1419,6 +1421,26 @@ async function _fichaResolverPivote(a){
   }catch(e){}
 }
 
+async function _fichaLoadPartos(a){
+  var box=document.getElementById('ficha-partos'); if(!box) return;
+  if(!(window.DB && typeof window.DB.getPartosPorAnimal==='function')){ box.innerHTML=''; return; }
+  var uuid=a._uuid||a.id;
+  box.innerHTML='<div class="ficha-skel">⏳ Cargando partos…</div>';
+  try{
+    var r=await window.DB.getPartosPorAnimal(uuid);
+    var partos=(r&&r.data)||[];
+    var head='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text4);margin-bottom:6px">Partos</div>';
+    if(!partos.length){ box.innerHTML=head+'<div style="font-size:12px;color:var(--text3)">Sin partos registrados</div>'; return; }
+    var lista=partos.slice(0,3).map(function(p){
+      var cn=p.corderos_nacidos||[];
+      var vivos=(cn.length?cn.filter(function(c){return c.estado_al_nacer!=='muerto';}).length:(p.num_corderos_vivos||0));
+      return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)"><span class="td-m">'+_escF(p.fecha_parto)+'</span><span>'+_escF(p.tipo_parto||'—')+' · '+vivos+' vivos</span></div>';
+    }).join('');
+    box.innerHTML=head
+      +'<div style="font-size:12px;color:var(--text2);margin-bottom:4px">Total: <b style="color:var(--text)">'+partos.length+'</b> · Última: '+_escF(partos[0].fecha_parto)+'</div>'
+      +lista;
+  }catch(e){ box.innerHTML='<div style="font-size:12px;color:var(--text3)">No se pudo cargar partos</div>'; }
+}
 function fichaTab(name){
   ['performance','tratamientos','linaje'].forEach(function(n){
     var b=document.getElementById('ftab-'+n), p=document.getElementById('fp-'+n);

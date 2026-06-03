@@ -1203,6 +1203,120 @@ window.DB = {
     };
   },
 
+  // ── PARTOS (migración 0047) ──────────────────────────────────────────
+
+  async getPartos(finca_id, limite = 50) {
+    return await window._sb.from('partos')
+      .select('*, madre:madre_id(codigo, nombre, raza), padre:padre_id(codigo, nombre), corderos_nacidos(*)')
+      .eq('finca_id', finca_id)
+      .order('fecha_parto', { ascending: false })
+      .limit(limite);
+  },
+  async getParto(id) {
+    return await window._sb.from('partos')
+      .select('*, madre:madre_id(codigo, nombre, raza), padre:padre_id(codigo, nombre), corderos_nacidos(*)')
+      .eq('id', id).single();
+  },
+  async getPartosPorAnimal(animalId) {
+    return await window._sb.from('partos')
+      .select('*, padre:padre_id(codigo, nombre), corderos_nacidos(*)')
+      .eq('madre_id', animalId)
+      .order('fecha_parto', { ascending: false });
+  },
+  // Flujo completo: parto → corderos_nacidos → (sala cuna) → lactancia.
+  // datosParto = { madre_id, padre_id?, fecha_parto, tipo_parto,
+  //   num_corderos_nacidos, num_corderos_vivos, estado_madre,
+  //   complicaciones?, responsable?, finca_id?, notas? }
+  // corderos = [{ sexo, peso_nacimiento_kg?, estado_al_nacer, destino_crianza, notas?, animal_id? }]
+  async createParto(datosParto, corderos) {
+    const FINCA = datosParto.finca_id || 'a1b2c3d4-0000-0000-0000-000000000001';
+    // 1. INSERT parto
+    const pr = await window._sb.from('partos')
+      .insert({ ...datosParto, finca_id: FINCA }).select().single();
+    if (pr.error) return { error: pr.error };
+    const parto = pr.data;
+    // 2. INSERT corderos_nacidos
+    const filas = (corderos || []).map(c => ({
+      parto_id: parto.id,
+      animal_id: c.animal_id || null,
+      sexo: c.sexo || 'H',
+      peso_nacimiento_kg: (c.peso_nacimiento_kg != null && c.peso_nacimiento_kg !== '') ? c.peso_nacimiento_kg : null,
+      estado_al_nacer: c.estado_al_nacer || 'vivo',
+      destino_crianza: c.destino_crianza || 'pie_madre',
+      notas: c.notas || null
+    }));
+    let nacidos = [];
+    if (filas.length) {
+      const cnr = await window._sb.from('corderos_nacidos').insert(filas).select();
+      nacidos = (cnr && cnr.data) || [];
+    }
+    // 3. Crianza artificial para destino != pie_madre (y cordero no muerto)
+    let crianzas_creadas = 0;
+    for (let i = 0; i < nacidos.length; i++) {
+      const cn = nacidos[i];
+      if (cn.destino_crianza && cn.destino_crianza !== 'pie_madre' && cn.estado_al_nacer !== 'muerto') {
+        try {
+          const cc = await this.createCorderoCrianza({
+            cordero_id: cn.animal_id || null,
+            parto_id: parto.id,
+            madre_id: datosParto.madre_id,
+            motivo: cn.destino_crianza,
+            peso_inicio_kg: cn.peso_nacimiento_kg != null ? cn.peso_nacimiento_kg : null,
+            finca_id: FINCA,
+            fecha_inicio: datosParto.fecha_parto
+          });
+          if (cc && cc.data) {
+            crianzas_creadas++;
+            await window._sb.from('corderos_nacidos')
+              .update({ corderos_crianza_id: cc.data.id }).eq('id', cn.id);
+            // Protocolo de tomas (solo si la función de Sala Cuna está cargada)
+            if (typeof window.generarProtocoloInicial === 'function') {
+              try { await window.generarProtocoloInicial(cc.data.id, cn.peso_nacimiento_kg || 0, datosParto.fecha_parto); } catch (e) {}
+            }
+          }
+        } catch (e) { /* continuar con los demás corderos */ }
+      }
+    }
+    // 4. Lactancia de la madre (enlazar la activa o crear una nueva)
+    let lactancia_id = null;
+    try {
+      const lr = await this.getLactancias(true);
+      const lact = ((lr && lr.data) || []).find(l => l.animal_id === datosParto.madre_id);
+      if (lact) { await this.updateLactancia(lact.id, { parto_id: parto.id }); lactancia_id = lact.id; }
+      else {
+        const nl = await this.createLactancia({
+          animal_id: datosParto.madre_id, parto_id: parto.id,
+          fecha_parto: datosParto.fecha_parto, finca_id: FINCA, destino: 'cria_natural'
+        });
+        lactancia_id = (nl && nl.data) ? nl.data.id : null;
+      }
+    } catch (e) {}
+    return { parto, corderos_nacidos: nacidos, crianzas_creadas, lactancia_id };
+  },
+  // Cambia el destino de un cordero nacido; si pasa a crianza, crea su registro.
+  async updateCorderoDestino(corderosNacidosId, destino, animalId) {
+    const patch = { destino_crianza: destino };
+    if (animalId) patch.animal_id = animalId;
+    const upd = await window._sb.from('corderos_nacidos')
+      .update(patch).eq('id', corderosNacidosId)
+      .select('*, partos(madre_id, fecha_parto, finca_id)').single();
+    if (upd.error) return upd;
+    const cn = upd.data;
+    if (destino && destino !== 'pie_madre' && !cn.corderos_crianza_id) {
+      const p = cn.partos || {};
+      const cc = await this.createCorderoCrianza({
+        cordero_id: cn.animal_id || null, parto_id: cn.parto_id, madre_id: p.madre_id,
+        motivo: destino, peso_inicio_kg: cn.peso_nacimiento_kg,
+        finca_id: p.finca_id || 'a1b2c3d4-0000-0000-0000-000000000001', fecha_inicio: p.fecha_parto
+      });
+      if (cc && cc.data) {
+        await window._sb.from('corderos_nacidos').update({ corderos_crianza_id: cc.data.id }).eq('id', corderosNacidosId);
+        if (typeof window.generarProtocoloInicial === 'function') { try { await window.generarProtocoloInicial(cc.data.id, cn.peso_nacimiento_kg || 0, p.fecha_parto); } catch (e) {} }
+      }
+    }
+    return upd;
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();

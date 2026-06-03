@@ -747,6 +747,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <div class="fg"><label class="fl">N° de parto de esta oveja</label><input class="fi" type="number" id="p-nro" placeholder="3" min="1"/></div>
       <div class="fg"><label class="fl">Padre (reproductor)</label><select class="fi" id="p-padre"><option value="desconocido">Desconocido</option></select></div>
       <div class="fg"><label class="fl">Tipo de parto *</label><select class="fi" id="p-tipo"><option>Normal</option><option>Asistido</option><option>Distócico</option><option>Cesárea</option></select></div>
+      <div class="fg"><label class="fl">Estado de la madre</label><select class="fi" id="p-estado-madre"><option value="bien">Bien</option><option value="complicaciones">Con complicaciones</option><option value="muerta">Falleció</option></select></div>
       <div class="fg"><label class="fl">Lote</label><select class="fi"><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select></div>
     </div>
     <div id="p-lineaje-info" style="display:none"></div>
@@ -1018,6 +1019,7 @@ function switchTab(el,id){
   document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
   document.getElementById(id).style.display='block';
   if(id==='t-grupos' && typeof renderGruposTab==='function') renderGruposTab();
+  if(id==='t-partos' && typeof loadPartosDB==='function') loadPartosDB();
 }
 
 // ═══ RENDER ═══
@@ -1056,7 +1058,7 @@ function renderGestaciones(){
       <div class="gest-right">
         <div class="gest-countdown" style="color:${color}">${diasRestantes}</div>
         <div class="gest-countdown-label">días</div>
-        ${urgente?'<div style="margin-top:4px"><span class="badge b-red"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> PRÓXIMO</span></div>':''}
+        ${urgente?`<div style="margin-top:4px"><span class="badge b-red"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:2px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg> PRÓXIMO</span></div><button class="btn btn-primary btn-sm" style="margin-top:6px" onclick="event.stopPropagation();abrirPartoConMadre('${g.id}')">Registrar parto</button>`:''}
       </div>
     </div>`;
   }).join('');
@@ -1100,6 +1102,44 @@ function renderPartos(data){
       <td class="td-muted">${p.colaborador}</td>
     </tr>`).join('');
 }
+
+// ═══ PARTOS desde Supabase (tablas partos/corderos_nacidos) ═══
+async function loadPartosDB(){
+  if(!(window.DB && typeof window.DB.getPartos==='function')) return;
+  try{
+    var r = await window.DB.getPartos('a1b2c3d4-0000-0000-0000-000000000001', 20);
+    if(r && r.data) renderPartosDB(r.data);
+  }catch(e){ console.warn('[Repro] loadPartosDB:', e&&e.message); }
+}
+function renderPartosDB(data){
+  var tb=document.getElementById('partos-tbody'); if(!tb) return;
+  if(!data.length){ tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text2);padding:20px">Sin partos registrados.</td></tr>'; return; }
+  var TIPO={simple:'b-green',doble:'b-amber',triple:'b-wine',cuadruple:'b-red'};
+  tb.innerHTML=data.map(function(p){
+    var cn=p.corderos_nacidos||[];
+    var vivos=(cn.length?cn.filter(function(c){return c.estado_al_nacer!=='muerto';}).length:(p.num_corderos_vivos||0));
+    var muertos=Math.max(0,(p.num_corderos_nacidos||cn.length)-vivos);
+    var pesos=cn.map(function(c){return c.peso_nacimiento_kg!=null?c.peso_nacimiento_kg:'—';}).join(', ')||'—';
+    var iconos=cn.map(function(c){ return (c.sexo==='M'?'🐏':'🐑')+((c.destino_crianza&&c.destino_crianza!=='pie_madre')?'🍼':''); }).join(' ')||'—';
+    var madre=(p.madre&&(p.madre.codigo||p.madre.nombre))||'—';
+    var padre=(p.padre&&(p.padre.codigo||p.padre.nombre))||'—';
+    var estadoBadge=p.estado_madre==='bien'?'':(' <span class="badge b-red">'+(p.estado_madre==='muerta'?'madre †':'complic.')+'</span>');
+    return '<tr>'
+      +'<td class="td-muted">'+(p.fecha_parto||'—')+'</td>'
+      +'<td class="td-mono">#'+madre+estadoBadge+'</td>'
+      +'<td style="text-align:center">—</td>'
+      +'<td class="td-mono">#'+padre+'</td>'
+      +'<td><span class="badge b-green">'+vivos+'</span></td>'
+      +'<td>'+(muertos>0?'<span class="badge b-red">'+muertos+'</span>':'—')+'</td>'
+      +'<td class="td-muted">'+pesos+'</td>'
+      +'<td><span class="badge '+(TIPO[p.tipo_parto]||'b-gray')+'">'+(p.tipo_parto||'—')+'</span></td>'
+      +'<td class="td-mono" style="font-size:11px">'+iconos+'</td>'
+      +'<td class="td-muted">—</td>'
+      +'</tr>';
+  }).join('');
+}
+document.addEventListener('appstate:ready', function(){ setTimeout(loadPartosDB, 200); });
+document.addEventListener('DOMContentLoaded', function(){ setTimeout(loadPartosDB, 1200); });
 
 // ═══ FILTROS ═══
 function filterMontas(val, field){
@@ -1172,17 +1212,29 @@ function generarCrias(){
   const n = parseInt(document.getElementById('p-vivas').value)||0;
   const container = document.getElementById('crias-form');
   if(n<=0||n>6){container.innerHTML='';return;}
-  const sexos = ['Macho','Hembra'];
   container.innerHTML = '<div class="form-section">Datos de cada cría</div>';
   for(let i=1;i<=n;i++){
     const div = document.createElement('div');
-    div.className = 'form-grid';
+    div.className = 'form-grid cria-row';
     div.style.marginBottom = '8px';
     div.innerHTML = `
-      <div class="fg" style="margin:0"><label class="fl">Cría ${i} — Sexo</label><select class="fi"><option>Hembra</option><option>Macho</option></select></div>
-      <div class="fg" style="margin:0"><label class="fl">Cría ${i} — Peso nac. (kg)</label><input class="fi" type="number" step="0.1" placeholder="${(5.5+Math.random()).toFixed(1)}"/></div>`;
+      <div class="fg" style="margin:0"><label class="fl">Cría ${i} — Sexo</label><select class="fi cria-sexo"><option>Hembra</option><option>Macho</option></select></div>
+      <div class="fg" style="margin:0"><label class="fl">Cría ${i} — Peso nac. (kg)</label><input class="fi cria-peso" type="number" step="0.1" placeholder="${(4+Math.random()).toFixed(1)}"/></div>
+      <div class="fg" style="margin:0"><label class="fl">Cría ${i} — Estado</label><select class="fi cria-estado" onchange="_toggleDestino(this)"><option value="vivo">Vivo</option><option value="debil">Débil</option><option value="muerto">Muerto</option></select></div>
+      <div class="fg cria-destino-wrap" style="margin:0"><label class="fl">Cría ${i} — Destino</label><select class="fi cria-destino">
+        <option value="pie_madre">🐑 Al pie de la madre</option>
+        <option value="huerfano">🍼 Crianza — huérfano</option>
+        <option value="mala_madre">😤 Crianza — mala madre</option>
+        <option value="sustituto_voluntario">🔄 Sustituto voluntario</option>
+        <option value="baja_produccion_madre">📉 Sustituto — baja producción</option>
+      </select></div>`;
     container.appendChild(div);
   }
+}
+function _toggleDestino(sel){
+  var row = sel.closest('.cria-row'); if(!row) return;
+  var wrap = row.querySelector('.cria-destino-wrap');
+  if(wrap) wrap.style.display = (sel.value==='muerto')?'none':'';
 }
 function autoFillMadre(val){
   const box=document.getElementById('p-lineaje-info');
@@ -1210,7 +1262,13 @@ function autoFillMadre(val){
   box.dataset.razaMadre=ctx.raza_madre||'';
   box.dataset.razaPadre=ctx.raza_padre||'';
 }
-function saveParto(){
+// Abre el modal de parto con la madre pre-seleccionada (desde gestantes).
+function abrirPartoConMadre(codigo){
+  openModal('modal-parto');
+  var el=document.getElementById('p-madre'); if(el){ el.value=codigo; if(typeof autoFillMadre==='function') autoFillMadre(codigo); }
+  var f=document.getElementById('p-fecha'); if(f && !f.value){ f.value=new Date().toISOString().slice(0,10); }
+}
+async function saveParto(){
   const madreId = document.getElementById('p-madre')?.value?.trim();
   const fecha   = document.getElementById('p-fecha')?.value;
   const vivas   = parseInt(document.getElementById('p-vivas')?.value)||0;
@@ -1305,6 +1363,42 @@ function saveParto(){
       });
     }
   }
+
+  // ── Módulo Partos: tablas partos/corderos_nacidos + Sala Cuna + Lactancia ──
+  try{
+    if(window.DB && typeof window.DB.createParto==='function'){
+      const _mo2=_findAnimalRepro(madreId);
+      const _pa2=_findAnimalRepro(padreId);
+      if(_mo2){
+        const _criasDestino=[];
+        criasFormGrids && criasFormGrids.forEach(function(grid){
+          const sx=grid.querySelector('.cria-sexo'), pz=grid.querySelector('.cria-peso');
+          const es=grid.querySelector('.cria-estado'), de=grid.querySelector('.cria-destino');
+          _criasDestino.push({
+            sexo:(sx&&sx.value==='Macho')?'M':'H',
+            peso_nacimiento_kg:(pz&&pz.value)?parseFloat(pz.value):null,
+            estado_al_nacer:es?es.value:'vivo',
+            destino_crianza:(es&&es.value==='muerto')?'pie_madre':(de?de.value:'pie_madre')
+          });
+        });
+        const _nac=_criasDestino.length||vivas;
+        const _viv=_criasDestino.length?_criasDestino.filter(function(c){return c.estado_al_nacer!=='muerto';}).length:vivas;
+        const _tipoMap={1:'simple',2:'doble',3:'triple',4:'cuadruple'};
+        const _estadoMadre=(document.getElementById('p-estado-madre')||{}).value||'bien';
+        const _res=await window.DB.createParto({
+          madre_id:_mo2.id, padre_id:(_pa2?_pa2.id:null), fecha_parto:fecha,
+          tipo_parto:(_tipoMap[_nac]||'cuadruple'),
+          num_corderos_nacidos:_nac, num_corderos_vivos:_viv,
+          estado_madre:_estadoMadre, complicaciones:(_estadoMadre!=='bien'?(obs||null):null),
+          responsable:(window.AUTH_PERFIL&&window.AUTH_PERFIL.id)||null, notas:obs||null
+        }, _criasDestino);
+        if(_res && _res.crianzas_creadas>0){
+          toast(_res.crianzas_creadas+' cordero(s) enviados a Sala Cuna →');
+        }
+        if(typeof loadPartosDB==='function') loadPartosDB();
+      }
+    }
+  }catch(e){ console.warn('[Repro] createParto:', e&&e.message); }
 
   closeModal('modal-parto');
   toast('Parto registrado · '+vivas+' crías creadas · Estado madre actualizado');
