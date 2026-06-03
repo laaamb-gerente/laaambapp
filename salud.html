@@ -498,6 +498,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 
     <!-- ══ ACTIVOS ══ -->
     <div id="t-activos" class="tab-pane" style="display:none">
+      <div id="dosis-hoy-panel" style="margin-bottom:16px"></div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:14px">
         <button class="btn btn-ghost btn-sm" onclick="exportActivos()">↓ Excel activos</button>
         <button class="btn btn-ghost btn-sm" onclick="openModal('modal-trat-grupal')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><circle cx="7" cy="7" r="3"/><path d="M1 17c0-2.8 2.2-5 5-5"/><circle cx="14" cy="7" r="3"/><path d="M10 17c0-2.8 2.2-5 5-5"/></svg> Grupal</button>
@@ -901,6 +902,14 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 </div>
 </div>
 
+<!-- ══ MODAL REGISTRAR DOSIS ══ -->
+<div class="overlay" id="modal-dosis" onclick="if(event.target===this)closeModal('modal-dosis')">
+<div class="modal modal-sm">
+  <div class="modal-head"><div class="modal-title" id="dosis-title">Registrar dosis</div><button class="modal-close" onclick="closeModal('modal-dosis')">✕</button></div>
+  <div class="modal-body" id="dosis-body"></div>
+</div>
+</div>
+
 <div class="toasts" id="toasts"></div>
 
 <script>
@@ -924,7 +933,82 @@ function switchTab(el,id){
   if(id==='t-calculadora') generarTabla();
   if(id==='t-medicamentos') renderMeds(MEDICAMENTOS);
   if(id==='t-calendario') renderCalendario();
+  if(id==='t-activos' && typeof loadDosisHoy==='function') loadDosisHoy();
 }
+
+// ═══════ DOSIS PROGRAMADAS (multi-dosis) ═══════
+var _FINCA_SALUD='a1b2c3d4-0000-0000-0000-000000000001';
+var _DOSIS_HOY=[];
+function _dEsc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+async function loadDosisHoy(){
+  var panel=document.getElementById('dosis-hoy-panel'); if(!panel) return;
+  if(!(window.DB && typeof window.DB.getDosisPendientesHoy==='function')){ panel.innerHTML=''; return; }
+  try{
+    var r=await window.DB.getDosisPendientesHoy(_FINCA_SALUD);
+    _DOSIS_HOY=(r&&r.data)||[];
+    if(!_DOSIS_HOY.length){ panel.innerHTML=''; return; }
+    var hoy=new Date().toISOString().slice(0,10);
+    panel.innerHTML='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px">💉 Dosis pendientes hoy</div>'
+      + _DOSIS_HOY.map(function(d){
+          var an=d.animales||{}; var nombre=an.nombre||an.codigo||'Animal';
+          var atrasada=d.fecha_programada<hoy;
+          var bc=atrasada?'var(--red)':'var(--amber)';
+          return '<div style="background:var(--bg2);border:1px solid '+bc+';border-radius:var(--r2,14px);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+            +'<div style="flex:1;min-width:160px"><b style="color:var(--text)">🐑 '+_dEsc(nombre)+'</b>'
+            +' <span style="font-size:12px;color:var(--text2)">· Día '+d.numero_dosis+'/'+d.total_dosis+'</span>'
+            +(atrasada?(' <span class="badge b-red" style="font-size:10px">Atrasada</span>'):' <span class="badge b-amber" style="font-size:10px">Aplicar hoy</span>')
+            +'<div style="font-size:11px;color:var(--text3);margin-top:2px">Programada: '+_dEsc(d.fecha_programada)+'</div></div>'
+            +'<button class="btn btn-primary btn-sm" onclick="abrirRegistroDosis(\''+d.id+'\')">Registrar dosis →</button>'
+            +'</div>';
+        }).join('');
+  }catch(e){ console.warn('[Salud] loadDosisHoy:',e&&e.message); }
+}
+function abrirRegistroDosis(dosisId){
+  var d=_DOSIS_HOY.filter(function(x){return x.id===dosisId;})[0];
+  var an=d&&d.animales||{}; var nombre=an.nombre||an.codigo||'Animal';
+  document.getElementById('dosis-title').textContent='Registrar dosis — '+nombre;
+  document.getElementById('dosis-body').innerHTML=
+      '<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Día '+(d?d.numero_dosis:'?')+'/'+(d?d.total_dosis:'?')+' del protocolo</div>'
+    + '<div class="fg"><label class="fl">Dosis aplicada</label><input class="fi" id="dz-dosis" placeholder="ej. 21 mL"></div>'
+    + '<div class="fg"><label class="fl">Observación (opcional)</label><textarea class="fi" id="dz-obs" rows="2"></textarea></div>'
+    + '<div class="fg"><label class="fl">Foto evidencia (opcional)</label><input class="fi" id="dz-foto" type="file" accept="image/*" capture="camera"></div>'
+    + '<div id="dz-msg" style="font-size:12px;min-height:16px;color:var(--red)"></div>'
+    + '<button class="btn btn-primary btn-sm" style="width:100%;margin-top:4px" id="dz-save" onclick="guardarDosis(\''+dosisId+'\')">Aplicada ✓</button>'
+    + '<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px;color:var(--red);border-color:var(--red)" onclick="saltarDosisUI(\''+dosisId+'\')">Saltar dosis</button>';
+  openModal('modal-dosis');
+}
+function _miColabId(){ return (window.AUTH_PERFIL && window.AUTH_PERFIL.id) || null; }
+async function guardarDosis(dosisId){
+  var btn=document.getElementById('dz-save'); if(btn){ btn.disabled=true; btn.textContent='Guardando…'; }
+  var foto_url=null;
+  var fileEl=document.getElementById('dz-foto');
+  var file=fileEl && fileEl.files && fileEl.files[0];
+  try{
+    if(file){
+      if(window.DB && typeof window.DB.uploadEvidencia==='function'){
+        try{ foto_url=await window.DB.uploadEvidencia(file,'dosis/'+dosisId+'-'+Date.now()+'.jpg'); }
+        catch(e){ foto_url='foto_registrada '+new Date().toISOString(); }
+      } else { foto_url='foto_registrada '+new Date().toISOString(); }
+    }
+    var res=await window.DB.registrarDosis(dosisId,{
+      dosis_aplicada:(document.getElementById('dz-dosis')||{}).value||null,
+      colaborador:_miColabId(),
+      foto_url:foto_url,
+      observacion:(document.getElementById('dz-obs')||{}).value||null
+    });
+    if(res && res.error) throw res.error;
+    closeModal('modal-dosis'); toast('Dosis registrada ✓','ok'); loadDosisHoy();
+  }catch(e){ if(btn){ btn.disabled=false; btn.textContent='Aplicada ✓'; } var m=document.getElementById('dz-msg'); if(m) m.textContent='Error al guardar.'; }
+}
+async function saltarDosisUI(dosisId){
+  var obs=prompt('Motivo para saltar la dosis (opcional):')||'Saltada';
+  try{
+    var res=await window.DB.saltarDosis(dosisId,obs);
+    if(res && res.error) throw res.error;
+    closeModal('modal-dosis'); toast('Dosis saltada'); loadDosisHoy();
+  }catch(e){ toast('No se pudo saltar la dosis','err'); }
+}
+document.addEventListener('appstate:ready', function(){ setTimeout(function(){ if(typeof loadDosisHoy==='function') loadDosisHoy(); }, 300); });
 function switchTabByName(id){
   const tabs = {'t-calculadora':5,'t-calendario':6,'t-medicamentos':4};
   const idx = tabs[id]||0;
@@ -1363,6 +1447,15 @@ function saveTratamiento(tipo){
         window.DB.saveTratamiento(_tPayload).then(function(res){
           if(res && !res.error && res.data){
             window.DB.logAudit(_tPayload.finca_id,'INSERT','tratamientos',res.data.id,null,_tPayload,null);
+            // Multi-dosis: generar la agenda diaria si el tratamiento dura > 1 día.
+            var _totalDias=parseInt(dur)||1;
+            if(_totalDias>1 && typeof window.DB.crearDosisProgramadas==='function'){
+              window.DB.crearDosisProgramadas(res.data.id,_a.id,_fi,_totalDias,_tPayload.finca_id)
+                .then(function(dr){
+                  if(dr && !dr.error && dr.data && dr.data.length){ toast('+ '+dr.data.length+' dosis programadas','ok'); }
+                  if(typeof loadDosisHoy==='function') loadDosisHoy();
+                }).catch(function(e){ console.warn('[Salud] crearDosisProgramadas:',e&&e.message); });
+            }
           }
         }).catch(err=>console.warn('[Salud] saveTratamiento Supabase:',err&&err.message));
       }

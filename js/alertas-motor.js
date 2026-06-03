@@ -225,6 +225,9 @@ window.AlertasMotor = {
     // ── 12. DESCARTE — score materno (Fase 6). Mismo patrón independiente.
     await this._alertasDescarte(alertas, hoy);
 
+    // ── 13. TRATAMIENTOS — dosis multi-día (0048). Patrón independiente.
+    await this._alertasTratamientos(alertas, hoy);
+
     // Ordenar por prioridad
     const orden = { critica: 0, alta: 1, media: 2, baja: 3 };
     alertas.sort((a, b) =>
@@ -403,6 +406,51 @@ window.AlertasMotor = {
       });
     } catch (e) {
       console.warn('[AlertasMotor] Descarte:', e && e.message);
+    }
+  },
+
+  // ── 13. TRATAMIENTOS — dosis pendientes/atrasadas (multi-dosis, 0048) ──
+  async _alertasTratamientos(alertas, hoy) {
+    try {
+      const sb = window._sb;
+      if (!sb) return;
+      const hoyStr = hoy.toISOString().slice(0, 10);
+      const { data: dosis } = await sb.from('dosis_programadas')
+        .select('id, tratamiento_id, numero_dosis, total_dosis, fecha_programada, animales(codigo, nombre)')
+        .eq('estado', 'pendiente')
+        .lte('fecha_programada', hoyStr);
+      const rows = dosis || [];
+      if (!rows.length) return;
+      // Nombre del medicamento (best-effort): tratamiento_id suele ser el uuid del tratamiento.
+      const ids = Array.from(new Set(rows.map(d => d.tratamiento_id).filter(Boolean)));
+      const medMap = {};
+      try {
+        const { data: trts } = await sb.from('tratamientos').select('id, medicamentos(nombre)').in('id', ids);
+        (trts || []).forEach(t => { medMap[t.id] = (t.medicamentos && t.medicamentos.nombre) || ''; });
+      } catch (e) {}
+      rows.forEach(d => {
+        const an = d.animales || {};
+        const nombre = an.nombre || an.codigo || 'animal';
+        const med = medMap[d.tratamiento_id] || 'tratamiento';
+        if (d.fecha_programada < hoyStr) {
+          const ret = Math.max(1, Math.round((new Date(hoyStr) - new Date(d.fecha_programada)) / 86400000));
+          alertas.push({
+            tipo: 'dosis_atrasada', prioridad: 'critica',
+            mensaje: `⚠️ Dosis atrasada — ${nombre}: lleva ${ret} día${ret > 1 ? 's' : ''} de retraso (${med}, día ${d.numero_dosis}/${d.total_dosis})`,
+            accion_sugerida: 'Aplicar la dosis pendiente o saltarla',
+            accion_url: 'salud.html', datos: { dosis_id: d.id }
+          });
+        } else {
+          alertas.push({
+            tipo: 'dosis_pendiente_hoy', prioridad: 'alta',
+            mensaje: `💉 Dosis pendiente — ${nombre}: ${med} · día ${d.numero_dosis}/${d.total_dosis}`,
+            accion_sugerida: 'Registrar la dosis de hoy',
+            accion_url: 'salud.html', datos: { dosis_id: d.id }
+          });
+        }
+      });
+    } catch (e) {
+      console.warn('[AlertasMotor] Tratamientos:', e && e.message);
     }
   },
 

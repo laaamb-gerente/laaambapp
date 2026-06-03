@@ -1317,6 +1317,64 @@ window.DB = {
     return upd;
   },
 
+  // ── DOSIS PROGRAMADAS (tratamientos multi-dosis · migración 0048) ────
+  async crearDosisProgramadas(tratamientoId, animalId, fechaInicio, totalDias, fincaId) {
+    var total = parseInt(totalDias, 10) || 1;
+    if (total <= 1) return { data: [], error: null };   // dosis única → sin agenda
+    var FINCA = fincaId || 'a1b2c3d4-0000-0000-0000-000000000001';
+    var base = new Date((fechaInicio || new Date().toISOString().slice(0,10)) + 'T00:00:00');
+    var filas = [];
+    for (var i = 1; i <= total; i++) {
+      var d = new Date(base.getTime() + (i - 1) * 86400000);
+      filas.push({
+        tratamiento_id: String(tratamientoId),
+        animal_id: animalId || null,
+        numero_dosis: i,
+        total_dosis: total,
+        fecha_programada: d.toISOString().slice(0, 10),
+        hora_objetivo: '08:00',
+        estado: 'pendiente',
+        finca_id: FINCA
+      });
+    }
+    return await window._sb.from('dosis_programadas').insert(filas).select();
+  },
+  async getDosisPendientesHoy(fincaId) {
+    var hoy = new Date().toISOString().slice(0, 10);
+    var q = window._sb.from('dosis_programadas')
+      .select('*, animales(codigo, nombre)')
+      .eq('estado', 'pendiente')
+      .lte('fecha_programada', hoy);
+    if (fincaId) q = q.eq('finca_id', fincaId);
+    return await q.order('fecha_programada', { ascending: true });
+  },
+  async registrarDosis(dosisId, datos) {
+    datos = datos || {};
+    return await window._sb.from('dosis_programadas').update({
+      estado: 'aplicada',
+      fecha_hora_aplicacion: new Date().toISOString(),
+      dosis_aplicada: datos.dosis_aplicada || null,
+      colaborador: datos.colaborador || null,
+      foto_url: datos.foto_url || null,
+      observacion: datos.observacion || null,
+      updated_at: new Date()
+    }).eq('id', dosisId).select().single();
+  },
+  async saltarDosis(dosisId, observacion) {
+    return await window._sb.from('dosis_programadas').update({
+      estado: 'saltada',
+      observacion: observacion || null,
+      fecha_hora_aplicacion: new Date().toISOString(),
+      updated_at: new Date()
+    }).eq('id', dosisId).select().single();
+  },
+  async getDosisPorTratamiento(tratamientoId) {
+    return await window._sb.from('dosis_programadas')
+      .select('*')
+      .eq('tratamiento_id', String(tratamientoId))
+      .order('numero_dosis', { ascending: true });
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();

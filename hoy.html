@@ -210,6 +210,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     <div id="mis-tareas-list"><div style="font-size:13px;color:var(--text3)">Cargando…</div></div>
   </div>
 
+  <!-- Dosis de tratamiento de hoy (multi-dosis) — se oculta si no hay -->
+  <div class="sec" id="dosis-hoy-sec" style="display:none">
+    <div class="sec-title"><span class="dot" style="background:var(--red)"></span>Dosis de tratamiento hoy</div>
+    <div id="dosis-hoy-hoylist"></div>
+    <a href="salud.html" style="display:inline-block;margin-top:6px;font-size:11px;font-weight:600;color:var(--teal);text-decoration:none">→ Ver todos los tratamientos</a>
+  </div>
+
   <div class="sec">
     <div class="sec-title"><span class="dot"></span>Agenda del día</div>
     <div class="agenda-grid">
@@ -395,7 +402,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
           toma_pendiente:   {tipo:'amber', ico:'🍼', t:'Toma pendiente'},
           cordero_bajo_peso:{tipo:'amber', ico:'📉', t:'Bajo crecimiento'},
           rcs_alto:         {tipo:'amber', ico:'⚠️', t:'RCS alto'},
-          nueva_candidata_descarte:{tipo:'red', ico:'⛔', t:'Candidata a descarte'}
+          nueva_candidata_descarte:{tipo:'red', ico:'⛔', t:'Candidata a descarte'},
+          dosis_pendiente_hoy:{tipo:'amber', ico:'💉', t:'Dosis pendiente'},
+          dosis_atrasada:   {tipo:'red', ico:'⚠️', t:'Dosis atrasada'}
         };
         (todas || []).forEach(function(a){
           var m = MAP[a.tipo];
@@ -774,6 +783,30 @@ navigator.serviceWorker?.addEventListener('message', function(e){
   document.addEventListener('appstate:ready', renderMisTareas);
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(renderMisTareas, 600); });
   else setTimeout(renderMisTareas, 600);
+
+  // ── Dosis de tratamiento de hoy (multi-dosis) ──
+  async function renderDosisHoy(){
+    var sec=document.getElementById('dosis-hoy-sec');
+    var cont=document.getElementById('dosis-hoy-hoylist');
+    if(!sec || !cont) return;
+    if(!(window.DB && window.DB.getDosisPendientesHoy)){ sec.style.display='none'; return; }
+    var rows=[];
+    try{ var r=await window.DB.getDosisPendientesHoy(FINCA_ID); rows=(r&&r.data)||[]; }catch(e){}
+    if(!rows.length){ sec.style.display='none'; return; }
+    var hoy=_hoyISO();
+    cont.innerHTML=rows.map(function(d){
+      var an=d.animales||{}; var nombre=an.nombre||an.codigo||'Animal';
+      var atrasada=(d.fecha_programada < hoy);
+      var c=atrasada?'var(--red)':'var(--orange)';
+      return '<div style="border:1px solid var(--border);border-left:3px solid '+c+';border-radius:8px;padding:11px 14px;margin-bottom:8px;background:var(--bg2)">'
+        +'<div style="font-size:14px;font-weight:600;color:var(--text)">💉 '+_esc(nombre)+' <span style="font-size:12px;color:var(--text2)">· día '+d.numero_dosis+'/'+d.total_dosis+'</span></div>'
+        +'<div style="font-size:11px;color:'+c+';font-weight:600;margin-top:2px">'+(atrasada?'⚠ Atrasada (programada '+_esc(d.fecha_programada)+')':'Aplicar hoy')+'</div>'
+        +'</div>';
+    }).join('');
+    sec.style.display='';
+  }
+  document.addEventListener('appstate:ready', renderDosisHoy);
+  setTimeout(renderDosisHoy, 700);
 })();
 </script>
 </body>
