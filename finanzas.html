@@ -1664,5 +1664,49 @@ document.addEventListener('DOMContentLoaded', initEspecieTabs);
   });
 })();
 </script>
+
+<script>
+// Pre-llenado del formulario de ingreso desde parámetros de URL.
+// Ej. desde queseria.html → "📒 Registrar venta":
+//   finanzas.html?tipo=ingreso&descripcion=Queso+fresco&monto=150000&categoria=Lácteos&fecha=YYYY-MM-DD
+// El modal de ingreso calcula total = peso × precio, así que el monto se mapea
+// como peso=1 × precio=monto (total auto). No hay selector de categoría aquí →
+// se usa Tipo='Otro' (o la opción que coincida con la categoría, si existe).
+(function(){
+  function prefillIngresoDesdeURL(){
+    var q = new URLSearchParams(location.search);
+    if(q.get('tipo') !== 'ingreso') return;
+    try{
+      var modal = document.getElementById('modal-ingreso'); if(!modal) return;
+      var tab = document.querySelector('.tn[onclick*="t-ingresos"]');
+      if(tab && typeof switchTab==='function') switchTab(tab,'t-ingresos');
+      if(typeof openModal==='function') openModal('modal-ingreso');
+
+      var inputs = modal.querySelectorAll('input.fi');
+      // Descripción → campo "Animal(es) vendidos" (texto libre)
+      var desc = q.get('descripcion');
+      if(desc && inputs[0]) inputs[0].value = desc;
+      // Categoría → Tipo (no hay selector de categoría); usa opción coincidente o 'Otro'
+      var cat = q.get('categoria');
+      var tipoSel = modal.querySelectorAll('select')[0];
+      if(tipoSel){
+        var match = Array.prototype.slice.call(tipoSel.options).filter(function(o){ return cat && o.text.toLowerCase()===String(cat).toLowerCase(); })[0];
+        tipoSel.value = match ? match.value : 'Otro';
+      }
+      // Monto → peso=1 × precio=monto → total auto = monto
+      var monto = parseFloat(q.get('monto'));
+      if(!isNaN(monto) && monto>0){
+        if(inputs[1]) inputs[1].value = 1;                 // peso (kg)
+        var pr = document.getElementById('i-precio'); if(pr) pr.value = monto;  // precio/kg
+        if(typeof calcIngreso==='function') calcIngreso();  // recalcula #i-total
+      }
+      // Fecha → param o hoy
+      var fe = document.getElementById('i-fecha');
+      if(fe) fe.value = q.get('fecha') || new Date().toISOString().slice(0,10);
+    }catch(e){ console.warn('[Finanzas] prefill URL:', e && e.message); }
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(prefillIngresoDesdeURL, 300); });
+})();
+</script>
 </body>
 </html>
