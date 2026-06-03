@@ -778,7 +778,7 @@ window.DB = {
   // Corderos en crianza artificial. soloActivos=true → solo estado='activo'.
   async getCorderosCrianza(soloActivos = true) {
     let q = window._sb.from('corderos_crianza')
-      .select('*, cordero:cordero_id(codigo, nombre, sexo, fecha_nacimiento), madre:madre_id(codigo, nombre)');
+      .select('*, cordero:cordero_id(codigo, nombre, sexo, fecha_nacimiento), madre:madre_id(codigo, nombre), responsable:responsable_default(id, nombre)');
     if (soloActivos) q = q.eq('estado', 'activo');
     return await q.order('fecha_inicio', { ascending: false });
   },
@@ -811,7 +811,7 @@ window.DB = {
   // Tomas programadas pendientes. filtros = { corderosCrianzaId, desde, hasta }.
   async getTomasPendientes(filtros = {}) {
     let q = window._sb.from('tomas_programadas')
-      .select('*')
+      .select('*, responsable:responsable_asignado(id, nombre)')
       .eq('estado', 'pendiente');
     if (filtros.corderosCrianzaId) q = q.eq('corderos_crianza_id', filtros.corderosCrianzaId);
     if (filtros.desde) q = q.gte('fecha_hora_programada', filtros.desde);
@@ -822,7 +822,7 @@ window.DB = {
   // La ventana es por fila, así que se filtra en cliente.
   async getTomasVencidas() {
     const { data, error } = await window._sb.from('tomas_programadas')
-      .select('*')
+      .select('*, responsable:responsable_asignado(id, nombre)')
       .eq('estado', 'pendiente')
       .order('fecha_hora_programada', { ascending: true });
     if (error) return { data: null, error };
@@ -865,7 +865,7 @@ window.DB = {
   },
   async getTomasRealizadas(corderosCrianzaId) {
     return await window._sb.from('tomas_realizadas')
-      .select('*')
+      .select('*, responsable_perfil:responsable(id, nombre)')
       .eq('corderos_crianza_id', corderosCrianzaId)
       .order('fecha_hora', { ascending: false });
   },

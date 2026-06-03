@@ -6,7 +6,11 @@
 -- por la 0039. Esta es la 0040.
 --
 -- FKs verificadas contra el schema real (REST):
---   animales.id ✓   fincas.id ✓   auth.users.id ✓ (estándar Supabase)
+--   animales.id ✓   fincas.id ✓
+-- Los campos responsable* referencian perfiles(id) (NO auth.users) para poder
+-- hacer el embedding de PostgREST responsable:perfiles(nombre) en Fase 2, igual
+-- que tareas.asignado_a. Nota: perfiles.id = auth.users.id (ver 0008), así que
+-- el uuid almacenado es el mismo; solo cambia la relación declarada.
 --
 -- Ejecutar en Supabase (SQL Editor). Idempotente: se puede re-ejecutar.
 -- ─────────────────────────────────────────────────────────────
@@ -28,7 +32,7 @@ CREATE TABLE IF NOT EXISTS corderos_crianza (
   fecha_inicio date NOT NULL DEFAULT CURRENT_DATE,
   fecha_destete date,
   peso_inicio_kg numeric(5,2),
-  responsable_default uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  responsable_default uuid REFERENCES perfiles(id) ON DELETE SET NULL,
   finca_id uuid REFERENCES fincas(id) ON DELETE CASCADE,
   notas text,
   created_at timestamptz DEFAULT now(),
@@ -44,7 +48,7 @@ CREATE TABLE IF NOT EXISTS eventos_calostro (
   fuente text NOT NULL CHECK (fuente IN ('madre','otra_oveja','vaca','comercial')),
   cantidad_ml numeric(7,1) NOT NULL,
   via text NOT NULL DEFAULT 'biberon' CHECK (via IN ('biberon','sonda')),
-  responsable uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  responsable uuid REFERENCES perfiles(id) ON DELETE SET NULL,
   observacion text,
   sincronizado boolean DEFAULT true,
   created_at timestamptz DEFAULT now()
@@ -58,7 +62,7 @@ CREATE TABLE IF NOT EXISTS tomas_programadas (
   ventana_min integer NOT NULL DEFAULT 45,
   cantidad_ml_objetivo numeric(7,1) NOT NULL,
   tipo text NOT NULL CHECK (tipo IN ('calostro','sustituto')),
-  responsable_asignado uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  responsable_asignado uuid REFERENCES perfiles(id) ON DELETE SET NULL,
   estado text NOT NULL DEFAULT 'pendiente' CHECK (estado IN (
     'pendiente','cumplida','perdida'
   )),
@@ -75,7 +79,7 @@ CREATE TABLE IF NOT EXISTS tomas_realizadas (
   tipo text NOT NULL CHECK (tipo IN ('calostro','sustituto')),
   cantidad_ml numeric(7,1) NOT NULL,
   temperatura_ok boolean DEFAULT true,
-  responsable uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  responsable uuid REFERENCES perfiles(id) ON DELETE SET NULL,
   observacion text,
   sincronizado boolean DEFAULT false,
   created_at timestamptz DEFAULT now()
@@ -88,7 +92,7 @@ CREATE TABLE IF NOT EXISTS pesajes_corderos (
   corderos_crianza_id uuid REFERENCES corderos_crianza(id) ON DELETE SET NULL,
   fecha date NOT NULL DEFAULT CURRENT_DATE,
   peso_kg numeric(5,2) NOT NULL,
-  responsable uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  responsable uuid REFERENCES perfiles(id) ON DELETE SET NULL,
   notas text,
   created_at timestamptz DEFAULT now()
 );
