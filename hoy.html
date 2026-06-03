@@ -402,11 +402,35 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       }
     });
 
-    if(items.length === 0){
+    // Inyectar las alertas de Sala Cuna (Fase 3) desde AlertasMotor y pintar.
+    _pintarAlertas(cont, items);
+  }
+
+  // Combina las alertas locales con las de Sala Cuna (toma_pendiente,
+  // toma_perdida, calostro_faltante, cordero_bajo_peso) que produce AlertasMotor.
+  async function _pintarAlertas(cont, items){
+    var salaCuna = [];
+    try{
+      if(window.AlertasMotor && typeof window.AlertasMotor.generar === 'function'){
+        var todas = await window.AlertasMotor.generar();
+        var MAP = {
+          toma_perdida:     {tipo:'red',   ico:'⏰', t:'Toma perdida'},
+          calostro_faltante:{tipo:'red',   ico:'🍼', t:'Sin calostro'},
+          toma_pendiente:   {tipo:'amber', ico:'🍼', t:'Toma pendiente'},
+          cordero_bajo_peso:{tipo:'amber', ico:'📉', t:'Bajo crecimiento'}
+        };
+        (todas || []).forEach(function(a){
+          var m = MAP[a.tipo];
+          if(m) salaCuna.push({tipo:m.tipo, ico:m.ico, t:m.t, s:esc(a.mensaje)});
+        });
+      }
+    }catch(e){ /* no romper la sección de alertas */ }
+    var all = salaCuna.concat(items);   // Sala Cuna primero (incluye las críticas)
+    if(all.length === 0){
       cont.innerHTML = '<div class="alert-empty">✓ Sin alertas prioritarias hoy. Todo en orden.</div>';
       return;
     }
-    cont.innerHTML = items.map(function(it){
+    cont.innerHTML = all.map(function(it){
       return '<div class="alert-item '+it.tipo+'"><div class="alert-ico">'+it.ico+'</div>'+
              '<div class="alert-txt"><b>'+it.t+'</b><div class="alert-sub">'+it.s+'</div></div></div>';
     }).join('');

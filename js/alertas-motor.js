@@ -208,89 +208,16 @@ window.AlertasMotor = {
         }
       }
 
-      // 10. SALA CUNA — crianza artificial (Fase 3).
-      // Evaluado dentro de este mismo ciclo (sin ciclo paralelo).
-      if (window.DB && typeof window.DB.getCorderosCrianza === 'function') {
-        try {
-          const rc = await window.DB.getCorderosCrianza(true);
-          const corderosCC = (rc && rc.data) || [];
-          const ccMap = {};
-          corderosCC.forEach(c => { ccMap[c.id] = c; });
-          const nombreCC = (c) => (c && c.cordero && (c.cordero.nombre || c.cordero.codigo)) || 'cordero';
-
-          // 10a. toma_pendiente (warning): pendiente con ≤15 min para vencer.
-          const rt = await window.DB.getTomasPendientes({});
-          (rt && rt.data || []).forEach(t => {
-            const min = Math.round((new Date(t.fecha_hora_programada) - hoy) / 60000);
-            if (min >= 0 && min <= 15) {
-              alertas.push({
-                tipo: 'toma_pendiente', prioridad: 'alta',
-                mensaje: `Toma pendiente — ${nombreCC(ccMap[t.corderos_crianza_id])}, ${t.tipo}, en ${min} min`,
-                accion_sugerida: 'Registrar la toma en Sala Cuna',
-                accion_url: 'sala-cuna.html',
-                datos: { toma_id: t.id, min }
-              });
-            }
-          });
-
-          // 10b. toma_perdida (danger): estado 'perdida' marcada en las últimas 2h.
-          const dosHoras = new Date(hoy.getTime() - 2 * 3600000).toISOString();
-          const { data: perdidas } = await window._sb
-            .from('tomas_programadas')
-            .select('id, tipo, corderos_crianza_id')
-            .eq('estado', 'perdida')
-            .gte('updated_at', dosHoras);
-          (perdidas || []).forEach(t => {
-            alertas.push({
-              tipo: 'toma_perdida', prioridad: 'critica',
-              mensaje: `Toma perdida — ${nombreCC(ccMap[t.corderos_crianza_id])}, ${t.tipo} no registrada`,
-              accion_sugerida: 'Verificar al cordero y reforzar la siguiente toma',
-              accion_url: 'sala-cuna.html',
-              datos: { toma_id: t.id }
-            });
-          });
-
-          // 10c/10d. Calostro faltante + bajo crecimiento, por cordero.
-          for (const c of corderosCC) {
-            const animalId = c.cordero_id;
-            // 10c. calostro_faltante (danger, máxima): >6h sin calostro registrado.
-            if (c.fecha_inicio) {
-              const horas = Math.floor((hoy - new Date(c.fecha_inicio)) / 3600000);
-              if (horas > 6) {
-                let totalCal = 0;
-                try { totalCal = await window.DB.getCalostroTotal24h(animalId); } catch (e) {}
-                if (!totalCal) {
-                  alertas.push({
-                    tipo: 'calostro_faltante', prioridad: 'critica',
-                    mensaje: `⚠️ Sin calostro — ${nombreCC(c)} lleva ${horas}h sin calostro registrado`,
-                    accion_sugerida: 'Administrar calostro URGENTE',
-                    accion_url: 'sala-cuna.html',
-                    datos: { cordero_id: animalId, horas }
-                  });
-                }
-              }
-            }
-            // 10d. cordero_bajo_peso (warning): GMD < 100 g/día con ≥2 pesajes.
-            let gmd = null;
-            try { gmd = await window.DB.calcularGMD(animalId); } catch (e) {}
-            if (gmd != null && gmd < 0.1) {
-              alertas.push({
-                tipo: 'cordero_bajo_peso', prioridad: 'media',
-                mensaje: `Bajo crecimiento — ${nombreCC(c)}: GMD ${Math.round(gmd * 1000)} g/día (mín: 100)`,
-                accion_sugerida: 'Revisar tomas, salud y temperatura del sustituto',
-                accion_url: 'sala-cuna.html',
-                datos: { cordero_id: animalId, gmd: Math.round(gmd * 1000) }
-              });
-            }
-          }
-        } catch (e) {
-          console.warn('[AlertasMotor] Sala Cuna:', e.message);
-        }
-      }
-
     } catch (e) {
       console.warn('[AlertasMotor] Error generando alertas:', e.message);
     }
+
+    // ── 10. SALA CUNA — crianza artificial (Fase 3) ──────────────────────
+    // Bloque INDEPENDIENTE: su propio try, FUERA del try anterior, para que un
+    // fallo en cualquier bloque previo (p.ej. AppState aún no listo) no impida
+    // estas alertas. Usa window._sb directo (no depende de que window.DB esté
+    // cargado en la página). Sus errores se loguean, no rompen el ciclo.
+    await this._alertasSalaCuna(alertas, hoy);
 
     // Ordenar por prioridad
     const orden = { critica: 0, alta: 1, media: 2, baja: 3 };
@@ -300,6 +227,117 @@ window.AlertasMotor = {
 
     this._alertas = alertas;
     return alertas;
+  },
+
+  // ── 10. SALA CUNA — alertas de crianza artificial (Fase 3) ──
+  // Independiente y defensivo: usa window._sb directo, no depende de window.DB.
+  async _alertasSalaCuna(alertas, hoy) {
+    try {
+      const sb = window._sb;
+      if (!sb) return;
+
+      // Corderos activos en crianza
+      const { data: corderosCC } = await sb
+        .from('corderos_crianza')
+        .select('id, cordero_id, fecha_inicio, estado, cordero:cordero_id(codigo, nombre)')
+        .eq('estado', 'activo');
+      const cc = corderosCC || [];
+      const ccMap = {};
+      cc.forEach(c => { ccMap[c.id] = c; });
+      const nombreCC = (c) => (c && c.cordero && (c.cordero.nombre || c.cordero.codigo)) || 'cordero';
+
+      // 10a. toma_pendiente (warning): pendiente con ≤15 min para vencer.
+      const { data: pend } = await sb
+        .from('tomas_programadas')
+        .select('id, tipo, corderos_crianza_id, fecha_hora_programada')
+        .eq('estado', 'pendiente');
+      (pend || []).forEach(t => {
+        const min = Math.round((new Date(t.fecha_hora_programada) - hoy) / 60000);
+        if (min >= 0 && min <= 15) {
+          alertas.push({
+            tipo: 'toma_pendiente', prioridad: 'alta',
+            mensaje: `Toma pendiente — ${nombreCC(ccMap[t.corderos_crianza_id])}, ${t.tipo}, en ${min} min`,
+            accion_sugerida: 'Registrar la toma en Sala Cuna',
+            accion_url: 'sala-cuna.html',
+            datos: { toma_id: t.id, min }
+          });
+        }
+      });
+
+      // 10b. toma_perdida (danger): estado 'perdida' marcada en las últimas 24h.
+      const ventana24h = new Date(hoy.getTime() - 24 * 3600000).toISOString();
+      const { data: perdidas } = await sb
+        .from('tomas_programadas')
+        .select('id, tipo, corderos_crianza_id')
+        .eq('estado', 'perdida')
+        .gte('updated_at', ventana24h);
+      (perdidas || []).forEach(t => {
+        alertas.push({
+          tipo: 'toma_perdida', prioridad: 'critica',
+          mensaje: `Toma perdida — ${nombreCC(ccMap[t.corderos_crianza_id])}, ${t.tipo} no registrada`,
+          accion_sugerida: 'Verificar al cordero y reforzar la siguiente toma',
+          accion_url: 'sala-cuna.html',
+          datos: { toma_id: t.id }
+        });
+      });
+
+      // 10c/10d. Calostro faltante + bajo crecimiento, por cordero.
+      for (const c of cc) {
+        const animalId = c.cordero_id;
+
+        // 10c. calostro_faltante (danger, máxima): >6h sin calostro en 24h.
+        if (c.fecha_inicio) {
+          const horas = Math.floor((hoy - new Date(c.fecha_inicio)) / 3600000);
+          if (horas > 6) {
+            const { data: cal } = await sb
+              .from('eventos_calostro')
+              .select('cantidad_ml, fecha_hora')
+              .eq('cordero_id', animalId)
+              .order('fecha_hora', { ascending: true });
+            let total = 0;
+            if (cal && cal.length) {
+              const corte = new Date(cal[0].fecha_hora).getTime() + 24 * 3600 * 1000;
+              total = cal
+                .filter(e => new Date(e.fecha_hora).getTime() <= corte)
+                .reduce((s, e) => s + (Number(e.cantidad_ml) || 0), 0);
+            }
+            if (!total) {
+              alertas.push({
+                tipo: 'calostro_faltante', prioridad: 'critica',
+                mensaje: `⚠️ Sin calostro — ${nombreCC(c)} lleva ${horas}h sin calostro registrado`,
+                accion_sugerida: 'Administrar calostro URGENTE',
+                accion_url: 'sala-cuna.html',
+                datos: { cordero_id: animalId, horas }
+              });
+            }
+          }
+        }
+
+        // 10d. cordero_bajo_peso (warning): GMD < 100 g/día con ≥2 pesajes.
+        const { data: pes } = await sb
+          .from('pesajes_corderos')
+          .select('peso_kg, fecha')
+          .eq('cordero_id', animalId)
+          .order('fecha', { ascending: true });
+        if (pes && pes.length >= 2) {
+          const dias = (new Date(pes[pes.length - 1].fecha) - new Date(pes[0].fecha)) / 86400000;
+          if (dias > 0) {
+            const gmd = (Number(pes[pes.length - 1].peso_kg) - Number(pes[0].peso_kg)) / dias; // kg/día
+            if (gmd < 0.1) {
+              alertas.push({
+                tipo: 'cordero_bajo_peso', prioridad: 'media',
+                mensaje: `Bajo crecimiento — ${nombreCC(c)}: GMD ${Math.round(gmd * 1000)} g/día (mín: 100)`,
+                accion_sugerida: 'Revisar tomas, salud y temperatura del sustituto',
+                accion_url: 'sala-cuna.html',
+                datos: { cordero_id: animalId, gmd: Math.round(gmd * 1000) }
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('[AlertasMotor] Sala Cuna:', e && e.message);
+    }
   },
 
   // ── Generar resumen para el copiloto ───────────────────

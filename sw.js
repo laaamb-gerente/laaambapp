@@ -2,7 +2,7 @@
 // Cache-first para assets estáticos. NUNCA intercepta peticiones
 // a Supabase ni a /api/ (auth y datos deben ir siempre a la red).
 
-const CACHE_NAME = 'laaambapp-v5';
+const CACHE_NAME = 'laaambapp-v6';
 
 // Paths relativos: resuelven contra la ubicación del SW en cada host
 // (raíz en Vercel, /laaambapp/ en GitHub Pages).
