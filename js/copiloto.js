@@ -73,6 +73,40 @@ const COPILOTO_TOOLS = [
       },
       required: []
     }
+  },
+  {
+    name: "consultar_produccion_leche",
+    description: "Consulta el estado actual de la producción de leche en la finca: lactancias activas, producción acumulada, último control por oveja, promedio del rebaño, rendimiento quesero teórico y resumen de quesería de los últimos 3 meses.",
+    input_schema: {
+      type: "object",
+      properties: {
+        periodo_meses: { type: "integer", description: "Meses hacia atrás para el resumen de quesería (default 3)", default: 3 }
+      },
+      required: []
+    }
+  },
+  {
+    name: "estado_sala_cuna",
+    description: "Consulta el estado actual de la Sala Cuna (crianza artificial): corderos activos, tomas pendientes y vencidas del día, compliance de los últimos 7 días por cordero, y alertas activas de calostro faltante.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: []
+    }
+  },
+  {
+    name: "calcular_decision_sustituto",
+    description: "Calcula si conviene criar un cordero con sustituto lácteo o destetar y destinar toda la leche de la madre al queso. Compara costo total del sustituto vs valor económico de la leche liberada transformada en queso.",
+    input_schema: {
+      type: "object",
+      properties: {
+        cordero_id: { type: "string", description: "UUID del cordero en crianza (de corderos_crianza.id)" },
+        precio_sustituto_cop_kg: { type: "number", description: "Precio del sustituto lácteo en polvo en COP por kg" },
+        precio_queso_cop_kg: { type: "number", description: "Precio de venta del queso en COP por kg" },
+        dias_restantes: { type: "integer", description: "Días restantes hasta el destete estimado (default: 56 - días_en_crianza)", default: null }
+      },
+      required: ["cordero_id", "precio_sustituto_cop_kg", "precio_queso_cop_kg"]
+    }
   }
 ];
 
@@ -208,7 +242,8 @@ ${enfoque}${this._enfoquePagina ? '\n\n' + this._enfoquePagina : ''}`;
   },
 
   // ── Ejecutar una tool call sobre datos reales ─────────
-  _ejecutarTool(name, input) {
+  // async: las tools de leche/sala cuna consultan Supabase vía window.DB.
+  async _ejecutarTool(name, input) {
     const as = window.AppState;
     input = input || {};
 
@@ -311,6 +346,136 @@ ${enfoque}${this._enfoquePagina ? '\n\n' + this._enfoquePagina : ''}`;
       return JSON.stringify({ proyeccion });
     }
 
+    // ── Fase 7 — tools de leche / sala cuna / decisión (async, vía window.DB) ──
+    const DB = window.DB;
+
+    if (name === 'consultar_produccion_leche') {
+      if (!DB) return JSON.stringify({ error: 'Capa de datos no disponible.' });
+      const meses = input.periodo_meses || 3;
+      const rl = await DB.getLactancias(true);
+      const lacts = (rl && rl.data) || [];
+      let sumUlt = 0, n = 0, top = null;
+      lacts.forEach(l => {
+        const ctr = l.controles || [];
+        const ult = ctr.length ? ctr[ctr.length - 1] : null;
+        if (ult && ult.leche_dia_l != null) {
+          const v = Number(ult.leche_dia_l);
+          sumUlt += v; n++;
+          const nombre = (l.animal && (l.animal.nombre || l.animal.codigo)) || 'oveja';
+          if (!top || v > top.litros_ultimo_control) top = { nombre, litros_ultimo_control: v };
+        }
+      });
+      const rq = await DB.getResumenQueseria(meses);
+      const q = (rq && rq.data) || {};
+      return JSON.stringify({
+        lactancias_activas: lacts.length,
+        produccion_promedio_l_dia: n ? Math.round((sumUlt / n) * 100) / 100 : null,
+        oveja_top: top,
+        resumen_queseria: {
+          total_queso_kg: q.total_queso_kg != null ? q.total_queso_kg : null,
+          rendimiento_promedio: q.rendimiento_promedio_real != null ? q.rendimiento_promedio_real : null,
+          margen_total_cop: q.margen_total_cop != null ? q.margen_total_cop : null
+        },
+        fuente: 'supabase_directo'
+      });
+    }
+
+    if (name === 'estado_sala_cuna') {
+      if (!DB) return JSON.stringify({ error: 'Capa de datos no disponible.' });
+      const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+      const d1 = new Date(); d1.setHours(23, 59, 59, 999);
+      const rc = await DB.getCorderosCrianza(true);
+      const corderos = (rc && rc.data) || [];
+      const rp = await DB.getTomasPendientes({ desde: d0.toISOString(), hasta: d1.toISOString() });
+      const pend = (rp && rp.data) || [];
+      const rv = await DB.getTomasVencidas();
+      const venc = (rv && rv.data) || [];
+      const alertas = [];
+      const out = [];
+      for (const c of corderos) {
+        const nombre = (c.cordero && (c.cordero.nombre || c.cordero.codigo)) || 'cordero';
+        let gmd = null; try { gmd = await DB.calcularGMD(c.cordero_id); } catch (e) {}
+        let cal = 0; try { cal = await DB.getCalostroTotal24h(c.cordero_id); } catch (e) {}
+        const calostro_ok = !!cal;
+        if (!calostro_ok) alertas.push('Sin calostro: ' + nombre);
+        out.push({
+          nombre,
+          dias_en_crianza: c.fecha_inicio ? Math.floor((Date.now() - new Date(c.fecha_inicio)) / 86400000) : null,
+          gmd_g_dia: gmd != null ? Math.round(gmd * 1000) : null,
+          calostro_ok,
+          compliance_7d_pct: null,
+          _ccid: c.id
+        });
+      }
+      // compliance 7d por cordero (cumplidas / cumplidas+perdidas)
+      try {
+        const sieteAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+        const { data } = await window._sb.from('tomas_programadas')
+          .select('corderos_crianza_id, estado')
+          .gte('fecha_hora_programada', sieteAgo)
+          .in('estado', ['cumplida', 'perdida']);
+        const agg = {};
+        (data || []).forEach(t => { const a = agg[t.corderos_crianza_id] || (agg[t.corderos_crianza_id] = { ok: 0, tot: 0 }); a.tot++; if (t.estado === 'cumplida') a.ok++; });
+        out.forEach(o => { const a = agg[o._ccid]; if (a && a.tot) o.compliance_7d_pct = Math.round(a.ok / a.tot * 100); delete o._ccid; });
+      } catch (e) { out.forEach(o => { delete o._ccid; }); }
+      return JSON.stringify({
+        corderos_activos: corderos.length,
+        tomas_pendientes_hoy: pend.length,
+        tomas_vencidas_hoy: venc.length,
+        corderos: out,
+        alertas
+      });
+    }
+
+    if (name === 'calcular_decision_sustituto') {
+      if (!DB) return JSON.stringify({ error: 'Capa de datos no disponible.' });
+      const rc = await DB.getCorderosCrianza(true);
+      const corderos = (rc && rc.data) || [];
+      const c = corderos.find(x => x.id === input.cordero_id);
+      if (!c) return JSON.stringify({ error: 'Cordero no encontrado en crianza activa.' });
+      const corderoNombre = (c.cordero && (c.cordero.nombre || c.cordero.codigo)) || 'cordero';
+      const rl = await DB.getLactancias(true);
+      const lacts = (rl && rl.data) || [];
+      const lact = c.madre_id ? lacts.find(l => l.animal_id === c.madre_id) : null;
+      const madreNombre = (lact && lact.animal && (lact.animal.nombre || lact.animal.codigo))
+        || (c.madre && (c.madre.nombre || c.madre.codigo)) || 'desconocida';
+      let prodMadre = 0, comp = {};
+      if (lact) {
+        const ctr = lact.controles || [];
+        const ult = ctr.length ? ctr[ctr.length - 1] : null;
+        if (ult) { prodMadre = Number(ult.leche_dia_l) || 0; comp = { grasa_pct: ult.grasa_pct, caseina_pct: ult.caseina_pct }; }
+      }
+      const rendObj = await DB.calcularRendimientoTeorico(null, comp);
+      const rend = rendObj.rendimiento_l_kg || 3.9;
+      const diasCrianza = c.fecha_inicio ? Math.floor((Date.now() - new Date(c.fecha_inicio)) / 86400000) : 0;
+      const diasRest = (input.dias_restantes != null) ? input.dias_restantes : Math.max(0, 56 - diasCrianza);
+      const consumoG = 600; // g/día de polvo (referencia)
+      const costoSust = (consumoG / 1000) * (input.precio_sustituto_cop_kg || 0) * diasRest;
+      const litrosLib = prodMadre * diasRest;
+      const kgQueso = rend > 0 ? litrosLib / rend : 0;
+      const valorQueso = kgQueso * (input.precio_queso_cop_kg || 0);
+      const dif = valorQueso - costoSust;
+      const margen = costoSust > 0 ? Math.round(dif / costoSust * 100) : null;
+      const rec = dif > 50000 ? 'destetar' : (dif < -50000 ? 'sustituto' : 'equilibrio');
+      const cop = (x) => '$' + Math.round(x).toLocaleString('es-CO');
+      let resumen;
+      if (rec === 'destetar') resumen = 'Conviene DESTETAR a ' + corderoNombre + ': la leche de ' + madreNombre + ' como queso vale ' + cop(valorQueso) + ' vs ' + cop(costoSust) + ' de sustituto en ' + diasRest + ' días — diferencia a favor del queso ' + cop(dif) + (margen != null ? (' (' + margen + '%)') : '') + '.';
+      else if (rec === 'sustituto') resumen = 'Conviene el SUSTITUTO para ' + corderoNombre + ': cuesta ' + cop(costoSust) + ' vs ' + cop(valorQueso) + ' de valor de la leche como queso — el sustituto ahorra ' + cop(-dif) + '.';
+      else resumen = 'Punto de equilibrio para ' + corderoNombre + ': sustituto ' + cop(costoSust) + ' vs queso ' + cop(valorQueso) + ' (diferencia ' + cop(dif) + '). Decidir por mano de obra, mortalidad y GMD.';
+      if (prodMadre <= 0) resumen += ' Nota: no hay control lechero reciente de la madre; el valor de la leche es estimado en 0 — registra producción para afinar.';
+      return JSON.stringify({
+        cordero_nombre: corderoNombre,
+        madre_nombre: madreNombre,
+        dias_restantes: diasRest,
+        costo_sustituto_total_cop: Math.round(costoSust),
+        valor_leche_queso_cop: Math.round(valorQueso),
+        diferencia_cop: Math.round(dif),
+        margen_pct: margen,
+        recomendacion: rec,
+        resumen
+      });
+    }
+
     return JSON.stringify({ error: 'Tool no reconocida' });
   },
 
@@ -348,13 +513,15 @@ ${enfoque}${this._enfoquePagina ? '\n\n' + this._enfoquePagina : ''}`;
       // Si el modelo pide ejecutar tools → ejecutarlas y continuar
       if (data.stop_reason === 'tool_use' && Array.isArray(data.content)) {
         msgs.push({ role: 'assistant', content: data.content });
-        const toolResults = data.content
-          .filter(b => b.type === 'tool_use')
-          .map(b => ({
+        const toolUses = data.content.filter(b => b.type === 'tool_use');
+        const toolResults = [];
+        for (const b of toolUses) {
+          toolResults.push({
             type: 'tool_result',
             tool_use_id: b.id,
-            content: this._ejecutarTool(b.name, b.input)
-          }));
+            content: await this._ejecutarTool(b.name, b.input)
+          });
+        }
         msgs.push({ role: 'user', content: toolResults });
         continue; // siguiente iteración
       }

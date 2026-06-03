@@ -208,6 +208,27 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     </div>
   </div>
 
+  <!-- [B1] CALCULADORA: Sustituto vs Leche al queso -->
+  <div class="sec" id="calc-sec">
+    <div class="sec-title" style="cursor:pointer" onclick="toggleCalc()"><span class="dot" style="background:var(--amber)"></span>🧮 Calculadora: Sustituto vs Leche al queso <span id="calc-caret" style="margin-left:auto;color:var(--text3)">▾</span></div>
+    <div class="card" id="calc-body" style="padding:16px">
+      <div class="fld"><label>Cordero en crianza</label><select id="calc-cordero" onchange="calcCorderoChange()"><option value="">— Cargando… —</option></select></div>
+      <div class="fld-row">
+        <div class="fld"><label>Días hasta destete</label><input type="number" id="calc-dias" min="0" step="1" oninput="recalcCalc()"></div>
+        <div class="fld"><label>Consumo sustituto (g/día)</label><input type="number" id="calc-consumo" min="0" step="10" value="600" oninput="recalcCalc()"></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>Precio sustituto (COP/kg)</label><input type="number" id="calc-psust" min="0" step="100" oninput="recalcCalc()" placeholder="requerido"></div>
+        <div class="fld"><label>Precio queso (COP/kg)</label><input type="number" id="calc-pqueso" min="0" step="100" oninput="recalcCalc()" placeholder="requerido"></div>
+      </div>
+      <div class="fld-row">
+        <div class="fld"><label>Rendimiento (L/kg)</label><input type="number" id="calc-rend" min="0" step="0.1" oninput="recalcCalc()"></div>
+        <div class="fld"><label>Producción madre (L/día)</label><input type="number" id="calc-prod" min="0" step="0.1" oninput="recalcCalc()"></div>
+      </div>
+      <div id="calc-out"></div>
+    </div>
+  </div>
+
   <!-- [B] LACTANCIAS ACTIVAS -->
   <div class="sec">
     <div class="sec-title"><span class="dot"></span>Lactancias activas</div>
@@ -303,6 +324,110 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     lactancias.forEach(function(l){ lactMap[l.id]=l; });
     document.getElementById('n-activas').textContent = lactancias.length;
     renderLactancias();
+    initCalc();
+  }
+
+  // ══ CALCULADORA: Sustituto vs Leche al queso (local) ══════════════════
+  var _calcCorderos = [];
+  var _calcPrecioQuesoDefault = null;
+  function fmtCop(n){ return '$'+Math.round(+n||0).toLocaleString('es-CO'); }
+  function gv(id){ var v=parseFloat((document.getElementById(id)||{}).value); return isNaN(v)?null:v; }
+  function toggleCalc(){
+    var b=document.getElementById('calc-body'), c=document.getElementById('calc-caret');
+    var hide = b.style.display!=='none';
+    b.style.display = hide?'none':''; if(c) c.textContent = hide?'▸':'▾';
+  }
+  async function initCalc(){
+    var sel = document.getElementById('calc-cordero');
+    if(!sel) return;
+    // Precio de queso por defecto: último lote registrado con precio
+    try{
+      var rq = await DB.getQuesosLotes(20);
+      var lote = ((rq&&rq.data)||[]).find(function(l){ return l.precio_venta_kg!=null; });
+      if(lote) _calcPrecioQuesoDefault = Number(lote.precio_venta_kg);
+    }catch(e){}
+    try{
+      var rc = await DB.getCorderosCrianza(true);
+      _calcCorderos = (rc&&rc.data)||[];
+    }catch(e){ _calcCorderos = []; }
+    if(!_calcCorderos.length){
+      sel.innerHTML = '<option value="">No hay corderos en crianza actualmente</option>';
+      document.getElementById('calc-out').innerHTML = '';
+      // colapsada si no hay corderos
+      var b=document.getElementById('calc-body'); if(b) b.style.display='none';
+      var c=document.getElementById('calc-caret'); if(c) c.textContent='▸';
+      return;
+    }
+    sel.innerHTML = '<option value="">— Seleccionar cordero —</option>' + _calcCorderos.map(function(c){
+      var nm = (c.cordero && (c.cordero.nombre||c.cordero.codigo)) || 'Cordero';
+      return '<option value="'+c.id+'">'+esc(nm)+'</option>';
+    }).join('');
+    // abierta por defecto si hay corderos
+    var bb=document.getElementById('calc-body'); if(bb) bb.style.display='';
+    var cc=document.getElementById('calc-caret'); if(cc) cc.textContent='▾';
+    // precargar precio queso default si está vacío
+    var pq=document.getElementById('calc-pqueso');
+    if(pq && !pq.value && _calcPrecioQuesoDefault!=null) pq.value=_calcPrecioQuesoDefault;
+  }
+  async function calcCorderoChange(){
+    var id = document.getElementById('calc-cordero').value;
+    var c = _calcCorderos.find(function(x){ return x.id===id; });
+    if(!c){ document.getElementById('calc-out').innerHTML=''; return; }
+    // Días hasta destete (protocolo: destete día 56)
+    var diasCrianza = c.fecha_inicio ? Math.max(0, Math.floor((Date.now()-new Date(c.fecha_inicio))/86400000)) : 0;
+    document.getElementById('calc-dias').value = Math.max(0, 56 - diasCrianza);
+    // Lactancia activa de la madre (si existe) → producción + rendimiento teórico
+    var lact = c.madre_id ? lactancias.find(function(l){ return l.animal_id===c.madre_id; }) : null;
+    var prodEl=document.getElementById('calc-prod'), rendEl=document.getElementById('calc-rend');
+    if(lact){
+      var ctr=(lact.controles||[]);
+      var ult=ctr.length?ctr[ctr.length-1]:null;
+      if(ult && ult.leche_dia_l!=null) prodEl.value = Number(ult.leche_dia_l);
+      try{
+        var comp = ult ? { grasa_pct: ult.grasa_pct, caseina_pct: ult.caseina_pct } : {};
+        var ro = await DB.calcularRendimientoTeorico(null, comp);
+        if(ro && !rendEl.value) rendEl.value = ro.rendimiento_l_kg;
+      }catch(e){}
+    }
+    if(!rendEl.value) rendEl.value = 3.9; // referencia industria ovina
+    var pq=document.getElementById('calc-pqueso');
+    if(pq && !pq.value && _calcPrecioQuesoDefault!=null) pq.value=_calcPrecioQuesoDefault;
+    recalcCalc();
+  }
+  function recalcCalc(){
+    var out=document.getElementById('calc-out'); if(!out) return;
+    var dias=gv('calc-dias'), consumo=gv('calc-consumo'), psust=gv('calc-psust'),
+        pqueso=gv('calc-pqueso'), rend=gv('calc-rend'), prod=gv('calc-prod');
+    if(psust==null || pqueso==null){
+      out.innerHTML = '<div class="empty-box" style="margin-top:4px">Ingresa los precios para ver la recomendación</div>';
+      return;
+    }
+    dias=dias||0; consumo=consumo||0; rend=rend||3.9; prod=prod||0;
+    // A — costo sustituto
+    var costoSust = (consumo/1000) * psust * dias;
+    // B — valor leche como queso
+    var litrosLib = prod * dias;
+    var kgQueso = rend>0 ? litrosLib/rend : 0;
+    var valorQueso = kgQueso * pqueso;
+    // C — decisión
+    var dif = valorQueso - costoSust;
+    var margen = costoSust>0 ? Math.round(dif/costoSust*100) : null;
+    var rec, recCls;
+    if(dif > 50000){ recCls='var(--green)'; rec='🟢 Conviene destetar: la leche como queso supera el costo del sustituto en '+fmtCop(dif)+(margen!=null?(' ('+margen+'% de margen)'):''); }
+    else if(Math.abs(dif) < 50000){ recCls='var(--amber)'; rec='🟡 Punto de equilibrio cercano: diferencia menor a $50.000. Considera mano de obra, mortalidad y GMD.'; }
+    else { recCls='var(--red)'; rec='🔴 No conviene destetar: el sustituto es más económico que la leche perdida como queso en '+fmtCop(-dif); }
+    out.innerHTML =
+        '<div style="display:flex;flex-direction:column;gap:6px;margin:6px 0 12px">'
+      +   '<div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">Costo sustituto total</span><b>'+fmtCop(costoSust)+'</b></div>'
+      +   '<div style="display:flex;justify-content:space-between"><span style="color:var(--text3)">Valor leche como queso</span><b>'+fmtCop(valorQueso)+' <span style="color:var(--text3);font-weight:400">('+num(kgQueso,1)+' kg)</span></b></div>'
+      +   '<div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px"><span style="color:var(--text3)">Diferencia (favor queso)</span><b style="color:'+recCls+'">'+fmtCop(dif)+(margen!=null?(' ('+(margen>=0?'+':'')+margen+'%)'):'')+'</b></div>'
+      + '</div>'
+      + '<div style="background:var(--bg3);border-left:3px solid '+recCls+';border-radius:8px;padding:11px 13px;font-size:13px;font-weight:600;color:var(--text)">'+rec+'</div>'
+      + '<div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">'
+      +   '· Litros liberados: '+num(litrosLib,1)+' L en '+dias+' días<br>'
+      +   '· Queso posible: '+num(kgQueso,1)+' kg a rendimiento '+num(rend,1)+' L/kg<br>'
+      +   '· Costo/día sustituto: '+fmtCop((consumo/1000)*psust)+' · Valor/día leche: '+fmtCop((prod/(rend||1))*pqueso)
+      + '</div>';
   }
 
   function renderLactancias(){
@@ -586,6 +711,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
   window.guardarControl=guardarControl;
   window.toggleComposicion=toggleComposicion;
   window.sumarOrdenos=sumarOrdenos;
+  window.toggleCalc=toggleCalc;
+  window.calcCorderoChange=calcCorderoChange;
+  window.recalcCalc=recalcCalc;
   window.abrirFicha=abrirFicha;
   window.cerrarFicha=cerrarFicha;
   window.cerrarModal=cerrarModal;
