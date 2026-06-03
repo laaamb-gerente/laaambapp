@@ -690,7 +690,7 @@ function renderTabla(){
     return '<tr onclick="verPerfil(\''+a.id+'\')" style="'+op+'">'
       +'<td class="td-id">#'+a.id+'</td>'
       +'<td><div class="td-animal"><div class="a-ico '+(a.sexo||'H')+'">'+(a.sexo==='H'?'🐑':'🐏')+'</div>'
-      +'<div><div style="font-weight:600">'+(a.nombre||'—')+'</div><div class="td-m">'+(a.especie==='bovino'?'🐄 ':'🐑 ')+(a.categoria||'')+'</div></div></div></td>'
+      +'<div><div style="font-weight:600">'+(a.nombre||'—')+(typeof _scoreBadge==='function'?_scoreBadge(a):'')+'</div><div class="td-m">'+(a.especie==='bovino'?'🐄 ':'🐑 ')+(a.categoria||'')+'</div></div></div></td>'
       +'<td class="td-m">'+(a.raza||'—')+'</td>'
       +'<td class="td-m">'+calcEdad(a.fecha_nacimiento)+'</td>'
       +'<td class="td-m">'+peso+'</td>'
@@ -700,6 +700,7 @@ function renderTabla(){
       +'<td><div style="display:flex;gap:4px">'
       +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();verPerfil(\''+a.id+'\')">Ver</button>'
       +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirEditar(\''+a.id+'\')">✏</button>'
+      +(typeof _evalBtn==='function'?_evalBtn(a):'')
       +'</div></td></tr>';
   }).join('');
 
@@ -1158,6 +1159,11 @@ document.addEventListener('appstate:ready', function(e){
       observaciones: a.notas || '',
       madre_id: a.madre_id || '',
       padre_id: a.padre_id || '',
+      // Fase 6 — score materno / descarte (columnas de animales)
+      score_materno: a.score_materno,
+      candidata_descarte: a.candidata_descarte,
+      motivo_descarte: a.motivo_descarte,
+      fecha_flag_descarte: a.fecha_flag_descarte,
       activo: true
     };
   });
@@ -1590,5 +1596,225 @@ async function _fichaLoadLinaje(a){
       cursor:pointer;
       touch-action:manipulation;
     ">⚖</button>
+
+<!-- ═══ FASE 6 — Score materno + lista de descarte ═══ -->
+<div class="overlay" id="m-eval" onclick="if(event.target===this)closeModal('m-eval')">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title" id="eval-title">Evaluación materna</div><button class="modal-close" onclick="closeModal('m-eval')">✕</button></div>
+    <div class="modal-body" id="eval-body"></div>
+  </div>
+</div>
+<div id="f6-toast"></div>
+<script>
+(function(){
+  'use strict';
+  var DB = window.DB;
+  function rol(){ return window.AUTH_ROL || ''; }
+  function inSet(r, arr){ return arr.indexOf(r) >= 0; }
+  function f6esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function miId(){ return (window.AUTH_PERFIL && window.AUTH_PERFIL.id) || null; }
+  function hoyISO(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+  function f6toast(msg, err){ var t=document.getElementById('f6-toast'); if(!t) return; t.textContent=msg; t.className=err?'on err':'on'; clearTimeout(t._tm); t._tm=setTimeout(function(){ t.className=''; },2600); }
+
+  // CSS (badges + sección de descarte + toast)
+  var css = document.createElement('style');
+  css.textContent =
+    '.score-b{display:inline-block;margin-left:7px;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;vertical-align:middle}'
+    + '.score-b.sb-g{background:var(--green-bg,rgba(46,199,122,.12));color:var(--green,#10B981)}'
+    + '.score-b.sb-a{background:var(--amber-bg,rgba(232,160,48,.12));color:var(--amber,#e8a030)}'
+    + '.score-b.sb-r{background:var(--red-bg,rgba(224,82,82,.12));color:var(--red,#e05252)}'
+    + '.score-b.sb-desc{background:var(--red,#e05252);color:#fff;animation:f6pulse 1.4s ease-in-out infinite}'
+    + '@keyframes f6pulse{0%,100%{opacity:1}50%{opacity:.45}}'
+    + '#descarte-sec{margin:0 0 18px;background:var(--bg2);border:1px solid var(--red,#e05252);border-radius:var(--r2,14px);overflow:hidden}'
+    + '#descarte-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;cursor:pointer;background:var(--red-bg,rgba(224,82,82,.08))}'
+    + '#descarte-head .t{font-size:13px;font-weight:700;color:var(--red,#e05252);display:flex;align-items:center;gap:8px}'
+    + '#descarte-body{padding:14px 16px;display:none}#descarte-body.on{display:block}'
+    + '.desc-card{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:12px 14px;margin-bottom:10px}'
+    + '.desc-top{display:flex;align-items:center;justify-content:space-between;gap:8px}'
+    + '.desc-name{font-weight:700;color:var(--text)}'
+    + '.desc-motivo{font-size:12px;color:var(--text2);margin-top:4px}'
+    + '.desc-fecha{font-size:11px;color:var(--text3);margin-top:2px}'
+    + '.desc-bar{height:8px;background:var(--surface2);border-radius:99px;overflow:hidden;margin-top:8px}'
+    + '.desc-bar > i{display:block;height:100%;background:var(--red,#e05252);border-radius:99px}'
+    + '.desc-acts{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}'
+    + '.desc-hist{margin-top:8px;font-size:11px;color:var(--text2);background:var(--bg2);border-radius:8px;padding:8px 10px;display:none}'
+    + '.desc-hist.on{display:block}'
+    + '.f6tg{display:flex;gap:8px}.f6tg label{flex:1}'
+    + '#f6-toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:11px 18px;border-radius:99px;font-size:13px;font-weight:600;z-index:10000;opacity:0;transition:opacity .2s;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.3)}'
+    + '#f6-toast.on{opacity:1}#f6-toast.err{background:var(--red,#e05252);color:#fff}';
+  document.head.appendChild(css);
+
+  // ── Badge de score (solo hembras) ──
+  window._scoreBadge = function(a){
+    if(a.sexo !== 'H') return '';
+    if(a.candidata_descarte) return '<span class="score-b sb-desc">⛔ Descarte</span>';
+    var s = a.score_materno;
+    if(s == null) return '';
+    var cls = s>=70?'sb-g':(s>=40?'sb-a':'sb-r');
+    var ico = s>=70?'♥':(s>=40?'⚠':'🔴');
+    return '<span class="score-b '+cls+'">'+ico+' '+s+'</span>';
+  };
+  // ── Botón de evaluación (solo hembras, solo creadores) ──
+  window._evalBtn = function(a){
+    if(a.sexo !== 'H' || !window._PUEDE_EVAL) return '';
+    var nm = (a.nombre || a.codigo || '').replace(/'/g,'');
+    return '<button class="btn btn-ghost btn-xs" title="Evaluación materna" onclick="event.stopPropagation();abrirEval(\''+(a._uuid||a.id)+'\',\''+f6esc(nm)+'\')">＋ Eval.</button>';
+  };
+
+  // ── Modal de evaluación ──
+  window.abrirEval = async function(uuid, nombre){
+    if(!window._PUEDE_EVAL){ f6toast('Sin permiso para evaluar', true); return; }
+    document.getElementById('eval-title').textContent = 'Evaluación materna — ' + (nombre||'oveja');
+    var body = document.getElementById('eval-body');
+    body.innerHTML = '<div style="font-size:12px;color:var(--text3)">Cargando lactancias…</div>';
+    openModal('m-eval');
+    var lactOpts = '<option value="">— Sin asociar —</option>';
+    try{
+      if(DB.getLactancias){
+        var r = await DB.getLactancias(true);
+        ((r&&r.data)||[]).filter(function(l){ return l.animal_id===uuid; }).forEach(function(l){
+          lactOpts += '<option value="'+l.id+'">Parto '+f6esc(l.fecha_parto)+'</option>';
+        });
+      }
+    }catch(e){}
+    body.innerHTML =
+        '<div class="fg"><label class="fl">Lactancia asociada (opcional)</label><select class="fi" id="ev-lact">'+lactOpts+'</select></div>'
+      + '<div class="fg"><label class="fl">Fecha</label><input class="fi" type="date" id="ev-fecha" value="'+hoyISO()+'"></div>'
+      + '<div class="fg"><label class="fl">¿Aceptó corderos?</label><select class="fi" id="ev-acepto"><option value="true">Sí</option><option value="false">No</option></select></div>'
+      + '<div class="fg"><label class="fl">¿Leche suficiente?</label><select class="fi" id="ev-leche"><option value="true">Sí</option><option value="false">No</option></select></div>'
+      + '<div class="fg"><label class="fl">¿Mastitis?</label><select class="fi" id="ev-mast"><option value="false">No</option><option value="true">Sí</option></select></div>'
+      + '<div class="f6tg"><div class="fg" style="flex:1"><label class="fl">Corderos nacidos</label><input class="fi" type="number" id="ev-nac" min="0" step="1" value="1"></div>'
+      + '<div class="fg" style="flex:1"><label class="fl">Destetados vivos</label><input class="fi" type="number" id="ev-dest" min="0" step="1" value="1"></div></div>'
+      + '<div class="fg"><label class="fl">Observación (opcional)</label><textarea class="fi" id="ev-obs" rows="2"></textarea></div>'
+      + '<div id="ev-msg" style="font-size:12px;min-height:16px;color:var(--red)"></div>'
+      + '<button class="btn btn-primary" style="width:100%" id="ev-save" onclick="guardarEval(\''+uuid+'\')">Guardar evaluación</button>';
+  };
+
+  window.guardarEval = async function(uuid){
+    var btn = document.getElementById('ev-save'); if(btn){ btn.disabled=true; btn.textContent='Guardando…'; }
+    function val(id){ return document.getElementById(id).value; }
+    var nac = parseInt(val('ev-nac'),10); if(isNaN(nac)) nac=0;
+    var dest = parseInt(val('ev-dest'),10); if(isNaN(dest)) dest=0;
+    try{
+      var res = await DB.createEvaluacionMaterna({
+        animal_id: uuid,
+        lactancia_id: val('ev-lact') || null,
+        fecha: val('ev-fecha') || hoyISO(),
+        acepto_corderos: val('ev-acepto')==='true',
+        leche_suficiente: val('ev-leche')==='true',
+        mastitis: val('ev-mast')==='true',
+        corderos_nacidos: nac,
+        corderos_destetados_vivos: dest,
+        observacion: val('ev-obs') || null,
+        evaluado_por: miId()
+      });
+      if(res.error) throw res.error;
+      // recalcular (idempotente) para obtener score/candidata y reflejar en la tabla
+      var r = await DB.recalcularScoreMaterno(uuid);
+      var it = (window.allAnimales||[]).find(function(x){ return (x._uuid||x.id)===uuid; });
+      if(it){ it.score_materno=r.score; it.candidata_descarte=r.candidata_descarte; it.motivo_descarte=r.motivo_descarte; if(r.candidata_descarte && !it.fecha_flag_descarte) it.fecha_flag_descarte=hoyISO(); }
+      closeModal('m-eval');
+      f6toast('Evaluación guardada · score ' + r.score + '/100');
+      if(typeof renderTabla==='function') try{ renderTabla(); }catch(e){}
+      loadDescarte();
+    }catch(e){
+      if(btn){ btn.disabled=false; btn.textContent='Guardar evaluación'; }
+      var m=document.getElementById('ev-msg'); if(m) m.textContent='Error al guardar.';
+    }
+  };
+
+  // ── Lista de descarte ──
+  window.loadDescarte = async function(){
+    var sec = document.getElementById('descarte-sec');
+    if(!sec || sec.style.display==='none') return;
+    var body = document.getElementById('descarte-body');
+    try{
+      var r = await DB.getCandidatasDescarte();
+      var cands = (r&&r.data)||[];
+      var cnt = document.getElementById('descarte-count'); if(cnt) cnt.textContent = cands.length;
+      if(!cands.length){
+        body.innerHTML = '<div style="font-size:13px;color:var(--text3);text-align:center;padding:8px">No hay ovejas candidatas a descarte actualmente.</div>';
+        return;
+      }
+      body.innerHTML = cands.map(function(a){
+        var s = a.score_materno!=null ? a.score_materno : 0;
+        var nm = a.nombre || a.codigo || 'Oveja';
+        return '<div class="desc-card">'
+          + '<div class="desc-top"><div class="desc-name">'+f6esc(nm)+(a.codigo?(' · '+f6esc(a.codigo)):'')+'</div>'
+          +   '<div style="font-weight:700;color:var(--red)">'+s+'/100</div></div>'
+          + '<div class="desc-bar"><i style="width:'+s+'%"></i></div>'
+          + '<div class="desc-motivo">'+f6esc(a.motivo_descarte||'—')+'</div>'
+          + (a.fecha_flag_descarte?('<div class="desc-fecha">Flaggeada desde: '+f6esc(a.fecha_flag_descarte)+'</div>'):'')
+          + '<div class="desc-acts">'
+          +   '<button class="btn btn-ghost btn-xs" onclick="verHistorialEval(\''+a.id+'\',this)">Ver historial</button>'
+          +   (window._PUEDE_DESCARTAR?('<button class="btn btn-ghost btn-xs" onclick="marcarDescarte(\''+a.id+'\',\''+f6esc(nm).replace(/\x27/g,'')+'\')">Marcar vendida/sacrificada</button>'):'')
+          + '</div>'
+          + '<div class="desc-hist" id="hist-'+a.id+'"></div>'
+          + '</div>';
+      }).join('');
+    }catch(e){ body.innerHTML='<div style="font-size:12px;color:var(--text3)">No se pudo cargar la lista.</div>'; }
+  };
+
+  window.verHistorialEval = async function(animalId, btn){
+    var box = document.getElementById('hist-'+animalId);
+    if(!box) return;
+    if(box.classList.contains('on')){ box.classList.remove('on'); return; }
+    box.classList.add('on'); box.innerHTML='Cargando…';
+    try{
+      var r = await DB.getEvaluacionesMaternas(animalId);
+      var evals = (r&&r.data)||[];
+      if(!evals.length){ box.innerHTML='Sin evaluaciones.'; return; }
+      box.innerHTML = evals.map(function(e){
+        var surv = (Number(e.corderos_nacidos)||0)>0 ? Math.round((Number(e.corderos_destetados_vivos)||0)/(Number(e.corderos_nacidos)||1)*100)+'%' : '—';
+        return '<div style="padding:4px 0;border-bottom:1px solid var(--border)">'+f6esc(e.fecha)+' · '
+          + (e.acepto_corderos?'aceptó':'<b style="color:var(--red)">rechazó</b>')
+          + (e.mastitis?' · <b style="color:var(--red)">mastitis</b>':'')
+          + (e.leche_suficiente?'':' · sin leche')
+          + ' · superv. '+surv+'</div>';
+      }).join('');
+    }catch(e){ box.innerHTML='Error.'; }
+  };
+
+  window.marcarDescarte = async function(animalId, nombre){
+    if(!window._PUEDE_DESCARTAR){ f6toast('Sin permiso', true); return; }
+    if(!confirm('¿Marcar a '+(nombre||'esta oveja')+' como vendida/sacrificada? Saldrá del inventario activo.')) return;
+    try{
+      // Conecta con el estado del animal: lo marca descartado y resuelve el flag.
+      var res = await DB.saveAnimal({ id: animalId, estado: 'descartado', candidata_descarte: false, fecha_flag_descarte: null });
+      if(res.error) throw res.error;
+      f6toast('Oveja marcada como descartada');
+      loadDescarte();
+    }catch(e){ f6toast('No se pudo marcar', true); }
+  };
+
+  // ── Inyectar la sección de descarte (antes de la tabla) ──
+  function injectSection(){
+    if(document.getElementById('descarte-sec')) return;
+    var anchor = document.querySelector('.table-wrap');
+    if(!anchor || !anchor.parentNode) return;
+    var sec = document.createElement('div');
+    sec.id = 'descarte-sec'; sec.style.display = 'none';
+    sec.innerHTML =
+        '<div id="descarte-head" onclick="document.getElementById(\'descarte-body\').classList.toggle(\'on\')">'
+      +   '<div class="t">⛔ Candidatas a descarte <span class="score-b sb-r" id="descarte-count">0</span></div>'
+      +   '<div style="font-size:11px;color:var(--text3)">toca para ver/ocultar</div>'
+      + '</div><div id="descarte-body"></div>';
+    anchor.parentNode.insertBefore(sec, anchor);
+  }
+
+  function ready(cb){ if(window.AUTH_ROL){ cb(); return; } var n=0,iv=setInterval(function(){ if(window.AUTH_ROL||n>60){ clearInterval(iv); cb(); } n++; },100); }
+  injectSection();
+  ready(function(){
+    var r = rol();
+    window._PUEDE_EVAL = inSet(r, ['gerente','administrador','admin','veterinario']);
+    window._PUEDE_DESCARTAR = inSet(r, ['gerente','administrador','admin']);
+    var veDescarte = inSet(r, ['gerente','administrador','admin','socio']);
+    if(veDescarte){ var sec=document.getElementById('descarte-sec'); if(sec){ sec.style.display=''; loadDescarte(); } }
+    if(typeof renderTabla==='function' && Array.isArray(window.allAnimales)) try{ renderTabla(); }catch(e){}
+  });
+  // Re-cargar descarte cuando AppState termina (por si auth resolvió antes)
+  document.addEventListener('appstate:ready', function(){ setTimeout(function(){ if(window.loadDescarte) loadDescarte(); }, 300); });
+})();
+</script>
 </body>
 </html>

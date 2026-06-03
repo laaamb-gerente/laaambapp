@@ -222,6 +222,9 @@ window.AlertasMotor = {
     // ── 11. LECHE — control lechero (Fase 4). Mismo patrón independiente.
     await this._alertasLeche(alertas, hoy);
 
+    // ── 12. DESCARTE — score materno (Fase 6). Mismo patrón independiente.
+    await this._alertasDescarte(alertas, hoy);
+
     // Ordenar por prioridad
     const orden = { critica: 0, alta: 1, media: 2, baja: 3 };
     alertas.sort((a, b) =>
@@ -372,6 +375,34 @@ window.AlertasMotor = {
       });
     } catch (e) {
       console.warn('[AlertasMotor] Leche:', e && e.message);
+    }
+  },
+
+  // ── 12. DESCARTE — nuevas candidatas a descarte (Fase 6) ──
+  // Independiente y defensivo: usa window._sb directo. Solo alerta las
+  // flaggeadas HOY (fecha_flag_descarte = hoy) para no repetir cada día.
+  async _alertasDescarte(alertas, hoy) {
+    try {
+      const sb = window._sb;
+      if (!sb) return;
+      const hoyStr = hoy.toISOString().split('T')[0];
+      const { data: cands } = await sb
+        .from('animales')
+        .select('id, codigo, nombre, motivo_descarte, fecha_flag_descarte')
+        .eq('candidata_descarte', true)
+        .eq('fecha_flag_descarte', hoyStr);
+      (cands || []).forEach(a => {
+        const nombre = a.nombre || a.codigo || 'oveja';
+        alertas.push({
+          tipo: 'nueva_candidata_descarte', prioridad: 'alta',
+          mensaje: `⛔ Nueva candidata a descarte — ${nombre}: ${a.motivo_descarte || 'criterios de descarte cumplidos'}`,
+          accion_sugerida: 'Revisar historial y decidir venta/sacrificio',
+          accion_url: 'animales.html',
+          datos: { animal_id: a.id }
+        });
+      });
+    } catch (e) {
+      console.warn('[AlertasMotor] Descarte:', e && e.message);
     }
   },
 

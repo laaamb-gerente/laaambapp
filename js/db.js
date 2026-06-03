@@ -1094,6 +1094,115 @@ window.DB = {
     };
   },
 
+  // ── EVALUACIONES MATERNAS / SCORE (migración 0044) ───────────────────
+
+  async getEvaluacionesMaternas(animalId) {
+    return await window._sb.from('evaluaciones_maternas')
+      .select('*')
+      .eq('animal_id', animalId)
+      .order('fecha', { ascending: false });
+  },
+  // datos = { animal_id, lactancia_id?, fecha?, acepto_corderos,
+  //           leche_suficiente, mastitis, corderos_nacidos,
+  //           corderos_destetados_vivos, observacion?, evaluado_por? }
+  async createEvaluacionMaterna(datos) {
+    const res = await window._sb.from('evaluaciones_maternas')
+      .insert(datos).select().single();
+    if (!res.error && datos.animal_id) {
+      try { await this.recalcularScoreMaterno(datos.animal_id); } catch (e) { /* no romper el insert */ }
+    }
+    return res;
+  },
+  // Recalcula score 0-100 + candidata_descarte + motivo, y lo graba en animales.
+  async recalcularScoreMaterno(animalId) {
+    const ev = await this.getEvaluacionesMaternas(animalId);
+    const evals = (ev && ev.data) || [];
+    let score = 100;
+    let nRechazo = 0, nMastitis = 0;
+    let sumSurv = 0, nSurv = 0;
+    evals.forEach(e => {
+      // Penalizaciones
+      if (e.acepto_corderos === false) { score -= 20; nRechazo++; }
+      if (e.mastitis === true) { score -= 15; nMastitis++; }
+      if (e.leche_suficiente === false) score -= 8;
+      const nac = Number(e.corderos_nacidos) || 0;
+      const dest = Number(e.corderos_destetados_vivos) || 0;
+      const surv = nac > 0 ? (dest / nac) : null;
+      if (surv != null) {
+        sumSurv += surv; nSurv++;
+        if (surv < 0.5) score -= 12;
+        else if (surv < 0.8) score -= 5;
+        // Bonificaciones
+        if (surv >= 1) score += 5;
+      }
+      if (e.acepto_corderos === true && e.leche_suficiente === true) score += 3;
+    });
+    score = Math.max(0, Math.min(100, score));
+    const promSurv = nSurv ? (sumSurv / nSurv) : null;
+
+    // Criterios de descarte (≥1 activa la candidatura)
+    const motivos = [];
+    if (score < 40) motivos.push('Score ' + score + '/100');
+    if (nRechazo >= 2) motivos.push('Rechazo reiterado (' + nRechazo + ' episodios)');
+    if (nMastitis >= 3) motivos.push('Mastitis crónica (' + nMastitis + ' episodios)');
+    if (nSurv >= 2 && promSurv != null && promSurv < 0.5) motivos.push('Baja supervivencia (' + Math.round(promSurv * 100) + '%)');
+    const candidata = motivos.length > 0;
+    const motivo = candidata ? motivos.join('; ') : null;
+
+    // Solo poner fecha_flag_descarte cuando se ACTIVA (si ya estaba flaggeada, no
+    // pisar la fecha original; si se desactiva, limpiar).
+    let fechaFlag;
+    if (candidata) {
+      const cur = await window._sb.from('animales')
+        .select('candidata_descarte, fecha_flag_descarte').eq('id', animalId).single();
+      const yaFlag = cur && cur.data && cur.data.candidata_descarte;
+      fechaFlag = yaFlag && cur.data.fecha_flag_descarte
+        ? cur.data.fecha_flag_descarte
+        : new Date().toISOString().split('T')[0];
+    } else {
+      fechaFlag = null;
+    }
+
+    await window._sb.from('animales').update({
+      score_materno: score,
+      candidata_descarte: candidata,
+      motivo_descarte: motivo,
+      fecha_flag_descarte: fechaFlag,
+      updated_at: new Date()
+    }).eq('id', animalId);
+
+    return { score, candidata_descarte: candidata, motivo_descarte: motivo };
+  },
+  // Ovejas marcadas candidatas a descarte, peores primero.
+  async getCandidatasDescarte() {
+    return await window._sb.from('animales')
+      .select('id, codigo, nombre, raza, sexo, estado, score_materno, candidata_descarte, motivo_descarte, fecha_flag_descarte')
+      .eq('candidata_descarte', true)
+      .order('score_materno', { ascending: true });
+  },
+  // Resumen para la ficha de la oveja.
+  async getEvaluacionesResumen(animalId) {
+    const ev = await this.getEvaluacionesMaternas(animalId);
+    const evals = (ev && ev.data) || [];
+    let nRechazo = 0, nMastitis = 0, sumSurv = 0, nSurv = 0;
+    evals.forEach(e => {
+      if (e.acepto_corderos === false) nRechazo++;
+      if (e.mastitis === true) nMastitis++;
+      const nac = Number(e.corderos_nacidos) || 0;
+      if (nac > 0) { sumSurv += (Number(e.corderos_destetados_vivos) || 0) / nac; nSurv++; }
+    });
+    const an = await window._sb.from('animales')
+      .select('score_materno, candidata_descarte').eq('id', animalId).single();
+    return {
+      total_partos_evaluados: evals.length,
+      episodios_rechazo: nRechazo,
+      episodios_mastitis: nMastitis,
+      promedio_supervivencia_pct: nSurv ? Math.round((sumSurv / nSurv) * 100) : null,
+      score_actual: an && an.data ? an.data.score_materno : null,
+      candidata: an && an.data ? !!an.data.candidata_descarte : false
+    };
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();
