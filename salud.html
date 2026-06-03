@@ -574,13 +574,6 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
                 <label class="fl">Medicamento *</label>
                 <select class="fi" id="calc-med" onchange="calcDosis()">
                   <option value="">Seleccionar…</option>
-                  <option value="ivermectina|0.2|mL/10kg|SC">Ivermectina 1% (0.2 mL/10kg SC)</option>
-                  <option value="oxitetra|5|mL/10kg|IM">Oxitetraciclina 20% (5 mL/10kg IM)</option>
-                  <option value="florfe|0.67|mL/10kg|SC">Florfenicol 30% (0.67 mL/10kg SC)</option>
-                  <option value="oxfen|5|mg/kg|VO">Oxfendazol 10% (5 mg/kg VO)</option>
-                  <option value="closantel|5|mg/kg|VO">Closantel 10% (5 mg/kg VO)</option>
-                  <option value="vitade|0.05|mL/kg|IM">Vitamina ADE (0.05 mL/kg IM)</option>
-                  <option value="melox|0.5|mg/kg|SC">Meloxicam (0.5 mg/kg SC)</option>
                   <option value="custom|0|mL/10kg|IM">Personalizado…</option>
                 </select>
               </div>
@@ -620,10 +613,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
             <div class="form-grid" style="margin-bottom:14px">
               <div class="fg"><label class="fl">Medicamento</label>
                 <select class="fi" id="tabla-med" onchange="generarTabla()">
-                  <option value="0.2|mL/10kg">Ivermectina 1% (0.2 mL/10kg)</option>
-                  <option value="5|mL/10kg">Oxitetraciclina 20% (5 mL/10kg)</option>
-                  <option value="0.67|mL/10kg">Florfenicol 30% (0.67 mL/10kg)</option>
-                  <option value="5|mg/kg">Oxfendazol (5 mg/kg)</option>
+                  <option value="0.2|mL/10kg">— Cargando… —</option>
                 </select>
               </div>
               <div class="fg"><label class="fl">Rango (kg mín - máx)</label>
@@ -837,11 +827,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div class="form-grid">
       <div class="fg"><label class="fl">Medicamento *</label>
         <select class="fi" id="tg-med" onchange="calcDosisTratGrupal()">
-          <option value="0.2|mL/10kg|14">Ivermectina 1% (ret. 14d)</option>
-          <option value="5|mg/kg|7">Oxfendazol 10% (ret. 7d)</option>
-          <option value="5|mg/kg|42">Closantel 10% (ret. 42d)</option>
-          <option value="0.05|mL/kg|0">Vitamina ADE (ret. 0d)</option>
-          <option value="0.2|mL/10kg|0">Vitamina B12 (ret. 0d)</option>
+          <option value="">— Cargando medicamentos… —</option>
         </select>
       </div>
       <div class="fg"><label class="fl">Dosis por animal</label>
@@ -926,7 +912,7 @@ function switchTab(el,id){
   el.classList.add('active');
   document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
   document.getElementById(id).style.display='block';
-  if(id==='t-calculadora') generarTabla();
+  if(id==='t-calculadora'){ if(typeof poblarCalculadoraMeds==='function') poblarCalculadoraMeds(); generarTabla(); }
   if(id==='t-medicamentos') renderMeds(MEDICAMENTOS);
   if(id==='t-calendario') renderCalendario();
   if(id==='t-activos' && typeof loadDosisHoy==='function') loadDosisHoy();
@@ -1216,18 +1202,9 @@ function _parseDosisEstandar(txt){
   if(m){ return { factor:parseFloat(m[1]), unidad:m[2].replace(/\s+/g,'') }; }
   return { factor:NaN, unidad:(String(txt||'').trim()||'según indicación') };
 }
-function _llenarMedsSelect(meds){
-  var sel=document.getElementById('ti-med'); if(!sel) return;
-  meds=(meds||[]).filter(function(m){ return m && m.activo!==false; });
-  var linkPrev=document.getElementById('ti-med-link'); if(linkPrev) linkPrev.remove();
-  if(!meds.length){
-    sel.innerHTML='<option value="">— Sin medicamentos registrados —</option>';
-    var a=document.createElement('a'); a.id='ti-med-link'; a.href='medicamentos.html';
-    a.textContent='→ Ir a Medicamentos'; a.style.cssText='display:inline-block;margin-top:6px;font-size:11px;font-weight:600;color:var(--teal);text-decoration:none';
-    if(sel.parentNode) sel.parentNode.appendChild(a);
-    return;
-  }
-  sel.innerHTML='<option value="">— Seleccionar medicamento —</option>'+meds.map(function(m){
+// Opciones para los modales de tratamiento (formato 6 partes: factor|unidad|retiro|via|medId|medNombre)
+function _medOptsModal(meds){
+  return '<option value="">— Seleccionar medicamento —</option>'+meds.map(function(m){
     var d=_parseDosisEstandar(m.dosis_estandar);
     var retiro=parseInt(m.dias_retiro,10)||0;
     var via=m.via_administracion||m.via||'IM';
@@ -1237,39 +1214,84 @@ function _llenarMedsSelect(meds){
     return '<option value="'+_medEscAttr(val)+'">'+_medEscHtml(lbl)+'</option>';
   }).join('');
 }
-function poblarMedicamentosModal(){
-  var sel=document.getElementById('ti-med'); if(!sel) return;
+// Llena cualquiera de los selects de medicamento según su formato esperado.
+function _llenarMedsSelect(selId, meds){
+  var sel=document.getElementById(selId); if(!sel) return;
+  meds=(meds||[]).filter(function(m){ return m && m.activo!==false; });
+  var linkPrev=document.getElementById('medlink-'+selId); if(linkPrev) linkPrev.remove();
+  if(!meds.length){
+    sel.innerHTML='<option value="">— Sin medicamentos registrados —</option>';
+    var a=document.createElement('a'); a.id='medlink-'+selId; a.href='medicamentos.html';
+    a.textContent='→ Ir a Medicamentos'; a.style.cssText='display:inline-block;margin-top:6px;font-size:11px;font-weight:600;color:var(--teal);text-decoration:none';
+    if(sel.parentNode) sel.parentNode.appendChild(a);
+    return;
+  }
+  if(selId==='calc-med'){
+    // Calculadora: formato medId|factor|unidad|via (calcDosis lee parts[1],[2],[3]) + Personalizado
+    sel.innerHTML='<option value="">Seleccionar…</option>'+meds.map(function(m){
+      var d=_parseDosisEstandar(m.dosis_estandar); var via=m.via_administracion||m.via||'IM';
+      var val=[ (m.id||'x'), (isNaN(d.factor)?'':d.factor), d.unidad, via ].join('|');
+      return '<option value="'+_medEscAttr(val)+'">'+_medEscHtml((m.nombre||'Medicamento')+(m.dosis_estandar?(' ('+m.dosis_estandar+')'):''))+'</option>';
+    }).join('')+'<option value="custom|0|mL/10kg|IM">Personalizado…</option>';
+    return;
+  }
+  if(selId==='tabla-med'){
+    // Tabla: formato factor|unidad (generarTabla lee parts[0],[1]); solo meds con factor numérico
+    var conF=meds.filter(function(m){ return !isNaN(_parseDosisEstandar(m.dosis_estandar).factor); });
+    var src=conF.length?conF:meds;
+    sel.innerHTML=src.map(function(m){
+      var d=_parseDosisEstandar(m.dosis_estandar);
+      var val=[ (isNaN(d.factor)?0.2:d.factor), (d.unidad.indexOf('/')>=0?d.unidad:'mL/10kg') ].join('|');
+      return '<option value="'+_medEscAttr(val)+'">'+_medEscHtml((m.nombre||'Medicamento')+(m.dosis_estandar?(' ('+m.dosis_estandar+')'):''))+'</option>';
+    }).join('');
+    if(typeof generarTabla==='function') generarTabla();
+    return;
+  }
+  // ti-med / tg-med
+  sel.innerHTML=_medOptsModal(meds);
+}
+// Obtiene medicamentos (AppState o Supabase) y llena el select indicado.
+function _poblarMed6(selId){
+  if(!document.getElementById(selId)) return;
   var meds=(window.AppState && window.AppState.medicamentos) || [];
-  if(meds.length){ _llenarMedsSelect(meds); return; }
-  // AppState aún cargando → traer de Supabase directamente.
+  if(meds.length){ _llenarMedsSelect(selId, meds); return; }
   if(window.DB && typeof window.DB.getMedicamentos==='function'){
     window.DB.getMedicamentos('a1b2c3d4-0000-0000-0000-000000000001')
-      .then(function(r){ _llenarMedsSelect((r&&r.data)||[]); })
-      .catch(function(){ _llenarMedsSelect([]); });
-  } else {
-    _llenarMedsSelect([]);
-  }
+      .then(function(r){ _llenarMedsSelect(selId, (r&&r.data)||[]); })
+      .catch(function(){ _llenarMedsSelect(selId, []); });
+  } else { _llenarMedsSelect(selId, []); }
 }
-// Poblar cuando se abre el modal de tratamiento individual.
+function poblarMedicamentosModal(){ _poblarMed6('ti-med'); }            // individual (compat)
+function poblarMedicamentosGrupal(){ _poblarMed6('tg-med'); }          // grupal
+function poblarCalculadoraMeds(){ _poblarMed6('calc-med'); _poblarMed6('tabla-med'); }
+// Poblar al abrir cada modal.
 (function(){
   var _orig=window.openModal;
   window.openModal=function(id){
     if(typeof _orig==='function') _orig(id);
     if(id==='modal-trat-individual') poblarMedicamentosModal();
+    if(id==='modal-trat-grupal') poblarMedicamentosGrupal();
   };
 })();
-// Y al estar listos los datos (por si el usuario abre el modal antes de tocar nada).
-document.addEventListener('appstate:ready', function(){ setTimeout(poblarMedicamentosModal, 200); });
+// Y al estar listos los datos.
+document.addEventListener('appstate:ready', function(){ setTimeout(function(){
+  poblarMedicamentosModal(); poblarMedicamentosGrupal(); poblarCalculadoraMeds();
+}, 200); });
 
 function calcDosisTratGrupal(){
   const medRaw=document.getElementById('tg-med')?.value;
   const peso=parseFloat(document.getElementById('tg-peso')?.value)||0;
   const n=parseInt(document.getElementById('tg-n')?.value)||0;
-  if(!medRaw||!peso)return;
+  if(!medRaw)return;
   const parts=medRaw.split('|');
   const factor=parseFloat(parts[0]);
-  const unidad=parts[1];
-  const retiro=parts[2];
+  const unidad=parts[1]||'';
+  const retiro=parts[2]||'0';
+  const rl0=document.getElementById('tg-retiro-label'); if(rl0) rl0.textContent=retiro;
+  if(isNaN(factor) || !peso){
+    const da0=document.getElementById('tg-dosis-animal'); if(da0) da0.value=isNaN(factor)?(unidad||'según indicación'):'Ingresa peso';
+    return;
+  }
   let dosisPorAnimal=unidad.includes('/10kg')?factor*peso/10:factor*peso;
   const da=document.getElementById('tg-dosis-animal');
   const dt=document.getElementById('tg-dosis-total');
@@ -1384,18 +1406,11 @@ function loadFromAppData(){
     });
   });
 
-  // ── Actualizar selector de medicamentos en los modales ─────────────────────
-  ['ti-med','tg-med'].forEach(selId=>{
-    const sel=document.getElementById(selId);
-    if(!sel||!MEDICAMENTOS.length) return;
-    // Si AppData tiene medicamentos, reemplazar opciones
-    const primero=sel.querySelector('option');
-    if(primero&&!primero.value.includes('AppData')) {
-      sel.innerHTML=MEDICAMENTOS.map(m=>
-        `<option value="${m.stock}|mL|${m.retiro}|IM|${m.id}|${m.nombre}">${m.nombre} — ret. ${m.retiro}d (stock: ${m.stock}mL)</option>`
-      ).join('');
-    }
-  });
+  // ── Repoblar selectores de medicamentos con datos reales (formato correcto) ──
+  if(typeof _poblarMed6==='function'){
+    _poblarMed6('ti-med'); _poblarMed6('tg-med');
+    if(typeof poblarCalculadoraMeds==='function') poblarCalculadoraMeds();
+  }
 
   // ── Actualizar selectores de lote ──────────────────────────────────────────
   const lotes=d.lotes||[];
