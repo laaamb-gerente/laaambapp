@@ -208,6 +208,86 @@ window.AlertasMotor = {
         }
       }
 
+      // 10. SALA CUNA — crianza artificial (Fase 3).
+      // Evaluado dentro de este mismo ciclo (sin ciclo paralelo).
+      if (window.DB && typeof window.DB.getCorderosCrianza === 'function') {
+        try {
+          const rc = await window.DB.getCorderosCrianza(true);
+          const corderosCC = (rc && rc.data) || [];
+          const ccMap = {};
+          corderosCC.forEach(c => { ccMap[c.id] = c; });
+          const nombreCC = (c) => (c && c.cordero && (c.cordero.nombre || c.cordero.codigo)) || 'cordero';
+
+          // 10a. toma_pendiente (warning): pendiente con ≤15 min para vencer.
+          const rt = await window.DB.getTomasPendientes({});
+          (rt && rt.data || []).forEach(t => {
+            const min = Math.round((new Date(t.fecha_hora_programada) - hoy) / 60000);
+            if (min >= 0 && min <= 15) {
+              alertas.push({
+                tipo: 'toma_pendiente', prioridad: 'alta',
+                mensaje: `Toma pendiente — ${nombreCC(ccMap[t.corderos_crianza_id])}, ${t.tipo}, en ${min} min`,
+                accion_sugerida: 'Registrar la toma en Sala Cuna',
+                accion_url: 'sala-cuna.html',
+                datos: { toma_id: t.id, min }
+              });
+            }
+          });
+
+          // 10b. toma_perdida (danger): estado 'perdida' marcada en las últimas 2h.
+          const dosHoras = new Date(hoy.getTime() - 2 * 3600000).toISOString();
+          const { data: perdidas } = await window._sb
+            .from('tomas_programadas')
+            .select('id, tipo, corderos_crianza_id')
+            .eq('estado', 'perdida')
+            .gte('updated_at', dosHoras);
+          (perdidas || []).forEach(t => {
+            alertas.push({
+              tipo: 'toma_perdida', prioridad: 'critica',
+              mensaje: `Toma perdida — ${nombreCC(ccMap[t.corderos_crianza_id])}, ${t.tipo} no registrada`,
+              accion_sugerida: 'Verificar al cordero y reforzar la siguiente toma',
+              accion_url: 'sala-cuna.html',
+              datos: { toma_id: t.id }
+            });
+          });
+
+          // 10c/10d. Calostro faltante + bajo crecimiento, por cordero.
+          for (const c of corderosCC) {
+            const animalId = c.cordero_id;
+            // 10c. calostro_faltante (danger, máxima): >6h sin calostro registrado.
+            if (c.fecha_inicio) {
+              const horas = Math.floor((hoy - new Date(c.fecha_inicio)) / 3600000);
+              if (horas > 6) {
+                let totalCal = 0;
+                try { totalCal = await window.DB.getCalostroTotal24h(animalId); } catch (e) {}
+                if (!totalCal) {
+                  alertas.push({
+                    tipo: 'calostro_faltante', prioridad: 'critica',
+                    mensaje: `⚠️ Sin calostro — ${nombreCC(c)} lleva ${horas}h sin calostro registrado`,
+                    accion_sugerida: 'Administrar calostro URGENTE',
+                    accion_url: 'sala-cuna.html',
+                    datos: { cordero_id: animalId, horas }
+                  });
+                }
+              }
+            }
+            // 10d. cordero_bajo_peso (warning): GMD < 100 g/día con ≥2 pesajes.
+            let gmd = null;
+            try { gmd = await window.DB.calcularGMD(animalId); } catch (e) {}
+            if (gmd != null && gmd < 0.1) {
+              alertas.push({
+                tipo: 'cordero_bajo_peso', prioridad: 'media',
+                mensaje: `Bajo crecimiento — ${nombreCC(c)}: GMD ${Math.round(gmd * 1000)} g/día (mín: 100)`,
+                accion_sugerida: 'Revisar tomas, salud y temperatura del sustituto',
+                accion_url: 'sala-cuna.html',
+                datos: { cordero_id: animalId, gmd: Math.round(gmd * 1000) }
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('[AlertasMotor] Sala Cuna:', e.message);
+        }
+      }
+
     } catch (e) {
       console.warn('[AlertasMotor] Error generando alertas:', e.message);
     }

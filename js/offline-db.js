@@ -7,7 +7,7 @@
 window.OfflineDB = {
   _db: null,
   _dbName: 'laaambapp_offline',
-  _version: 1,
+  _version: 2,
 
   async init() {
     return new Promise((resolve, reject) => {
@@ -19,6 +19,7 @@ window.OfflineDB = {
         // Store para cada entidad principal
         ['animales','lotes','pesajes','eventos',
          'tratamientos','eventos_reproductivos',
+         'tomas_programadas_cache',  // agenda local de Sala Cuna (Fase 3)
          'sync_queue'  // cola de operaciones pendientes
         ].forEach(store => {
           if (!db.objectStoreNames.contains(store)) {
@@ -48,6 +49,17 @@ window.OfflineDB = {
       const s = tx.objectStore(store);
       const items = Array.isArray(datos) ? datos : [datos];
       items.forEach(item => s.put(item));
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    });
+  },
+
+  // Vaciar un store completo (cache local; no afecta la cola de sync)
+  async vaciar(store) {
+    if (!this._db) await this.init();
+    return new Promise((resolve, reject) => {
+      const tx = this._db.transaction(store, 'readwrite');
+      tx.objectStore(store).clear();
       tx.oncomplete = () => resolve(true);
       tx.onerror = () => reject(tx.error);
     });
