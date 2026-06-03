@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00AFB6">
+<meta name="apple-mobile-web-app-title" content="LAAAMB">
+<link rel="apple-touch-icon" href="icons/icon-laaamb.jpg">
+<title>LAAAMB · Queso de especialidad · Trazabilidad</title>
+<link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<!-- Supabase JS SDK (PÚBLICO — sin autenticación) -->
+<script src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js" crossorigin="anonymous"></script>
+<script src="js/error-handler.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script>
+  window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--teal:#00AFB6;--teal-d:#008a90;--teal-l:#39d4db;--bg:#0a0f14;--bg2:#121a21;--bg3:#19242d;
+  --green:#2ec77a;--amber:#e8a030;--red:#e05252;--gold:#d9b25a;
+  --text:#e2f3f4;--text2:#8fbabf;--text3:#52828a;--text4:#33565c;
+  --border:rgba(0,175,182,.16);--border2:rgba(0,175,182,.28);--r:14px;--r2:18px}
+html,body{background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:15px;line-height:1.55;min-height:100vh}
+body{background:radial-gradient(circle at 50% -10%,rgba(0,175,182,.10),transparent 55%),radial-gradient(circle at 50% 105%,rgba(0,175,182,.06),transparent 45%),var(--bg)}
+.wrap{max-width:500px;margin:0 auto;padding:26px 16px 52px}
+.brand{text-align:center;margin-bottom:22px}
+.brand-logo{font-family:'Sigmar',cursive;font-size:40px;color:var(--teal);letter-spacing:1px;line-height:1;text-shadow:0 0 24px rgba(0,175,182,.35)}
+.brand-sub{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--teal-d);margin-top:5px}
+.brand-finca{font-size:11.5px;color:var(--text3);margin-top:9px;letter-spacing:.3px}
+.hero{background:linear-gradient(165deg,#16323a 0%,#0e1820 100%);border:1px solid var(--border2);border-radius:var(--r2);padding:34px 22px 28px;text-align:center;margin-bottom:18px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 50% 0%,rgba(0,175,182,.18),transparent 65%)}
+.seal{width:96px;height:96px;margin:0 auto;position:relative;display:flex;align-items:center;justify-content:center}
+.seal-ring{position:absolute;inset:0;border-radius:50%;border:2px solid var(--border2);animation:pulse 2.6s ease-in-out infinite}
+.seal-ring.r2{inset:10px;border-color:rgba(46,199,122,.30)}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.05);opacity:.7}}
+.seal-core{width:62px;height:62px;border-radius:50%;background:radial-gradient(circle at 50% 35%,#2ee08a,#1a9455);display:flex;align-items:center;justify-content:center;box-shadow:0 0 28px rgba(46,199,122,.5);position:relative}
+.seal-core svg{width:34px;height:34px;color:#06120c;stroke-width:3}
+.badge-verif{display:inline-flex;align-items:center;gap:7px;background:rgba(46,199,122,.14);border:1px solid rgba(46,199,122,.42);color:var(--green);font-size:11.5px;font-weight:700;letter-spacing:.4px;padding:6px 14px;border-radius:999px;margin-top:18px;position:relative;text-transform:uppercase}
+.hero-corte{font-family:'Sigmar',cursive;font-size:30px;color:#fff;margin-top:18px;position:relative;text-transform:capitalize;line-height:1.15}
+.hero-peso{font-size:18px;color:var(--teal-l);font-weight:700;position:relative;margin-top:2px}
+.hero-peso small{font-size:12px;color:var(--text2);font-weight:500}
+.sec{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:4px 18px;margin-bottom:16px}
+.sec-h{display:flex;align-items:center;gap:9px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.4px;color:var(--teal);padding:16px 0 10px;border-bottom:1px solid var(--border)}
+.sec-h .n{width:22px;height:22px;border-radius:50%;background:rgba(0,175,182,.14);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--teal-l);flex-shrink:0}
+.info-row{display:flex;justify-content:space-between;gap:14px;padding:12px 0;border-bottom:1px solid var(--border);font-size:14px}
+.info-row:last-child{border-bottom:none}
+.info-row .k{color:var(--text3)}
+.info-row .v{color:var(--text);font-weight:600;text-align:right}
+.info-row .v.big{font-size:18px;color:var(--teal-l)}
+.flow{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:14px 0;border-bottom:1px solid var(--border)}
+.flow-step{text-align:center;flex:1}
+.flow-step .fv{font-size:16px;font-weight:700;color:var(--text)}
+.flow-step .fl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:1px}
+.flow-arrow{color:var(--teal-d);font-size:16px;flex-shrink:0}
+.notas{font-size:13px;color:var(--text2);line-height:1.6;padding:13px 0}
+.about{background:linear-gradient(155deg,#16323a,#121a21);border:1px solid var(--border2);border-radius:var(--r2);padding:22px;margin-bottom:18px}
+.about h3{font-family:'Sigmar',cursive;font-size:19px;color:var(--teal);margin-bottom:10px}
+.about p{font-size:13px;color:var(--text2);line-height:1.65}
+.foot{text-align:center;margin-top:24px}
+.foot-qr{display:inline-flex;align-items:center;justify-content:center;background:#fff;border-radius:var(--r);padding:11px;margin-bottom:14px}
+.foot-line{font-size:11.5px;color:var(--text3);line-height:1.8}
+.foot-line b{color:var(--text2)}
+.foot a{color:var(--teal);text-decoration:none;font-weight:600}
+.center-state{min-height:72vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px}
+.center-state .brand-logo{font-size:48px}
+.center-state p{color:var(--text3);font-size:14px}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap" id="root">
+  <div class="center-state">
+    <div class="spinner"></div>
+    <p>Verificando trazabilidad…</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  var TIPO_LABEL = { fresco:'Queso fresco', semicurado:'Queso semicurado', curado:'Queso curado', manchego:'Manchego', otro:'Queso de especialidad' };
+  var MESES = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  function esc(s){ var d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
+  function fmtFecha(f){ if(!f) return '—'; var d=new Date(f+'T00:00:00'); if(isNaN(d.getTime())) return esc(f); return d.getDate()+' '+MESES[d.getMonth()]+' '+d.getFullYear(); }
+  function n1(v){ return (Math.round((+v||0)*10)/10).toLocaleString('es-CO',{minimumFractionDigits:0,maximumFractionDigits:1}); }
+  function n2(v){ return (Math.round((+v||0)*100)/100).toLocaleString('es-CO',{minimumFractionDigits:0,maximumFractionDigits:2}); }
+
+  function noEncontrado(){
+    document.getElementById('root').innerHTML =
+      '<div class="center-state">'+
+      '<div class="brand-logo">LAAAMB</div>'+
+      '<div class="brand-sub">Corderos de especialidad</div>'+
+      '<svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#52828a" stroke-width="1.4" style="margin-top:10px"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>'+
+      '<p>Lote no encontrado.<br>Verifica el código QR del empaque.</p>'+
+      '</div>';
+  }
+
+  function render(d){
+    var tipoLbl = TIPO_LABEL[d.tipo_queso] || (d.tipo_queso ? (d.tipo_queso.charAt(0).toUpperCase()+d.tipo_queso.slice(1)) : 'Queso de especialidad');
+    var rend = d.rendimiento_l_por_kg!=null ? d.rendimiento_l_por_kg : ((d.queso_kg>0)? (d.leche_usada_l/d.queso_kg) : null);
+    var html =
+      '<div class="brand">'+
+        '<div class="brand-logo">LAAAMB</div>'+
+        '<div class="brand-sub">Corderos de especialidad</div>'+
+        '<div class="brand-finca">La Marinilla · Vereda San Bernardo · Ibagué · Tolima · Colombia</div>'+
+      '</div>'+
+      '<div class="hero">'+
+        '<div class="seal"><div class="seal-ring"></div><div class="seal-ring r2"></div>'+
+          '<div class="seal-core"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div></div>'+
+        '<div class="badge-verif">✓ Trazabilidad verificada · LAAAMB</div>'+
+        '<div class="hero-corte">'+esc(tipoLbl)+'</div>'+
+        '<div class="hero-peso">'+n2(d.queso_kg)+' kg <small>· producción artesanal</small></div>'+
+      '</div>'+
+      '<div class="sec">'+
+        '<div class="sec-h"><span class="n">1</span>Ficha del lote</div>'+
+        '<div class="info-row"><span class="k">Tipo de queso</span><span class="v big">'+esc(tipoLbl)+'</span></div>'+
+        '<div class="info-row"><span class="k">Fecha de producción</span><span class="v">'+fmtFecha(d.fecha)+'</span></div>'+
+        '<div class="info-row"><span class="k">Maduración</span><span class="v">'+(Number(d.maduracion_dias)||0)+' días</span></div>'+
+        '<div class="flow">'+
+          '<div class="flow-step"><div class="fv">'+n1(d.leche_usada_l)+' L</div><div class="fl">Leche</div></div>'+
+          '<div class="flow-arrow">→</div>'+
+          '<div class="flow-step"><div class="fv">'+n2(d.queso_kg)+' kg</div><div class="fl">Queso</div></div>'+
+          '<div class="flow-arrow">→</div>'+
+          '<div class="flow-step"><div class="fv">'+(rend!=null?n1(rend):'—')+'</div><div class="fl">L / kg</div></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="sec">'+
+        '<div class="sec-h"><span class="n">2</span>Origen</div>'+
+        '<div class="info-row"><span class="k">Finca</span><span class="v">La Marinilla</span></div>'+
+        '<div class="info-row"><span class="k">Ubicación</span><span class="v">Vereda San Bernardo<br>Ibagué, Tolima</span></div>'+
+        '<div class="info-row"><span class="k">Leche</span><span class="v">Oveja · pastoreo adaptativo</span></div>'+
+        (d.notas?'<div class="notas">📝 '+esc(d.notas)+'</div>':'')+
+      '</div>'+
+      '<div class="about">'+
+        '<h3>Sobre LAAAMB</h3>'+
+        '<p>LAAAMB es un proyecto de ganadería ovina regenerativa en el Tolima. Nuestros quesos se elaboran con leche de ovejas criadas en pastoreo adaptativo multipotrero.</p>'+
+        '<p>Cada lote es trazado desde la leche cruda hasta tu mesa. Este código QR es la prueba: una historia verificable de origen y elaboración.</p>'+
+      '</div>'+
+      '<div class="foot">'+
+        '<div class="foot-qr" id="foot-qr"></div>'+
+        '<div class="foot-line"><b>Powered by LAAAMBAPP</b> · Trazabilidad verificada · LAAAMB Corderos de Especialidad<br>'+
+        '<a href="https://app.laaambcorderos.com">app.laaambcorderos.com</a></div>'+
+      '</div>';
+    document.getElementById('root').innerHTML = html;
+    var fq = document.getElementById('foot-qr');
+    if(fq && window.QRCode){
+      new QRCode(fq, { text:window.location.href, width:128, height:128, colorDark:'#0a0f14', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.H });
+    }
+  }
+
+  async function load(){
+    var id = new URLSearchParams(window.location.search).get('id');
+    if(!id){ return noEncontrado(); }
+    try{
+      var resp = await window._sb.from('quesos_lotes')
+        .select('id, fecha, tipo_queso, leche_usada_l, queso_kg, rendimiento_l_por_kg, maduracion_dias, notas')
+        .eq('id', id)
+        .single();
+      if(resp.error || !resp.data){ return noEncontrado(); }
+      render(resp.data);
+    }catch(e){ noEncontrado(); }
+  }
+  load();
+})();
+</script>
+</body>
+</html>

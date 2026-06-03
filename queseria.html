@@ -17,6 +17,7 @@
 <script src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js" crossorigin="anonymous"></script>
 <script src="js/error-handler.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/supabase-client.js"></script>
 <script>
   window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
@@ -154,6 +155,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     <a class="nav-link" href="hoy.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="14" height="14" rx="2"/><line x1="3" y1="8" x2="17" y2="8"/><line x1="7" y1="2" x2="7" y2="5"/><line x1="13" y1="2" x2="13" y2="5"/></svg>Hoy</a>
     <a class="nav-link" href="sala-cuna.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 7h6v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V7z"/><path d="M8 7l.6-2.5h2.8L12 7"/><line x1="7" y1="10.5" x2="13" y2="10.5"/></svg>Sala Cuna</a>
     <a class="nav-link" href="leche.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2h8M7 2l-.5 4.5a4 4 0 0 0-.5 2V16a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V8.5a4 4 0 0 0-.5-2L13 2"/><line x1="6.2" y1="10" x2="13.8" y2="10"/></svg>Leche</a>
+    <a class="nav-link" href="lacteo.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h14v3H3zM4 8l1 9a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-9"/><path d="M8 12h4"/></svg>Lácteo</a>
     <a class="nav-link active" href="queseria.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l7-4 7 4v5a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><circle cx="8" cy="13.5" r="1"/><circle cx="12.5" cy="13" r="1"/></svg>Quesería</a>
     <a class="nav-link" href="okr.html"><svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>OKRs &amp; Análisis</a>
     <div class="nav-group">Ganadería</div>
@@ -335,7 +337,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
         + '<div class="lote-rend '+rendCls(real)+'">Rendimiento: '+num(real,2)+' L/kg</div>'
         + cmp
         + '<div class="lote-cost">'+costoBlock+'</div>'
-        + '<button class="lote-btn" onclick="abrirDetalle(\''+l.id+'\')">'+(esCreador()?'Ver detalle / editar':'Ver detalle')+'</button>'
+        + '<div style="display:flex;gap:6px;margin-top:12px">'
+        +   '<button class="lote-btn" style="margin-top:0" onclick="abrirDetalle(\''+l.id+'\')">'+(esCreador()?'Detalle':'Ver')+'</button>'
+        +   '<button class="lote-btn" style="margin-top:0;flex:0 0 auto;width:auto;padding:9px 12px" onclick="mostrarQRQueso(\''+l.id+'\')">🔗 QR</button>'
+        + '</div>'
+        + ((l.precio_venta_kg!=null && Number(l.queso_kg)>0)
+            ? '<button class="lote-btn" style="border-color:var(--green);color:var(--green)" onclick="registrarVentaQueso(\''+l.id+'\')">📒 Registrar venta</button>'
+            : '')
         + '</div>';
     }).join('');
   }
@@ -497,7 +505,51 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     }catch(e){ btn.disabled=false; btn.textContent='Guardar cambios'; var m=document.getElementById('d-msg'); m.className='modal-msg err'; m.textContent='Error al guardar.'; }
   }
 
+  // ── QR de trazabilidad del lote ──
+  function mostrarQRQueso(id){
+    var url = 'https://laaambapp.vercel.app/qr-queso.html?id='+id;
+    var html =
+        '<div style="text-align:center;font-size:13px;color:var(--text2);margin-bottom:12px">Escanea para ver trazabilidad</div>'
+      + '<div id="qr-box" style="display:flex;justify-content:center;background:#fff;border-radius:12px;padding:14px;margin-bottom:12px"></div>'
+      + '<div style="font-size:11px;color:var(--text3);word-break:break-all;background:var(--bg3);border-radius:8px;padding:9px 11px;margin-bottom:12px" id="qr-url">'+esc(url)+'</div>'
+      + '<div style="display:flex;gap:8px">'
+      +   '<button class="btn btn-ghost" style="flex:1" onclick="copiarQR(\''+id+'\')">Copiar enlace</button>'
+      +   '<button class="btn btn-primary" style="flex:1" onclick="compartirQR(\''+id+'\')">Compartir</button>'
+      + '</div>';
+    abrirModal('QR de trazabilidad', html);
+    var box = document.getElementById('qr-box');
+    if(box && window.QRCode){ new QRCode(box, { text:url, width:200, height:200, colorDark:'#0c1517', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.H }); }
+    else if(box){ box.innerHTML = '<div style="color:#333;font-size:12px;padding:20px">No se pudo generar el QR. Usa el enlace.</div>'; }
+  }
+  function _qrUrl(id){ return 'https://laaambapp.vercel.app/qr-queso.html?id='+id; }
+  function copiarQR(id){
+    var url=_qrUrl(id);
+    if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(url).then(function(){ toast('Enlace copiado'); }).catch(function(){ toast('Copia manual: '+url); }); }
+    else { toast('Copia manual del enlace'); }
+  }
+  function compartirQR(id){
+    var url=_qrUrl(id);
+    if(navigator.share){ navigator.share({ title:'Trazabilidad LAAAMB', text:'Trazabilidad del queso LAAAMB', url:url }).catch(function(){}); }
+    else { copiarQR(id); }
+  }
+  // ── Registrar venta en Finanzas (integración ligera) ──
+  function registrarVentaQueso(id){
+    var l = loteMap[id]; if(!l) return;
+    var ingreso = (Number(l.ingreso_total)||0) || (Number(l.queso_kg)*Number(l.precio_venta_kg||0));
+    var tipo = (TIPOS[l.tipo_queso]||l.tipo_queso||'queso');
+    // finanzas.html no lee parámetros de URL → avisamos el monto y abrimos Finanzas.
+    toast('Registra la venta en Finanzas: '+cop(ingreso));
+    var desc = encodeURIComponent('Queso '+tipo+' '+(l.fecha||''));
+    setTimeout(function(){
+      window.location.href = 'finanzas.html?tipo=ingreso&categoria=L%C3%A1cteos&descripcion='+desc+'&monto='+Math.round(ingreso);
+    }, 900);
+  }
+
   // Exponer
+  window.mostrarQRQueso=mostrarQRQueso;
+  window.copiarQR=copiarQR;
+  window.compartirQR=compartirQR;
+  window.registrarVentaQueso=registrarVentaQueso;
   window.abrirNuevoLote=abrirNuevoLote;
   window.onTipoChange=onTipoChange;
   window.toggleCosteo=toggleCosteo;

@@ -14,10 +14,10 @@
   var PAGE_ACCESS = {
     gerente: '*',
     administrador: '*',
-    veterinario: ['animales', 'reproduccion', 'salud', 'lotes', 'hoy', 'reportes', 'sala-cuna', 'leche', 'queseria'],
-    auxiliar: ['animales', 'hoy', 'salud', 'reproduccion', 'sala-cuna', 'leche'],
-    // Socio: Dashboard, OKRs, Reportes, Leche y Quesería (ve, no crea — gating UI).
-    socio: ['index', 'okr', 'reportes', 'leche', 'queseria']
+    veterinario: ['animales', 'reproduccion', 'salud', 'lotes', 'hoy', 'reportes', 'sala-cuna', 'leche', 'queseria', 'lacteo'],
+    auxiliar: ['animales', 'hoy', 'salud', 'reproduccion', 'sala-cuna', 'leche', 'lacteo'],
+    // Socio: Dashboard, OKRs, Reportes, Leche, Quesería y Lácteo (vista integrada).
+    socio: ['index', 'okr', 'reportes', 'leche', 'queseria', 'lacteo']
   };
 
   // Páginas donde el rol es SOLO LECTURA (se ocultan acciones de escritura).
