@@ -156,7 +156,7 @@ body{background:radial-gradient(circle at 50% -10%,rgba(0,175,182,.10),transpare
     var id = new URLSearchParams(window.location.search).get('id');
     if(!id){ return noEncontrado(); }
     try{
-      var resp = await window._sb.from('quesos_lotes')
+      var resp = await window._sb.from('quesos_lotes_publico')
         .select('id, fecha, tipo_queso, leche_usada_l, queso_kg, rendimiento_l_por_kg, maduracion_dias, notas')
         .eq('id', id)
         .single();
