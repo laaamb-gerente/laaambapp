@@ -2,7 +2,7 @@
 // Cache-first para assets estáticos. NUNCA intercepta peticiones
 // a Supabase ni a /api/ (auth y datos deben ir siempre a la red).
 
-const CACHE_NAME = 'laaambapp-v10';
+const CACHE_NAME = 'laaambapp-v11';
 
 // Paths relativos: resuelven contra la ubicación del SW en cada host
 // (raíz en Vercel, /laaambapp/ en GitHub Pages).
@@ -29,6 +29,7 @@ const STATIC_ASSETS = [
   './ajustes.html',
   './login.html',
   './js/supabase-client.js',
+  './js/sidebar.js',
   './js/auth.js',
   './js/db.js',
   './js/app-state.js',
