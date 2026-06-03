@@ -1355,7 +1355,22 @@ async function verPerfilFicha(id){
     +'<div id="fp-performance" class="ficha-pane"><div id="ficha-perf" class="ficha-skel">⏳ Cargando performance…</div></div>'
     +'<div id="fp-tratamientos" class="ficha-pane" style="display:none"><div id="ficha-trts" class="ficha-skel">⏳ Cargando tratamientos…</div></div>'
     +'<div id="fp-linaje" class="ficha-pane" style="display:none"><div id="ficha-linaje" class="ficha-skel">⏳ Cargando linaje…</div></div>';
-  setElHTML('perfil-body', header+'<div id="ficha-retiro-banner"></div>'+tabs);
+  // Fase 6 — evaluación materna (solo hembras y roles autorizados).
+  // _PUEDE_EVAL, _scoreBadge y abrirEval los define el bloque Fase 6 (window.*);
+  // guard typeof por si el bloque aún no cargó.
+  var evalBlock = '';
+  if(a.sexo==='H' && window._PUEDE_EVAL && typeof window.abrirEval==='function'){
+    var nmEv = (a.nombre||a.codigo||'').replace(/'/g,'');
+    evalBlock = '<div style="margin-top:14px">'
+      + (a.score_materno != null && typeof window._scoreBadge==='function'
+          ? '<div style="margin-bottom:8px;font-size:13px;color:var(--text3)">Score materno actual: '+window._scoreBadge(a)+'</div>'
+          : '')
+      + '<button class="btn btn-ghost" style="width:100%" '
+        + 'onclick="closeModal(\'m-perfil\');abrirEval(\''+(a._uuid||a.id)+'\',\''+_escF(nmEv)+'\')">'
+        + '＋ Registrar evaluación materna</button>'
+      + '</div>';
+  }
+  setElHTML('perfil-body', header+'<div id="ficha-retiro-banner"></div>'+tabs+evalBlock);
   document.getElementById('btn-edit').onclick=function(){closeModal('m-perfil');abrirEditar(id);};
   document.getElementById('btn-baja').onclick=function(){
     if(confirm('¿Confirmar baja de #'+id+'? El animal saldrá del inventario activo.')){
@@ -1586,8 +1601,9 @@ async function _fichaLoadLinaje(a){
       border-radius:50%;
       background:#00AFB6;
       color:white;
-      font-size:26px;
+      font-size:18px;
       line-height:1;
+      flex-direction:column;
       border:none;
       box-shadow:0 4px 16px rgba(0,175,182,0.45);
       z-index:200;
@@ -1595,7 +1611,7 @@ async function _fichaLoadLinaje(a){
       justify-content:center;
       cursor:pointer;
       touch-action:manipulation;
-    ">⚖</button>
+    "><span style="font-size:18px;line-height:1">⚖</span><span style="font-size:10px;font-weight:700;letter-spacing:.3px;display:block;margin-top:2px">PESAR</span></button>
 
 <!-- ═══ FASE 6 — Score materno + lista de descarte ═══ -->
 <div class="overlay" id="m-eval" onclick="if(event.target===this)closeModal('m-eval')">
