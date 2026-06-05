@@ -789,8 +789,33 @@ document.addEventListener('appstate:ready', function(e) {
       const hoy = new Date();
       const enMes = function(f){ if(!f) return false; const d=new Date(f); return d.getMonth()===hoy.getMonth() && d.getFullYear()===hoy.getFullYear(); };
       const muertesMes = bajas.filter(function(b){ return b.tipo==='muerte' && enMes((b.datos_clinicos&&b.datos_clinicos.fecha_real_muerte)||b.fecha); });
+      // Deaths last month (for comparison)
+      const mesAnterior = function(f){
+        if(!f) return false;
+        const d=new Date(f), h=new Date();
+        const prev=new Date(h.getFullYear(), h.getMonth()-1, 1);
+        return d.getFullYear()===prev.getFullYear() && d.getMonth()===prev.getMonth();
+      };
+      const muertesAnt = bajas.filter(function(b){ return b.tipo==='muerte' && mesAnterior((b.datos_clinicos&&b.datos_clinicos.fecha_real_muerte)||b.fecha); }).length;
+      // Total active animals (from AppState)
+      const totalActivos = (window.AppState && window.AppState.animales)
+        ? window.AppState.animales.filter(function(a){ return a.estado!=='muerto'&&a.estado!=='vendido'; }).length
+        : 0;
+      const denominador = totalActivos + muertesMes.length;
+      const tasa = denominador>0 ? (muertesMes.length/denominador*100).toFixed(1) : 0;
+      // Update KPI card
       const elMort = document.getElementById('kpi-mort');
       if (elMort) elMort.textContent = muertesMes.length;
+      const elDelta = document.getElementById('kpi-mort-delta');
+      if (elDelta) {
+        var tasaTxt = 'Tasa ' + tasa + '% · ';
+        if (muertesAnt === 0) tasaTxt += muertesMes.length + ' este mes';
+        else if (muertesMes.length < muertesAnt) tasaTxt += '↓ vs ' + muertesAnt + ' el mes anterior';
+        else if (muertesMes.length > muertesAnt) tasaTxt += '↑ vs ' + muertesAnt + ' el mes anterior';
+        else tasaTxt += '= igual que mes anterior';
+        elDelta.textContent = tasaTxt;
+        elDelta.className = 'kpi-delta ' + (muertesMes.length < muertesAnt ? 'pos' : muertesMes.length > muertesAnt ? 'neg' : 'neu');
+      }
       // Causa principal del mes
       const counts = {};
       muertesMes.forEach(function(b){ const c=(b.datos_clinicos&&b.datos_clinicos.causa_muerte); if(c) counts[c]=(counts[c]||0)+1; });

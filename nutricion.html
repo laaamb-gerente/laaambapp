@@ -491,11 +491,18 @@ async function loadNutricion(){
   }catch(e){ console.error('[nutricion] load',e); toast('Error cargando datos','error'); }
 }
 // Ingredientes individuales (insumos que se compran) — el usuario puede agregar más.
+// Ingredientes base: insumos reales de LAAAMB
 const INGREDIENTES_BASE = [
-  {ingrediente:'Maíz molido',           tipo:'grano', stock_kg:0, unidad:'kg', kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:50},
-  {ingrediente:'Sorgo de grano',        tipo:'grano', stock_kg:0, unidad:'kg', kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:30},
-  {ingrediente:'Torta de soya',         tipo:'grano', stock_kg:0, unidad:'kg', kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:20},
-  {ingrediente:'Sal mineralizada ovina',tipo:'sal',  stock_kg:0, unidad:'kg', kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:10},
+  // Mezcla de Grano
+  {ingrediente:'Maíz molido',           tipo:'grano', stock_kg:0, unidad:'kg',     kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:50},
+  {ingrediente:'Glicerol',              tipo:'grano', stock_kg:0, unidad:'litros', kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:5},
+  {ingrediente:'Cascarilla de cacao',   tipo:'grano', stock_kg:0, unidad:'kg',     kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:20},
+  // Mezcla de Sal
+  {ingrediente:'Sal mineralizada ovina',tipo:'sal',  stock_kg:0, unidad:'kg',     kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:10},
+  {ingrediente:'Ajo',                   tipo:'sal',  stock_kg:0, unidad:'kg',     kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:2},
+  {ingrediente:'Orégano',               tipo:'sal',  stock_kg:0, unidad:'kg',     kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:2},
+  {ingrediente:'Tierra de diatomeas',   tipo:'sal',  stock_kg:0, unidad:'kg',     kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:5},
+  // Forraje
   {ingrediente:'Heno',                  tipo:'heno', stock_kg:0, unidad:'fardos', kg_por_unidad:20, costo_por_kg:0, stock_minimo_kg:100},
 ];
 // Mezclas (lo que se ENTREGA a los animales) — su stock se abastece produciendo.
