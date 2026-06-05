@@ -1614,15 +1614,25 @@ async function saveParto(){
         const _viv=_criasDestino.length?_criasDestino.filter(function(c){return c.estado_al_nacer!=='muerto';}).length:vivas;
         const _tipoMap={1:'simple',2:'doble',3:'triple',4:'cuadruple'};
         const _estadoMadre=(document.getElementById('p-estado-madre')||{}).value||'bien';
-        const _res=await window.DB.createParto({
+        // NOTE: Only valid partos columns — no internal fields
+        const _partoPayload = {
           madre_id:_mo2.id, padre_id:(_pa2?_pa2.id:null), fecha_parto:fecha,
           tipo_parto:(_tipoMap[_nac]||'cuadruple'),
           num_corderos_nacidos:_nac, num_corderos_vivos:_viv,
           estado_madre:_estadoMadre, complicaciones:(_estadoMadre!=='bien'?(obs||null):null),
-          responsable:(window.AUTH_PERFIL&&window.AUTH_PERFIL.id)||null, notas:obs||null,
-          // Pass animal UUIDs so corderos_nacidos gets linked (with a short delay for animal creation)
-          _animal_ids: window._criasCreadas_ids||[]
-        }, _criasDestino);
+          responsable:(window.AUTH_PERFIL&&window.AUTH_PERFIL.id)||null, notas:obs||null
+        };
+        const _res=await window.DB.createParto(_partoPayload, _criasDestino);
+        // After createParto succeeds, link animal UUIDs to corderos_nacidos
+        if(_res && _res.parto && !_res.error){
+          var _cnData = _res.corderos_nacidos || [];
+          var _aids = window._criasCreadas_ids || [];
+          if(_cnData.length && _aids.length && window._sb){
+            _cnData.forEach(function(cn,i){
+              if(_aids[i]) window._sb.from('corderos_nacidos').update({animal_id:_aids[i]}).eq('id',cn.id).then(function(){});
+            });
+          }
+        }
         if(_res && _res.crianzas_creadas>0){
           toast(_res.crianzas_creadas+' cordero(s) enviados a Sala Cuna →');
         }
