@@ -1207,19 +1207,19 @@ window.DB = {
 
   async getPartos(finca_id, limite = 50) {
     return await window._sb.from('partos')
-      .select('*, madre:madre_id(codigo, nombre, raza), padre:padre_id(codigo, nombre), corderos_nacidos(*)')
+      .select('*, madre:madre_id(codigo, nombre, raza), padre:padre_id(codigo, nombre), corderos_nacidos(*, cria:animal_id(id, codigo, sexo, peso_actual, estado, fecha_nacimiento))')
       .eq('finca_id', finca_id)
       .order('fecha_parto', { ascending: false })
       .limit(limite);
   },
   async getParto(id) {
     return await window._sb.from('partos')
-      .select('*, madre:madre_id(codigo, nombre, raza), padre:padre_id(codigo, nombre), corderos_nacidos(*)')
+      .select('*, madre:madre_id(codigo, nombre, raza), padre:padre_id(codigo, nombre), corderos_nacidos(*, cria:animal_id(id, codigo, sexo, peso_actual, estado, fecha_nacimiento))')
       .eq('id', id).single();
   },
   async getPartosPorAnimal(animalId) {
     return await window._sb.from('partos')
-      .select('*, padre:padre_id(codigo, nombre), corderos_nacidos(*)')
+      .select('*, padre:padre_id(codigo, nombre), corderos_nacidos(*, cria:animal_id(id, codigo, sexo, peso_actual, estado, fecha_nacimiento))')
       .eq('madre_id', animalId)
       .order('fecha_parto', { ascending: false });
   },
@@ -1248,6 +1248,14 @@ window.DB = {
     let nacidos = [];
     if (filas.length) {
       const cnr = await window._sb.from('corderos_nacidos').insert(filas).select();
+      // Link animal_ids if provided (set by saveParto after creating each cría as an animal)
+      if(cnr && cnr.data && datosParto._animal_ids && datosParto._animal_ids.length) {
+        for(let i=0; i<cnr.data.length && i<datosParto._animal_ids.length; i++){
+          if(datosParto._animal_ids[i]) {
+            await window._sb.from('corderos_nacidos').update({animal_id: datosParto._animal_ids[i]}).eq('id', cnr.data[i].id);
+          }
+        }
+      }
       nacidos = (cnr && cnr.data) || [];
     }
     // 3. Crianza artificial para destino != pie_madre (y cordero no muerto)

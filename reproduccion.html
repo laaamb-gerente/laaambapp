@@ -1160,6 +1160,8 @@ function renderPartosDB(data){
     var muertos=Math.max(0,(p.num_corderos_nacidos||cn.length)-vivos);
     var pesos=cn.map(function(c){return c.peso_nacimiento_kg!=null?c.peso_nacimiento_kg:'—';}).join(', ')||'—';
     var iconos=cn.map(function(c){ return (c.sexo==='M'?'🐏':'🐑')+((c.destino_crianza&&c.destino_crianza!=='pie_madre')?'🍼':''); }).join(' ')||'—';
+    // Attach cria data (from JOIN) so detail can show chapeta
+    p._criasData = cn;
     var madre=(p.madre&&(p.madre.codigo||p.madre.nombre))||'—';
     var padre=(p.padre&&(p.padre.codigo||p.padre.nombre))||'—';
     var estadoBadge=p.estado_madre==='bien'?'':(' <span class="badge b-red">'+(p.estado_madre==='muerta'?'madre †':'complic.')+'</span>');
@@ -1404,8 +1406,10 @@ async function saveParto(){
       const _especie=_mo.especie||'ovino';
       const _pref=_especie==='bovino'?'BV':'OV';
       const _stamp=Date.now().toString().slice(-6);
-      crias.forEach(function(c,i){
-        window.DB.saveAnimal({
+      // Save animals sequentially and collect UUIDs to link corderos_nacidos
+      window._criasCreadas_ids = [];
+      const _criaPromises = crias.map(function(c,i){
+        return window.DB.saveAnimal({
           finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
           codigo:_pref+'-'+_stamp+(i+1),
           especie:_especie,
@@ -1415,7 +1419,19 @@ async function saveParto(){
           madre_id:_mo.id, padre_id:_padreId||null,
           peso_actual:c.peso_kg||null,
           estado:'activo'
-        }).catch(err=>{console.warn('[Repro] cría Supabase:',err&&err.message); if(window.logError)logError('saveParto.cria',err);});
+        }).then(function(res){
+          if(res && res.data && res.data.id) return res.data.id;
+          if(res && res.data && !res.data.id && res.data[0]) return res.data[0].id;
+          return null;
+        }).catch(function(err){
+          console.warn('[Repro] cría Supabase:',err&&err.message);
+          if(window.logError) logError('saveParto.cria',err);
+          return null;
+        });
+      });
+      Promise.all(_criaPromises).then(function(uuids){
+        window._criasCreadas_ids = uuids.filter(Boolean);
+        console.log('[Repro] Crías creadas UUIDs:', window._criasCreadas_ids);
       });
     }
   }
@@ -1446,7 +1462,9 @@ async function saveParto(){
           tipo_parto:(_tipoMap[_nac]||'cuadruple'),
           num_corderos_nacidos:_nac, num_corderos_vivos:_viv,
           estado_madre:_estadoMadre, complicaciones:(_estadoMadre!=='bien'?(obs||null):null),
-          responsable:(window.AUTH_PERFIL&&window.AUTH_PERFIL.id)||null, notas:obs||null
+          responsable:(window.AUTH_PERFIL&&window.AUTH_PERFIL.id)||null, notas:obs||null,
+          // Pass animal UUIDs so corderos_nacidos gets linked (with a short delay for animal creation)
+          _animal_ids: window._criasCreadas_ids||[]
         }, _criasDestino);
         if(_res && _res.crianzas_creadas>0){
           toast(_res.crianzas_creadas+' cordero(s) enviados a Sala Cuna →');
@@ -2670,6 +2688,12 @@ async function agregarHembraGrupo(hembraId, cod){
 }
 
 // ── DETALLE PARTO ──────────────────────────────────────────────────────────
+function abrirFichaDesdeRepro(animalId){
+  // Navigate to animales.html and open the profile for this animal UUID
+  try{ sessionStorage.setItem('abrir_ficha_uuid', animalId); }catch(e){}
+  window.location.href = 'animales.html?ficha='+encodeURIComponent(animalId);
+}
+
 function abrirDetalleParto(partoId){
   var partos = window._partosCache || [];
   var p = partos.find(function(x){ return (x.id||'')===partoId; });
@@ -2693,9 +2717,17 @@ function abrirDetalleParto(partoId){
       + cn.map(function(c,i){
         var sx = c.sexo==='M'?'🐏':'🐑';
         var est = c.estado_al_nacer==='muerto'?'<span style="color:var(--red)">† muerto</span>':'<span style="color:var(--green)">vivo/a</span>';
-        var cod = c.codigo_asignado||c.codigo||('Cría '+(i+1));
-        var peso = c.peso_nacimiento_kg!=null?(c.peso_nacimiento_kg+' kg'):'—';
-        return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">'+sx+' <b>'+cod+'</b> · '+peso+' · '+est+'</div>';
+        // Try to get chapeta from joined cria data, or fallback
+        var criaJoin = c.cria||null;
+        var cod = criaJoin ? criaJoin.codigo : (c.codigo_asignado||c.codigo||('Cría '+(i+1)));
+        var criaId = criaJoin ? criaJoin.id : null;
+        var pesoActual = criaJoin && criaJoin.peso_actual!=null ? (' · <span style=\"color:var(--teal)\">'+criaJoin.peso_actual+' kg actual</span>') : '';
+        var peso = c.peso_nacimiento_kg!=null?(' nac: '+c.peso_nacimiento_kg+' kg'):'';
+        var clickFn = criaId ? 'onclick=\"abrirFichaDesdeRepro(\''+criaId+'\')\" style=\"cursor:pointer\"' : '';
+        return '<div '+clickFn+' style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--border);font-size:13px;border-radius:4px" '+
+          'onmouseover=\"this.style.background=\'var(--bg3)\'\" onmouseout=\"this.style.background=\'\'">'
+          +sx+' <b style="color:var(--teal)">#'+cod+'</b>'+peso+pesoActual+' · '+est
+          +(criaId?'<span style=\"margin-left:auto;font-size:11px;color:var(--text3)\">Ver ficha →</span>':'')+'</div>';
       }).join('')
     : '<div style="font-size:12px;color:var(--text3)">Sin crías registradas individualmente.</div>',
     p.observaciones||p.notas ? '<div style="margin-top:10px;font-size:12px;color:var(--text2)"><b>Observaciones:</b> '+(p.observaciones||p.notas)+'</div>' : ''

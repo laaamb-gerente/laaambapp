@@ -1378,6 +1378,7 @@ async function verPerfilFicha(id){
     window.location.href = 'bajas.html?tipo=venta';
   };
   openModal('m-perfil');
+  window._fichaCurrentAnimal = a; // for tab reloads
   _fichaLoadPerformance(a, raw, fechaNac);
   _fichaLoadTratamientos(a);
   _fichaLoadGenealogía(a);
@@ -1443,6 +1444,10 @@ function fichaTab(name){
     if(b) b.classList.toggle('active', n===name);
     if(p) p.style.display = (n===name)?'block':'none';
   });
+  // Reload genealogía fresh from Supabase every time (ensures crías recién creadas aparecen)
+  if(name==='genealogia' && window._fichaCurrentAnimal) {
+    _fichaLoadGenealogía(window._fichaCurrentAnimal);
+  }
 }
 function fichaSub(name){
   ['padres','crias'].forEach(function(n){
@@ -1587,12 +1592,16 @@ async function _fichaLoadGenealogía(a){
     subCrias='<div class="ficha-skel">'+(esHembra?'Sin crías registradas':'Sin descendencia registrada para este animal')+'</div>';
   } else {
     var cr=crias.map(function(c){
-      return '<tr><td class="td-id">#'+_escF(c.codigo||'--')+'</td><td class="td-m">'+_escF(c.raza||'--')+'</td>'
+      var cuuid=c.id||'';
+      return '<tr style="cursor:pointer" title="Ver ficha de esta cría" onclick="fichaVerPorUuid(\''+cuuid+'\')">'
+        +'<td class="td-id"><b style="color:var(--teal)">#'+_escF(c.codigo||'--')+'</b></td>'
+        +'<td class="td-m">'+_escF(c.raza||'--')+'</td>'
         +'<td class="td-m">'+_fmtF(c.fecha_nacimiento)+'</td>'
         +'<td class="td-m">'+(c.peso_actual!=null?_escF(c.peso_actual)+' kg':'--')+'</td>'
-        +'<td class="td-m">'+_escF(c.estado||'--')+'</td></tr>';
+        +'<td class="td-m"><span class="badge '+(c.estado==='muerto'?'b-red':'b-green')+'">'+_escF(c.estado||'--')+'</span></td>'
+        +'<td class="td-m" style="font-size:10px;color:var(--text3)">Ver →</td></tr>';
     }).join('');
-    subCrias='<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);overflow:auto"><table><thead><tr><th>Código</th><th>Raza</th><th>Fecha nac.</th><th>Peso actual</th><th>Estado</th></tr></thead><tbody>'+cr+'</tbody></table></div>';
+    subCrias='<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);overflow:auto"><table><thead><tr><th>Código</th><th>Raza</th><th>Fecha nac.</th><th>Peso actual</th><th>Estado</th><th></th></tr></thead><tbody>'+cr+'</tbody></table></div>';
   }
   cont.innerHTML=
     '<div style="display:flex;gap:6px;margin-bottom:12px">'
@@ -1865,7 +1874,19 @@ async function _fichaLoadGenealogía(a){
     if(typeof renderTabla==='function' && Array.isArray(window.allAnimales)) try{ renderTabla(); }catch(e){}
   });
   // Re-cargar descarte cuando AppState termina (por si auth resolvió antes)
-  document.addEventListener('appstate:ready', function(){ setTimeout(function(){ if(window.loadDescarte) loadDescarte(); }, 300); });
+  // Auto-open animal ficha if URL has ?ficha=UUID (e.g. from reproduccion.html or bajas.html)
+document.addEventListener('appstate:ready', function(){
+  var _fp = new URLSearchParams(location.search).get('ficha');
+  if(!_fp){ try{_fp=sessionStorage.getItem('abrir_ficha_uuid');}catch(e){} }
+  if(!_fp) return;
+  try{sessionStorage.removeItem('abrir_ficha_uuid');}catch(e){}
+  setTimeout(function(){
+    var found=(window.allAnimales||[]).find(function(x){return x._uuid===_fp||x.id===_fp;});
+    if(found) verPerfilFicha(found.id);
+    else toast('Animal no encontrado en el inventario activo','info');
+  }, 900);
+});
+document.addEventListener('appstate:ready', function(){ setTimeout(function(){ if(window.loadDescarte) loadDescarte(); }, 300); });
 })();
 </script>
 </body>
