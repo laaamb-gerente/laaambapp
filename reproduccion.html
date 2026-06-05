@@ -834,6 +834,55 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 </div>
 </div>
 
+<!-- ══ MODAL DETALLE / EDITAR GRUPO DE MONTA ══ -->
+<div class="overlay" id="modal-detalle-grupo" onclick="if(event.target===this)closeModal('modal-detalle-grupo')">
+<div class="modal modal-md">
+  <div class="modal-head">
+    <div class="modal-title" id="dg-titulo">📋 Detalle grupo de monta</div>
+    <button class="modal-close" onclick="closeModal('modal-detalle-grupo')">✕</button>
+  </div>
+  <div class="modal-body">
+    <!-- Info principal -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:var(--bg3);border-radius:var(--r);padding:10px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:700;margin-bottom:3px">Macho reproductor</div>
+        <div style="font-size:14px;font-weight:700;color:var(--teal)" id="dg-macho">—</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:var(--r);padding:10px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:700;margin-bottom:3px">Período</div>
+        <div style="font-size:12px;font-weight:600" id="dg-periodo">—</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:var(--r);padding:10px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:700;margin-bottom:3px">Ecografía programada</div>
+        <div style="font-size:12px;font-weight:600" id="dg-eco">—</div>
+      </div>
+      <div style="background:var(--bg3);border-radius:var(--r);padding:10px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:700;margin-bottom:3px">Hembras</div>
+        <div style="font-size:14px;font-weight:700;color:var(--teal)" id="dg-nhembras">—</div>
+      </div>
+    </div>
+    <!-- Lista de hembras con X para quitar -->
+    <div class="form-section" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Hembras en el grupo</span>
+      <button class="btn btn-ghost btn-xs" onclick="abrirAgregarHembra()" style="font-size:11px">+ Agregar hembra</button>
+    </div>
+    <div id="dg-hembras-lista" style="max-height:260px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);padding:4px;margin-bottom:8px"></div>
+    <!-- Agregar hembra inline -->
+    <div id="dg-agregar-wrap" style="display:none;border:1px solid var(--border2);border-radius:var(--r);padding:10px;margin-bottom:8px;background:var(--bg3)">
+      <div style="font-size:12px;font-weight:600;margin-bottom:6px;color:var(--text2)">Buscar hembra para agregar</div>
+      <input class="fi" id="dg-buscar" placeholder="ID o nombre de la hembra..." oninput="renderDetalleHembrasAgregar(this.value)" style="margin-bottom:6px">
+      <div id="dg-buscar-resultados" style="max-height:120px;overflow-y:auto"></div>
+      <button class="btn btn-ghost btn-xs" style="margin-top:6px" onclick="document.getElementById('dg-agregar-wrap').style.display='none'">Cancelar</button>
+    </div>
+    <div id="dg-notas" style="font-size:12px;color:var(--text2)"></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-detalle-grupo')">Cerrar</button>
+    <button class="btn btn-primary btn-sm" onclick="abrirRegistrarMontas(window._detalleGrupoId)">📅 Registrar montas</button>
+  </div>
+</div>
+</div>
+
 <!-- ══ MODAL ECOGRAFÍA INDIVIDUAL ══ -->
 <div class="overlay" id="modal-ecografia" onclick="if(event.target===this)closeModal('modal-ecografia')">
 <div class="modal modal-sm">
@@ -2288,15 +2337,15 @@ function renderGruposTab(){
     ta.innerHTML=activos.map(function(g){
       var rest=Math.ceil((new Date(g.fecha_fin+'T00:00:00')-hoy)/86400000);
       var restTxt=rest>0?(rest+' días'):(rest===0?'hoy':'vencido');
-      return '<tr>'
-        +'<td><b>'+_gEsc(g.nombre)+'</b></td>'
+      return '<tr style="cursor:pointer" onclick="abrirDetalleGrupo(\''+g.id+'\')">'
+        +'<td><b style="color:var(--teal)">'+_gEsc(g.nombre)+'</b></td>'
         +'<td>'+_gEsc(g.macho_codigo||'—')+'</td>'
         +'<td>'+(g.num_hembras||0)+'</td>'
         +'<td>'+_fmtD(g.fecha_inicio)+'</td>'
         +'<td>'+_fmtD(g.fecha_fin)+'</td>'
         +'<td>'+_ecoCell(g)+'</td>'
         +'<td><span class="badge '+(rest>=0?'b-green':'b-amber')+'">'+restTxt+'</span></td>'
-        +'<td style="white-space:nowrap"><button class="btn btn-primary btn-sm" onclick="abrirRegistrarMontas(\''+g.id+'\')">Registrar montas</button> '
+        +'<td style="white-space:nowrap" onclick="event.stopPropagation()"><button class="btn btn-primary btn-sm" onclick="abrirRegistrarMontas(\''+g.id+'\')">Registrar montas</button> '
         +'<button class="btn btn-ghost btn-sm" onclick="cerrarGrupo(\''+g.id+'\')">Cerrar</button></td>'
         +'</tr>';
     }).join('');
@@ -2365,9 +2414,10 @@ function renderHembrasChecklist(filtro){
   cont.innerHTML=hembras.map(function(h){
     var ck=window._grupoSel[h.id]?'checked':'';
     var wk=_edadWk(h.fecha_nacimiento);
-    var warn=_hembraEnGrupoActivo(h.id)?' <span style="color:var(--amber)" title="Ya está en un grupo activo">⚠️</span>':'';
-    return '<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px">'
-      +'<input type="checkbox" data-hembra="'+h.id+'" '+ck+' onchange="window._grupoSel[this.getAttribute(\'data-hembra\')]=this.checked;_actualizarContadorHembras();">'
+    var enGrupo=_hembraEnGrupoActivo(h.id);
+    var warn=enGrupo?'<span style="color:var(--red);font-size:11px;margin-left:4px" title="Ya en grupo de monta activo">🚫 En monta</span>':'';
+    return '<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);cursor:'+(enGrupo?'not-allowed':'pointer')+';font-size:13px;opacity:'+(enGrupo?'0.45':'1')+'">'
+      +'<input type="checkbox" data-hembra="'+h.id+'" '+ck+(enGrupo?' disabled title="Esta hembra ya está en un grupo de monta activo"':'')+' onchange="if(!this.disabled){window._grupoSel[this.getAttribute(\'data-hembra\')]=this.checked;_actualizarContadorHembras();}">'
       +'<span><b>'+_gEsc(h.codigo||h.id)+'</b>'+(h.raza?' — '+_gEsc(h.raza):'')+(wk!=null?' · '+wk+' sem':'')+warn+'</span>'
       +'</label>';
   }).join('');
@@ -2483,6 +2533,106 @@ async function guardarMontasGrupo(){
   closeModal('modal-grupo-montas');
   if(typeof loadReproFromSupabase==='function'){ try{ loadReproFromSupabase(); }catch(e){} }
   toast(n+' monta'+(n===1?'':'s')+' registrada'+(n===1?'':'s')+' para '+_fmtD(fecha));
+}
+
+// ── DETALLE / EDICIÓN DE GRUPO ──────────────────────────────────────────────
+window._detalleGrupoId = null;
+
+function abrirDetalleGrupo(grupoId){
+  var g=(window._grupos||[]).find(function(x){return x.id===grupoId;}); if(!g) return;
+  window._detalleGrupoId = grupoId;
+  document.getElementById('dg-titulo').textContent='📋 '+g.nombre;
+  document.getElementById('dg-macho').textContent=g.macho_codigo||'—';
+  document.getElementById('dg-periodo').textContent=_fmtD(g.fecha_inicio)+' → '+_fmtD(g.fecha_fin)+' ('+( g.dias_duracion||'—')+' días)';
+  document.getElementById('dg-eco').textContent=g.fecha_ecografia?_fmtD(g.fecha_ecografia):'Sin programar';
+  document.getElementById('dg-nhembras').textContent=(g.hembras_ids||[]).length+' hembras';
+  document.getElementById('dg-notas').textContent=g.notas?'Notas: '+g.notas:'';
+  document.getElementById('dg-agregar-wrap').style.display='none';
+  renderDetalleHembras(g);
+  openModal('modal-detalle-grupo');
+}
+
+function renderDetalleHembras(g){
+  var el=document.getElementById('dg-hembras-lista'); if(!el) return;
+  var ids=g.hembras_ids||[];
+  var codigos=g.hembras_codigos||[];
+  if(!ids.length){ el.innerHTML='<div style="padding:10px;text-align:center;color:var(--text3);font-size:12px">Sin hembras en este grupo.</div>'; return; }
+  el.innerHTML=ids.map(function(id,i){
+    var a=_animalPorId(id);
+    var cod=a?(a.codigo||a.id):(codigos[i]||id);
+    var wk=a?_edadWk(a.fecha_nacimiento):null;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border-bottom:1px solid var(--border);font-size:13px">'+
+      '<span><b>'+_gEsc(cod)+'</b>'+(a&&a.raza?' — '+_gEsc(a.raza):'')+( wk!=null?' · '+wk+' sem':'')+
+      '</span>'+
+      '<button class="btn btn-ghost btn-xs" style="color:var(--red);padding:2px 8px" data-gid="'+g.id+'" data-hid="'+id+'" data-cod="'+encodeURIComponent(cod)+'" onmousedown="var d=this.dataset;quitarHembraGrupo(d.gid,d.hid,decodeURIComponent(d.cod))">✕</button>'+
+      '</div>';
+  }).join('');
+}
+
+async function quitarHembraGrupo(grupoId, hembraId, cod){
+  if(!confirm('¿Quitar a '+cod+' del grupo?')) return;
+  var g=(window._grupos||[]).find(function(x){return x.id===grupoId;}); if(!g) return;
+  var newIds=(g.hembras_ids||[]).filter(function(id){return id!==hembraId;});
+  var newCods=(g.hembras_codigos||[]).filter(function(c,i){return (g.hembras_ids||[])[i]!==hembraId;});
+  try{
+    if(window.DB&&window.DB.saveGrupoMonta){
+      var r=await window.DB.saveGrupoMonta(Object.assign({},g,{hembras_ids:newIds,hembras_codigos:newCods,num_hembras:newIds.length}));
+      if(r&&r.error) throw r.error;
+    }
+    // Update local
+    g.hembras_ids=newIds; g.hembras_codigos=newCods; g.num_hembras=newIds.length;
+    document.getElementById('dg-nhembras').textContent=newIds.length+' hembras';
+    renderDetalleHembras(g);
+    renderGruposTab();
+    toast('Hembra '+cod+' quitada del grupo');
+  }catch(e){ toast('Error: '+(e.message||e),'err'); }
+}
+
+function abrirAgregarHembra(){
+  document.getElementById('dg-agregar-wrap').style.display='block';
+  document.getElementById('dg-buscar').value='';
+  renderDetalleHembrasAgregar('');
+}
+
+function renderDetalleHembrasAgregar(filtro){
+  var el=document.getElementById('dg-buscar-resultados'); if(!el) return;
+  var g=(window._grupos||[]).find(function(x){return x.id===window._detalleGrupoId;}); if(!g) return;
+  var inGrupo=new Set(g.hembras_ids||[]);
+  filtro=(filtro||'').toLowerCase().trim();
+  var hembras=_hembrasActivas().filter(function(h){
+    if(inGrupo.has(h.id)) return false; // already in
+    if(_hembraEnGrupoActivo(h.id)) return false; // in another group
+    if(!filtro) return true;
+    return String(h.codigo||'').toLowerCase().indexOf(filtro)>=0||String(h.nombre||'').toLowerCase().indexOf(filtro)>=0;
+  }).slice(0,10);
+  if(!hembras.length){el.innerHTML='<div style="padding:6px;color:var(--text3);font-size:12px">Sin hembras disponibles</div>';return;}
+  el.innerHTML=hembras.map(function(h){
+    var wk=_edadWk(h.fecha_nacimiento);
+    var hcod=_gEsc(h.codigo||h.id);
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 6px;border-bottom:1px solid var(--border);font-size:12px;cursor:pointer" data-hid="'+h.id+'" data-hcod="'+encodeURIComponent(hcod)+'" onclick="var d=this.dataset;agregarHembraGrupo(d.hid,decodeURIComponent(d.hcod))">'+
+      '<span><b>'+_gEsc(h.codigo||h.id)+'</b>'+(h.raza?' — '+_gEsc(h.raza):'')+( wk!=null?' · '+wk+' sem':'')+
+      '</span><button class="btn btn-primary btn-xs" style="font-size:11px">+ Agregar</button></div>';
+  }).join('');
+}
+
+async function agregarHembraGrupo(hembraId, cod){
+  var g=(window._grupos||[]).find(function(x){return x.id===window._detalleGrupoId;}); if(!g) return;
+  if((g.hembras_ids||[]).indexOf(hembraId)>=0){toast('Ya está en el grupo','err');return;}
+  var newIds=(g.hembras_ids||[]).concat([hembraId]);
+  var a=_animalPorId(hembraId);
+  var newCods=(g.hembras_codigos||[]).concat([a?(a.codigo||a.id):cod]);
+  try{
+    if(window.DB&&window.DB.saveGrupoMonta){
+      var r=await window.DB.saveGrupoMonta(Object.assign({},g,{hembras_ids:newIds,hembras_codigos:newCods,num_hembras:newIds.length}));
+      if(r&&r.error) throw r.error;
+    }
+    g.hembras_ids=newIds; g.hembras_codigos=newCods; g.num_hembras=newIds.length;
+    document.getElementById('dg-nhembras').textContent=newIds.length+' hembras';
+    document.getElementById('dg-agregar-wrap').style.display='none';
+    renderDetalleHembras(g);
+    renderGruposTab();
+    toast('✓ '+cod+' agregada al grupo');
+  }catch(e){ toast('Error: '+(e.message||e),'err'); }
 }
 
 async function cerrarGrupo(grupoId){

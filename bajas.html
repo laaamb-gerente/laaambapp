@@ -627,7 +627,13 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="modal-body">
     <div class="form-section">Identificación</div>
     <div class="form-grid">
-      <div class="fg"><label class="fl">Animal (ID) *</label><input class="fi" id="baja-animal" placeholder="OV-0001" onchange="onBajaAnimalChange()"></div>
+      <div class="fg"><label class="fl">Animal *</label>
+        <input class="fi" id="baja-animal-search" placeholder="Buscar por ID o nombre..." autocomplete="off"
+          oninput="filtrarAnimalesBaja(this.value)" onfocus="filtrarAnimalesBaja(this.value)" style="margin-bottom:2px">
+        <input type="hidden" id="baja-animal">
+        <div id="baja-animal-dropdown" style="display:none;position:absolute;z-index:200;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);max-height:180px;overflow-y:auto;width:calc(100% - 2px);box-shadow:0 4px 12px rgba(0,0,0,.3)"></div>
+        <div id="baja-animal-selected" style="font-size:11px;color:var(--teal);margin-top:2px"></div>
+      </div>
       <div class="fg"><label class="fl">Tipo de baja *</label>
         <select class="fi" id="tipo-baja" onchange="toggleBajaFields()">
           <option value="muerte">Muerte</option>
@@ -916,6 +922,42 @@ function toggleBajaFields(){
 
 // Caché de tratamientos activos del animal seleccionado (para el cierre por muerte)
 let _tratActivos=[];
+// ── Búsqueda de animal con dropdown ──
+function filtrarAnimalesBaja(q){
+  const dd=document.getElementById('baja-animal-dropdown'); if(!dd) return;
+  q=(q||'').toLowerCase().trim();
+  const animales=(window.AppState&&window.AppState.animales||[])
+    .filter(a=>a.estado!=='muerto'&&a.estado!=='vendido')
+    .filter(a=>{
+      if(!q) return true;
+      return String(a.codigo||'').toLowerCase().includes(q)||String(a.nombre||'').toLowerCase().includes(q);
+    }).slice(0,12);
+  if(!animales.length&&!q){dd.style.display='none';return;}
+  dd.style.display='block';
+  dd.innerHTML=animales.length?animales.map(a=>{
+    const wk=a.fecha_nacimiento?Math.floor((new Date()-new Date(a.fecha_nacimiento))/604800000):null;
+    const cod=String(a.codigo||a.id);
+    return '<div style="padding:7px 10px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)"'
+      +' data-aid="'+a.id+'" data-cod="'+encodeURIComponent(cod)+'" data-nom="'+encodeURIComponent(a.nombre||'')+'" data-raza="'+encodeURIComponent(a.raza||'')+'" data-peso="'+encodeURIComponent(a.peso_actual||'')+'"'
+      +' onmousedown="var d=this.dataset;seleccionarAnimalBaja(d.aid,decodeURIComponent(d.cod),decodeURIComponent(d.nom),decodeURIComponent(d.raza),decodeURIComponent(d.peso))">'
+      +'<b>'+cod+'</b>'+(a.nombre?' — '+a.nombre:'')+(a.raza?' · '+a.raza:'')+(wk!=null?' · '+wk+'sem':'')
+      +'</div>';
+  }).join(''):'<div style="padding:8px 10px;color:var(--text3);font-size:12px">Sin animales activos que coincidan</div>';
+}
+function seleccionarAnimalBaja(id,cod,nombre,raza,peso){
+  document.getElementById('baja-animal').value=cod;
+  const srch=document.getElementById('baja-animal-search'); if(srch) srch.value=cod+(nombre?' — '+nombre:'');
+  const info=document.getElementById('baja-animal-selected');
+  if(info) info.textContent=cod+(raza?' · '+raza:'')+(peso?' · '+peso+' kg':'');
+  const dd=document.getElementById('baja-animal-dropdown'); if(dd) dd.style.display='none';
+  onBajaAnimalChange();
+}
+// Cerrar dropdown al hacer click fuera
+document.addEventListener('click',function(e){
+  const dd=document.getElementById('baja-animal-dropdown');
+  if(dd&&!dd.contains(e.target)&&e.target.id!=='baja-animal-search') dd.style.display='none';
+});
+
 function _findAnimalByCodigo(cod){
   const c=String(cod||'').replace(/^#/,'').trim();
   return (window.AppState&&window.AppState.animales||[]).find(x=>x.codigo===c||x.id===c)||null;
@@ -1239,11 +1281,19 @@ async function loadBajasFromSupabase(){
     // ── KPIs reales (orden: 0 muertes mes · 2 ventas mes · 3 ingresos) ──
     const hoy=new Date();
     const enMes=(f)=>{ if(!f) return false; const d=new Date(f); return d.getMonth()===hoy.getMonth()&&d.getFullYear()===hoy.getFullYear(); };
+    const enAnio=(f)=>{ if(!f) return false; return new Date(f).getFullYear()===hoy.getFullYear(); };
     const muertesMes=bajas.filter(b=>b.tipo!=='venta'&&enMes(b.fecha)).length;
+    const muertesAnio=bajas.filter(b=>b.tipo==='muerte'&&enAnio(b.fecha)).length;
     const ventasMes=bajas.filter(b=>b.tipo==='venta'&&enMes(b.fecha)).length;
     const ingresos=bajas.filter(b=>b.tipo==='venta'&&enMes(b.fecha)).reduce((s,b)=>s+(parseFloat(b.precio_venta)||0),0);
+    const totalAnimales=(window.AppState&&window.AppState.animales||[]).length;
+    const baseCalc=totalAnimales+muertesAnio;
+    const pctMort=baseCalc>0?((muertesAnio/baseCalc)*100).toFixed(1):0;
     const kpiEls=document.querySelectorAll('.kpi-val');
     if(kpiEls[0]) kpiEls[0].textContent=muertesMes;
+    if(kpiEls[1]) kpiEls[1].textContent=muertesAnio;
+    const kpiDeltas=document.querySelectorAll('.kpi-delta');
+    if(kpiDeltas[1]) kpiDeltas[1].textContent='Mortalidad '+pctMort+'%';
     if(kpiEls[2]) kpiEls[2].textContent=ventasMes;
     if(kpiEls[3]) kpiEls[3].innerHTML=(ingresos>=1e6?('$'+(ingresos/1e6).toFixed(1)+'<span class="kpi-unit">M</span>'):('$'+Math.round(ingresos/1000)+'<span class="kpi-unit">K</span>'));
 
@@ -1388,7 +1438,42 @@ function renderAnalisisCausas(bajas){
   }
 }
 
-document.addEventListener('appstate:ready', loadBajasFromSupabase);
+document.addEventListener('appstate:ready', function(){
+  loadBajasFromSupabase();
+  // Auto-abrir modal baja si viene de animales.html con ?tipo=muerte&animal=XXX
+  const params=new URLSearchParams(location.search);
+  const tipoParam=params.get('tipo');
+  const animalParam=params.get('animal');
+  if(tipoParam==='muerte'){
+    // Pre-seleccionar tipo muerte
+    const tipoBajaSel=document.getElementById('tipo-baja');
+    if(tipoBajaSel){ tipoBajaSel.value='muerte'; toggleBajaFields(); }
+    // Cargar datos del animal desde sessionStorage
+    try{
+      const animalData=JSON.parse(sessionStorage.getItem('baja_animal')||'null');
+      if(animalData&&animalData.codigo){
+        const srch=document.getElementById('baja-animal-search');
+        const hidden=document.getElementById('baja-animal');
+        const info=document.getElementById('baja-animal-selected');
+        if(srch) srch.value=animalData.codigo+(animalData.nombre?' — '+animalData.nombre:'');
+        if(hidden) hidden.value=animalData.codigo;
+        if(info) info.textContent=animalData.codigo+(animalData.raza?' · '+animalData.raza:'')+(animalData.peso?' · '+animalData.peso+' kg':'');
+        onBajaAnimalChange();
+        sessionStorage.removeItem('baja_animal');
+      } else if(animalParam){
+        const srch=document.getElementById('baja-animal-search');
+        const hidden=document.getElementById('baja-animal');
+        if(srch) srch.value=decodeURIComponent(animalParam);
+        if(hidden) hidden.value=decodeURIComponent(animalParam);
+        onBajaAnimalChange();
+      }
+    }catch(e){}
+    // Pre-fill fecha con hoy
+    const fd=document.getElementById('baja-fecha'); if(fd&&!fd.value) fd.value=new Date().toISOString().slice(0,10);
+    const mfd=document.getElementById('muerte-fecha-real'); if(mfd&&!mfd.value) mfd.value=new Date().toISOString().slice(0,10);
+    setTimeout(function(){openModal('modal-baja');},400);
+  }
+});
 if(window.AppState && window.AppState._loaded) loadBajasFromSupabase();
 </script>
 

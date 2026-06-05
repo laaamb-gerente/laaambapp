@@ -165,6 +165,8 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .map-legend-title{font-weight:700;color:var(--text);margin-bottom:6px;font-size:10px;text-transform:uppercase;letter-spacing:.5px}
 .map-legend-item{display:flex;align-items:center;gap:6px;margin-bottom:4px;color:var(--text2)}
 .map-legend-swatch{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+.lote-tooltip{background:rgba(8,15,16,.9)!important;border:1px solid rgba(0,175,182,.45)!important;border-radius:6px!important;padding:5px 10px!important;box-shadow:0 2px 8px rgba(0,0,0,.55)!important;font-family:Changa,sans-serif!important;}
+.lote-tooltip::before{border-top-color:rgba(0,175,182,.45)!important;}
 .map-status-bar{position:absolute;top:12px;left:12px;z-index:400;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);padding:8px 14px;font-size:12px;color:var(--text2);box-shadow:0 2px 8px rgba(0,0,0,.4);max-width:340px}
 .map-finca-selector{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:400;display:flex;gap:4px}
 
@@ -1186,14 +1188,15 @@ function renderLoteLayer(loteId, lote, geojson){
     }
   });
 
-  // Etiqueta centrada
+  // Tooltip del potrero: solo visible al hacer click (no permanente para no congestionar)
   var center=poly.getBounds().getCenter();
-  var label=L.marker(center,{
-    icon:L.divIcon({
-      html:'<div style="font-family:Changa,sans-serif;font-size:11px;font-weight:700;color:'+color+';text-shadow:0 1px 3px rgba(0,0,0,.8);white-space:nowrap;pointer-events:none">'+lote.nombre+'<br><span style="font-size:10px;font-weight:400;opacity:.8">'+animales.length+'/'+cap+'</span></div>',
-      className:'',iconAnchor:[20,10]
-    }),zIndexOffset:10
-  }).addTo(MAP);
+  poly.bindTooltip(
+    '<div style="font-family:Changa,sans-serif;font-size:12px;font-weight:700;color:'+color+';white-space:nowrap">'+
+    lote.nombre+'<br><span style=\"font-size:11px;font-weight:400;opacity:.85\">'+animales.length+'/'+cap+' animales</span></div>',
+    {permanent:false, direction:'top', className:'lote-tooltip', sticky:false, offset:[0,-6]}
+  );
+  // Solo un marcador invisible en el centro para el loteLayers ref
+  var label=L.marker(center,{opacity:0,interactive:false,icon:L.divIcon({html:'',className:''})}).addTo(MAP);
 
   loteLayers[loteId]={poly:poly,label:label};
 

@@ -755,10 +755,16 @@ function verPerfilLegacy(id){
   );
   document.getElementById('btn-edit').onclick=function(){closeModal('m-perfil');abrirEditar(id);};
   document.getElementById('btn-baja').onclick=function(){
-    if(confirm('¿Confirmar baja de #'+id+'? El animal saldrá del inventario activo.')){
-      AppData.registrarBaja({animal_id:id,tipo_baja:'muerte',fecha:new Date().toISOString().slice(0,10),colaborador:(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—'});
-      cargarDatos();closeModal('m-perfil');toast('Baja de #'+id+' registrada');
-    }
+    // Abrir modal de baja completo en bajas.html con datos del animal pre-cargados
+    try{
+      sessionStorage.setItem('baja_animal', JSON.stringify({
+        id: a.id, codigo: a.codigo||a.id, nombre: a.nombre||a.id,
+        raza: a.raza, sexo: a.sexo, especie: a.especie,
+        peso: (raw&&raw.peso_actual!=null?raw.peso_actual:a.peso_actual), tipo: 'muerte'
+      }));
+    }catch(err){}
+    closeModal('m-perfil');
+    window.location.href = 'bajas.html?tipo=muerte&animal='+(encodeURIComponent(a.codigo||a.id));
   };
   openModal('m-perfil');
 }
@@ -1348,10 +1354,16 @@ async function verPerfilFicha(id){
   setElHTML('perfil-body', header+'<div id="ficha-retiro-banner"></div>'+tabs+evalBlock+partosBlock);
   document.getElementById('btn-edit').onclick=function(){closeModal('m-perfil');abrirEditar(id);};
   document.getElementById('btn-baja').onclick=function(){
-    if(confirm('¿Confirmar baja de #'+id+'? El animal saldrá del inventario activo.')){
-      AppData.registrarBaja({animal_id:id,tipo_baja:'muerte',fecha:new Date().toISOString().slice(0,10),colaborador:(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—'});
-      cargarDatos();closeModal('m-perfil');toast('Baja de #'+id+' registrada');
-    }
+    // Abrir modal de baja completo en bajas.html con datos del animal pre-cargados
+    try{
+      sessionStorage.setItem('baja_animal', JSON.stringify({
+        id: a.id, codigo: a.codigo||a.id, nombre: a.nombre||a.id,
+        raza: a.raza, sexo: a.sexo, especie: a.especie,
+        peso: (raw&&raw.peso_actual!=null?raw.peso_actual:a.peso_actual), tipo: 'muerte'
+      }));
+    }catch(err){}
+    closeModal('m-perfil');
+    window.location.href = 'bajas.html?tipo=muerte&animal='+(encodeURIComponent(a.codigo||a.id));
   };
   var _bv=document.getElementById('btn-vender');
   if(_bv) _bv.onclick=function(e){
