@@ -1111,13 +1111,12 @@ initEspecieTabs();
   var CROSS = '<line x1="4" y1="4" x2="18" y2="18"/><line x1="18" y1="4" x2="4" y2="18"/>';
   function show(){ open=true; document.getElementById('sidebar').classList.add('on'); document.getElementById('lov').classList.add('on'); document.getElementById('lico').innerHTML=CROSS; }
   function hide(){ open=false; document.getElementById('sidebar').classList.remove('on'); document.getElementById('lov').classList.remove('on'); document.getElementById('lico').innerHTML=BARS; }
-  document.addEventListener('DOMContentLoaded', function(){
+
     document.getElementById('lham').onclick = function(){ open ? hide() : show(); };
     document.getElementById('lov').onclick = hide;
     document.querySelectorAll('#sidebar a.nav-link').forEach(function(a){
       a.addEventListener('click', function(){ if(window.innerWidth<=768) hide(); });
     });
-  });
 })();
 </script>
 

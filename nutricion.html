@@ -981,10 +981,8 @@ if('serviceWorker' in navigator){ window.addEventListener('load',function(){ nav
   var open=false;
   function show(){open=true;document.getElementById('sidebar').classList.add('on');document.getElementById('lov').classList.add('on');document.body.style.overflow='hidden';document.getElementById('lico').innerHTML=CROSS;}
   function hide(){open=false;document.getElementById('sidebar').classList.remove('on');document.getElementById('lov').classList.remove('on');document.body.style.overflow='';document.getElementById('lico').innerHTML=BARS;}
-  document.addEventListener('DOMContentLoaded',function(){
-    var btn=document.getElementById('lham'); if(btn) btn.onclick=function(){open?hide():show();};
-    var ov=document.getElementById('lov'); if(ov) ov.onclick=hide;
-  });
+  document.getElementById('lham').onclick=function(){open?hide():show();};
+    document.getElementById('lov').onclick=hide;
 })();
 </script>
 </body>
