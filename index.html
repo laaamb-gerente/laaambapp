@@ -683,16 +683,13 @@ document.addEventListener('DOMContentLoaded', function() {
         var poly=L.polygon(coords,{color:color,weight:1.5,fillColor:color,fillOpacity:0.22,interactive:false});
         poly.addTo(DMAP); DMAP_LAYERS.push(poly);
         var center=poly.getBounds().getCenter();
-        var lbl=L.marker(center,{
-          icon:L.divIcon({
-            html:'<div style="font-family:Changa,sans-serif;text-align:center;pointer-events:none;white-space:nowrap">'
-              +'<div style="font-size:11px;font-weight:700;color:'+color+';text-shadow:0 1px 4px rgba(0,0,0,1)">'+l.nombre+'</div>'
-              +'<div style="font-size:10px;color:rgba(255,255,255,.85);text-shadow:0 1px 3px rgba(0,0,0,1)">'+n+'/'+cap+'</div>'
-              +'</div>',
-            className:'',iconAnchor:[30,14]
-          }),interactive:false
-        });
-        lbl.addTo(DMAP); DMAP_LAYERS.push(lbl); bounds=bounds.concat(coords);
+        // Nombre del potrero: solo al hover/click (tooltip), no label permanente
+        poly.bindTooltip(
+          '<div style="font-family:Changa,sans-serif;font-size:12px;font-weight:700;color:'+color+';white-space:nowrap">'+l.nombre+'<br><span style=\"font-size:11px;font-weight:400;opacity:.85\">'+n+'/'+cap+' animales</span></div>',
+          {permanent:false,direction:'top',className:'lote-tooltip-dash',sticky:false}
+        );
+        var lbl=L.marker(center,{opacity:0,interactive:false,icon:L.divIcon({html:'',className:''})}).addTo(DMAP);
+        DMAP_LAYERS.push(lbl); bounds=bounds.concat(coords);
       });
 
       // Sin geometría: centrar en municipio de la finca
