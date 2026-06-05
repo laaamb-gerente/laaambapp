@@ -1228,6 +1228,7 @@ window.DB = {
   //   num_corderos_nacidos, num_corderos_vivos, estado_madre,
   //   complicaciones?, responsable?, finca_id?, notas? }
   // corderos = [{ sexo, peso_nacimiento_kg?, estado_al_nacer, destino_crianza, notas?, animal_id? }]
+  // v2 - fixed _animal_ids exclusion from INSERT
   async createParto(datosParto, corderos) {
     const FINCA = datosParto.finca_id || 'a1b2c3d4-0000-0000-0000-000000000001';
     // Destructure internal fields that should NOT go to Supabase
