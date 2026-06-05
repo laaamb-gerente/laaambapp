@@ -762,7 +762,41 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div class="form-grid">
       <div class="fg"><label class="fl">Animal (ID) *</label><input class="fi" id="ti-animal" placeholder="OV-0001" oninput="autoFillAnimal(this.value)"></div>
       <div class="fg"><label class="fl">Peso actual (kg) *</label><input class="fi" type="number" id="ti-peso" placeholder="42" step="0.5" oninput="calcDosisTrat()"></div>
-      <div class="fg"><label class="fl">Diagnóstico / Motivo *</label><input class="fi" id="ti-dx" placeholder="Neumonía bacteriana"></div>
+      <div class="fg"><label class="fl">Diagnóstico / Motivo *</label>
+        <input class="fi" id="ti-dx" placeholder="Escribe o selecciona…" list="dx-sugerencias" autocomplete="off">
+        <datalist id="dx-sugerencias">
+          <option value="Parasitosis">Parasitosis (Gut Worms / Haemonchus)</option>
+          <option value="Miasis">Miasis (Flystrike)</option>
+          <option value="Hipotermia">Hipotermia</option>
+          <option value="Debilidad">Debilidad</option>
+          <option value="Asfixia">Asfixia</option>
+          <option value="Fiebre">Fiebre</option>
+          <option value="Indigestión">Indigestión</option>
+          <option value="Nacido muerto">Nacido muerto</option>
+          <option value="Accidente">Accidente</option>
+          <option value="Ahorcamiento">Ahorcamiento</option>
+          <option value="Rodamiento">Rodamiento</option>
+          <option value="Fractura">Fractura</option>
+          <option value="Trauma">Trauma</option>
+          <option value="Abandono">Abandono (olvidado en potrero)</option>
+          <option value="Julian">Julian (evento)</option>
+          <option value="Cody">Cody (evento)</option>
+          <option value="Neumonía">Neumonía</option>
+          <option value="Enterotoxemia">Enterotoxemia</option>
+          <option value="Coccidiosis">Coccidiosis</option>
+          <option value="Anemia">Anemia</option>
+          <option value="Timpanismo">Timpanismo</option>
+          <option value="Distocia">Distocia</option>
+          <option value="Diarrea neonatal">Diarrea neonatal</option>
+          <option value="Hipocalcemia">Hipocalcemia</option>
+          <option value="Toxemia de preñez">Toxemia de preñez</option>
+          <option value="Fasciola">Fasciola</option>
+          <option value="Depredación">Depredación</option>
+          <option value="Desparasitación preventiva">Desparasitación preventiva</option>
+          <option value="Vacunación">Vacunación</option>
+          <option value="Control rutinario">Control rutinario</option>
+        </datalist>
+      </div>
       <div class="fg"><label class="fl">Lote</label><select class="fi"><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select></div>
     </div>
     <div class="form-section">Medicamento</div>
@@ -819,7 +853,9 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
           <option value="hato|470">Todo el hato — 470 animales</option>
         </select>
       </div>
-      <div class="fg"><label class="fl">Motivo / Diagnóstico</label><input class="fi" placeholder="Desparasitación preventiva"></div>
+      <div class="fg"><label class="fl">Motivo / Diagnóstico</label>
+        <input class="fi" id="tg-dx" placeholder="Escribe o selecciona…" list="dx-sugerencias" autocomplete="off">
+      </div>
       <div class="fg"><label class="fl">Peso promedio grupo (kg)</label><input class="fi" type="number" id="tg-peso" placeholder="38" oninput="calcDosisTratGrupal()"></div>
       <div class="fg"><label class="fl">N° animales (confirmado)</label><input class="fi" type="number" id="tg-n" placeholder="47" oninput="calcDosisTratGrupal()"></div>
     </div>

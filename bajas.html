@@ -468,12 +468,23 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <div id="t-muertes" class="tab-pane" style="display:none">
       <div style="display:flex;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <select class="fi" style="width:160px" onchange="filterMuertes(this.value,'causa')">
+          <select class="fi" style="width:170px" onchange="filterMuertes(this.value,'causa')">
             <option value="">Todas las causas</option>
-            <option>Neumonía</option><option>Diarrea neonatal</option>
-            <option>Predación</option><option>Parto distócico</option>
-            <option>Enterotoxemia</option><option>Traumatismo</option>
-            <option>Causa desconocida</option>
+            <optgroup label="La Marinilla">
+              <option>Parasitosis</option><option>Miasis</option>
+              <option>Hipotermia</option><option>Debilidad</option>
+              <option>Asfixia</option><option>Fiebre</option>
+              <option>Indigestión</option><option>Nacido muerto</option>
+              <option>Accidente</option><option>Ahorcamiento</option>
+              <option>Rodamiento</option><option>Fractura</option>
+              <option>Trauma</option><option>Abandono</option>
+              <option>Julian</option><option>Cody</option>
+            </optgroup>
+            <optgroup label="Otras">
+              <option>Neumonía</option><option>Enterotoxemia</option>
+              <option>Coccidiosis</option><option>Anemia</option>
+              <option>Depredación</option><option>Causa desconocida</option>
+            </optgroup>
           </select>
           <select class="fi" style="width:140px" onchange="filterMuertes(this.value,'cat')">
             <option value="">Todas las categorías</option>
@@ -681,40 +692,50 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
         <div class="fg"><label class="fl">Causa de muerte *</label>
           <select class="fi" id="muerte-causa">
             <option value="">— Selecciona la causa —</option>
+            <optgroup label="✅ Registradas en La Marinilla">
+              <option value="Parasitosis">Parasitosis (Gut Worms / Haemonchus)</option>
+              <option value="Miasis">Miasis (Flystrike / gusanos)</option>
+              <option value="Hipotermia">Hipotermia</option>
+              <option value="Debilidad">Debilidad (madre con baja leche)</option>
+              <option value="Asfixia">Asfixia</option>
+              <option value="Fiebre">Fiebre</option>
+              <option value="Indigestión">Indigestión (indiscreción alimenticia)</option>
+              <option value="Nacido muerto">Nacido muerto</option>
+              <option value="Accidente">Accidente (engarzado, atrapado)</option>
+              <option value="Ahorcamiento">Ahorcamiento</option>
+              <option value="Rodamiento">Rodamiento (caída en terreno)</option>
+              <option value="Fractura">Fractura (sacrificio de emergencia)</option>
+              <option value="Trauma">Trauma (herida grave)</option>
+              <option value="Abandono">Abandono (olvidado en potrero)</option>
+              <option value="Julian">Julian (evento masivo ene-feb 2026)</option>
+              <option value="Cody">Cody (evento abr 2026)</option>
+            </optgroup>
+            <optgroup label="Parasitarias">
+              <option value="Coccidiosis">Coccidiosis</option>
+              <option value="Fasciola">Fasciola (distomatosis)</option>
+            </optgroup>
             <optgroup label="Digestivas">
-              <option>Diarrea neonatal (enterotoxemia tipo E)</option>
-              <option>Enterotoxemia (tipo C/D — Clostridium)</option>
-              <option>Timpanismo</option>
-              <option>Parasitosis gastrointestinal (Haemonchus, Trichostrongylus)</option>
-              <option>Coccidiosis</option>
+              <option value="Enterotoxemia">Enterotoxemia (Clostridium)</option>
+              <option value="Timpanismo">Timpanismo</option>
+              <option value="Diarrea neonatal">Diarrea neonatal</option>
             </optgroup>
             <optgroup label="Respiratorias">
-              <option>Neumonía bacteriana</option>
-              <option>Neumonía viral (Parainfluenza, Adenovirus)</option>
-              <option>Pleuropneumonía</option>
+              <option value="Neumonía">Neumonía</option>
+              <option value="Pleuropneumonía">Pleuropneumonía</option>
             </optgroup>
-            <optgroup label="Metabólicas/Nutricionales">
-              <option>Anemia (Haemonchus contortus)</option>
-              <option>Hipocalcemia / Fiebre de leche</option>
-              <option>Hipomagnesemia</option>
-              <option>Toxemia de la preñez (ketosis ovina)</option>
-              <option>Deficiencia de selenio / enfermedad del músculo blanco</option>
+            <optgroup label="Metabólicas / Nutricionales">
+              <option value="Anemia">Anemia</option>
+              <option value="Hipocalcemia">Hipocalcemia (fiebre de leche)</option>
+              <option value="Toxemia de preñez">Toxemia de preñez (ketosis)</option>
+              <option value="Deficiencia selenio">Deficiencia de selenio</option>
             </optgroup>
-            <optgroup label="Reproductivas/Neonatales">
-              <option>Distocia</option>
-              <option>Muerte neonatal (primeras 24h)</option>
-              <option>Septicemia neonatal</option>
-              <option>Aborto (registrar aparte en reproducción)</option>
-            </optgroup>
-            <optgroup label="Traumáticas">
-              <option>Accidente / trauma</option>
-              <option>Depredación</option>
-              <option>Ahogamiento / accidente en potrero</option>
+            <optgroup label="Neonatales / Reproductivas">
+              <option value="Distocia">Distocia</option>
+              <option value="Septicemia neonatal">Septicemia neonatal</option>
             </optgroup>
             <optgroup label="Otras">
-              <option>Causa desconocida</option>
-              <option>Sacrificio de emergencia (animal sufriente)</option>
-              <option>Intoxicación</option>
+              <option value="Depredación">Depredación</option>
+              <option value="Causa desconocida">Causa desconocida</option>
             </optgroup>
           </select>
         </div>
