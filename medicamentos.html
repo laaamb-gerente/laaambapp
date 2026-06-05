@@ -111,7 +111,8 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .stock-num{font-size:18px;font-weight:700;color:var(--text);line-height:1}
 .stock-label{font-size:10px;color:var(--text3)}
 .stock-track{flex:1;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden}
-.stock-fill{height:100%;border-radius:2px}
+.stock-track{background:var(--surface2);border-radius:5px;height:10px;overflow:hidden;flex:1;margin:4px 0}
+.stock-fill{height:100%;border-radius:5px;transition:width .4s ease}
 .venc-badge{position:absolute;top:12px;right:12px}
 
 /* MODAL */
@@ -490,7 +491,9 @@ function renderMeds(){
     const dias = diasVenc(m.venc);
     const vs = vencStatus(m.venc);
     const stockPct = Math.round((m.stock / m.max) * 100);
-    const stockColor = stockPct < 20 ? 'var(--red)' : stockPct < 40 ? 'var(--amber)' : 'var(--teal)';
+    // Stock levels: >70% lleno (teal), 40-70% medio (green), 20-40% bajo (amber), <20% crítico (red)
+    const stockColor = stockPct < 20 ? 'var(--red)' : stockPct < 40 ? 'var(--amber)' : stockPct < 70 ? '#4ade80' : 'var(--teal)';
+    const stockLabel = stockPct < 20 ? '🔴 Crítico' : stockPct < 40 ? '🟡 Bajo' : stockPct < 70 ? '🟢 Medio' : '✅ Lleno';
     const vencText = vs==='urgente' ? '⚠ Vence en '+dias+'d' : vs==='pronto' ? '⏰ Vence en '+dias+'d' : '✓ OK ('+dias+'d)';
     const vencBadge = vs==='urgente' ? 'b-red' : vs==='pronto' ? 'b-amber' : 'b-green';
     return '<div class="med-card venc-'+vs+'" onclick="toast(\''+m.nombre+' · Lote '+m.lote+'\',\'info\')">'
@@ -507,8 +510,8 @@ function renderMeds(){
         +'<div class="med-stock-row">'
           +'<div><div class="stock-num">'+m.stock+'<span style="font-size:11px;color:var(--text3);margin-left:2px">mL</span></div>'
           +'<div class="stock-label">de '+m.max+' mL stock</div></div>'
-          +'<div class="stock-track"><div class="stock-fill" style="width:'+stockPct+'%;background:'+stockColor+'"></div></div>'
-          +'<div style="font-size:11px;font-weight:600;color:'+stockColor+'">'+stockPct+'%</div>'
+          +'<div class="stock-track" style="position:relative;height:10px;border-radius:5px"><div class="stock-fill" style="width:'+stockPct+'%;background:'+stockColor+';height:10px;border-radius:5px;transition:width .4s"></div></div>'
+          +'<div style="font-size:11px;font-weight:600;color:'+stockColor+';">'+stockLabel+'</div>'
         +'</div>'
       +'</div>'
       +'<div class="venc-badge"><span class="badge '+vencBadge+'" style="font-size:10px">'+vencText+'</span></div>'

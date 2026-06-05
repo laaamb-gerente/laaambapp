@@ -723,7 +723,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <div class="fg"><label class="fl">Estado de la madre</label><select class="fi" id="p-estado-madre"><option value="bien">Bien</option><option value="complicaciones">Con complicaciones</option><option value="muerta">Falleció</option></select></div>
       <div class="fg"><label class="fl">Lote</label><select class="fi"><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select></div>
     </div>
-    <div id="p-lineaje-info" style="display:none"></div>
+    <div id="p-genealogía-info" style="display:none"></div>
     <div class="form-section">Crías</div>
     <div class="form-grid">
       <div class="fg"><label class="fl">N° crías vivas *</label><input class="fi" type="number" id="p-vivas" placeholder="2" min="0" oninput="generarCrias()"/></div>
@@ -830,6 +830,22 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="modal-foot">
     <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-grupo-montas')">Cancelar</button>
     <button class="btn btn-primary btn-sm" onclick="guardarMontasGrupo()">Guardar montas</button>
+  </div>
+</div>
+</div>
+
+<!-- ══ MODAL DETALLE PARTO ══ -->
+<div class="overlay" id="modal-detalle-parto" onclick="if(event.target===this)closeModal('modal-detalle-parto')">
+<div class="modal modal-md">
+  <div class="modal-head">
+    <div class="modal-title" id="dp-titulo">🐑 Detalle de parto</div>
+    <button class="modal-close" onclick="closeModal('modal-detalle-parto')">✕</button>
+  </div>
+  <div class="modal-body">
+    <div id="dp-body"></div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-detalle-parto')">Cerrar</button>
   </div>
 </div>
 </div>
@@ -1130,13 +1146,14 @@ async function loadPartosDB(){
   if(!(window.DB && typeof window.DB.getPartos==='function')) return;
   try{
     var r = await window.DB.getPartos('a1b2c3d4-0000-0000-0000-000000000001', 20);
-    if(r && r.data) renderPartosDB(r.data);
+    if(r && r.data){ window._partosCache = r.data; renderPartosDB(r.data); }
   }catch(e){ console.warn('[Repro] loadPartosDB:', e&&e.message); }
 }
 function renderPartosDB(data){
   var tb=document.getElementById('partos-tbody'); if(!tb) return;
   if(!data.length){ tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--text2);padding:20px">Sin partos registrados.</td></tr>'; return; }
   var TIPO={simple:'b-green',doble:'b-amber',triple:'b-wine',cuadruple:'b-red'};
+  var _partoData = data;
   tb.innerHTML=data.map(function(p){
     var cn=p.corderos_nacidos||[];
     var vivos=(cn.length?cn.filter(function(c){return c.estado_al_nacer!=='muerto';}).length:(p.num_corderos_vivos||0));
@@ -1146,21 +1163,38 @@ function renderPartosDB(data){
     var madre=(p.madre&&(p.madre.codigo||p.madre.nombre))||'—';
     var padre=(p.padre&&(p.padre.codigo||p.padre.nombre))||'—';
     var estadoBadge=p.estado_madre==='bien'?'':(' <span class="badge b-red">'+(p.estado_madre==='muerta'?'madre †':'complic.')+'</span>');
-    return '<tr>'
+    var pid=p.id||'';
+    return '<tr style="cursor:pointer" onclick="abrirDetalleParto(\''+pid+'\',this._parto)" data-pid="'+pid+'">'
       +'<td class="td-muted">'+(p.fecha_parto||'—')+'</td>'
-      +'<td class="td-mono">#'+madre+estadoBadge+'</td>'
-      +'<td style="text-align:center">—</td>'
+      +'<td class="td-mono"><b style="color:var(--teal)">#'+madre+'</b>'+estadoBadge+'</td>'
+      +'<td style="text-align:center">'+iconos+'</td>'
       +'<td class="td-mono">#'+padre+'</td>'
       +'<td><span class="badge b-green">'+vivos+'</span></td>'
       +'<td>'+(muertos>0?'<span class="badge b-red">'+muertos+'</span>':'—')+'</td>'
       +'<td class="td-muted">'+pesos+'</td>'
       +'<td><span class="badge '+(TIPO[p.tipo_parto]||'b-gray')+'">'+(p.tipo_parto||'—')+'</span></td>'
-      +'<td class="td-mono" style="font-size:11px">'+iconos+'</td>'
-      +'<td class="td-muted">—</td>'
+      +'<td class="td-muted">'+((p.notas||p.observaciones||'').substring(0,30)||'—')+'</td>'
+      +'<td class="td-muted">'+((p.colaborador||p.registrado_por||'—').substring(0,12))+'</td>'
       +'</tr>';
   }).join('');
 }
-document.addEventListener('appstate:ready', function(){ setTimeout(loadPartosDB, 200); });
+document.addEventListener('appstate:ready', function(){
+  setTimeout(loadPartosDB, 200);
+  // Auto-abrir modal parto si viene de animales.html con ?accion=parto&madre=XXX
+  var params=new URLSearchParams(location.search);
+  if(params.get('accion')==='parto'){
+    var madre=params.get('madre')||sessionStorage.getItem('parto_madre')||'';
+    if(madre){
+      setTimeout(function(){
+        openModal('modal-parto');
+        var el=document.getElementById('p-madre'); if(el){el.value=madre;el.dispatchEvent(new Event('change'));}
+        var infoBox=document.getElementById('p-genealogia-info');
+        if(infoBox&&typeof _showGenealogiaInfo==='function') _showGenealogiaInfo(madre);
+        try{sessionStorage.removeItem('parto_madre');}catch(e){}
+      }, 600);
+    }
+  }
+});
 document.addEventListener('DOMContentLoaded', function(){ setTimeout(loadPartosDB, 1200); });
 
 // ═══ FILTROS ═══
@@ -1259,7 +1293,7 @@ function _toggleDestino(sel){
   if(wrap) wrap.style.display = (sel.value==='muerto')?'none':'';
 }
 function autoFillMadre(val){
-  const box=document.getElementById('p-lineaje-info');
+  const box=document.getElementById('p-genealogía-info');
   if(!box) return;
   // Para el parto usamos la última monta registrada aunque su ecografía
   // haya sido "vacía" (detección tardía de preñez).
@@ -1338,7 +1372,7 @@ async function saveParto(){
   }
 
   // ── Supabase: registrar evento reproductivo (parto) + estado de la madre ──
-  // + propagación de lineaje: padres y raza calculada a cada cría.
+  // + propagación de genealogía: padres y raza calculada a cada cría.
   if(window.DB && window.AppState && Array.isArray(window.AppState.animales)){
     const _mo=_findAnimalRepro(madreId);
     if(_mo){
@@ -2633,6 +2667,40 @@ async function agregarHembraGrupo(hembraId, cod){
     renderGruposTab();
     toast('✓ '+cod+' agregada al grupo');
   }catch(e){ toast('Error: '+(e.message||e),'err'); }
+}
+
+// ── DETALLE PARTO ──────────────────────────────────────────────────────────
+function abrirDetalleParto(partoId){
+  var partos = window._partosCache || [];
+  var p = partos.find(function(x){ return (x.id||'')===partoId; });
+  if(!p){ toast('Parto no encontrado','err'); return; }
+  var cn = p.corderos_nacidos||[];
+  var vivos = cn.filter(function(c){return c.estado_al_nacer!=='muerto';});
+  var muertos = cn.filter(function(c){return c.estado_al_nacer==='muerto';});
+  var madre = (p.madre&&(p.madre.codigo||p.madre.nombre))||'—';
+  var padre = (p.padre&&(p.padre.codigo||p.padre.nombre))||'—';
+  document.getElementById('dp-titulo').textContent = '🐑 Parto de #'+madre+' · '+_fmtD(p.fecha_parto);
+  document.getElementById('dp-body').innerHTML = [
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">',
+    '<div style="background:var(--bg3);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:3px">Madre</div><div style="font-size:14px;font-weight:700;color:var(--teal)">#'+madre+'</div></div>',
+    '<div style="background:var(--bg3);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:3px">Padre</div><div style="font-size:14px;font-weight:700;color:var(--teal)">#'+padre+'</div></div>',
+    '<div style="background:var(--bg3);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:3px">Fecha</div><div style="font-size:13px;font-weight:600">'+_fmtD(p.fecha_parto)+'</div></div>',
+    '<div style="background:var(--bg3);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:3px">Tipo</div><div style="font-size:13px;font-weight:600">'+(p.tipo_parto||'—')+'</div></div>',
+    '<div style="background:var(--bg3);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:3px">Vivos</div><div style="font-size:18px;font-weight:700;color:var(--green)">'+(p.num_corderos_vivos||vivos.length||0)+'</div></div>',
+    '<div style="background:var(--bg3);border-radius:var(--r);padding:10px"><div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;margin-bottom:3px">Muertos</div><div style="font-size:18px;font-weight:700;color:var(--red)">'+(muertos.length||p.num_corderos_muertos||0)+'</div></div>',
+    '</div>',
+    cn.length ? '<div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">Crías registradas</div>'
+      + cn.map(function(c,i){
+        var sx = c.sexo==='M'?'🐏':'🐑';
+        var est = c.estado_al_nacer==='muerto'?'<span style="color:var(--red)">† muerto</span>':'<span style="color:var(--green)">vivo/a</span>';
+        var cod = c.codigo_asignado||c.codigo||('Cría '+(i+1));
+        var peso = c.peso_nacimiento_kg!=null?(c.peso_nacimiento_kg+' kg'):'—';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px">'+sx+' <b>'+cod+'</b> · '+peso+' · '+est+'</div>';
+      }).join('')
+    : '<div style="font-size:12px;color:var(--text3)">Sin crías registradas individualmente.</div>',
+    p.observaciones||p.notas ? '<div style="margin-top:10px;font-size:12px;color:var(--text2)"><b>Observaciones:</b> '+(p.observaciones||p.notas)+'</div>' : ''
+  ].join('');
+  openModal('modal-detalle-parto');
 }
 
 async function cerrarGrupo(grupoId){

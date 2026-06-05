@@ -227,7 +227,7 @@ label.fl[for] + .fi:required,label.fl + .fi[required]{border-left:2px solid var(
 .sp-tab.active{background:var(--teal);border-color:var(--teal);color:#080f10}
 .sp-tab.active-bo{background:var(--amber);border-color:var(--amber);color:#080f10}
 
-/* ── FICHA INDIVIDUAL (Performance · Tratamientos · Linaje) ── */
+/* ── FICHA INDIVIDUAL (Performance · Tratamientos · Genealogía) ── */
 .ficha-head{background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);padding:14px 16px;margin-bottom:14px}
 .ficha-id{font-family:'Sigmar',cursive;font-size:20px;color:var(--text);margin-top:8px}
 .ficha-cat{font-size:13px;color:var(--text3);font-family:'Changa',sans-serif;font-weight:600}
@@ -700,7 +700,7 @@ function cambiarPagina(delta){
 
 // ── Perfil animal ─────────────────────────────────────────────────────────────
 function verPerfil(id){
-  // Nueva ficha estilo FlockFinder (Performance · Tratamientos · Linaje).
+  // Nueva ficha estilo FlockFinder (Performance · Tratamientos · Genealogía).
   return verPerfilFicha(id);
 }
 function verPerfilLegacy(id){
@@ -1209,7 +1209,7 @@ document.addEventListener('appstate:ready', function(e){
 </script>
 <script>
 // ════════════════════════════════════════════════════════════════════════════
-//  FICHA INDIVIDUAL — estilo FlockFinder (Performance · Tratamientos · Linaje)
+//  FICHA INDIVIDUAL — estilo FlockFinder (Performance · Tratamientos · Genealogía)
 //  La ficha se abre con el MISMO mecanismo de hoy: modal #m-perfil (verPerfil).
 // ════════════════════════════════════════════════════════════════════════════
 var FICHA_PESO_META = 48; // kg objetivo de sacrificio (default)
@@ -1330,11 +1330,11 @@ async function verPerfilFicha(id){
     '<div class="ficha-tabs">'
     +'<div class="ftab active" id="ftab-performance" onclick="fichaTab(\'performance\')">Performance</div>'
     +'<div class="ftab" id="ftab-tratamientos" onclick="fichaTab(\'tratamientos\')">Tratamientos</div>'
-    +'<div class="ftab" id="ftab-linaje" onclick="fichaTab(\'linaje\')">Linaje</div>'
+    +'<div class="ftab" id="ftab-genealogia" onclick="fichaTab(\'genealogia\')">Genealogía</div>'
     +'</div>'
     +'<div id="fp-performance" class="ficha-pane"><div id="ficha-perf" class="ficha-skel">⏳ Cargando performance…</div></div>'
     +'<div id="fp-tratamientos" class="ficha-pane" style="display:none"><div id="ficha-trts" class="ficha-skel">⏳ Cargando tratamientos…</div></div>'
-    +'<div id="fp-linaje" class="ficha-pane" style="display:none"><div id="ficha-linaje" class="ficha-skel">⏳ Cargando linaje…</div></div>';
+    +'<div id="fp-genealogia" class="ficha-pane" style="display:none"><div id="ficha-genealogia" class="ficha-skel">⏳ Cargando genealogia…</div></div>';
   // Fase 6 — evaluación materna (solo hembras y roles autorizados).
   // _PUEDE_EVAL, _scoreBadge y abrirEval los define el bloque Fase 6 (window.*);
   // guard typeof por si el bloque aún no cargó.
@@ -1380,7 +1380,7 @@ async function verPerfilFicha(id){
   openModal('m-perfil');
   _fichaLoadPerformance(a, raw, fechaNac);
   _fichaLoadTratamientos(a);
-  _fichaLoadLinaje(a);
+  _fichaLoadGenealogía(a);
   _fichaResolverPivote(a);
   if(a.sexo==='H') _fichaLoadPartos(a);
 }
@@ -1408,26 +1408,37 @@ async function _fichaResolverPivote(a){
 
 async function _fichaLoadPartos(a){
   var box=document.getElementById('ficha-partos'); if(!box) return;
-  if(!(window.DB && typeof window.DB.getPartosPorAnimal==='function')){ box.innerHTML=''; return; }
   var uuid=a._uuid||a.id;
-  box.innerHTML='<div class="ficha-skel">⏳ Cargando partos…</div>';
+  var cod=a.codigo||a.id;
+  // Botón Registrar parto siempre visible para hembras
+  var btnRegistrar='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+    +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text4)">Partos</div>'
+    +'<button class="btn btn-primary btn-xs" onclick="abrirPartoDesdeAnimal(\''+cod+'\')" style="font-size:11px">+ Registrar parto</button>'
+    +'</div>';
+  if(!(window.DB && typeof window.DB.getPartosPorAnimal==='function')){ box.innerHTML=btnRegistrar+'<div style="font-size:12px;color:var(--text3)">Sin partos registrados</div>'; return; }
+  box.innerHTML='<div class="ficha-skel">⏳ Cargando…</div>';
   try{
     var r=await window.DB.getPartosPorAnimal(uuid);
     var partos=(r&&r.data)||[];
-    var head='<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text4);margin-bottom:6px">Partos</div>';
-    if(!partos.length){ box.innerHTML=head+'<div style="font-size:12px;color:var(--text3)">Sin partos registrados</div>'; return; }
-    var lista=partos.slice(0,3).map(function(p){
+    if(!partos.length){ box.innerHTML=btnRegistrar+'<div style="font-size:12px;color:var(--text3)">Sin partos registrados. Usa el botón para registrar el primero.</div>'; return; }
+    var lista=partos.slice(0,5).map(function(p){
       var cn=p.corderos_nacidos||[];
       var vivos=(cn.length?cn.filter(function(c){return c.estado_al_nacer!=='muerto';}).length:(p.num_corderos_vivos||0));
-      return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border)"><span class="td-m">'+_escF(p.fecha_parto)+'</span><span>'+_escF(p.tipo_parto||'—')+' · '+vivos+' vivos</span></div>';
+      return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;color:var(--text2)" onclick="window.location=\'reproduccion.html\'"><span class="td-m">'+_escF(p.fecha_parto)+'</span><span>'+_escF(p.tipo_parto||'—')+' · <b style="color:var(--green)">'+vivos+' vivos</b></span></div>';
     }).join('');
-    box.innerHTML=head
+    box.innerHTML=btnRegistrar
       +'<div style="font-size:12px;color:var(--text2);margin-bottom:4px">Total: <b style="color:var(--text)">'+partos.length+'</b> · Última: '+_escF(partos[0].fecha_parto)+'</div>'
       +lista;
-  }catch(e){ box.innerHTML='<div style="font-size:12px;color:var(--text3)">No se pudo cargar partos</div>'; }
+  }catch(e){ box.innerHTML=btnRegistrar+'<div style="font-size:12px;color:var(--text3)">No se pudo cargar partos</div>'; }
+}
+
+function abrirPartoDesdeAnimal(codigoMadre){
+  // Guardar contexto y abrir reproduccion.html con modal pre-cargado
+  try{ sessionStorage.setItem('parto_madre', codigoMadre); }catch(e){}
+  window.location.href='reproduccion.html?accion=parto&madre='+encodeURIComponent(codigoMadre);
 }
 function fichaTab(name){
-  ['performance','tratamientos','linaje'].forEach(function(n){
+  ['performance','tratamientos','genealogia'].forEach(function(n){
     var b=document.getElementById('ftab-'+n), p=document.getElementById('fp-'+n);
     if(b) b.classList.toggle('active', n===name);
     if(p) p.style.display = (n===name)?'block':'none';
@@ -1550,8 +1561,8 @@ async function _fichaLoadTratamientos(a){
   }).join('');
   cont.innerHTML='<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);overflow:auto;margin-bottom:12px"><table><thead><tr><th>Fecha</th><th>Medicamento</th><th>Dosis</th><th>Vía</th><th>Retiro (días)</th><th>Estado</th><th>Notas</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+linkBtn;
 }
-async function _fichaLoadLinaje(a){
-  var cont=document.getElementById('ficha-linaje'); if(!cont) return;
+async function _fichaLoadGenealogía(a){
+  var cont=document.getElementById('ficha-genealogia'); if(!cont) return;
   var madre=null,padre=null,crias=[];
   try{ if(a.madre_id && window.DB && window.DB.getAnimal){ var rm=await window.DB.getAnimal(a.madre_id); if(rm && !rm.error) madre=rm.data; } }catch(e){}
   try{ if(a.padre_id && window.DB && window.DB.getAnimal){ var rp=await window.DB.getAnimal(a.padre_id); if(rp && !rp.error) padre=rp.data; } }catch(e){}
