@@ -1496,8 +1496,28 @@ async function _fichaLoadPerformance(a, raw, fechaNac){
   catch(e){ cont.innerHTML='<div class="ficha-skel">No se pudieron cargar los pesajes (--)</div>'; return; }
   var btnHTML='<div style="text-align:center"><button class="btn btn-primary btn-xs" onclick="fichaRegistrarPesaje(\''+_escF(a.codigo||a.id)+'\')">+ Registrar pesaje</button></div>';
   if(!pesajes.length){
-    cont.innerHTML='<div class="ficha-skel">Sin pesajes registrados</div>'+btnHTML;
+    cont.innerHTML='<div class="ficha-skel">Sin pesajes registrados.<br><span style="font-size:11px;color:var(--text3)">Registra el primer pesaje para ver la curva de crecimiento.</span></div>'+btnHTML;
     return;
+  }
+  // ── Agregar peso al nacer como primer punto si no existe pesaje en fecha de nacimiento ──
+  if(fechaNac){
+    var hasNacimiento = pesajes.some(function(p){ return p.fecha===fechaNac; });
+    if(!hasNacimiento){
+      // Buscar peso de nacimiento desde corderos_nacidos (para crías de parto)
+      try{
+        if(a._uuid && window.DB && window._sb){
+          var _cnR = await window._sb.from('corderos_nacidos')
+            .select('peso_nacimiento_kg')
+            .eq('animal_id', a._uuid)
+            .single();
+          if(_cnR && _cnR.data && _cnR.data.peso_nacimiento_kg!=null){
+            pesajes.unshift({fecha:fechaNac, peso:Number(_cnR.data.peso_nacimiento_kg), _isBirth:true});
+          } else if(raw.peso_nacimiento_kg!=null){
+            pesajes.unshift({fecha:fechaNac, peso:Number(raw.peso_nacimiento_kg), _isBirth:true});
+          }
+        }
+      }catch(e){}
+    }
   }
   var gdps=calcularGDP(pesajes);
   var gdpAct = gdps.length?gdps[gdps.length-1]:null;
@@ -1506,17 +1526,20 @@ async function _fichaLoadPerformance(a, raw, fechaNac){
   var sac=calcularEdadSacrificio(pesajes, FICHA_PESO_META, gdpAct);
   var kpis='<div class="kpi-row">'
     +'<div class="kpi-card"><div class="kpi-label">Último peso</div><div class="kpi-val">'+ultimo.peso+' kg</div><div class="kpi-sub">'+_fmtF(ultimo.fecha)+'</div></div>'
-    +'<div class="kpi-card"><div class="kpi-label">GDP total</div><div class="kpi-val">'+(gdpTot!=null?Math.round(gdpTot)+' g/día':'--')+'</div><div class="kpi-sub">desde nacimiento</div></div>'
+    +'<div class="kpi-card"><div class="kpi-label">GDP total</div><div class="kpi-val" style="color:'+(gdpTot!=null&&gdpTot>=200?'var(--green)':gdpTot!=null&&gdpTot>=100?'var(--teal)':'var(--amber)')+'">'+(gdpTot!=null?Math.round(gdpTot)+' g/día':'--')+'</div><div class="kpi-sub">'+(pesajes.length&&(pesajes[0]._isBirth||pesajes[0].fuente==='nacimiento')?'🐣 desde nacimiento':'desde 1er pesaje')+'</div></div>'
     +'<div class="kpi-card"><div class="kpi-label">Edad a sacrificio est.</div><div class="kpi-val">'+(sac?sac.dias_restantes+' días':'--')+'</div><div class="kpi-sub">'+(sac?'~'+_fmtF(sac.fecha_estimada)+' · '+FICHA_PESO_META+' kg':'meta '+FICHA_PESO_META+' kg')+'</div></div>'
     +'</div>';
   var chart='<div class="ficha-chart">'+renderGraficoPesos(pesajes, FICHA_PESO_META, fechaNac)+'</div>';
   var rowsHtml=pesajes.map(function(p,i){
     var edad=fechaNac?_semDesde(fechaNac,p.fecha):_semDesde(pesajes[0].fecha,p.fecha);
-    var gdpCell = i===0 ? '<span class="td-m">N/A</span>' : (gdps[i-1]!=null?Math.round(gdps[i-1]):'--');
+    var gdpCell = i===0 ? '<span style="color:var(--text3);font-size:11px">Nacimiento</span>' : (gdps[i-1]!=null?('<b style="color:var(--green)">'+Math.round(gdps[i-1])+'</b> g/día'):'--');
     var isLast=i===pesajes.length-1;
-    return '<tr'+(isLast?' style="background:var(--teal-bg)"':'')+'><td class="td-m">'+_fmtF(p.fecha)+'</td>'
-      +'<td style="font-weight:600;color:var(--teal)">'+p.peso+'</td>'
-      +'<td class="td-m">'+(edad!=null?edad+' sem':'--')+'</td>'
+    var isBirth=p._isBirth||p.fuente==='nacimiento';
+    var rowStyle=isBirth?'background:var(--surface);font-style:italic':isLast?'background:var(--teal-bg)':'';
+    return '<tr style="'+rowStyle+'">'
+      +'<td class="td-m">'+_fmtF(p.fecha)+(isBirth?' <span style="font-size:10px;color:var(--text3)">🐣</span>':'')+'</td>'
+      +'<td style="font-weight:600;color:var(--teal)">'+p.peso+' <span style="font-size:10px;font-weight:400;color:var(--text3)">kg</span></td>'
+      +'<td class="td-m">'+(edad!=null?edad+' sem':'0 sem')+'</td>'
       +'<td class="td-m">'+gdpCell+'</td></tr>';
   }).join('');
   var tabla='<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:12px"><table><thead><tr><th>Fecha</th><th>Peso (kg)</th><th>Edad</th><th>GDP (g/día)</th></tr></thead><tbody>'+rowsHtml+'</tbody></table></div>';

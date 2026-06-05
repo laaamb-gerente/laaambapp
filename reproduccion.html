@@ -1406,7 +1406,7 @@ async function saveParto(){
       const _especie=_mo.especie||'ovino';
       const _pref=_especie==='bovino'?'BV':'OV';
       const _stamp=Date.now().toString().slice(-6);
-      // Save animals sequentially and collect UUIDs to link corderos_nacidos
+      // Save animals sequentially, collect UUIDs, and create birth pesaje for each
       window._criasCreadas_ids = [];
       const _criaPromises = crias.map(function(c,i){
         return window.DB.saveAnimal({
@@ -1420,9 +1420,19 @@ async function saveParto(){
           peso_actual:c.peso_kg||null,
           estado:'activo'
         }).then(function(res){
-          if(res && res.data && res.data.id) return res.data.id;
-          if(res && res.data && !res.data.id && res.data[0]) return res.data[0].id;
-          return null;
+          var animalUuid = (res&&res.data&&res.data.id) ? res.data.id
+                         : (res&&res.data&&res.data[0]) ? res.data[0].id : null;
+          // Crear pesaje de nacimiento automáticamente (punto de partida de la curva de crecimiento)
+          if(animalUuid && c.peso_kg && window.DB && typeof window.DB.savePesaje==='function'){
+            var _semNac=0;
+            window.DB.savePesaje({
+              finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+              animal_id:animalUuid, peso:c.peso_kg, fecha:fecha,
+              tipo:'rutina', fuente:'nacimiento', edad_semanas:_semNac,
+              notas:'Peso al nacer (registrado automáticamente desde parto)'
+            }).catch(function(e){ console.warn('[Repro] pesaje nacimiento:',e&&e.message); });
+          }
+          return animalUuid;
         }).catch(function(err){
           console.warn('[Repro] cría Supabase:',err&&err.message);
           if(window.logError) logError('saveParto.cria',err);
