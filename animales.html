@@ -580,12 +580,20 @@ function initHamburger(){
 
 // ── Cargar datos ──────────────────────────────────────────────────────────────
 function cargarDatos(){
+  // Si AppState ya tiene animales cargados desde Supabase, solo re-filtrar
+  // (no pisar allAnimales con el AppData local que puede estar vacío)
+  if(window.AppState && Array.isArray(window.AppState.animales) && window.AppState.animales.length > 0){
+    var activos = allAnimales.filter(function(a){return true;});
+    setEl('sb-count', allAnimales.length);
+    if(typeof FarmSelector !== 'undefined') FarmSelector.updateBtn();
+    applyFilters();
+    return;
+  }
   var d=AppData.get();
   var finca=d.finca||{};
   allAnimales=d.animales||[];
   var activos=allAnimales.filter(function(a){return a.activo!==false;});
   setEl('sb-count', activos.length);
-  // Actualizar farm pill con datos reales
   if(typeof FarmSelector !== 'undefined') FarmSelector.updateBtn();
   applyFilters();
 }
@@ -1028,7 +1036,21 @@ function savePesaje(){
     '⏳ Pesaje registrado · Pendiente de aprobación del gerente.'
   );
   closeModal('modal-pesaje');
-  cargarDatos();
+  // Actualizar peso en memoria (sin pisar allAnimales)
+  var _idx = allAnimales.findIndex(function(a){ return a.id===animalId||a.codigo===animalId||a._uuid===animalId; });
+  if(_idx >= 0) allAnimales[_idx].peso_actual = peso;
+  // También actualizar en AppState.animales si existe
+  if(window.AppState && Array.isArray(window.AppState.animales)){
+    var _sa = window.AppState.animales.find(function(a){ return a.codigo===animalId||a.id===animalId; });
+    if(_sa) _sa.peso_actual = peso;
+  }
+  applyFilters(); // Re-render tabla sin destruir allAnimales
+  // Si hay perfil abierto, recargar performance para mostrar nuevo GDP
+  if(window._fichaCurrentAnimal){
+    var _raw = _rawAnimal(window._fichaCurrentAnimal)||{};
+    var _fn = _raw.fecha_nacimiento||window._fichaCurrentAnimal.fecha_nacimiento||null;
+    setTimeout(function(){ _fichaLoadPerformance(window._fichaCurrentAnimal,_raw,_fn); }, 400);
+  }
 }
 
 // ── Pesaje grupal ─────────────────────────────────────────────────────────────

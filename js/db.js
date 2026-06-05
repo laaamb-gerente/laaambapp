@@ -1207,14 +1207,14 @@ window.DB = {
 
   async getPartos(finca_id, limite = 50) {
     return await window._sb.from('partos')
-      .select('*, madre:madre_id(codigo, nombre, raza), padre:padre_id(codigo, nombre), corderos_nacidos(*, cria:animal_id(id, codigo, sexo, peso_actual, estado, fecha_nacimiento))')
+      .select('*, madre:madre_id(codigo, nombre, raza), padre:padre_id(codigo, nombre), corderos_nacidos(*)')
       .eq('finca_id', finca_id)
       .order('fecha_parto', { ascending: false })
       .limit(limite);
   },
   async getParto(id) {
     return await window._sb.from('partos')
-      .select('*, madre:madre_id(codigo, nombre, raza), padre:padre_id(codigo, nombre), corderos_nacidos(*, cria:animal_id(id, codigo, sexo, peso_actual, estado, fecha_nacimiento))')
+      .select('*, madre:madre_id(codigo, nombre, raza), padre:padre_id(codigo, nombre), corderos_nacidos(*)')
       .eq('id', id).single();
   },
   async getPartosPorAnimal(animalId) {

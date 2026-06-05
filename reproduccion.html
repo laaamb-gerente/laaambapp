@@ -1632,7 +1632,15 @@ async function saveParto(){
   }catch(e){ console.warn('[Repro] createParto:', e&&e.message); }
 
   closeModal('modal-parto');
-  toast('Parto registrado · '+vivas+' crías creadas · Estado madre actualizado');
+  // Limpiar URL params para que un refresh no vuelva a abrir el modal
+  if(location.search.includes('accion=parto') || location.search.includes('madre=')){
+    history.replaceState(null, '', location.pathname);
+  }
+  // Toast de éxito prominente
+  var _madreLabel = document.getElementById('p-madre')?.value || madreId;
+  toast('✅ PARTO CREADO CON ÉXITO · Madre: #'+_madreLabel+' · '+vivas+' cría(s) registrada(s)', 'success', 5000);
+  // Recargar lista de partos
+  setTimeout(function(){ if(typeof loadPartosDB==='function') loadPartosDB(); }, 800);
 }
 
 function saveMonta(){
@@ -2874,17 +2882,20 @@ function abrirDetalleParto(partoId){
       + cn.map(function(c,i){
         var sx = c.sexo==='M'?'🐏':'🐑';
         var est = c.estado_al_nacer==='muerto'?'<span style="color:var(--red)">† muerto</span>':'<span style="color:var(--green)">vivo/a</span>';
-        // Try to get chapeta from joined cria data, or fallback
-        var criaJoin = c.cria||null;
-        var cod = criaJoin ? criaJoin.codigo : (c.codigo_asignado||c.codigo||('Cría '+(i+1)));
-        var criaId = criaJoin ? criaJoin.id : null;
-        var pesoActual = criaJoin && criaJoin.peso_actual!=null ? (' · <span style=\"color:var(--teal)\">'+criaJoin.peso_actual+' kg actual</span>') : '';
-        var peso = c.peso_nacimiento_kg!=null?(' nac: '+c.peso_nacimiento_kg+' kg'):'';
-        var clickFn = criaId ? 'onclick=\"abrirFichaDesdeRepro(\''+criaId+'\')\" style=\"cursor:pointer\"' : '';
-        return '<div '+clickFn+' style="display:flex;align-items:center;gap:8px;padding:7px 4px;border-bottom:1px solid var(--border);font-size:13px;border-radius:4px" '+
-          'onmouseover=\"this.style.background=\'var(--bg3)\'\" onmouseout=\"this.style.background=\'\'">'
-          +sx+' <b style="color:var(--teal)">#'+cod+'</b>'+peso+pesoActual+' · '+est
-          +(criaId?'<span style=\"margin-left:auto;font-size:11px;color:var(--text3)\">Ver ficha →</span>':'')+'</div>';
+        // Look up animal from AppState using animal_id
+        var criaAnimal = null;
+        if(c.animal_id && window.AppState && window.AppState.animales){
+          criaAnimal = window.AppState.animales.find(function(a){ return a.id===c.animal_id; });
+        }
+        var cod = criaAnimal ? criaAnimal.codigo : (c.codigo_asignado||c.codigo||('Cría '+(i+1)));
+        var criaId = c.animal_id || (criaAnimal ? criaAnimal.id : null);
+        var pesoNac = c.peso_nacimiento_kg!=null?(' nac: <b>'+c.peso_nacimiento_kg+' kg</b>'):'';
+        var pesoAct = criaAnimal&&criaAnimal.peso_actual!=null?(' · <span style=\"color:var(--teal)\">'+criaAnimal.peso_actual+' kg actual</span>'):'';
+        var clickable = criaId ? 'onclick=\"abrirFichaDesdeRepro(\''+criaId+'\')\" style=\"cursor:pointer\"' : '';
+        return '<div '+clickable+' style="display:flex;align-items:center;gap:8px;padding:8px 4px;border-bottom:1px solid var(--border);font-size:13px;border-radius:4px"'
+          +' onmouseover=\"this.style.background=\'var(--bg3)\'\" onmouseout=\"this.style.background=\'\'">'
+          +sx+' <b style="color:var(--teal)">#'+cod+'</b>'+pesoNac+pesoAct+' · '+est
+          +(criaId?'<span style=\"margin-left:auto;font-size:11px;color:var(--text3)\">Ver →</span>':'')+'</div>';
       }).join('')
     : '<div style="font-size:12px;color:var(--text3)">Sin crías registradas individualmente.</div>',
     p.observaciones||p.notas ? '<div style="margin-top:10px;font-size:12px;color:var(--text2)"><b>Observaciones:</b> '+(p.observaciones||p.notas)+'</div>' : ''
