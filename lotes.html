@@ -1768,6 +1768,7 @@ function renderLotesTab(){
       +'<div class="lc-actions">'
         +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirMoverDesde(\''+l.id+'\')">↔ Mover</button>'
         +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirEditarLotePorId(\''+l.id+'\')">Editar</button>'
+        +'<button class="btn btn-ghost btn-xs" style="color:var(--red)" onclick="event.stopPropagation();confirmarEliminarLote(\''+l.id+'\',\''+l.nombre+'\')">Eliminar</button>'
       +'</div>'
       +'</div>';
   }
@@ -1792,6 +1793,36 @@ function renderLotesTab(){
 var _editingLoteId=null;
 // MEJORA 4 — Resuelve el lote por id: primero localStorage (AppData), si no, AppState (Supabase).
 // Solo cambia la FUENTE del objeto lote; el modal (abrirEditarLote) queda intacto.
+// ── Eliminar lote / potrero ─────────────────────────────────────────────────
+function confirmarEliminarLote(loteId, loteNombre){
+  if(!confirm('¿Eliminar el potrero "'+loteNombre+'"?\n\nEsto lo eliminará del inventario. El historial de movimientos de animales se conserva.')) return;
+  eliminarLoteDefinitivo(loteId, loteNombre);
+}
+async function eliminarLoteDefinitivo(loteId, loteNombre){
+  // 1. Remove from AppData
+  try{
+    if(typeof AppData!=='undefined'){
+      var d=AppData.get();
+      d.lotes=(d.lotes||[]).filter(function(l){return l.id!==loteId;});
+      AppData.set(d);
+    }
+  }catch(e){}
+  // 2. Remove from AppState cache
+  if(window.AppState && Array.isArray(window.AppState.lotes)){
+    window.AppState.lotes = window.AppState.lotes.filter(function(l){return l.id!==loteId;});
+  }
+  // 3. Delete from Supabase
+  if(window.DB && window._sb){
+    try{
+      var r = await window._sb.from('lotes').delete().eq('id', loteId);
+      if(r.error){ toast('Error al eliminar: '+r.error.message, 'err'); return; }
+    }catch(e){ toast('Error: '+e.message, 'err'); return; }
+  }
+  toast('Potrero "'+loteNombre+'" eliminado');
+  // Re-render
+  if(typeof renderLotes==='function') renderLotes();
+}
+
 function abrirEditarLotePorId(id){
   var lote=(AppData.get().lotes||[]).find(function(x){return x.id===id;});
   if(!lote && window.AppState && Array.isArray(window.AppState.lotes)){

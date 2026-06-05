@@ -648,7 +648,9 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
               <select class="fi"><option>Desparasitación</option><option>Vacunación</option><option>Vitaminas</option><option>Pesaje</option><option>Revisión veterinaria</option></select>
             </div>
             <div class="fg"><label class="fl">Animales / Lote</label>
-              <select class="fi"><option>Lote A (47)</option><option>Lote B (132)</option><option>Lote C (98)</option><option>Lote D (193)</option><option>Todo el hato</option></select>
+              <select class="fi" id="cal-lote-filter" onchange="renderCalendario()">
+                <option value="">Todo el hato</option>
+              </select>
             </div>
             <div class="form-grid">
               <div class="fg"><label class="fl">Fecha programada</label><input class="fi" type="date"></div>
@@ -797,7 +799,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
           <option value="Control rutinario">Control rutinario</option>
         </datalist>
       </div>
-      <div class="fg"><label class="fl">Lote</label><select class="fi"><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select></div>
+
     </div>
     <div class="form-section">Medicamento</div>
     <div class="form-grid">
@@ -851,23 +853,46 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     </div>
     <div class="form-grid">
       <div class="fg"><label class="fl">Motivo / Diagnóstico</label>
-        <input class="fi" id="tg-dx" placeholder="Escribe o selecciona…" list="dx-sugerencias" autocomplete="off">
+        <input class="fi" id="tg-dx" placeholder="Desparasitación, Vacunación, Vitaminas…" autocomplete="off" style="color:var(--text)">
+        <div style="display:flex;gap:4px;margin-top:4px;flex-wrap:wrap">
+          <span class="badge b-gray" style="cursor:pointer;font-size:10px" onclick="document.getElementById('tg-dx').value=this.textContent">Desparasitación</span>
+          <span class="badge b-gray" style="cursor:pointer;font-size:10px" onclick="document.getElementById('tg-dx').value=this.textContent">Vacunación</span>
+          <span class="badge b-gray" style="cursor:pointer;font-size:10px" onclick="document.getElementById('tg-dx').value=this.textContent">Vitaminas</span>
+          <span class="badge b-gray" style="cursor:pointer;font-size:10px" onclick="document.getElementById('tg-dx').value=this.textContent">Antibiótico</span>
+          <span class="badge b-gray" style="cursor:pointer;font-size:10px" onclick="document.getElementById('tg-dx').value=this.textContent">Antiparasitario</span>
+        </div>
       </div>
     </div>
-    <div class="form-section">Medicamento</div>
+    <div class="form-section" style="display:flex;justify-content:space-between;align-items:center">
+      <span>Medicamentos</span>
+      <button type="button" class="btn btn-ghost btn-xs" onclick="agregarMedGrupal()" style="font-size:11px">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><path d="M10 4v12M4 10h12"/></svg>
+        Agregar medicamento
+      </button>
+    </div>
+    <div id="tg-meds-container">
+      <!-- Primer medicamento (siempre visible) -->
+      <div class="tg-med-row" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px;margin-bottom:8px">
+        <div class="form-grid" style="margin-bottom:6px">
+          <div class="fg"><label class="fl">Medicamento *</label>
+            <select class="fi tg-med-sel" onchange="onTGMedRowChange(this)">
+              <option value="">— Cargando medicamentos… —</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Dosis sugerida</label>
+            <input class="fi tg-dosis-ref" readonly style="background:var(--bg4);color:var(--teal);font-weight:600" placeholder="Selecciona medicamento">
+          </div>
+          <div class="fg"><label class="fl">Retiro (días)</label>
+            <input class="fi tg-retiro-input" readonly style="background:var(--bg4);color:var(--amber);" placeholder="Auto">
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="form-grid">
-      <div class="fg"><label class="fl">Medicamento *</label>
-        <select class="fi" id="tg-med" onchange="onTGMedChange()">
-          <option value="">— Cargando medicamentos… —</option>
-        </select>
-      </div>
-      <div class="fg"><label class="fl">Dosis sugerida</label>
-        <input class="fi" id="tg-dosis-ref" readonly style="background:var(--bg4);color:var(--teal);font-weight:600" placeholder="Selecciona medicamento">
-      </div>
-      <div class="fg"><label class="fl">Total a descontar de inventario</label>
+      <div class="fg"><label class="fl">Total a descontar (todos los medicamentos)</label>
         <input class="fi" id="tg-dosis-total" readonly style="background:var(--bg4);color:var(--orange);font-weight:700" placeholder="Suma de dosis individuales">
       </div>
-      <div class="fg"><label class="fl">Período retiro (días)</label>
+      <div class="fg"><label class="fl">Retiro máximo aplicado</label>
         <input class="fi" id="tg-retiro" readonly style="background:var(--bg4);color:var(--amber);" placeholder="Auto">
       </div>
     </div>
@@ -1304,7 +1329,17 @@ function poblarCalculadoraMeds(){ _poblarMed6('calc-med'); _poblarMed6('tabla-me
   window.openModal=function(id){
     if(typeof _orig==='function') _orig(id);
     if(id==='modal-trat-individual') poblarMedicamentosModal();
-    if(id==='modal-trat-grupal') poblarMedicamentosGrupal();
+    if(id==='modal-trat-grupal'){
+      // Populate first med row
+      var firstSel = document.querySelector('#tg-meds-container .tg-med-sel');
+      if(firstSel) _llenarMedsSelect_byEl(firstSel);
+      // Reset: remove extra med rows
+      var rows = document.querySelectorAll('#tg-meds-container .tg-med-row');
+      rows.forEach(function(r,i){ if(i>0) r.remove(); });
+      window._tgSel={};
+      renderTGAnimalesLista();
+      recalcTGTotal();
+    }
   };
 })();
 // Y al estar listos los datos.
@@ -1341,23 +1376,74 @@ function calcDosisTratGrupal(){
 window._tgSel = {}; // {animalId: {codigo, peso, dosisSug, dosisReal}}
 
 function onTGMedChange(){
-  var sel=document.getElementById('tg-med');
-  var opt=sel?.options[sel.selectedIndex];
-  var parts=(sel?.value||'').split('|');
-  var retiro=parseInt(parts[2])||0;
-  var dosisRef=parts[6]||opt?.dataset?.dosis||'—';
-  var factorMl=parseFloat(parts[7])||0; // ml per kg factor
-  document.getElementById('tg-retiro').value=retiro?retiro+' días':'—';
-  document.getElementById('tg-dosis-ref').value=dosisRef;
-  document.getElementById('tg-retiro-label').textContent=retiro||'—';
-  // Recalculate doses for all selected animals
+  // Update first med row when tg-med is changed (legacy compat)
+  var firstRow = document.querySelector('.tg-med-row');
+  if(firstRow){
+    var sel = firstRow.querySelector('.tg-med-sel');
+    if(sel) onTGMedRowChange(sel);
+  }
+}
+
+function onTGMedRowChange(sel){
+  var row = sel?.closest('.tg-med-row'); if(!row) return;
+  var parts = (sel?.value||'').split('|');
+  var retiro = parseInt(parts[2])||0;
+  var dosisRef = parts[6]||'—';
+  var factorMl = parseFloat(parts[7])||0;
+  var refEl = row.querySelector('.tg-dosis-ref');
+  var retEl = row.querySelector('.tg-retiro-input');
+  if(refEl) refEl.value = dosisRef;
+  if(retEl) retEl.value = retiro?(retiro+' días'):'—';
+  // Update global tg-retiro (max across all meds)
+  var allRetiros = Array.from(document.querySelectorAll('.tg-retiro-input'))
+    .map(function(e){ return parseInt(e.value)||0; });
+  var maxRetiro = Math.max.apply(null, allRetiros.concat([0]));
+  document.getElementById('tg-retiro').value = maxRetiro?(maxRetiro+' días'):'—';
+  document.getElementById('tg-retiro-label').textContent = maxRetiro||'—';
+  // Recalc per-animal doses for this med row
   Object.keys(window._tgSel).forEach(function(id){
     var a=window._tgSel[id];
     a.dosisSug = factorMl&&a.peso ? parseFloat((factorMl*a.peso).toFixed(1)) : null;
-    if(a.dosisSug) a.dosisReal = a.dosisSug;
+    if(a.dosisSug!=null) a.dosisReal = a.dosisSug;
   });
   renderTGAnimalesLista();
   recalcTGTotal();
+}
+
+function agregarMedGrupal(){
+  var container = document.getElementById('tg-meds-container');
+  if(!container) return;
+  var idx = container.querySelectorAll('.tg-med-row').length + 1;
+  var div = document.createElement('div');
+  div.className = 'tg-med-row';
+  div.style.cssText = 'background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px;margin-bottom:8px;position:relative';
+  var _closeBtn=document.createElement('button');
+  _closeBtn.type='button'; _closeBtn.textContent='✕';
+  _closeBtn.style.cssText='position:absolute;top:6px;right:6px;background:none;border:none;color:var(--red);cursor:pointer;font-size:14px';
+  _closeBtn.onclick=function(){this.closest('.tg-med-row').remove();recalcTGTotal();};
+  var _grid=document.createElement('div'); _grid.className='form-grid';
+  _grid.innerHTML='<div class="fg"><label class="fl">Medicamento '+idx+' *</label>'
+    +'<select class="fi tg-med-sel"><option value="">— Seleccionar —</option></select>'
+    +'</div><div class="fg"><label class="fl">Dosis sugerida</label>'
+    +'<input class="fi tg-dosis-ref" readonly style="background:var(--bg4);color:var(--teal);font-weight:600" placeholder="Selecciona"></div>'
+    +'<div class="fg"><label class="fl">Retiro (días)</label>'
+    +'<input class="fi tg-retiro-input" readonly style="background:var(--bg4);color:var(--amber);" placeholder="Auto"></div>';
+  div.appendChild(_closeBtn); div.appendChild(_grid);
+  container.appendChild(div);
+  // Populate the new med select
+  var newSel = div.querySelector('.tg-med-sel');
+  _llenarMedsSelect_byEl(newSel);
+}
+
+// Helper to populate a med select element directly  
+function _llenarMedsSelect_byEl(sel){
+  if(!sel) return;
+  var meds=(window.AppState && window.AppState.medicamentos)||[];
+  if(meds.length){ sel.innerHTML='<option value="">— Seleccionar —</option>'+_medOptsModal(meds).replace('<option value="">— Seleccionar medicamento —</option>',''); return; }
+  if(window.DB && typeof window.DB.getMedicamentos==='function'){
+    window.DB.getMedicamentos('a1b2c3d4-0000-0000-0000-000000000001')
+      .then(function(r){ sel.innerHTML='<option value="">— Seleccionar —</option>'+_medOptsModal((r&&r.data)||[]).replace('<option value="">— Seleccionar medicamento —</option>',''); });
+  }
 }
 
 function filtrarAnimalesTG(q){
@@ -1698,11 +1784,18 @@ function saveTratamiento(tipo){
     const colab=colabEl?.value||(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—';
     const motivo=document.getElementById('tg-dx')?.value||'Tratamiento grupal';
 
-    const medSel=document.getElementById('tg-med')?.value||'';
-    const medParts=medSel.split('|');
-    const retiroDias=parseInt(medParts[2])||0;
-    const medId=medParts[4]||'';
-    const medNombre=medParts[5]||document.getElementById('tg-med')?.options[document.getElementById('tg-med')?.selectedIndex]?.text||'—';
+    // Collect ALL medication rows
+    var _medRows = Array.from(document.querySelectorAll('#tg-meds-container .tg-med-row'));
+    window._tgMedicamentos = _medRows.map(function(row){
+      var sel=row.querySelector('.tg-med-sel');
+      var parts=(sel?.value||'').split('|');
+      return {medId:parts[4]||'',medNombre:parts[5]||sel?.options[sel.selectedIndex]?.text||'—',retiroDias:parseInt(parts[2])||0,dosisTotal:parseFloat(document.getElementById('tg-dosis-total')?.value)||0};
+    }).filter(function(m){return m.medId;});
+    // Compat: use first med for legacy fields
+    var _firstMed=window._tgMedicamentos[0]||{};
+    const medId=_firstMed.medId||'';
+    const medNombre=_firstMed.medNombre||'—';
+    const retiroDias=_firstMed.retiroDias||0;
     const dosisTotal=parseFloat(document.getElementById('tg-dosis-total')?.value)||0;
     const nAnimales=animalesIds.length;
     const animalesCodigos=Object.values(window._tgSel).map(function(a){return a.codigo;}).join(', ');
@@ -1723,20 +1816,48 @@ function saveTratamiento(tipo){
       observaciones: document.querySelector('#modal-trat-grupal textarea')?.value||''
     };
 
-    // Save to Supabase if available
+    // Save to Supabase: one record per animal (correct column mapping)
     if(window.DB&&typeof window.DB.saveTratamiento==='function'){
-      window.DB.saveTratamiento({
-        finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
-        animales_ids: animalesIds,
-        tipo:'Grupal', fecha_inicio:fecha||new Date().toISOString().slice(0,10),
-        diagnostico:motivo, medicamento_id:medId||null, medicamento_nombre:medNombre,
-        dosis_aplicada:dosisTotal, dosis_unidad:'mL', dias_retiro:retiroDias,
-        colaborador:colab, observaciones:tratData.observaciones
-      }).then(function(){
-        // Descontar stock
-        if(medId&&window.DB.updateStockMedicamento) window.DB.updateStockMedicamento(medId,-dosisTotal);
+      var _grupoId = 'grp-'+Date.now().toString(36);
+      var _fechaStr = fecha||new Date().toISOString().slice(0,10);
+      var _fechaFin = null;
+      if(retiroDias>0){
+        var _d=new Date(_fechaStr); _d.setDate(_d.getDate()+retiroDias);
+        _fechaFin=_d.toISOString().slice(0,10);
+      }
+      var _totalMeds = window._tgMedicamentos||[{medId:medId,medNombre:medNombre,retiroDias:retiroDias,dosisTotal:dosisTotal}];
+      var _savePromises = animalesIds.map(function(animalUuid){
+        var _animal = window._tgSel[animalUuid]||{};
+        return (_totalMeds.length>0 ? _totalMeds : [{medId:medId,medNombre:medNombre,retiroDias:retiroDias,dosisTotal:null}])
+          .map(function(med){
+            return window.DB.saveTratamiento({
+              finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+              animal_id: animalUuid,
+              medicamento_id: med.medId||null,
+              medicamento_nombre: med.medNombre||'—',
+              tipo: 'grupal',
+              diagnostico: motivo,
+              grupo_id: _grupoId,
+              fecha_inicio: _fechaStr,
+              dosis: _animal.dosisReal||(med.dosisTotal/Math.max(1,animalesIds.length))||null,
+              unidad: 'mL',
+              dias_retiro: med.retiroDias||0,
+              fecha_fin_retiro: _fechaFin,
+              registrado_por: colab,
+              notas: '[GRUPAL:'+_grupoId+'] '+motivo+' | '+med.medNombre+' | '+nAnimales+' animales',
+              estado: (_fechaFin&&retiroDias>0)?'en_retiro':'completado',
+              fuente: 'grupal'
+            });
+          });
+      });
+      Promise.all(_savePromises.flat()).then(function(results){
+        var errors = results.filter(function(r){return r&&r.error;});
+        if(errors.length){ console.error('[Salud] saveTratGrupal errors:', errors[0]?.error); }
+        // Descontar stock por medicamento
+        _totalMeds.forEach(function(med){ if(med.medId&&window.DB.updateStockMedicamento) window.DB.updateStockMedicamento(med.medId,-med.dosisTotal); });
         toast('✓ Tratamiento grupal guardado · '+nAnimales+' animales · Retiro: '+retiroDias+'d');
-      }).catch(function(e){toast('Error Supabase: '+(e&&e.message),'err');});
+        if(typeof loadFromSupabase==='function') setTimeout(loadFromSupabase, 600);
+      }).catch(function(e){toast('Error al guardar: '+(e&&e.message),'err');});
     } else if(typeof AppData!=='undefined'){
       AppData.registrarTratamiento(tratData, medId, dosisTotal);
     }
@@ -1937,12 +2058,14 @@ async function loadFromSupabase(){
         const finRetiro=t.fecha_fin_retiro?new Date(t.fecha_fin_retiro):null;
         const enRetiro=finRetiro&&finRetiro>=hoy;
         const animalLbl=t.animales?('#'+(t.animales.codigo||t.animales.nombre||'')):'—';
+        var esGrupal=t.tipo==='grupal'||t.fuente==='grupal';
+        var grupoRef = esGrupal&&t.grupo_id ? '['+t.grupo_id.slice(-5)+']' : '';
         TRATAMIENTOS.push({
           id:t.id,
           fecha:inicio.toLocaleDateString('es-CO'),
-          tipo:'Individual',
-          animales:animalLbl,
-          dx:t.notas||'—',
+          tipo:esGrupal?'Grupal':'Individual',
+          animales:esGrupal?(grupoRef+' '+animalLbl):animalLbl,
+          dx:t.diagnostico||t.notas||'—',
           med:(t.medicamentos&&t.medicamentos.nombre)||'—',
           dosis:(t.dosis!=null?t.dosis+(t.unidad?' '+t.unidad:''):'—'),
           via:t.unidad||'IM',
