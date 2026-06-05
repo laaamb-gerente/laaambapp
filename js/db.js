@@ -1230,10 +1230,12 @@ window.DB = {
   // corderos = [{ sexo, peso_nacimiento_kg?, estado_al_nacer, destino_crianza, notas?, animal_id? }]
   async createParto(datosParto, corderos) {
     const FINCA = datosParto.finca_id || 'a1b2c3d4-0000-0000-0000-000000000001';
+    // Destructure internal fields that should NOT go to Supabase
+    const { _animal_ids: _aids, finca_id: _fid, ...partoInsert } = datosParto;
     // 1. INSERT parto
     const pr = await window._sb.from('partos')
-      .insert({ ...datosParto, finca_id: FINCA }).select().single();
-    if (pr.error) return { error: pr.error };
+      .insert({ ...partoInsert, finca_id: FINCA }).select().single();
+    if (pr.error) { console.error('[DB] createParto INSERT error:', pr.error); return { error: pr.error }; }
     const parto = pr.data;
     // 2. INSERT corderos_nacidos
     const filas = (corderos || []).map(c => ({
@@ -1249,10 +1251,10 @@ window.DB = {
     if (filas.length) {
       const cnr = await window._sb.from('corderos_nacidos').insert(filas).select();
       // Link animal_ids if provided (set by saveParto after creating each cría as an animal)
-      if(cnr && cnr.data && datosParto._animal_ids && datosParto._animal_ids.length) {
-        for(let i=0; i<cnr.data.length && i<datosParto._animal_ids.length; i++){
-          if(datosParto._animal_ids[i]) {
-            await window._sb.from('corderos_nacidos').update({animal_id: datosParto._animal_ids[i]}).eq('id', cnr.data[i].id);
+      if(cnr && cnr.data && _aids && _aids.length) {
+        for(let i=0; i<cnr.data.length && i<_aids.length; i++){
+          if(_aids[i]) {
+            await window._sb.from('corderos_nacidos').update({animal_id: _aids[i]}).eq('id', cnr.data[i].id);
           }
         }
       }

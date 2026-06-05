@@ -1296,6 +1296,37 @@ function getMontaContext(hembraCodeOrId, opts){
   };
 }
 
+// ── Validación de chapeta duplicada ──────────────────────────────────────
+function validarChapataDuplicada(input){
+  var val = (input.value||'').trim();
+  var errEl = input.nextElementSibling;
+  if(!val){ 
+    input.style.borderColor='var(--teal)'; 
+    if(errEl) errEl.style.display='none';
+    return; 
+  }
+  // Check in allAnimales (loaded from Supabase via AppState)
+  var todos = (window.AppState && window.AppState.animales) || 
+              (window.allAnimales ? window.allAnimales.map(function(a){return {codigo:a.codigo||a.id};}) : []);
+  var existe = todos.some(function(a){ 
+    return String(a.codigo||'').trim().toUpperCase() === val.toUpperCase();
+  });
+  // Also check against other chapeta fields in this same form (avoid duplicates between siblings)
+  var otrasDuplicadas = Array.from(document.querySelectorAll('.cria-codigo'))
+    .filter(function(el){ return el !== input && (el.value||'').trim().toUpperCase() === val.toUpperCase(); })
+    .length > 0;
+  if(existe){
+    input.style.borderColor='var(--red)';
+    if(errEl){ errEl.style.display='block'; errEl.textContent='⚠ Ya existe un animal con ID "'+val+'" — elige otro'; }
+  } else if(otrasDuplicadas){
+    input.style.borderColor='var(--red)';
+    if(errEl){ errEl.style.display='block'; errEl.textContent='⚠ ID "'+val+'" ya está en otra cría de este parto'; }
+  } else {
+    input.style.borderColor='var(--green)';
+    if(errEl){ errEl.style.display='block'; errEl.style.color='var(--green)'; errEl.textContent='✓ Disponible'; }
+  }
+}
+
 function generarCrias(){
   const n = parseInt(document.getElementById('p-vivas').value)||0;
   const container = document.getElementById('crias-form');
@@ -1312,7 +1343,9 @@ function generarCrias(){
       <div class="fg" style="margin:0">
         <label class="fl" style="font-weight:700;color:var(--text)">🐣 Cría ${i} — ID / Chapeta *</label>
         <input class="fi cria-codigo" placeholder="Ej: N155" autocomplete="off"
-          style="border-color:var(--teal)" oninput="this.value=this.value.toUpperCase()">
+          style="border-color:var(--teal)"
+          oninput="this.value=this.value.toUpperCase();validarChapataDuplicada(this)">
+        <div class="chapeta-error" style="display:none;color:var(--red);font-size:11px;margin-top:3px;font-weight:600"></div>
       </div>
       <div class="fg" style="margin:0"><label class="fl">Sexo *</label>
         <select class="fi cria-sexo">
@@ -1444,6 +1477,10 @@ async function saveParto(){
     {el:'p-fecha',label:'Fecha',required:true},
   ]):[];
   if(!madreId||!fecha){toast('Madre y fecha son requeridos','err');return;}
+  // Block save if any chapeta is duplicate
+  var chapetaErrors = Array.from(document.querySelectorAll('.chapeta-error'))
+    .filter(function(el){ return el.style.display!=='none' && el.textContent.includes('⚠'); });
+  if(chapetaErrors.length){toast('Corrige los IDs duplicados antes de guardar','err');return;}
 
   // Recolectar datos de crías del formulario dinámico
   const criaRows = document.getElementById('crias-form')?.querySelectorAll('.cria-row');
