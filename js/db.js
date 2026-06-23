@@ -788,6 +788,46 @@ window.DB = {
     return await window._sb.from('corderos_crianza')
       .insert(datos).select().single();
   },
+
+  // Crías activas de una madre que aún no han sido destetadas
+  // (fecha_destete IS NULL y peso < 20 kg o sin peso)
+  async getCriasNoDestetadas(madreAnimalId) {
+    return await window._sb.from('animales')
+      .select('id, codigo, nombre, sexo, peso_actual, fecha_nacimiento')
+      .eq('madre_id', madreAnimalId)
+      .eq('estado', 'activo')
+      .is('fecha_destete', null)
+      .or('peso_actual.is.null,peso_actual.lt.20');
+  },
+
+  // Marca crías como en_sala_cuna y crea su registro en corderos_crianza
+  async enviarCriasASalaCuna(criasIds, motivo, fincaId) {
+    const FINCA = fincaId || 'a1b2c3d4-0000-0000-0000-000000000001';
+    // 1. Marcar en animales
+    await window._sb.from('animales')
+      .update({ en_sala_cuna: true })
+      .in('id', criasIds);
+    // 2. Crear entrada en corderos_crianza si no tiene una activa
+    const creados = [];
+    for (const criaId of criasIds) {
+      try {
+        const existing = await window._sb.from('corderos_crianza')
+          .select('id').eq('cordero_id', criaId).eq('estado', 'activo')
+          .maybeSingle();
+        if (!existing.data) {
+          const cc = await this.createCorderoCrianza({
+            cordero_id: criaId,
+            motivo: motivo || 'muerte_madre',
+            finca_id: FINCA,
+            fecha_inicio: new Date().toISOString().slice(0, 10)
+          });
+          if (cc && cc.data) creados.push(cc.data.id);
+        }
+      } catch (e) { /* continuar con las demás */ }
+    }
+    return creados;
+  },
+
   async updateCorderoCrianza(id, cambios) {
     return await window._sb.from('corderos_crianza')
       .update({ ...cambios, updated_at: new Date() })

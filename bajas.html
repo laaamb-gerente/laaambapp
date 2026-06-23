@@ -1165,6 +1165,57 @@ async function saveBaja(){
       // Quitarlo del inventario activo local
       window.AppState.animales=(window.AppState.animales||[]).filter(x=>x.id!==_a.id);
       window.AppState._loaded=false;
+
+      // ── AUTO SALA CUNA: si la madre muere, detectar crías sin destetar ──
+      if(_tipoSb==='muerte' && _a && (_a.sexo==='hembra'||_a.sexo==='H'||_a.sexo==='F')
+         && window.DB && typeof window.DB.getCriasNoDestetadas==='function'){
+        try{
+          const _criasRes = await window.DB.getCriasNoDestetadas(_a.id);
+          const _crias = (_criasRes&&_criasRes.data)||[];
+          if(_crias.length>0){
+            const _nomMadre=(_a.codigo||'')+((_a.nombre)?' · '+_a.nombre:'');
+            const _listaCrias=_crias.map(function(c){
+              return '#'+(c.codigo||c.id)+(c.peso_actual?' ('+c.peso_actual+'kg)':'');
+            }).join(', ');
+            // Crear modal de confirmación inline
+            const _confirmar = await new Promise(function(resolve){
+              const _ov=document.createElement('div');
+              _ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);'
+                +'z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+              _ov.innerHTML='<div style="background:var(--bg2);border-radius:var(--r);'
+                +'padding:20px;max-width:400px;width:100%;border:1px solid var(--border)">'
+                +'<div style="font-weight:700;font-size:14px;margin-bottom:10px">🍼 Crías sin destetar</div>'
+                +'<p style="font-size:13px;color:var(--text2);margin-bottom:8px">'
+                +'La madre <strong>'+_nomMadre+'</strong> tenía '
+                +_crias.length+' cría(s) al pie:</p>'
+                +'<p style="font-size:12px;color:var(--teal);margin-bottom:14px">'+_listaCrias+'</p>'
+                +'<p style="font-size:12px;color:var(--text2);margin-bottom:16px">'
+                +'¿Enrolarlas en <strong>Sala Cuna</strong> (crianza artificial)?</p>'
+                +'<div style="display:flex;gap:8px;justify-content:flex-end">'
+                +'<button id="_sc-no" class="btn btn-ghost btn-sm">No por ahora</button>'
+                +'<button id="_sc-si" class="btn btn-primary btn-sm">🍼 Sí, Sala Cuna</button>'
+                +'</div></div>';
+              document.body.appendChild(_ov);
+              _ov.querySelector('#_sc-si').onclick=function(){
+                document.body.removeChild(_ov); resolve(true);
+              };
+              _ov.querySelector('#_sc-no').onclick=function(){
+                document.body.removeChild(_ov); resolve(false);
+              };
+            });
+            if(_confirmar){
+              const _ids=_crias.map(function(c){return c.id;});
+              await window.DB.enviarCriasASalaCuna(
+                _ids,'muerte_madre','a1b2c3d4-0000-0000-0000-000000000001'
+              );
+              if(typeof toast==='function')
+                toast('🍼 '+_crias.length+' cría(s) enviadas a Sala Cuna','ok');
+            }
+          }
+        }catch(e){
+          console.warn('[Bajas] auto sala cuna:',e&&e.message);
+        }
+      }
     }
   }
 
