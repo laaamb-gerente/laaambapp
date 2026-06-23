@@ -320,6 +320,31 @@ textarea.fi{resize:vertical;min-height:60px}
   </div>
 </div></div>
 
+<!-- ══ MODAL EDITAR INSUMO ══ -->
+<div class="overlay" id="modal-editar-insumo" onclick="if(event.target===this)closeModal('modal-editar-insumo')">
+<div class="modal modal-sm">
+  <div class="modal-head"><div class="modal-title">Editar insumo</div><button class="modal-close" onclick="closeModal('modal-editar-insumo')">✕</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="edit-insumo-id">
+    <div class="fg"><label class="fl">Ingrediente *</label><input class="fi" id="edit-insumo-nombre" placeholder="Maíz molido"></div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Stock actual (kg) — ajuste por conteo</label><input class="fi" type="number" id="edit-insumo-stock" step="0.1" min="0" placeholder="200"></div>
+      <div class="fg"><label class="fl">Stock mínimo (kg)</label><input class="fi" type="number" id="edit-insumo-min" step="0.1" min="0" placeholder="50"></div>
+    </div>
+    <div class="form-grid">
+      <div class="fg"><label class="fl">Costo por kg (COP)</label><input class="fi" type="number" id="edit-insumo-costo" min="0" placeholder="1800"></div>
+      <div class="fg"><label class="fl">Proveedor</label><input class="fi" id="edit-insumo-prov" placeholder="Agroinsumos…"></div>
+    </div>
+    <div style="background:var(--amber-bg);border:1px solid rgba(232,160,48,.2);border-radius:var(--r);padding:9px 12px;font-size:11px;color:var(--text2);margin-top:6px">
+      ⚠ El stock actual se SOBRESCRIBE con el valor que ingreses (ajuste por conteo físico). Para sumar una compra, usa "+ Compra".
+    </div>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-editar-insumo')">Cancelar</button>
+    <button class="btn btn-primary btn-sm" onclick="guardarInsumo()">Guardar cambios</button>
+  </div>
+</div></div>
+
 <!-- ══ MODAL PRODUCIR MEZCLA ══ -->
 <div class="overlay" id="modal-producir" onclick="if(event.target===this)closeModal('modal-producir')">
 <div class="modal modal-sm">
@@ -724,7 +749,8 @@ function renderInventario(){
           +'<td>'+(dias==='∞'?'∞':dias+' días')+'</td>'
           +'<td>'+((+i.costo_por_kg)>0?fmtCOP(i.costo_por_kg):'—')+'</td>'
           +'<td>'+estadoBadge(i,cons)+'</td>'
-          +'<td><button class="btn btn-ghost btn-sm" onclick="openCompra(\''+i.id+'\')">Registrar compra</button></td></tr>';
+          +'<td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="editarInsumo(\''+i.id+'\')">✏️ Editar</button> '
+          +'<button class="btn btn-ghost btn-sm" onclick="openCompra(\''+i.id+'\')">+ Compra</button></td></tr>';
       }).join('')+'</tbody></table>';
   }
   const th=document.getElementById('tbl-heno');
@@ -773,6 +799,45 @@ window.registrarCompra=async function(){
     closeModal('modal-compra'); renderInventario(); renderResumenDia();
     toast('Compra registrada','ok');
   }catch(e){ console.error(e); toast('Error al registrar compra','error'); }
+};
+window.editarInsumo=function(id){
+  const i=INVENTARIO.find(function(x){ return x.id===id; });
+  if(!i){ toast('Insumo no encontrado','error'); return; }
+  document.getElementById('edit-insumo-id').value=id;
+  document.getElementById('edit-insumo-nombre').value=i.ingrediente||'';
+  document.getElementById('edit-insumo-stock').value=(+i.stock_kg)||0;
+  document.getElementById('edit-insumo-min').value=(+i.stock_minimo_kg)||0;
+  document.getElementById('edit-insumo-costo').value=(+i.costo_por_kg)||0;
+  document.getElementById('edit-insumo-prov').value=i.proveedor||'';
+  openModal('modal-editar-insumo');
+};
+window.guardarInsumo=async function(){
+  const id=document.getElementById('edit-insumo-id').value;
+  if(!id){ toast('Insumo inválido','error'); return; }
+  const nombre=document.getElementById('edit-insumo-nombre').value.trim();
+  if(!nombre){ toast('El nombre es requerido','error'); return; }
+  const patch={
+    ingrediente:nombre,
+    stock_kg:parseFloat(document.getElementById('edit-insumo-stock').value)||0,
+    stock_minimo_kg:parseFloat(document.getElementById('edit-insumo-min').value)||0,
+    costo_por_kg:parseFloat(document.getElementById('edit-insumo-costo').value)||0,
+    proveedor:document.getElementById('edit-insumo-prov').value.trim()||null,
+    updated_at:new Date()
+  };
+  try{
+    const res=await window._sb.from('inventario_nutricion').update(patch).eq('id',id).select();
+    if(res && res.error){ toast('Error: '+res.error.message,'error'); return; }
+    // Refrescar inventario desde Supabase
+    const inv=await window.DB.getInventarioNutricion(FINCA);
+    INVENTARIO=(inv&&inv.data)||INVENTARIO;
+    closeModal('modal-editar-insumo');
+    renderInventario();
+    if(typeof renderResumenDia==='function') renderResumenDia();
+    toast(nombre+' actualizado');
+  }catch(e){
+    console.warn('[Nutricion] guardarInsumo:',e&&e.message);
+    toast('No se pudo guardar el cambio','error');
+  }
 };
 window.openCompraHeno=function(){
   document.getElementById('chen-fardos').value='';
