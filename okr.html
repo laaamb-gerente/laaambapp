@@ -453,20 +453,20 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   
       <div class="species-tabs" id="species-tabs">
         <button class="sp-tab" id="sp-todas" onclick="setEspecie('todas')">Todas</button>
-        <button class="sp-tab" id="sp-ovino" onclick="setEspecie('ovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/></svg> Ovinos</button>
-        <button class="sp-tab" id="sp-bovino" onclick="setEspecie('bovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="12" rx="6" ry="4"/><circle cx="14" cy="8" r="2.5"/></svg> Bovinos</button>
+        <button class="sp-tab" id="sp-ovino" onclick="setEspecie('ovino')">Ovinos</button>
+        <button class="sp-tab" id="sp-bovino" onclick="setEspecie('bovino')">Bovinos</button>
       </div>
     </div>
 
   <!-- TAB NAV -->
   <div class="tab-nav">
-    <div class="tn active" onclick="switchTab(this,'t-produccion')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><polyline points="2 15 7 9 11 12 18 4"/></svg>Producción</div>
-    <div class="tn" onclick="switchTab(this,'t-reproduccion')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/></svg>Reproducción</div>
-    <div class="tn" onclick="switchTab(this,'t-mortalidad')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="5" y="3" width="10" height="11" rx="5"/><path d="M8 10v3M12 10v3"/></svg>Mortalidad</div>
-    <div class="tn" onclick="switchTab(this,'t-ranking')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M7 3h6v7a3 3 0 01-6 0V3z"/><path d="M7 7H4a2 2 0 000 4h3M13 7h3a2 2 0 010 4h-3"/></svg>Rankings</div>
-    <div class="tn" onclick="switchTab(this,'t-proyeccion')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M3 17l5-6 4 3 5-8"/><path d="M14 6h4v4"/></svg>Proyección</div>
-    <div class="tn" onclick="switchTab(this,'t-culling')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M10 3L2 17h16L10 3z"/><path d="M10 9v4M10 15h.01"/></svg>Culling</div>
-    <div class="tn" onclick="switchTab(this,'t-ia')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="4" y="3" width="12" height="10" rx="2"/><path d="M10 13v4M7 17h6"/><path d="M7 7h6M8 10h4"/></svg>Análisis IA</div>
+    <div class="tn active" onclick="switchTab(this,'t-produccion')">Producción</div>
+    <div class="tn" onclick="switchTab(this,'t-reproduccion')">Reproducción</div>
+    <div class="tn" onclick="switchTab(this,'t-mortalidad')">Mortalidad</div>
+    <div class="tn" onclick="switchTab(this,'t-ranking')">Rankings</div>
+    <div class="tn" onclick="switchTab(this,'t-proyeccion')">Proyección</div>
+    <div class="tn" onclick="switchTab(this,'t-culling')">Culling</div>
+    <div class="tn" onclick="switchTab(this,'t-ia')">Análisis IA</div>
   </div>
 
   <div class="content" id="main-content">

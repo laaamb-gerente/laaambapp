@@ -316,7 +316,7 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="etq-modal-actions">
       <button class="btn btn-ghost btn-sm" onclick="cerrarEtiqueta()">Cerrar</button>
-      <button class="btn btn-primary btn-sm" onclick="window.print()">🖨 Imprimir etiqueta</button>
+      <button class="btn btn-primary btn-sm" onclick="window.print()">Imprimir etiqueta</button>
     </div>
   </div>
 </div>
@@ -325,7 +325,7 @@ tr:last-child td{border-bottom:none}
 <div id="frio-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9990;backdrop-filter:blur(2px);align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)cerrarFrio()">
   <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2,14px);width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.6)">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)">
-      <div style="font-size:15px;font-weight:700">🌡️ Registrar temperatura</div>
+      <div style="font-size:15px;font-weight:700">Registrar temperatura</div>
       <button onclick="cerrarFrio()" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1">&times;</button>
     </div>
     <div style="padding:20px">
@@ -504,7 +504,7 @@ tr:last-child td{border-bottom:none}
         '<div class="qr-code">'+esc(emp.qr_code)+'</div>'+
         '<div style="font-size:12px;color:var(--text3);margin-top:6px">'+esc(emp.peso_neto)+' kg · vence '+esc(emp.fecha_limite_consumo||'—')+'</div>'+
         '<div class="qr-actions">'+
-          '<button class="btn btn-ghost btn-sm" id="qr-print-btn">🖨 Imprimir etiqueta</button>'+
+          '<button class="btn btn-ghost btn-sm" id="qr-print-btn">Imprimir etiqueta</button>'+
           '<a class="btn btn-primary btn-sm" href="'+url+'" target="_blank" rel="noopener">Ver micrositio público →</a>'+
         '</div>'+
       '</div>';
@@ -577,8 +577,8 @@ tr:last-child td{border-bottom:none}
       var accVenta = e.estado==='disponible'
         ? '<button class="btn btn-ghost btn-sm" onclick="abrirVenta(\''+e.id+'\')">Marcar vendido</button>'
         : (e.cliente?'<span class="td-muted">'+esc(e.cliente)+'</span>':'');
-      var btnEtq = '<button class="btn btn-ghost btn-sm" onclick="etiquetaInv(\''+e.id+'\')">🖨 Etiqueta</button>';
-      var btnFrio = '<button class="btn btn-ghost btn-sm" title="Registrar temperatura" onclick="abrirFrio(\''+e.id+'\')">🌡️</button>';
+      var btnEtq = '<button class="btn btn-ghost btn-sm" onclick="etiquetaInv(\''+e.id+'\')">Etiqueta</button>';
+      var btnFrio = '<button class="btn btn-ghost btn-sm" title="Registrar temperatura" onclick="abrirFrio(\''+e.id+'\')">Temp.</button>';
       var acc = '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+btnEtq+btnFrio+accVenta+'</div>';
       // Celda de temperatura (último registro de cadena de frío)
       var t = TEMPS[e.id];
@@ -586,7 +586,7 @@ tr:last-child td{border-bottom:none}
       if(t){
         var tv = parseFloat(t.temperatura_c);
         var col = (!isNaN(tv) && tv > 4) ? 'var(--red)' : 'var(--green)';
-        tempCell = '<span style="color:'+col+';font-weight:600">🌡 '+esc(isNaN(tv)?t.temperatura_c:tv.toFixed(1))+'°C</span>';
+        tempCell = '<span style="color:'+col+';font-weight:600">'+esc(isNaN(tv)?t.temperatura_c:tv.toFixed(1))+'°C</span>';
       } else {
         tempCell = '<span class="td-muted">—</span>';
       }
