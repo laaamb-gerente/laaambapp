@@ -417,7 +417,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar masivo<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importRepro(this)"></label>
       <button class="btn btn-ghost btn-sm" onclick="exportRepro()">↓ Exportar Excel</button>
       <button class="btn btn-ghost btn-sm" onclick="openModal('modal-monta')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg> Registrar monta</button>
-      <button class="btn btn-primary btn-sm" onclick="openModal('modal-parto')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><ellipse cx="10" cy="12" rx="4" ry="3"/><circle cx="13" cy="9.5" r="1.5"/><path d="M10 7v-2"/></svg> Registrar parto</button>
+      <button class="btn btn-primary btn-sm" onclick="_resetModalParto();openModal('modal-parto')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><ellipse cx="10" cy="12" rx="4" ry="3"/><circle cx="13" cy="9.5" r="1.5"/><path d="M10 7v-2"/></svg> Registrar parto</button>
       <button class="btn btn-wine btn-sm" onclick="abrirModalAborto()"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><line x1="5" y1="5" x2="15" y2="15"/><line x1="15" y1="5" x2="5" y2="15"/></svg> Registrar aborto</button>
     </div>
   
@@ -462,7 +462,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
         <div class="card">
           <div class="card-h"><div class="card-title">Acciones rápidas</div></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
-            <button class="btn btn-primary" onclick="openModal('modal-parto')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><ellipse cx="10" cy="12" rx="4" ry="3"/><circle cx="13" cy="9.5" r="1.5"/><path d="M10 7v-2"/></svg> Registrar parto</button>
+            <button class="btn btn-primary" onclick="_resetModalParto();openModal('modal-parto')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><ellipse cx="10" cy="12" rx="4" ry="3"/><circle cx="13" cy="9.5" r="1.5"/><path d="M10 7v-2"/></svg> Registrar parto</button>
             <button class="btn btn-ghost" onclick="openModal('modal-monta')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 2"/></svg> Registrar monta</button>
             <button class="btn btn-ghost" onclick="openModal('modal-ecografia')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="vertical-align:middle;margin-right:4px"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 10h2l1.5-3 2 6 1.5-3H16"/></svg>Registrar ecografía</button>
             <button class="btn btn-ghost" onclick="openModal('modal-ecografia-masiva')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle"><rect x="3" y="4" width="14" height="12" rx="2"/><path d="M7 8h6M7 11h4M7 14h2"/></svg> Ecografía masiva (varios animales)</button>
@@ -542,7 +542,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
         <div style="display:flex;gap:8px">
           <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar partos<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importRepro(this)"></label>
           <button class="btn btn-ghost btn-sm" onclick="exportPartos()">↓ Excel</button>
-          <button class="btn btn-primary btn-sm" onclick="openModal('modal-parto')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><ellipse cx="10" cy="12" rx="4" ry="3"/><circle cx="13" cy="9.5" r="1.5"/><path d="M10 7v-2"/></svg> Registrar parto</button>
+          <button class="btn btn-primary btn-sm" onclick="_resetModalParto();openModal('modal-parto')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><ellipse cx="10" cy="12" rx="4" ry="3"/><circle cx="13" cy="9.5" r="1.5"/><path d="M10 7v-2"/></svg> Registrar parto</button>
         </div>
       </div>
       <div class="card">
@@ -715,7 +715,25 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="modal-body">
     <div class="form-section">Datos del parto</div>
     <div class="form-grid">
-      <div class="fg"><label class="fl">Madre (ID) *</label><input class="fi" placeholder="OV-0001" id="p-madre" oninput="autoFillMadre(this.value)"/></div>
+      <div class="fg" style="position:relative">
+        <label class="fl">Madre *</label>
+        <input class="fi" id="p-madre"
+          placeholder="Buscar madre por ID, nombre o raza…"
+          autocomplete="off"
+          oninput="buscarMadre(this.value)"
+          onfocus="buscarMadre(this.value)"/>
+        <div id="p-madre-dropdown"
+          style="display:none;position:absolute;z-index:400;background:var(--bg2);
+            border:1px solid var(--border2);border-radius:var(--r);max-height:180px;
+            overflow-y:auto;width:100%;box-shadow:0 4px 14px rgba(0,0,0,.4)">
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;
+          color:var(--text2);margin-top:5px;cursor:pointer">
+          <input type="checkbox" id="p-madre-nn" onchange="toggleMadreNN(this.checked)">
+          Madre no identificada (NN — chapeta perdida)
+        </label>
+      </div>
+      <input type="hidden" id="p-madre-id">
       <div class="fg"><label class="fl">Fecha parto *</label><input class="fi" type="date" id="p-fecha"/></div>
       <div class="fg"><label class="fl">N° de parto</label>
         <input class="fi" type="number" id="p-nro" placeholder="…" min="1" readonly
@@ -1194,10 +1212,8 @@ document.addEventListener('appstate:ready', function(){
     var madre=params.get('madre')||sessionStorage.getItem('parto_madre')||'';
     if(madre){
       setTimeout(function(){
-        openModal('modal-parto');
-        var el=document.getElementById('p-madre'); if(el){el.value=madre;el.dispatchEvent(new Event('change'));}
-        var infoBox=document.getElementById('p-genealogia-info');
-        if(infoBox&&typeof _showGenealogiaInfo==='function') _showGenealogiaInfo(madre);
+        if(typeof abrirPartoConMadre==='function'){ abrirPartoConMadre(madre); }
+        else { openModal('modal-parto'); var el=document.getElementById('p-madre'); if(el){ el.value=madre; } }
         try{sessionStorage.removeItem('parto_madre');}catch(e){}
       }, 600);
     }
@@ -1453,11 +1469,109 @@ function actualizarRazaCrias(){
     el.style.color=razaCria?'var(--teal)':'var(--text3)';
   });
 }
+// ── Buscador interactivo de madre (hembras activas) ──
+function buscarMadre(q){
+  var dd=document.getElementById('p-madre-dropdown');
+  if(!dd) return;
+  if(window._madreNN){ dd.style.display='none'; return; }
+  var todos=(window.AppState&&window.AppState.animales)||[];
+  // El modelo de datos usa sexo='hembra'; se aceptan variantes ('H','F') por robustez.
+  var hembras=todos.filter(function(a){
+    return (a.estado==='activo'||a.activo) && (a.sexo==='hembra'||a.sexo==='H'||a.sexo==='F');
+  });
+  var q2=(q||'').toLowerCase().trim();
+  var lista=q2
+    ? hembras.filter(function(a){
+        return String(a.codigo||'').toLowerCase().includes(q2)
+          ||String(a.nombre||'').toLowerCase().includes(q2)
+          ||String(a.raza||'').toLowerCase().includes(q2);
+      })
+    : hembras.slice(0,50);
+  if(!lista.length){ dd.style.display='none'; return; }
+  dd.innerHTML=lista.slice(0,50).map(function(a){
+    var peso=a.peso_actual?(' · '+a.peso_actual+'kg'):'';
+    var nom=a.nombre?(' · '+a.nombre):'';
+    return '<div onclick="seleccionarMadre(\''+a.id+'\',\''+
+      (a.codigo||a.id)+'\')" '+
+      'style="padding:8px 10px;cursor:pointer;font-size:12px;'+
+      'border-bottom:1px solid var(--border)" '+
+      'onmouseover="this.style.background=\'var(--teal-bg)\'" '+
+      'onmouseout="this.style.background=\'\'">'
+      +'<b>'+_dEscRz(a.codigo||a.id)+'</b>'+_dEscRz(nom)
+      +' <span style="color:var(--teal)">'+_dEscRz(a.raza||'')+'</span>'
+      +' <span style="color:var(--text3)">'+_dEscRz(peso)+'</span>'
+      +'</div>';
+  }).join('');
+  dd.style.display='block';
+}
+
+function seleccionarMadre(id, codigo){
+  window._madreSelId=id;
+  var inp=document.getElementById('p-madre');
+  var hid=document.getElementById('p-madre-id');
+  if(inp) inp.value=codigo;
+  if(hid) hid.value=id;
+  var dd=document.getElementById('p-madre-dropdown');
+  if(dd) dd.style.display='none';
+  // Reutilizar la lógica existente de autoFillMadre con el código
+  if(typeof autoFillMadre==='function') autoFillMadre(codigo);
+}
+
+function toggleMadreNN(checked){
+  window._madreNN=checked;
+  var inp=document.getElementById('p-madre');
+  var hid=document.getElementById('p-madre-id');
+  var dd=document.getElementById('p-madre-dropdown');
+  var box=document.getElementById('p-genealogía-info');
+  if(checked){
+    if(inp){ inp.value=''; inp.disabled=true; inp.placeholder='Madre no identificada (NN)'; }
+    if(hid) hid.value='';
+    if(dd) dd.style.display='none';
+    if(box) box.style.display='none';
+    window._madreSelId=null;
+    var nroEl=document.getElementById('p-nro'); if(nroEl) nroEl.value=1;
+  } else {
+    if(inp){ inp.disabled=false; inp.placeholder='Buscar madre por ID, nombre o raza…'; inp.value=''; }
+    if(hid) hid.value='';
+    window._madreSelId=null;
+  }
+}
+
+// Reset del modal de parto (estado de madre/NN/buscador) — llamar al abrir.
+function _resetModalParto(){
+  window._madreNN=false;
+  window._madreSelId=null;
+  var inp=document.getElementById('p-madre');
+  if(inp){ inp.value=''; inp.disabled=false;
+    inp.placeholder='Buscar madre por ID, nombre o raza…'; }
+  var hid=document.getElementById('p-madre-id');
+  if(hid) hid.value='';
+  var nn=document.getElementById('p-madre-nn');
+  if(nn) nn.checked=false;
+  var dd=document.getElementById('p-madre-dropdown');
+  if(dd) dd.style.display='none';
+}
+
+// Escape mínimo para texto inyectado en el dropdown de madre.
+function _dEscRz(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+// Cierre del dropdown de madre al hacer clic fuera.
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#p-madre-dropdown') && e.target.id!=='p-madre'){
+    var dd=document.getElementById('p-madre-dropdown');
+    if(dd) dd.style.display='none';
+  }
+});
+
 // Abre el modal de parto con la madre pre-seleccionada (desde gestantes).
 function abrirPartoConMadre(codigo){
+  _resetModalParto();
   openModal('modal-parto');
-  var el=document.getElementById('p-madre'); if(el){ el.value=codigo; if(typeof autoFillMadre==='function') autoFillMadre(codigo); }
-  var f=document.getElementById('p-fecha'); if(f && !f.value){ f.value=new Date().toISOString().slice(0,10); }
+  var el=document.getElementById('p-madre');
+  if(el){ el.value=codigo; }
+  if(typeof autoFillMadre==='function') autoFillMadre(codigo);
+  var f=document.getElementById('p-fecha');
+  if(f&&!f.value) f.value=new Date().toISOString().slice(0,10);
 }
 async function saveParto(){
   const madreId = document.getElementById('p-madre')?.value?.trim();
@@ -1473,10 +1587,13 @@ async function saveParto(){
   const colab   = colabs[colabs.length-1]?.value||(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—';
 
   var errs=typeof validateForm!=='undefined'?validateForm([
-    {el:'p-madre',label:'ID Madre',required:true},
+    {el:'p-madre',label:'ID Madre',required:!window._madreNN},
     {el:'p-fecha',label:'Fecha',required:true},
   ]):[];
-  if(!madreId||!fecha){toast('Madre y fecha son requeridos','err');return;}
+  if(!fecha){toast('La fecha del parto es requerida','err');return;}
+  if(!window._madreNN && !madreId){
+    toast('Selecciona la madre desde el buscador o marca "Madre NN"','err');return;
+  }
   // Block save if any chapeta is duplicate
   var chapetaErrors = Array.from(document.querySelectorAll('.chapeta-error'))
     .filter(function(el){ return el.style.display!=='none' && el.textContent.includes('⚠'); });
@@ -1523,12 +1640,20 @@ async function saveParto(){
   // ── Supabase: registrar evento reproductivo (parto) + estado de la madre ──
   // + propagación de genealogía: padres y raza calculada a cada cría.
   if(window.DB && window.AppState && Array.isArray(window.AppState.animales)){
-    const _mo=_findAnimalRepro(madreId);
-    if(_mo){
+    const _mo = window._madreNN ? null : (
+      window._madreSelId
+        ? (window.AppState.animales.find(function(a){return a.id===window._madreSelId;})||null)
+        : _findAnimalRepro(madreId)
+    );
+    if(!window._madreNN && !_mo){
+      toast('No se encontró la madre "'+madreId+'" — selecciónala desde el buscador','err');
+      return;
+    }
+    if(_mo || window._madreNN){
       // Contexto de monta (última, aunque su ecografía haya sido "vacía").
       const _ctx=getMontaContext(madreId,{soloActiva:false});
       let _padreId=_ctx?_ctx.padre_id:null;
-      let _razaMadre=_ctx?(_ctx.raza_madre||_mo.raza||''):(_mo.raza||'');
+      let _razaMadre=_ctx?(_ctx.raza_madre||(_mo&&_mo.raza)||''):((_mo&&_mo.raza)||'');
       let _razaPadre=_ctx?(_ctx.raza_padre||''):'';
       // Override: padre seleccionado manualmente en el modal (si existe en el hato).
       const _paSel=_findAnimalRepro(padreId);
@@ -1536,21 +1661,21 @@ async function saveParto(){
       const _razaCria=calcRazaCria(_razaMadre,_razaPadre);
       const _pesoCria=crias.length?(crias.reduce((s,c)=>s+(c.peso_kg||0),0)/crias.length):null;
       const _datos={
-        madre_id:_mo.id, padre_id:_padreId||null,
+        madre_id:_mo?_mo.id:null, padre_id:_padreId||null,
         raza_madre:_razaMadre||null, raza_padre:_razaPadre||null,
         raza_cria:_razaCria||null, crias:crias
       };
       window.DB.saveEventoReproductivo({
         finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
-        hembra_id:_mo.id, macho_id:_padreId||null,
+        hembra_id:_mo?_mo.id:null, macho_id:_padreId||null,
         tipo:'parto', fecha:fecha, resultado:tipo,
         crias_vivas:vivas, crias_muertas:muertas, peso_cria:_pesoCria,
         notas:obs, registrado_por:colab, datos:_datos
-      }).then(()=>window.DB.updateEstadoReproductivo(_mo.id,'lactante',null,null))
+      }).then(()=>_mo?window.DB.updateEstadoReproductivo(_mo.id,'lactante',null,null):null)
         .catch(err=>{console.warn('[Repro] parto Supabase:',err&&err.message); if(window.logError)logError('saveParto.evento',err);});
 
       // Crear cada cría viva como animal nuevo con raza y padres heredados.
-      const _especie=_mo.especie||'ovino';
+      const _especie=(_mo&&_mo.especie)||'ovino';
       const _pref=_especie==='bovino'?'BV':'OV';
       const _stamp=Date.now().toString().slice(-6);
       // Save animals sequentially, collect UUIDs, and create birth pesaje for each
@@ -1564,7 +1689,7 @@ async function saveParto(){
           sexo:(c.sexo==='H'?'hembra':'macho'),
           raza:(c.raza_heredada||_razaCria||_razaMadre||null),
           fecha_nacimiento:fecha,
-          madre_id:_mo.id, padre_id:_padreId||null,
+          madre_id:_mo?_mo.id:null, padre_id:_padreId||null,
           peso_actual:c.peso_kg||null,
           estado:'activo'
         }).then(function(res){
@@ -1597,9 +1722,13 @@ async function saveParto(){
   // ── Módulo Partos: tablas partos/corderos_nacidos + Sala Cuna + Lactancia ──
   try{
     if(window.DB && typeof window.DB.createParto==='function'){
-      const _mo2=_findAnimalRepro(madreId);
+      const _mo2 = window._madreNN ? null : (
+        window._madreSelId
+          ? (window.AppState.animales.find(function(a){return a.id===window._madreSelId;})||null)
+          : _findAnimalRepro(madreId)
+      );
       const _pa2=_findAnimalRepro(padreId);
-      if(_mo2){
+      if(_mo2 || window._madreNN){
         const _criasDestino=[];
         // Use already-parsed crias array (populated from .cria-row elements)
         crias.forEach(function(c){
@@ -1616,7 +1745,7 @@ async function saveParto(){
         const _estadoMadre=(document.getElementById('p-estado-madre')||{}).value||'bien';
         // NOTE: Only valid partos columns — no internal fields
         const _partoPayload = {
-          madre_id:_mo2.id, padre_id:(_pa2?_pa2.id:null), fecha_parto:fecha,
+          madre_id:_mo2?_mo2.id:null, padre_id:(_pa2?_pa2.id:null), fecha_parto:fecha,
           tipo_parto:(_tipoMap[_nac]||'cuadruple'),
           num_corderos_nacidos:_nac, num_corderos_vivos:_viv,
           estado_madre:_estadoMadre, complicaciones:(_estadoMadre!=='bien'?(obs||null):null),
@@ -1647,7 +1776,7 @@ async function saveParto(){
     history.replaceState(null, '', location.pathname);
   }
   // Toast de éxito prominente
-  var _madreLabel = document.getElementById('p-madre')?.value || madreId;
+  var _madreLabel = window._madreNN ? 'NN (no identificada)' : (document.getElementById('p-madre')?.value || madreId);
   toast('✅ PARTO CREADO CON ÉXITO · Madre: #'+_madreLabel+' · '+vivas+' cría(s) registrada(s)', 'success', 5000);
   // Recargar lista de partos
   setTimeout(function(){ if(typeof loadPartosDB==='function') loadPartosDB(); }, 800);
