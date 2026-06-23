@@ -216,6 +216,10 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .repo-row.low{border-left:3px solid var(--orange)}
 .repo-row.venc{border-left:3px solid var(--red)}
 .empty-state{grid-column:1/-1;text-align:center;padding:48px 20px;background:var(--bg3);border:1px dashed var(--border2);border-radius:var(--r2)}
+.acciones-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--surface,#fff);border:1px solid var(--border-2,#E0E6E6);border-radius:12px;box-shadow:0 8px 24px rgba(21,32,31,.12);z-index:60;min-width:210px;overflow:hidden;padding:5px}
+.acciones-menu.open{display:block}
+.acciones-menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:10px 12px;font-family:'Changa',sans-serif;font-size:13px;color:var(--text);cursor:pointer;border-radius:8px}
+.acciones-menu button:hover,.acciones-menu label:hover{background:var(--surface-2,#F4F6F6)}
 </style>
 <!-- Supabase JS SDK -->
 <!-- Sentry: monitoreo de errores -->
@@ -283,44 +287,55 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
       <!-- Species tabs con CSS correcto -->
       <div class="species-tabs" id="species-tabs">
         <button class="sp-tab active" id="sp-todas" onclick="setEspecie('todas')">Todas</button>
-        <button class="sp-tab" id="sp-ovino" onclick="setEspecie('ovino')">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="11" rx="5" ry="4"/><circle cx="14" cy="8" r="2"/></svg>
-          Ovinos
-        </button>
-        <button class="sp-tab" id="sp-bovino" onclick="setEspecie('bovino')">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="10" cy="12" rx="6" ry="4"/><circle cx="14" cy="8" r="2.5"/></svg>
-          Bovinos
-        </button>
+        <button class="sp-tab" id="sp-ovino" onclick="setEspecie('ovino')">Ovinos</button>
+        <button class="sp-tab" id="sp-bovino" onclick="setEspecie('bovino')">Bovinos</button>
       </div>
     </div>
     <div class="ph-actions">
-      <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar inventario<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importMeds(this)"></label>
-      <button class="btn btn-ghost btn-sm" onclick="exportMeds()">↓ Excel inventario</button>
-      <button class="btn btn-ghost btn-sm" onclick="abrirCompra()">+ Registrar compra</button>
       <button class="btn btn-primary btn-sm" onclick="nuevoMed()">+ Agregar medicamento</button>
+      <button class="btn btn-ghost btn-sm" onclick="abrirCompra()">+ Registrar compra</button>
+      <div style="position:relative;display:inline-block">
+        <button class="btn btn-ghost btn-sm" id="med-mas-btn" onclick="document.getElementById('med-mas').classList.toggle('open')">⋯ Más</button>
+        <div id="med-mas" class="acciones-menu">
+          <label style="display:block;width:100%;text-align:left;padding:10px 12px;font-family:'Changa',sans-serif;font-size:13px;color:var(--text);cursor:pointer;border-radius:8px">Importar inventario<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importMeds(this);document.getElementById('med-mas').classList.remove('open')"></label>
+          <button onclick="exportMeds();document.getElementById('med-mas').classList.remove('open')">Exportar Excel inventario</button>
+        </div>
+      </div>
     </div>
   </div>
 
   <div class="filters-bar">
-    <input type="text" class="fi" style="width:220px" placeholder="Buscar por nombre o principio…" oninput="filterMeds(this.value,'q')">
-    <select class="fi" style="width:170px" onchange="filterMeds(this.value,'cat')">
-      <option value="">Todas las categorías</option>
-      <option>Antiparasitario</option><option>Antibiótico</option>
-      <option>Vitamina</option><option>Antiinflamatorio</option>
-      <option>Vacuna</option><option>Hormonal</option>
-    </select>
-    <select class="fi" style="width:160px" onchange="filterMeds(this.value,'venc')">
-      <option value="">Todos los vencimientos</option>
-      <option value="urgente">⚠ Vence en 7 días</option>
-      <option value="pronto">⏰ Vence en 30 días</option>
-      <option value="ok">✓ Sin alerta</option>
-    </select>
-    <select class="fi" style="width:150px" onchange="filterMeds(this.value,'pres')">
-      <option value="">Todas las presentaciones</option>
-      <option>Inyectable</option><option>Oral (líquido)</option>
-      <option>Oral (sólido)</option><option>Vacuna</option>
-    </select>
+    <input type="text" class="fi" style="max-width:260px;flex:1" placeholder="Buscar por nombre o principio…" oninput="filterMeds(this.value,'q')">
+    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('med-filtros-ov').classList.add('open');document.getElementById('med-filtros-sheet').classList.add('open')">Filtros</button>
     <span style="font-size:12px;color:var(--text3);margin-left:auto" id="filter-count">— productos</span>
+  </div>
+
+  <div class="lb-sheet-overlay" id="med-filtros-ov" onclick="this.classList.remove('open');document.getElementById('med-filtros-sheet').classList.remove('open')"></div>
+  <div class="lb-sheet" id="med-filtros-sheet">
+    <div class="lb-sheet-handle"></div>
+    <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px">Filtrar medicamentos</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <select class="fi" onchange="filterMeds(this.value,'cat')">
+        <option value="">Todas las categorías</option>
+        <option>Antiparasitario</option><option>Antibiótico</option>
+        <option>Vitamina</option><option>Antiinflamatorio</option>
+        <option>Vacuna</option><option>Hormonal</option>
+      </select>
+      <select class="fi" onchange="filterMeds(this.value,'venc')">
+        <option value="">Todos los vencimientos</option>
+        <option value="urgente">Vence en 7 días</option>
+        <option value="pronto">Vence en 30 días</option>
+        <option value="ok">Sin alerta</option>
+      </select>
+      <select class="fi" onchange="filterMeds(this.value,'pres')">
+        <option value="">Todas las presentaciones</option>
+        <option>Inyectable</option><option>Oral (líquido)</option>
+        <option>Oral (sólido)</option><option>Vacuna</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="lb-btn primary" style="flex:1" onclick="document.getElementById('med-filtros-ov').classList.remove('open');document.getElementById('med-filtros-sheet').classList.remove('open')">Ver resultados</button>
+    </div>
   </div>
 
   <div class="content">
@@ -1146,6 +1161,11 @@ if (window.DB && window.DB.getMedicamentos) {
   setTimeout(function(){ if (MEDS.length === 0) loadMedsFromSupabase(); }, 2000);
 }
 initEspecieTabs();
+document.addEventListener('click',function(e){
+  var m=document.getElementById('med-mas');
+  var b=document.getElementById('med-mas-btn');
+  if(m&&m.classList.contains('open')&&!m.contains(e.target)&&e.target!==b){ m.classList.remove('open'); }
+});
 </script>
 
 <script>
