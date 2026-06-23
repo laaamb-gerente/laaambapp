@@ -14,6 +14,7 @@
 <title>LAAAMBAPP · Animales</title>
 <script>(function(){var t=(function(){var _t=localStorage.getItem('laaamb-theme');return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute('data-theme',t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/laaamb.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <!-- Supabase JS SDK -->
 <!-- Sentry: monitoreo de errores -->
@@ -260,6 +261,10 @@ label.fl[for] + .fi:required,label.fl + .fi[required]{border-left:2px solid var(
   circle.ficha-pt{r:5.5}
 }
 .retiro-banner{background:#DC2626;color:#fff;padding:10px 14px;border-radius:var(--r,8px);font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.acciones-menu{display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--surface,#fff);border:1px solid var(--border-2,#E0E6E6);border-radius:12px;box-shadow:0 8px 24px rgba(21,32,31,.12);z-index:60;min-width:210px;overflow:hidden;padding:5px}
+.acciones-menu.open{display:block}
+.acciones-menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:10px 12px;font-family:'Changa',sans-serif;font-size:13px;color:var(--text,#15201F);cursor:pointer;border-radius:8px}
+.acciones-menu button:hover{background:var(--surface-2,#F4F6F6)}
 </style>
 </head>
 <body>
@@ -315,12 +320,17 @@ label.fl[for] + .fi:required,label.fl + .fi[required]{border-left:2px solid var(
       </div>
     </div>
     <div class="ph-actions">
-      <button class="btn btn-ghost" onclick="openImport()">↑ Importar CSV/Excel</button>
-      <button class="btn btn-ghost btn-xs" onclick="openModal('modal-pesaje')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><rect x="2" y="3" width="16" height="14" rx="2"/><path d="M10 7v6M7 10h6"/></svg> Pesaje</button>
-      <button class="btn btn-ghost btn-xs" onclick="openModal('modal-pesaje-grupal')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><circle cx="7" cy="7" r="3"/><path d="M1 17c0-2.8 2.2-5 5-5"/><circle cx="14" cy="7" r="3"/><path d="M10 17c0-2.8 2.2-5 5-5"/></svg> Pesaje grupal</button>
-      <button class="btn btn-ghost" onclick="exportarTodo()">↓ Excel completo</button>
-      <button class="btn btn-ghost" onclick="exportarCSV()">↓ CSV</button>
       <button class="btn btn-primary" onclick="abrirNuevo()">+ Registrar animal</button>
+      <div style="position:relative;display:inline-block">
+        <button class="btn btn-ghost" id="acciones-mas-btn" onclick="document.getElementById('acciones-mas').classList.toggle('open')" aria-label="Más acciones">⋯ Más</button>
+        <div id="acciones-mas" class="acciones-menu">
+          <button onclick="openModal('modal-pesaje');document.getElementById('acciones-mas').classList.remove('open')">Pesaje individual</button>
+          <button onclick="openModal('modal-pesaje-grupal');document.getElementById('acciones-mas').classList.remove('open')">Pesaje grupal</button>
+          <button onclick="openImport();document.getElementById('acciones-mas').classList.remove('open')">Importar CSV/Excel</button>
+          <button onclick="exportarTodo();document.getElementById('acciones-mas').classList.remove('open')">Exportar Excel completo</button>
+          <button onclick="exportarCSV();document.getElementById('acciones-mas').classList.remove('open')">Exportar CSV</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -329,13 +339,27 @@ label.fl[for] + .fi:required,label.fl + .fi[required]{border-left:2px solid var(
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       <input type="text" id="q" placeholder="ID, nombre, raza…" oninput="applyFilters()">
     </div>
-    <select class="fsel" id="f-sexo" onchange="applyFilters()"><option value="">Sexo</option><option value="H">Hembras</option><option value="M">Machos</option></select>
-    <select class="fsel" id="f-estado" onchange="applyFilters()"><option value="">Estado</option><option>Activa</option><option>Gestante</option><option>Vacía</option><option>En tratamiento</option><option>Reproductor</option><option>Levante</option><option>Cría</option></select>
-    <select class="fsel" id="f-lote" onchange="applyFilters()"><option value="">Lote</option><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select>
-    <select class="fsel" id="f-raza" onchange="applyFilters()"><option value="">Raza</option><option>Dorper</option><option>Katahdin</option><option>Hampshire</option><option>Pelibuey</option><option>Cruce</option></select>
-    <select class="fsel" id="f-activo" onchange="applyFilters()"><option value="true">Solo activos</option><option value="">Todos</option></select>
+    <button class="btn btn-ghost btn-xs" onclick="document.getElementById('filtros-sheet-ov').classList.add('open');document.getElementById('filtros-sheet').classList.add('open')" id="abrir-filtros-btn">⚙ Filtros</button>
     <button class="btn btn-ghost btn-xs" onclick="limpiarFiltros()">✕</button>
     <span class="filter-count" id="filter-count"></span>
+  </div>
+
+  <!-- Bottom sheet de filtros -->
+  <div class="lb-sheet-overlay" id="filtros-sheet-ov" onclick="this.classList.remove('open');document.getElementById('filtros-sheet').classList.remove('open')"></div>
+  <div class="lb-sheet" id="filtros-sheet">
+    <div class="lb-sheet-handle"></div>
+    <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px">Filtrar animales</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <select class="fsel" id="f-sexo" onchange="applyFilters()"><option value="">Sexo</option><option value="H">Hembras</option><option value="M">Machos</option></select>
+      <select class="fsel" id="f-estado" onchange="applyFilters()"><option value="">Estado</option><option>Activa</option><option>Gestante</option><option>Vacía</option><option>En tratamiento</option><option>Reproductor</option><option>Levante</option><option>Cría</option></select>
+      <select class="fsel" id="f-lote" onchange="applyFilters()"><option value="">Lote</option><option>Lote A</option><option>Lote B</option><option>Lote C</option><option>Lote D</option></select>
+      <select class="fsel" id="f-raza" onchange="applyFilters()"><option value="">Raza</option><option>Dorper</option><option>Katahdin</option><option>Hampshire</option><option>Pelibuey</option><option>Cruce</option></select>
+      <select class="fsel" id="f-activo" onchange="applyFilters()"><option value="true">Solo activos</option><option value="">Todos</option></select>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px">
+      <button class="lb-btn ghost" style="flex:1" onclick="limpiarFiltros();document.getElementById('filtros-sheet-ov').classList.remove('open');document.getElementById('filtros-sheet').classList.remove('open')">Limpiar</button>
+      <button class="lb-btn primary" style="flex:1" onclick="document.getElementById('filtros-sheet-ov').classList.remove('open');document.getElementById('filtros-sheet').classList.remove('open')">Ver resultados</button>
+    </div>
   </div>
 
   <div class="table-wrap">
@@ -1933,6 +1957,13 @@ document.addEventListener('appstate:ready', function(){
 });
 document.addEventListener('appstate:ready', function(){ setTimeout(function(){ if(window.loadDescarte) loadDescarte(); }, 300); });
 })();
+document.addEventListener('click',function(e){
+  var m=document.getElementById('acciones-mas');
+  var b=document.getElementById('acciones-mas-btn');
+  if(m&&m.classList.contains('open')&&!m.contains(e.target)&&e.target!==b){
+    m.classList.remove('open');
+  }
+});
 </script>
 </body>
 </html>
