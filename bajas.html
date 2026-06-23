@@ -763,9 +763,9 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 
       <!-- Campo 7 · Foto de evidencia OBLIGATORIA -->
       <div class="fg" id="campo-foto-muerte" style="margin-top:8px">
-        <label class="fl">📷 Foto de evidencia — OBLIGATORIA</label>
-        <div style="font-size:10px;color:var(--text2);margin-top:2px;margin-bottom:5px">La foto debe mostrar al animal muerto con la chapeta (arete) visible. Muerte sin foto no se acepta en el sistema.</div>
-        <input class="fi" type="file" id="muerte-foto" accept="image/*" capture="environment" onchange="previewFotoMuerte(this)">
+        <label class="fl">📷 Foto o imagen *</label>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px;margin-bottom:5px">Toma una foto o sube una imagen del animal muerto con la chapeta visible. Obligatorio para registrar una muerte.</div>
+        <input class="fi" type="file" id="muerte-foto" accept="image/*" onchange="previewFotoMuerte(this)">
         <div id="muerte-foto-preview" style="display:none;margin-top:6px">
           <img id="muerte-foto-img" style="max-height:120px;border-radius:6px;border:1px solid var(--border)" alt="evidencia">
           <span id="muerte-foto-nombre" style="font-size:10px;color:var(--text2);margin-left:6px"></span>
