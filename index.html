@@ -734,6 +734,15 @@ document.addEventListener('appstate:ready', function(e) {
     if (elSub) elSub.textContent = 'activos en ' + finca.nombre;
   }
 
+  // Eyebrow de ubicación desde Supabase (la tabla fincas solo tiene 'ubicacion')
+  if (finca) {
+    const elEye = document.getElementById('ph-eyebrow');
+    if (elEye) {
+      const ubic = finca.ubicacion || 'Ibagué · Tolima · Colombia';
+      elEye.textContent = (finca.nombre ? finca.nombre + ' · ' : '') + ubic;
+    }
+  }
+
   // ── MEJORA 5 — KPIs adicionales del dashboard ──
   const MS_MES = 30.44 * 24 * 3600 * 1000;
   const ahora = Date.now();
@@ -742,6 +751,11 @@ document.addEventListener('appstate:ready', function(e) {
   const gestantes = window.AppState.getGestantes().length;
   const elGest = document.getElementById('kpi-gestantes');
   if (elGest) elGest.textContent = gestantes;
+  const elGestD = document.getElementById('kpi-gest-delta');
+  if (elGestD) {
+    elGestD.textContent = gestantes>0 ? gestantes+' preñez confirmada' : 'Sin gestantes confirmadas';
+    elGestD.className = 'kpi-delta neu';
+  }
 
   // En levante: crías de 0–6 meses (por fecha_nacimiento)
   const levante = activos.filter(function(a){
@@ -826,6 +840,64 @@ document.addEventListener('appstate:ready', function(e) {
         else { elCausa.style.display = 'none'; }
       }
     }).catch(function(err){ console.warn('[Dashboard] mortalidad:', err && err.message); });
+  }
+
+  // ── PARTOS ESTE MES + NATALIDAD (desde Supabase tabla partos) ──
+  if (window.DB && typeof window.DB.getPartos === 'function') {
+    window.DB.getPartos('a1b2c3d4-0000-0000-0000-000000000001', 200).then(function(res){
+      const partos = (res && res.data) || [];
+      const hoy = new Date();
+      const partosMes = partos.filter(function(p){
+        if(!p.fecha_parto) return false;
+        const f = new Date(p.fecha_parto);
+        return f.getMonth()===hoy.getMonth() && f.getFullYear()===hoy.getFullYear();
+      });
+      const elP = document.getElementById('kpi-partos');
+      if (elP) elP.textContent = partosMes.length;
+
+      // Natalidad = crías nacidas vivas este mes / total partos del mes
+      let criasVivas = 0;
+      partosMes.forEach(function(p){
+        criasVivas += (Number(p.num_corderos_vivos) || (p.corderos_nacidos
+          ? p.corderos_nacidos.filter(function(c){return c.estado_al_nacer!=='muerto';}).length
+          : 0));
+      });
+      const elPD = document.getElementById('kpi-partos-delta');
+      if (elPD) {
+        elPD.textContent = partosMes.length>0
+          ? criasVivas + ' crías vivas · ' + (criasVivas/partosMes.length).toFixed(1) + ' por parto'
+          : 'Sin partos este mes';
+      }
+    }).catch(function(err){ console.warn('[Dashboard] partos:', err && err.message); });
+  }
+
+  // ── FERTILIDAD: hembras preñadas o paridas vs hembras en edad reproductiva ──
+  // Aproximación: (gestantes + partos últimos 5 meses) / hembras adultas activas
+  if (window.DB && typeof window.DB.getPartos === 'function') {
+    const hembrasAdultas = activos.filter(function(a){
+      if (a.sexo !== 'hembra') return false;
+      // edad >= 8 meses (edad reproductiva) o sin fecha (asumir adulta)
+      if (!a.fecha_nacimiento) return true;
+      const meses = (Date.now() - new Date(a.fecha_nacimiento).getTime()) / (30.44*24*3600*1000);
+      return meses >= 8;
+    }).length;
+    const gestActivas = window.AppState.getGestantes().length;
+    window.DB.getPartos('a1b2c3d4-0000-0000-0000-000000000001', 200).then(function(res){
+      const partos = (res && res.data) || [];
+      const hace5meses = new Date();
+      hace5meses.setMonth(hace5meses.getMonth() - 5);
+      const partosRecientes = partos.filter(function(p){
+        return p.fecha_parto && new Date(p.fecha_parto) >= hace5meses;
+      }).length;
+      const hembrasReproduciendo = gestActivas + partosRecientes;
+      const elF = document.getElementById('kpi-fert');
+      if (elF && hembrasAdultas > 0) {
+        const fert = Math.min(100, Math.round(hembrasReproduciendo / hembrasAdultas * 100));
+        elF.innerHTML = fert + '<span class="kpi-unit"> %</span>';
+      } else if (elF) {
+        elF.innerHTML = '—<span class="kpi-unit"> %</span>';
+      }
+    }).catch(function(err){ console.warn('[Dashboard] fertilidad:', err && err.message); });
   }
 
   console.log('[Dashboard] Actualizado desde', e.detail.source,
