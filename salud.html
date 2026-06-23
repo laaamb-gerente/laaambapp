@@ -990,6 +990,19 @@ function switchTab(el,id){
 var _FINCA_SALUD='a1b2c3d4-0000-0000-0000-000000000001';
 var _DOSIS_HOY=[];
 function _dEsc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+function _limpiarDx(txt){
+  if(!txt) return '—';
+  var s=String(txt);
+  // Quitar prefijo "[GRUPAL:grp-xxxxx] " que se guarda en notas de tratamientos grupales
+  s=s.replace(/^\[GRUPAL:[^\]]*\]\s*/i,'');
+  // El texto grupal tiene formato "motivo | medicamento | N animales"
+  // Conservar solo el motivo (primer segmento antes del primer |)
+  if(s.indexOf(' | ')>=0){
+    s=s.split(' | ')[0].trim();
+  }
+  return s||'—';
+}
 async function loadDosisHoy(){
   var panel=document.getElementById('dosis-hoy-panel'); if(!panel) return;
   if(!(window.DB && typeof window.DB.getDosisPendientesHoy==='function')){ panel.innerHTML=''; return; }
@@ -2232,7 +2245,7 @@ async function loadFromSupabase(){
           fecha:inicio.toLocaleDateString('es-CO'),
           tipo:esGrupal?'Grupal':'Individual',
           animales: animalLbl,
-          dx:t.diagnostico||t.notas||'—',
+          dx:_limpiarDx(t.diagnostico||t.notas||'—'),
           med:(t.medicamentos&&t.medicamentos.nombre)||'—',
           dosis:(t.dosis!=null?t.dosis+(t.unidad?' '+t.unidad:''):'—'),
           via:t.unidad||'IM',
