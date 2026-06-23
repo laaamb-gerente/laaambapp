@@ -296,7 +296,7 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
       <label class="btn btn-ghost btn-sm" style="cursor:pointer">↑ Importar inventario<input type="file" class="import-hidden" accept=".xlsx,.csv" onchange="importMeds(this)"></label>
       <button class="btn btn-ghost btn-sm" onclick="exportMeds()">↓ Excel inventario</button>
       <button class="btn btn-ghost btn-sm" onclick="abrirCompra()">+ Registrar compra</button>
-      <button class="btn btn-primary btn-sm" onclick="openModal('modal-add')">+ Agregar medicamento</button>
+      <button class="btn btn-primary btn-sm" onclick="nuevoMed()">+ Agregar medicamento</button>
     </div>
   </div>
 
@@ -496,7 +496,7 @@ function renderMeds(){
     const stockLabel = stockPct < 20 ? '🔴 Crítico' : stockPct < 40 ? '🟡 Bajo' : stockPct < 70 ? '🟢 Medio' : '✅ Lleno';
     const vencText = vs==='urgente' ? '⚠ Vence en '+dias+'d' : vs==='pronto' ? '⏰ Vence en '+dias+'d' : '✓ OK ('+dias+'d)';
     const vencBadge = vs==='urgente' ? 'b-red' : vs==='pronto' ? 'b-amber' : 'b-green';
-    return '<div class="med-card venc-'+vs+'" onclick="toast(\''+m.nombre+' · Lote '+m.lote+'\',\'info\')">'
+    return '<div class="med-card venc-'+vs+'">'
       +'<div class="med-ico '+(PRES_CLASS[m.pres]||'inyectable')+'">'+(PRES_ICO[m.pres]||'💉')+'</div>'
       +'<div class="med-info">'
         +'<div class="med-nombre">'+m.nombre+'</div>'
@@ -514,7 +514,8 @@ function renderMeds(){
           +'<div style="font-size:11px;font-weight:600;color:'+stockColor+';">'+stockLabel+'</div>'
         +'</div>'
       +'</div>'
-      +'<div class="venc-badge"><span class="badge '+vencBadge+'" style="font-size:10px">'+vencText+'</span></div>'
+      +'<div class="venc-badge"><span class="badge '+vencBadge+'" style="font-size:10px">'+vencText+'</span>'
+      +'<button class="btn btn-ghost btn-sm" style="margin-top:6px;font-size:11px" onclick="event.stopPropagation();editarMed(\''+m._uuid+'\')">✏️ Editar</button></div>'
       +'</div>';
   }).join('');
   setEl('filter-count', filteredMeds.length + ' de ' + MEDS.length + ' productos');
@@ -633,8 +634,10 @@ function saveMed(){
     costo: parseInt(document.getElementById('m-costo').value) || 0,
   };
   // Guardar en Supabase (fuente de verdad) y recargar la lista desde ahí.
+  var _esEdicion = !!window._editMedId;
   if(window.DB && typeof window.DB.saveMedicamento==='function'){
     window.DB.saveMedicamento({
+      id: window._editMedId || undefined,
       finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
       nombre:med.nombre,
       tipo:med.cat,
@@ -643,6 +646,9 @@ function saveMed(){
       stock_minimo:Math.round(med.max*0.2)||null,
       dias_retiro:med.retiro,
       precio_unitario:med.costo,
+      principio_activo: med.principio || null,
+      dosis_sugerida: med.dosis || null,
+      fecha_vencimiento: med.venc || null,
       notas:document.getElementById('m-obs').value||null
     }).then(function(res){
       if(res && res.error){ console.warn('[Medicamentos] saveMedicamento Supabase:',res.error.message); toast('Error guardando: '+res.error.message,'err'); return; }
@@ -653,7 +659,44 @@ function saveMed(){
   }
 
   closeModal('modal-add');
-  toast(nombre + ' agregado al inventario');
+  toast(nombre + (_esEdicion ? ' actualizado' : ' agregado al inventario'));
+  // Limpiar estado de edición y restaurar título
+  window._editMedId = null;
+  var _t = document.querySelector('#modal-add .modal-title');
+  if(_t) _t.textContent = 'Agregar medicamento';
+}
+
+function editarMed(uuid){
+  var m = MEDS.find(function(x){ return x._uuid===uuid || x._id===uuid; });
+  if(!m){ toast('Medicamento no encontrado','err'); return; }
+  // Guardar el id en edición
+  window._editMedId = uuid;
+  // Pre-llenar el modal-add con los valores actuales
+  document.getElementById('m-nombre').value = m.nombre==='Sin nombre'?'':m.nombre;
+  document.getElementById('m-principio').value = (m.principio==='—'?'':m.principio)||'';
+  document.getElementById('m-cat').value = m.cat||'Antiparasitario';
+  document.getElementById('m-pres').value = m.pres||'Inyectable';
+  document.getElementById('m-lote').value = (m.lote==='—'?'':m.lote)||'';
+  document.getElementById('m-stock').value = m.stock||0;
+  document.getElementById('m-max').value = m.max||100;
+  document.getElementById('m-venc').value = (m.venc&&m.venc!=='2099-01-01')?m.venc:'';
+  document.getElementById('m-retiro').value = m.retiro||0;
+  document.getElementById('m-costo').value = m.costo||0;
+  document.getElementById('m-dosis').value = (m.dosis==='—'?'':m.dosis)||'';
+  // Cambiar título del modal y botón
+  var titulo = document.querySelector('#modal-add .modal-title');
+  if(titulo) titulo.textContent = 'Editar medicamento';
+  openModal('modal-add');
+}
+
+function nuevoMed(){
+  window._editMedId = null;
+  ['m-nombre','m-principio','m-lote','m-stock','m-max','m-venc','m-retiro','m-costo','m-dosis','m-obs'].forEach(function(id){
+    var el=document.getElementById(id); if(el) el.value='';
+  });
+  var t=document.querySelector('#modal-add .modal-title');
+  if(t) t.textContent='Agregar medicamento';
+  openModal('modal-add');
 }
 
 function exportMeds(){
