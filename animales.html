@@ -180,8 +180,8 @@ textarea.fi{resize:vertical;min-height:60px}
   thead th:nth-child(8),tbody td:nth-child(8){display:none}
   thead th,tbody td{padding:8px 6px;font-size:13px;white-space:nowrap}
   table{min-width:0}
-  /* FAB de pesaje rápido siempre accesible con el pulgar */
-  #pesaje-fab { display:flex !important; }
+  /* FAB de acción principal siempre accesible con el pulgar */
+  #fab-wrap { display:block !important; }
 }
 
 /* Validación */
@@ -265,6 +265,14 @@ label.fl[for] + .fi:required,label.fl + .fi[required]{border-left:2px solid var(
 .acciones-menu.open{display:block}
 .acciones-menu button{display:block;width:100%;text-align:left;background:none;border:none;padding:10px 12px;font-family:'Changa',sans-serif;font-size:13px;color:var(--text,#15201F);cursor:pointer;border-radius:8px}
 .acciones-menu button:hover{background:var(--surface-2,#F4F6F6)}
+@media (max-width:899px){
+  #tabla-main{display:none !important}
+  #cards-mobile{display:block !important}
+  #pagination{padding:0 12px 90px}
+}
+@media (min-width:900px){
+  #cards-mobile{display:none !important}
+}
 </style>
 </head>
 <body>
@@ -364,7 +372,7 @@ label.fl[for] + .fi:required,label.fl + .fi[required]{border-left:2px solid var(
 
   <div class="table-wrap">
     <div class="table-scroll">
-      <table>
+      <table id="tabla-main">
         <thead><tr>
           <th class="sort" onclick="sortBy('id')">ID / Arete</th>
           <th>Animal</th>
@@ -378,6 +386,7 @@ label.fl[for] + .fi:required,label.fl + .fi[required]{border-left:2px solid var(
         </tr></thead>
         <tbody id="tbody"></tbody>
       </table>
+      <div id="cards-mobile" class="lb-list" style="display:none"></div>
       <div id="pagination" style="display:none;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-top:1px solid var(--border);flex-wrap:wrap">
         <div id="pag-info" style="font-size:12px;color:var(--text2)">—</div>
         <div style="display:flex;align-items:center;gap:8px">
@@ -681,7 +690,7 @@ function renderTabla(){
   var total=allAnimales.filter(function(a){return a.activo!==false;}).length;
   setEl('ph-sub', filtered.length+' animales mostrados · '+total+' activos en total');
   setEl('filter-count', filtered.length+' resultados');
-  if(!filtered.length){tbody.innerHTML='';empty.style.display='block';document.getElementById('pagination').style.display='none';return;}
+  if(!filtered.length){tbody.innerHTML='';var _cm0=document.getElementById('cards-mobile');if(_cm0)_cm0.innerHTML='';empty.style.display='block';document.getElementById('pagination').style.display='none';return;}
   empty.style.display='none';
   var totalPages=Math.max(1,Math.ceil(filtered.length/PER_PAGE));
   if(currentPage>totalPages)currentPage=totalPages;
@@ -709,6 +718,47 @@ function renderTabla(){
       +(typeof _evalBtn==='function'?_evalBtn(a):'')
       +'</div></td></tr>';
   }).join('');
+
+  // ── Tarjetas flotantes (solo móvil) — mismos pageItems, sin tocar la tabla ──
+  var cardsEl = document.getElementById('cards-mobile');
+  if(cardsEl){
+    cardsEl.innerHTML = pageItems.map(function(a){
+      var peso=(a.pesoParaTabla!=null && a.pesoParaTabla!=='') ? Number(a.pesoParaTabla).toFixed(1)+' kg' : null;
+      var edad=calcEdad(a.fecha_nacimiento);
+      var op=a.activo===false?'opacity:.5;':'';
+      // Color del cuadro del número según estado
+      var tcls='t-teal';
+      if(a.candidata_descarte || a.estado==='En tratamiento') tcls='t-amber';
+      else if(a.estado==='Reproductor' || a.sexo==='M') tcls='t-wine';
+      // Texto del cuadro: usa el id corto
+      var num=String(a.id||'').replace(/[^0-9A-Za-z]/g,'').slice(-3) || '#';
+      // Sub-línea: raza · edad · lote · peso
+      var partes=[];
+      if(a.raza) partes.push(a.raza);
+      if(edad && edad!=='—') partes.push(edad);
+      if(a.lote) partes.push(a.lote);
+      if(peso) partes.push(peso);
+      var sub=partes.join(' · ');
+      // Badge de estado a la derecha (solo si destaca; activo normal = punto)
+      var badge='';
+      var estadoNorm=(a.estado||'').toLowerCase();
+      if(a.candidata_descarte){ badge='<span class="lb-badge amber">descarte</span>'; }
+      else if(a.estado==='Reproductor'){ badge='<span class="lb-badge wine">reproductor</span>'; }
+      else if(a.estado==='En tratamiento'){ badge='<span class="lb-badge amber">tratamiento</span>'; }
+      else if(a.estado==='Gestante'){ badge='<span class="lb-badge teal">gestante</span>'; }
+      else if(a.categoria==='Cría'){ badge='<span class="lb-badge teal">cría</span>'; }
+      else { badge='<span class="lb-dot"></span>'; }
+      return '<div class="lb-card'+(a.candidata_descarte?' is-alert':'')+'" style="'+op+'" onclick="verPerfil(\''+a.id+'\')">'
+        +'<div class="lb-card-badge '+tcls+'">'+num+'</div>'
+        +'<div class="lb-card-body">'
+          +'<div class="lb-card-title">'+(a.nombre||('#'+a.id))+'</div>'
+          +'<div class="lb-card-sub">'+(sub||'Sin datos')+'</div>'
+        +'</div>'
+        +badge
+        +'<i style="font-size:18px;color:#C4CECE;flex:none">›</i>'
+        +'</div>';
+    }).join('');
+  }
 
   // ── Controles de paginación ──
   var pag=document.getElementById('pagination');
@@ -1684,31 +1734,16 @@ async function _fichaLoadGenealogía(a){
 </script>
 
 <!-- FAB pesaje rápido (solo móvil) -->
-<button id="pesaje-fab"
-    onclick="openModal('modal-pesaje')"
-    aria-label="Pesaje rápido"
-    title="Registrar pesaje"
-    style="
-      display:none;
-      position:fixed;
-      bottom:24px;
-      right:24px;
-      width:60px;
-      height:60px;
-      border-radius:50%;
-      background:#00AFB6;
-      color:white;
-      font-size:18px;
-      line-height:1;
-      flex-direction:column;
-      border:none;
-      box-shadow:0 4px 16px rgba(0,175,182,0.45);
-      z-index:200;
-      align-items:center;
-      justify-content:center;
-      cursor:pointer;
-      touch-action:manipulation;
-    "><span style="font-size:18px;line-height:1">⚖</span><span style="font-size:10px;font-weight:700;letter-spacing:.3px;display:block;margin-top:2px">PESAR</span></button>
+<!-- FAB acción principal (solo móvil) -->
+<div id="fab-wrap" style="display:none;position:fixed;right:16px;bottom:18px;z-index:200">
+  <div id="fab-menu" style="display:none;position:absolute;right:0;bottom:60px;background:var(--surface,#fff);border:1px solid var(--border-2,#E0E6E6);border-radius:14px;box-shadow:0 8px 28px rgba(21,32,31,.18);overflow:hidden;min-width:200px;padding:5px">
+    <button onclick="abrirNuevo();_closeFab()" style="display:block;width:100%;text-align:left;background:none;border:none;padding:11px 13px;font-family:'Changa',sans-serif;font-size:13px;color:var(--text,#15201F);cursor:pointer;border-radius:8px">Registrar animal</button>
+    <button onclick="openModal('modal-pesaje');_closeFab()" style="display:block;width:100%;text-align:left;background:none;border:none;padding:11px 13px;font-family:'Changa',sans-serif;font-size:13px;color:var(--text,#15201F);cursor:pointer;border-radius:8px">Pesaje individual</button>
+    <button onclick="openModal('modal-pesaje-grupal');_closeFab()" style="display:block;width:100%;text-align:left;background:none;border:none;padding:11px 13px;font-family:'Changa',sans-serif;font-size:13px;color:var(--text,#15201F);cursor:pointer;border-radius:8px">Pesaje grupal</button>
+    <button onclick="openImport();_closeFab()" style="display:block;width:100%;text-align:left;background:none;border:none;padding:11px 13px;font-family:'Changa',sans-serif;font-size:13px;color:var(--text,#15201F);cursor:pointer;border-radius:8px">Importar CSV/Excel</button>
+  </div>
+  <button id="fab-btn" onclick="_toggleFab()" aria-label="Acciones" style="height:50px;padding:0 22px;border-radius:25px;border:none;background:#00AFB6;color:#fff;display:flex;align-items:center;gap:8px;font-family:'Changa',sans-serif;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 14px rgba(0,175,182,0.35)"><span style="font-size:20px;line-height:1">+</span> Registrar</button>
+</div>
 
 <!-- ═══ FASE 6 — Score materno + lista de descarte ═══ -->
 <div class="overlay" id="m-eval" onclick="if(event.target===this)closeModal('m-eval')">
@@ -1963,6 +1998,17 @@ document.addEventListener('click',function(e){
   if(m&&m.classList.contains('open')&&!m.contains(e.target)&&e.target!==b){
     m.classList.remove('open');
   }
+});
+window._toggleFab=function(){
+  var m=document.getElementById('fab-menu');
+  if(m) m.style.display = m.style.display==='block' ? 'none' : 'block';
+};
+window._closeFab=function(){
+  var m=document.getElementById('fab-menu'); if(m) m.style.display='none';
+};
+document.addEventListener('click',function(e){
+  var w=document.getElementById('fab-wrap'); var m=document.getElementById('fab-menu');
+  if(w&&m&&m.style.display==='block'&&!w.contains(e.target)){ m.style.display='none'; }
 });
 </script>
 </body>
