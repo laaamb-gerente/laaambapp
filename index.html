@@ -172,6 +172,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 }
 /* Móvil pequeño: mantener 2 tarjetas por fila (no 1) */
 @media(max-width:480px){.kpi-grid{grid-template-columns:1fr 1fr;gap:8px}}
+.dash-section-label{font-size:11px;font-weight:700;letter-spacing:.8px;color:var(--text3);text-transform:uppercase;margin:18px 0 10px}
+.rango-chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;-webkit-overflow-scrolling:touch}
+.rango-chip{flex:none;padding:6px 13px;border-radius:20px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);font-family:'Changa',sans-serif;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all var(--anim)}
+.rango-chip.active{background:var(--teal);border-color:var(--teal);color:#fff}
+.rango-label{font-size:11px;color:var(--text3);margin-bottom:12px}
+.rango-custom{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -207,6 +213,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
   </div>
 
   <!-- KPIs -->
+  <!-- ZONA 1: ESTADO ACTUAL (stock, sin rango) -->
+  <div class="dash-section-label">Estado actual</div>
   <div class="kpi-grid">
     <div class="kpi-card c-teal">
       <div class="kpi-label">Total animales</div>
@@ -223,24 +231,44 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       <div class="kpi-val" id="kpi-gestantes">—</div>
       <div class="kpi-delta up" id="kpi-gest-delta">—</div>
     </div>
-    <div class="kpi-card c-wine">
-      <div class="kpi-label">Partos este mes</div>
-      <div class="kpi-val" id="kpi-partos">—</div>
-      <div class="kpi-delta neu" id="kpi-partos-delta">Natalidad —%</div>
-    </div>
-  </div>
-  <div class="kpi-grid">
-    <div class="kpi-card c-teal">
-      <div class="kpi-label">Mortalidad MTD</div>
-      <div class="kpi-val" id="kpi-mort">0</div>
-      <div class="kpi-delta neu" id="kpi-mort-delta">Tasa —%</div>
-      <div class="kpi-delta neu" id="kpi-mort-causa" style="display:none"></div>
-      <div class="kpi-delta warn" id="kpi-pendientes-aprob" style="display:none"></div>
-    </div>
     <div class="kpi-card c-green">
       <div class="kpi-label">Trat. activos</div>
       <div class="kpi-val" id="kpi-trat">0</div>
       <div class="kpi-delta neu" id="kpi-trat-delta">— indiv. · — grupales</div>
+    </div>
+  </div>
+
+  <!-- ZONA 2: ACTIVIDAD DEL PERÍODO (flujo, con rango) -->
+  <div class="dash-period-head">
+    <div class="dash-section-label">Actividad del período</div>
+  </div>
+  <div class="rango-chips" id="rango-chips">
+    <button class="rango-chip active" data-rango="mes" onclick="setRango('mes',this)">Este mes</button>
+    <button class="rango-chip" data-rango="7d" onclick="setRango('7d',this)">7 días</button>
+    <button class="rango-chip" data-rango="30d" onclick="setRango('30d',this)">30 días</button>
+    <button class="rango-chip" data-rango="anio" onclick="setRango('anio',this)">Este año</button>
+    <button class="rango-chip" data-rango="anio_ant" onclick="setRango('anio_ant',this)">Año anterior</button>
+    <button class="rango-chip" data-rango="custom" onclick="abrirRangoCustom(this)">Personalizado</button>
+  </div>
+  <div class="rango-label" id="rango-label"></div>
+  <div class="rango-custom" id="rango-custom" style="display:none">
+    <input type="date" id="rango-desde" class="fi" style="max-width:160px">
+    <span style="color:var(--text3)">→</span>
+    <input type="date" id="rango-hasta" class="fi" style="max-width:160px">
+    <button class="btn btn-primary btn-sm" onclick="aplicarRangoCustom()">Aplicar</button>
+  </div>
+  <div class="kpi-grid">
+    <div class="kpi-card c-wine">
+      <div class="kpi-label">Partos</div>
+      <div class="kpi-val" id="kpi-partos">—</div>
+      <div class="kpi-delta neu" id="kpi-partos-delta">Natalidad —%</div>
+    </div>
+    <div class="kpi-card c-teal">
+      <div class="kpi-label">Mortalidad</div>
+      <div class="kpi-val" id="kpi-mort">0</div>
+      <div class="kpi-delta neu" id="kpi-mort-delta">Tasa —%</div>
+      <div class="kpi-delta neu" id="kpi-mort-causa" style="display:none"></div>
+      <div class="kpi-delta warn" id="kpi-pendientes-aprob" style="display:none"></div>
     </div>
     <div class="kpi-card c-amber">
       <div class="kpi-label">GDP levante</div>
@@ -717,6 +745,166 @@ document.addEventListener('DOMContentLoaded', function() {
   window.addEventListener('finca-changed', renderDashboard);
 });
 
+// ── Estado de rango del dashboard ──
+window._dashRango = { tipo:'mes', desde:null, hasta:null };
+window._dashData = { bajas:null, partos:null, animales:null };
+
+function _calcRango(tipo){
+  var hoy=new Date(); var desde, hasta=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate(),23,59,59);
+  if(tipo==='mes'){ desde=new Date(hoy.getFullYear(),hoy.getMonth(),1); }
+  else if(tipo==='7d'){ desde=new Date(hoy); desde.setDate(hoy.getDate()-6); desde.setHours(0,0,0,0); }
+  else if(tipo==='30d'){ desde=new Date(hoy); desde.setDate(hoy.getDate()-29); desde.setHours(0,0,0,0); }
+  else if(tipo==='anio'){ desde=new Date(hoy.getFullYear(),0,1); }
+  else if(tipo==='anio_ant'){ desde=new Date(hoy.getFullYear()-1,0,1); hasta=new Date(hoy.getFullYear()-1,11,31,23,59,59); }
+  else { desde=new Date(hoy.getFullYear(),hoy.getMonth(),1); }
+  return { desde:desde, hasta:hasta };
+}
+// Inicializar con el mes en curso (fechas reales, no null)
+window._dashRango = Object.assign({ tipo:'mes' }, _calcRango('mes'));
+
+function _fmtFecha(d){
+  var meses=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return d.getDate()+' '+meses[d.getMonth()]+' '+d.getFullYear();
+}
+
+// Devuelve true si la fecha f cae dentro del rango activo
+window._enRango = function(f){
+  if(!f) return false;
+  var d=new Date(f);
+  var r=window._dashRango;
+  if(!r.desde || !r.hasta) return false;
+  return d>=r.desde && d<=r.hasta;
+};
+
+window.setRango = function(tipo, btn){
+  window._dashRango = Object.assign({tipo:tipo}, _calcRango(tipo));
+  // marcar chip activo
+  document.querySelectorAll('.rango-chip').forEach(function(c){ c.classList.remove('active'); });
+  if(btn) btn.classList.add('active');
+  // ocultar el custom si estaba abierto
+  var rc=document.getElementById('rango-custom'); if(rc) rc.style.display='none';
+  _actualizarRangoLabel();
+  _recalcularKPIsFlujo();
+};
+
+window.abrirRangoCustom = function(btn){
+  document.querySelectorAll('.rango-chip').forEach(function(c){ c.classList.remove('active'); });
+  if(btn) btn.classList.add('active');
+  var rc=document.getElementById('rango-custom'); if(rc) rc.style.display='flex';
+};
+
+window.aplicarRangoCustom = function(){
+  var d=document.getElementById('rango-desde').value, h=document.getElementById('rango-hasta').value;
+  if(!d||!h){ return; }
+  window._dashRango = { tipo:'custom', desde:new Date(d+'T00:00:00'), hasta:new Date(h+'T23:59:59') };
+  _actualizarRangoLabel();
+  _recalcularKPIsFlujo();
+};
+
+function _actualizarRangoLabel(){
+  var el=document.getElementById('rango-label'); if(!el) return;
+  var r=window._dashRango;
+  if(!r.desde || !r.hasta){ el.textContent=''; return; }
+  el.textContent = _fmtFecha(r.desde)+' – '+_fmtFecha(r.hasta);
+}
+
+// ── Cálculos de KPIs de FLUJO (usan window._dashData + window._enRango) ──
+window._calcMortalidad = function(){
+  var bajas = window._dashData.bajas;
+  if(!bajas) return;
+  var r = window._dashRango;
+  var muertesRango = bajas.filter(function(b){ return b.tipo==='muerte' && window._enRango((b.datos_clinicos&&b.datos_clinicos.fecha_real_muerte)||b.fecha); });
+  var totalActivos = (window.AppState && window.AppState.animales)
+    ? window.AppState.animales.filter(function(a){ return a.estado!=='muerto'&&a.estado!=='vendido'; }).length
+    : 0;
+  var denominador = totalActivos + muertesRango.length;
+  var tasa = denominador>0 ? (muertesRango.length/denominador*100).toFixed(1) : 0;
+  var elMort = document.getElementById('kpi-mort');
+  if (elMort) elMort.textContent = muertesRango.length;
+  var elDelta = document.getElementById('kpi-mort-delta');
+  if (elDelta) {
+    var tasaTxt = 'Tasa ' + tasa + '% · ';
+    if (r.tipo==='mes') {
+      // Comparación vs mes anterior (solo cuando el rango es el mes en curso)
+      var h=new Date(), prev=new Date(h.getFullYear(), h.getMonth()-1, 1);
+      var muertesAnt = bajas.filter(function(b){
+        var f=(b.datos_clinicos&&b.datos_clinicos.fecha_real_muerte)||b.fecha;
+        if(b.tipo!=='muerte'||!f) return false;
+        var d=new Date(f);
+        return d.getFullYear()===prev.getFullYear() && d.getMonth()===prev.getMonth();
+      }).length;
+      if (muertesAnt === 0) tasaTxt += muertesRango.length + ' este mes';
+      else if (muertesRango.length < muertesAnt) tasaTxt += '↓ vs ' + muertesAnt + ' el mes anterior';
+      else if (muertesRango.length > muertesAnt) tasaTxt += '↑ vs ' + muertesAnt + ' el mes anterior';
+      else tasaTxt += '= igual que mes anterior';
+      elDelta.className = 'kpi-delta ' + (muertesRango.length < muertesAnt ? 'pos' : muertesRango.length > muertesAnt ? 'neg' : 'neu');
+    } else {
+      tasaTxt += muertesRango.length + ' en el período';
+      elDelta.className = 'kpi-delta neu';
+    }
+    elDelta.textContent = tasaTxt;
+  }
+  // Causa principal del período
+  var counts = {};
+  muertesRango.forEach(function(b){ var c=(b.datos_clinicos&&b.datos_clinicos.causa_muerte); if(c) counts[c]=(counts[c]||0)+1; });
+  var top = Object.entries(counts).sort(function(a,b){ return b[1]-a[1]; })[0];
+  var elCausa = document.getElementById('kpi-mort-causa');
+  if (elCausa) {
+    if (top) { elCausa.textContent = 'Principal: ' + top[0]; elCausa.style.display = ''; }
+    else { elCausa.style.display = 'none'; }
+  }
+};
+
+window._calcPartos = function(){
+  var partos = window._dashData.partos;
+  if(!partos) return;
+  var partosRango = partos.filter(function(p){ return window._enRango(p.fecha_parto); });
+  var elP = document.getElementById('kpi-partos');
+  if (elP) elP.textContent = partosRango.length;
+  // Natalidad = crías nacidas vivas en el período / total partos del período
+  var criasVivas = 0;
+  partosRango.forEach(function(p){
+    criasVivas += (Number(p.num_corderos_vivos) || (p.corderos_nacidos
+      ? p.corderos_nacidos.filter(function(c){return c.estado_al_nacer!=='muerto';}).length
+      : 0));
+  });
+  var elPD = document.getElementById('kpi-partos-delta');
+  if (elPD) {
+    elPD.textContent = partosRango.length>0
+      ? criasVivas + ' crías vivas · ' + (criasVivas/partosRango.length).toFixed(1) + ' por parto'
+      : 'Sin partos en el período';
+  }
+};
+
+window._calcFertilidad = function(){
+  var partos = window._dashData.partos;
+  if(!partos) return;
+  var activos = (window.AppState && typeof window.AppState.getAnimalesActivos==='function') ? window.AppState.getAnimalesActivos() : [];
+  var hembrasAdultas = activos.filter(function(a){
+    if (a.sexo !== 'hembra') return false;
+    if (!a.fecha_nacimiento) return true;
+    var meses = (Date.now() - new Date(a.fecha_nacimiento).getTime()) / (30.44*24*3600*1000);
+    return meses >= 8;
+  }).length;
+  var gestActivas = (window.AppState && typeof window.AppState.getGestantes==='function') ? window.AppState.getGestantes().length : 0;
+  // TODO afinar fertilidad por rango: aprox = (gestantes confirmadas + partos del rango) / hembras adultas
+  var partosRango = partos.filter(function(p){ return window._enRango(p.fecha_parto); }).length;
+  var hembrasReproduciendo = gestActivas + partosRango;
+  var elF = document.getElementById('kpi-fert');
+  if (elF && hembrasAdultas > 0) {
+    var fert = Math.min(100, Math.round(hembrasReproduciendo / hembrasAdultas * 100));
+    elF.innerHTML = fert + '<span class="kpi-unit"> %</span>';
+  } else if (elF) {
+    elF.innerHTML = '—<span class="kpi-unit"> %</span>';
+  }
+};
+
+window._recalcularKPIsFlujo = function(){
+  try{ window._calcMortalidad(); }catch(e){ console.warn('[Dashboard] mort recalc:', e&&e.message); }
+  try{ window._calcPartos(); }catch(e){ console.warn('[Dashboard] partos recalc:', e&&e.message); }
+  try{ window._calcFertilidad(); }catch(e){ console.warn('[Dashboard] fert recalc:', e&&e.message); }
+};
+
 // ═══ DASHBOARD — datos live desde Supabase (AppState) ═══
 document.addEventListener('appstate:ready', function(e) {
   const activos = window.AppState.getAnimalesActivos();
@@ -797,108 +985,22 @@ document.addEventListener('appstate:ready', function(e) {
     }
   }
 
-  // ── MORTALIDAD MTD — conteo del mes + causa principal (datos_clinicos) ──
+  // ── DATOS DE FLUJO (bajas + partos): se cargan UNA vez y se cachean en
+  //    window._dashData; el selector de rango recalcula sin re-consultar. ──
+  window._dashData.animales = (window.AppState && window.AppState.animales) || null;
+  _actualizarRangoLabel();
   if (window.DB && typeof window.DB.getBajas === 'function') {
     window.DB.getBajas('a1b2c3d4-0000-0000-0000-000000000001').then(function(res){
-      const bajas = (res && res.data) || [];
-      const hoy = new Date();
-      const enMes = function(f){ if(!f) return false; const d=new Date(f); return d.getMonth()===hoy.getMonth() && d.getFullYear()===hoy.getFullYear(); };
-      const muertesMes = bajas.filter(function(b){ return b.tipo==='muerte' && enMes((b.datos_clinicos&&b.datos_clinicos.fecha_real_muerte)||b.fecha); });
-      // Deaths last month (for comparison)
-      const mesAnterior = function(f){
-        if(!f) return false;
-        const d=new Date(f), h=new Date();
-        const prev=new Date(h.getFullYear(), h.getMonth()-1, 1);
-        return d.getFullYear()===prev.getFullYear() && d.getMonth()===prev.getMonth();
-      };
-      const muertesAnt = bajas.filter(function(b){ return b.tipo==='muerte' && mesAnterior((b.datos_clinicos&&b.datos_clinicos.fecha_real_muerte)||b.fecha); }).length;
-      // Total active animals (from AppState)
-      const totalActivos = (window.AppState && window.AppState.animales)
-        ? window.AppState.animales.filter(function(a){ return a.estado!=='muerto'&&a.estado!=='vendido'; }).length
-        : 0;
-      const denominador = totalActivos + muertesMes.length;
-      const tasa = denominador>0 ? (muertesMes.length/denominador*100).toFixed(1) : 0;
-      // Update KPI card
-      const elMort = document.getElementById('kpi-mort');
-      if (elMort) elMort.textContent = muertesMes.length;
-      const elDelta = document.getElementById('kpi-mort-delta');
-      if (elDelta) {
-        var tasaTxt = 'Tasa ' + tasa + '% · ';
-        if (muertesAnt === 0) tasaTxt += muertesMes.length + ' este mes';
-        else if (muertesMes.length < muertesAnt) tasaTxt += '↓ vs ' + muertesAnt + ' el mes anterior';
-        else if (muertesMes.length > muertesAnt) tasaTxt += '↑ vs ' + muertesAnt + ' el mes anterior';
-        else tasaTxt += '= igual que mes anterior';
-        elDelta.textContent = tasaTxt;
-        elDelta.className = 'kpi-delta ' + (muertesMes.length < muertesAnt ? 'pos' : muertesMes.length > muertesAnt ? 'neg' : 'neu');
-      }
-      // Causa principal del mes
-      const counts = {};
-      muertesMes.forEach(function(b){ const c=(b.datos_clinicos&&b.datos_clinicos.causa_muerte); if(c) counts[c]=(counts[c]||0)+1; });
-      const top = Object.entries(counts).sort(function(a,b){ return b[1]-a[1]; })[0];
-      const elCausa = document.getElementById('kpi-mort-causa');
-      if (elCausa) {
-        if (top) { elCausa.textContent = 'Principal: ' + top[0]; elCausa.style.display = ''; }
-        else { elCausa.style.display = 'none'; }
-      }
+      window._dashData.bajas = (res && res.data) || [];
+      window._calcMortalidad();
     }).catch(function(err){ console.warn('[Dashboard] mortalidad:', err && err.message); });
   }
-
-  // ── PARTOS ESTE MES + NATALIDAD (desde Supabase tabla partos) ──
   if (window.DB && typeof window.DB.getPartos === 'function') {
     window.DB.getPartos('a1b2c3d4-0000-0000-0000-000000000001', 200).then(function(res){
-      const partos = (res && res.data) || [];
-      const hoy = new Date();
-      const partosMes = partos.filter(function(p){
-        if(!p.fecha_parto) return false;
-        const f = new Date(p.fecha_parto);
-        return f.getMonth()===hoy.getMonth() && f.getFullYear()===hoy.getFullYear();
-      });
-      const elP = document.getElementById('kpi-partos');
-      if (elP) elP.textContent = partosMes.length;
-
-      // Natalidad = crías nacidas vivas este mes / total partos del mes
-      let criasVivas = 0;
-      partosMes.forEach(function(p){
-        criasVivas += (Number(p.num_corderos_vivos) || (p.corderos_nacidos
-          ? p.corderos_nacidos.filter(function(c){return c.estado_al_nacer!=='muerto';}).length
-          : 0));
-      });
-      const elPD = document.getElementById('kpi-partos-delta');
-      if (elPD) {
-        elPD.textContent = partosMes.length>0
-          ? criasVivas + ' crías vivas · ' + (criasVivas/partosMes.length).toFixed(1) + ' por parto'
-          : 'Sin partos este mes';
-      }
-    }).catch(function(err){ console.warn('[Dashboard] partos:', err && err.message); });
-  }
-
-  // ── FERTILIDAD: hembras preñadas o paridas vs hembras en edad reproductiva ──
-  // Aproximación: (gestantes + partos últimos 5 meses) / hembras adultas activas
-  if (window.DB && typeof window.DB.getPartos === 'function') {
-    const hembrasAdultas = activos.filter(function(a){
-      if (a.sexo !== 'hembra') return false;
-      // edad >= 8 meses (edad reproductiva) o sin fecha (asumir adulta)
-      if (!a.fecha_nacimiento) return true;
-      const meses = (Date.now() - new Date(a.fecha_nacimiento).getTime()) / (30.44*24*3600*1000);
-      return meses >= 8;
-    }).length;
-    const gestActivas = window.AppState.getGestantes().length;
-    window.DB.getPartos('a1b2c3d4-0000-0000-0000-000000000001', 200).then(function(res){
-      const partos = (res && res.data) || [];
-      const hace5meses = new Date();
-      hace5meses.setMonth(hace5meses.getMonth() - 5);
-      const partosRecientes = partos.filter(function(p){
-        return p.fecha_parto && new Date(p.fecha_parto) >= hace5meses;
-      }).length;
-      const hembrasReproduciendo = gestActivas + partosRecientes;
-      const elF = document.getElementById('kpi-fert');
-      if (elF && hembrasAdultas > 0) {
-        const fert = Math.min(100, Math.round(hembrasReproduciendo / hembrasAdultas * 100));
-        elF.innerHTML = fert + '<span class="kpi-unit"> %</span>';
-      } else if (elF) {
-        elF.innerHTML = '—<span class="kpi-unit"> %</span>';
-      }
-    }).catch(function(err){ console.warn('[Dashboard] fertilidad:', err && err.message); });
+      window._dashData.partos = (res && res.data) || [];
+      window._calcPartos();
+      window._calcFertilidad();
+    }).catch(function(err){ console.warn('[Dashboard] partos/fertilidad:', err && err.message); });
   }
 
   console.log('[Dashboard] Actualizado desde', e.detail.source,
