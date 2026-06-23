@@ -508,7 +508,7 @@ function renderMeds(){
     const vs = vencStatus(m.venc);
     const stockPct = Math.round((m.stock / m.max) * 100);
     // Stock levels: >70% lleno (teal), 40-70% medio (green), 20-40% bajo (amber), <20% crítico (red)
-    const stockColor = stockPct < 20 ? 'var(--red)' : stockPct < 40 ? 'var(--amber)' : stockPct < 70 ? '#4ade80' : 'var(--teal)';
+    const stockColor = stockPct < 20 ? 'var(--red)' : stockPct < 40 ? 'var(--amber)' : stockPct < 70 ? '#1D9E75' : 'var(--teal)';
     const stockLabel = stockPct < 20 ? '🔴 Crítico' : stockPct < 40 ? '🟡 Bajo' : stockPct < 70 ? '🟢 Medio' : '✅ Lleno';
     const vencText = vs==='urgente' ? '⚠ Vence en '+dias+'d' : vs==='pronto' ? '⏰ Vence en '+dias+'d' : '✓ OK ('+dias+'d)';
     const vencBadge = vs==='urgente' ? 'b-red' : vs==='pronto' ? 'b-amber' : 'b-green';
