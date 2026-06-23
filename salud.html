@@ -441,25 +441,25 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     </div>
     <div class="ph-actions">
       <button class="btn btn-ghost btn-sm" onclick="exportSalud()">↓ Excel</button>
-      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-trat-grupal')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle"><circle cx="7" cy="7" r="3"/><path d="M1 17c0-2.8 2.2-5 5-5"/><circle cx="14" cy="7" r="3"/><path d="M10 17c0-2.8 2.2-5 5-5"/></svg> Tratamiento grupal</button>
+      <button class="btn btn-ghost btn-sm" onclick="openModal('modal-trat-grupal')">Tratamiento grupal</button>
       <button class="btn btn-primary btn-sm" onclick="openModal('modal-trat-individual')">+ Tratamiento individual</button>
     </div>
   
       <div class="species-tabs" id="species-tabs">
         <button class="sp-tab" id="sp-todas" onclick="setEspecie('todas')">Todas</button>
-        <button class="sp-tab" id="sp-ovino" onclick="setEspecie('ovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><ellipse cx="9" cy="11.5" rx="5.5" ry="4"/><circle cx="15" cy="9" r="2.4"/><path d="M14 7.4q1-1.6 2.8-.8"/><line x1="7.5" y1="15" x2="7" y2="18"/><line x1="11" y1="15.2" x2="11.5" y2="18"/></svg> Ovinos</button>
-        <button class="sp-tab" id="sp-bovino" onclick="setEspecie('bovino')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="flex-shrink:0"><rect x="3.5" y="9.5" width="10" height="6" rx="1.5"/><rect x="12.5" y="7.5" width="4" height="4.5" rx="1"/><path d="M12.8 7.4q-.8-2.2-2.6-1.4"/><path d="M16.2 7.4q.8-2.2 2.6-1.4"/><line x1="5.5" y1="15.5" x2="5.5" y2="18.3"/><line x1="11.5" y1="15.5" x2="11.5" y2="18.3"/></svg> Bovinos</button>
+        <button class="sp-tab" id="sp-ovino" onclick="setEspecie('ovino')">Ovinos</button>
+        <button class="sp-tab" id="sp-bovino" onclick="setEspecie('bovino')">Bovinos</button>
       </div>
     </div>
 
   <div class="tab-nav">
-    <div class="tn active" onclick="switchTab(this,'t-resumen')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="3" y="11" width="3" height="6"/><rect x="8" y="7" width="3" height="10"/><rect x="13" y="3" width="3" height="14"/></svg>Resumen</div>
-    <div class="tn" onclick="switchTab(this,'t-activos')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M13 3l4 4-9 9-5 1 1-5 9-9z"/></svg>Activos</div>
-    <div class="tn" onclick="switchTab(this,'t-historial')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><path d="M4 4h12v12H4z" rx="1"/><path d="M7 8h6M7 11h4M7 14h2"/></svg>Historial</div>
-    <div class="tn" onclick="switchTab(this,'t-retiro')">⏱ Retiro</div>
-    <div class="tn" onclick="switchTab(this,'t-medicamentos')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>Medicamentos</div>
-    <div class="tn" onclick="switchTab(this,'t-calculadora')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 7h6M7 10h2M11 10h2M7 13h2M11 13h2"/></svg>Calculadora</div>
-    <div class="tn" onclick="switchTab(this,'t-calendario')"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 9h14M7 3v3M13 3v3"/></svg>Calendario</div>
+    <div class="tn active" onclick="switchTab(this,'t-resumen')">Resumen</div>
+    <div class="tn" onclick="switchTab(this,'t-activos')">Activos</div>
+    <div class="tn" onclick="switchTab(this,'t-historial')">Historial</div>
+    <div class="tn" onclick="switchTab(this,'t-retiro')">Retiro</div>
+    <div class="tn" onclick="switchTab(this,'t-medicamentos')">Medicamentos</div>
+    <div class="tn" onclick="switchTab(this,'t-calculadora')">Calculadora</div>
+    <div class="tn" onclick="switchTab(this,'t-calendario')">Calendario</div>
   </div>
 
   <div class="content">
@@ -486,8 +486,8 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
         <div class="card">
           <div class="card-h"><div class="card-title">Acciones rápidas</div></div>
           <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
-            <button class="btn btn-primary" onclick="openModal('modal-trat-individual')" style="width:100%;justify-content:center">💉 Nuevo tratamiento individual</button>
-            <button class="btn btn-ghost" onclick="openModal('modal-trat-grupal')" style="width:100%;justify-content:center">👥 Nuevo tratamiento grupal</button>
+            <button class="btn btn-primary" onclick="openModal('modal-trat-individual')" style="width:100%;justify-content:center">Nuevo tratamiento individual</button>
+            <button class="btn btn-ghost" onclick="openModal('modal-trat-grupal')" style="width:100%;justify-content:center">Nuevo tratamiento grupal</button>
             <button class="btn btn-ghost" onclick="openModal('modal-add-med')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15" style="vertical-align:middle;margin-right:4px"><ellipse cx="10" cy="10" rx="7" ry="4" transform="rotate(-45 10 10)"/><line x1="4.5" y1="4.5" x2="15.5" y2="15.5"/></svg>Agregar medicamento</button>
             <button class="btn btn-ghost" onclick="switchTabByName('t-calculadora')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:4px"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 7h6M7 10h2M11 10h2M7 13h2M11 13h2"/></svg>Calculadora de dosis</button>
             <button class="btn btn-ghost" onclick="switchTabByName('t-calendario')" style="width:100%;justify-content:center"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="12" height="12" style="vertical-align:middle;margin-right:3px"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 9h14M7 3v3M13 3v3"/></svg> Ver calendario sanitario</button>
