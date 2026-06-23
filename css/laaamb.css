@@ -1,0 +1,121 @@
+/* ═══════════════════════════════════════════════════════
+   LAAAMB · Sistema de diseño compartido (solo modo claro)
+   Marca: teal #00AFB6 · wine #9C3F66 · orange #F18F22
+   Tipografía: Sigmar (display) + Changa (texto)
+   ═══════════════════════════════════════════════════════ */
+
+:root{
+  /* Marca */
+  --teal:#00AFB6; --teal-d:#00838A; --teal-bg:#E5F6F7;
+  --wine:#9C3F66; --wine-d:#7d3251; --wine-bg:#F3EAF0;
+  --orange:#F18F22; --orange-d:#B26A12; --orange-bg:#FCF1DF;
+
+  /* Neutros (solo claro) */
+  --bg:#F4F6F6;          /* fondo de página */
+  --surface:#FFFFFF;     /* tarjetas, header */
+  --surface-2:#F4F6F6;   /* inputs, chips inactivos */
+  --border:#EAEEEE;      /* divisores suaves */
+  --border-2:#E0E6E6;    /* bordes de control */
+
+  /* Texto */
+  --text:#15201F;        /* principal */
+  --text-2:#5F6B6C;      /* secundario */
+  --text-3:#8A9696;      /* terciario / hints */
+  --text-4:#A8B3B3;      /* eyebrow / muy tenue */
+
+  /* Semánticos */
+  --green:#1D9E75; --green-bg:#E1F5EE;
+  --red:#E24B4A;   --red-bg:#FCEBEB;
+  --amber:#BA7517; --amber-bg:#FCF1DF;
+
+  /* Forma y movimiento */
+  --r-sm:8px; --r:12px; --r-lg:14px; --r-pill:20px;
+  --anim:0.16s cubic-bezier(.4,0,.2,1);
+  --shadow-fab:0 4px 14px rgba(0,175,182,0.35);
+  --sidebar:236px;
+}
+
+*{box-sizing:border-box}
+
+body.laaamb{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:'Changa',sans-serif; font-size:14px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── Tipografía ── */
+.lb-display{font-family:'Sigmar',cursive; letter-spacing:-0.3px; color:var(--text)}
+.lb-eyebrow{font-size:11px; letter-spacing:1.5px; color:var(--text-4); text-transform:uppercase}
+.lb-title{font-size:24px; font-weight:500; color:var(--text); letter-spacing:-0.5px; line-height:1.15}
+.lb-subtitle{font-size:13px; color:var(--text-3)}
+
+/* ── Header de página ── */
+.lb-pagehead{background:var(--surface); padding:16px 16px 14px; border-bottom:1px solid var(--border)}
+.lb-pagehead-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px}
+.lb-logo{display:flex; align-items:center; gap:8px}
+.lb-logo-mark{width:28px; height:28px; border-radius:7px; background:var(--teal); display:flex; align-items:center; justify-content:center; color:#fff; font-size:12px; font-weight:700; letter-spacing:-0.5px}
+.lb-logo-text{font-size:14px; font-weight:600; color:var(--text); letter-spacing:-0.2px}
+.lb-hamburger{border:none; background:none; color:var(--text-2); padding:0; display:flex; cursor:pointer}
+
+/* ── Tarjetas flotantes (lista de items) ── */
+.lb-list{padding:12px 12px 90px}
+.lb-card{background:var(--surface); border-radius:var(--r-lg); padding:13px 14px; margin-bottom:8px; display:flex; align-items:center; gap:13px; transition:transform var(--anim); cursor:pointer; border:1px solid transparent}
+.lb-card:active{transform:scale(0.99)}
+.lb-card.is-alert{border-color:#FBE6C7}
+.lb-card-badge{display:flex; align-items:center; justify-content:center; width:46px; height:46px; border-radius:12px; flex:none; font-size:15px; font-weight:700; line-height:1}
+.lb-card-badge.t-teal{background:var(--teal-bg); color:var(--teal-d)}
+.lb-card-badge.t-wine{background:var(--wine-bg); color:var(--wine-d)}
+.lb-card-badge.t-amber{background:var(--orange-bg); color:var(--amber)}
+.lb-card-body{flex:1; min-width:0}
+.lb-card-title{font-size:15px; font-weight:600; color:var(--text); margin-bottom:2px}
+.lb-card-sub{font-size:12px; color:var(--text-3)}
+.lb-card-chev{font-size:18px; color:#C4CECE; flex:none}
+.lb-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--teal); flex:none}
+
+/* ── Badges / pills de estado ── */
+.lb-badge{font-size:11px; font-weight:500; padding:2px 8px; border-radius:6px}
+.lb-badge.teal{background:var(--teal-bg); color:var(--teal-d)}
+.lb-badge.wine{background:var(--wine-bg); color:var(--wine-d)}
+.lb-badge.amber{background:var(--orange-bg); color:var(--amber)}
+.lb-badge.green{background:var(--green-bg); color:var(--green)}
+.lb-badge.red{background:var(--red-bg); color:var(--red)}
+
+/* ── Búsqueda y chips de filtro ── */
+.lb-search{display:flex; align-items:center; gap:8px; background:var(--surface-2); border-radius:10px; padding:9px 12px}
+.lb-search input{border:none; background:none; outline:none; font-family:inherit; font-size:13px; color:var(--text); width:100%}
+.lb-search input::placeholder{color:var(--text-4)}
+.lb-chips{display:flex; gap:7px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:2px}
+.lb-chip{flex:none; display:inline-flex; align-items:center; gap:5px; padding:6px 13px; border-radius:var(--r-pill); border:1px solid var(--border-2); color:var(--text-2); font-size:12px; cursor:pointer; background:var(--surface); transition:all var(--anim); white-space:nowrap}
+.lb-chip.active{background:var(--teal); color:#fff; border-color:var(--teal); font-weight:600}
+
+/* ── Botones ── */
+.lb-btn{display:inline-flex; align-items:center; justify-content:center; gap:7px; padding:10px 18px; border-radius:var(--r-sm); font-family:'Changa',sans-serif; font-size:14px; font-weight:600; cursor:pointer; border:1px solid var(--border-2); background:var(--surface); color:var(--text); transition:all var(--anim); white-space:nowrap}
+.lb-btn:active{transform:scale(0.98)}
+.lb-btn.primary{background:var(--teal); color:#fff; border-color:var(--teal)}
+.lb-btn.ghost{background:none; border-color:transparent; color:var(--text-2)}
+
+/* ── FAB (acción flotante) ── */
+.lb-fab{position:fixed; right:16px; bottom:18px; height:50px; padding:0 22px; border-radius:25px; border:none; background:var(--teal); color:#fff; display:flex; align-items:center; gap:8px; font-family:'Changa',sans-serif; font-size:15px; font-weight:600; cursor:pointer; box-shadow:var(--shadow-fab); z-index:50}
+
+/* ── Inputs de formulario ── */
+.lb-fg{margin-bottom:12px}
+.lb-fl{display:block; font-size:12px; font-weight:600; color:var(--text-2); margin-bottom:5px}
+.lb-fi{width:100%; background:var(--surface); border:1px solid var(--border-2); border-radius:var(--r-sm); padding:10px 12px; color:var(--text); font-size:14px; font-family:'Changa',sans-serif; outline:none; transition:border-color var(--anim)}
+.lb-fi:focus{border-color:var(--teal)}
+
+/* ── Hoja inferior (bottom sheet para filtros/menús) ── */
+.lb-sheet-overlay{position:fixed; inset:0; background:rgba(21,32,31,0.4); z-index:100; display:none}
+.lb-sheet-overlay.open{display:block}
+.lb-sheet{position:fixed; left:0; right:0; bottom:0; background:var(--surface); border-radius:20px 20px 0 0; padding:18px 18px calc(18px + env(safe-area-inset-bottom)); z-index:101; transform:translateY(100%); transition:transform .25s cubic-bezier(.4,0,.2,1)}
+.lb-sheet.open{transform:translateY(0)}
+.lb-sheet-handle{width:36px; height:4px; border-radius:2px; background:var(--border-2); margin:0 auto 14px}
+
+/* ── Utilidades ── */
+.lb-empty{text-align:center; padding:40px 20px; color:var(--text-3); font-size:13px}
+.lb-divider{height:1px; background:var(--border); border:none; margin:0}
+
+/* ── Escritorio: la lista puede mostrarse como tabla densa ── */
+@media (min-width:900px){
+  .lb-list{padding:16px 24px 24px}
+  .lb-fab{display:none} /* en desktop las acciones van en el header */
+}
