@@ -1640,7 +1640,7 @@ function renderTGAnimalesLista(){
           + 'dosisSug:null,dosisReal:parseFloat(this.value)||0};'
           + 'recalcTGTotal()}).call(this)"> mL';
 
-      return '<div style="display:flex;align-items:center;gap:4px;margin-top:3px">'
+      return '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;border-left:2px solid var(--border);padding-left:6px">'
         + _label + _input + '</div>';
     }).join('');
 
@@ -1648,7 +1648,7 @@ function renderTGAnimalesLista(){
       + 'align-items:start;padding:6px 4px;border-bottom:1px solid var(--border)">'
       + '<div style="font-size:12px"><b>'+a.codigo+'</b>'
       + (a.raza?' · '+a.raza:'')+' <span style="color:var(--teal)">'+pesoTxt+'</span></div>'
-      + '<div style="text-align:right">'+dosisRows+'</div>'
+      + '<div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;align-items:flex-start">'+dosisRows+'</div>'
       + '<button style="background:none;border:none;cursor:pointer;color:var(--red);'
       + 'font-size:14px;padding:2px 4px" onclick="quitarAnimalTG(\''+id+'\')">✕</button>'
       + '</div>';
