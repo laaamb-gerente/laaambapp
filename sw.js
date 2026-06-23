@@ -2,7 +2,7 @@
 // Cache-first para assets estáticos. NUNCA intercepta peticiones
 // a Supabase ni a /api/ (auth y datos deben ir siempre a la red).
 
-const CACHE_NAME = 'laaambapp-v11';
+const CACHE_NAME = 'laaambapp-v12';
 
 // Paths relativos: resuelven contra la ubicación del SW en cada host
 // (raíz en Vercel, /laaambapp/ en GitHub Pages).
@@ -69,7 +69,8 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: cache-first para estáticos; red directa para Supabase y /api/
+// Fetch: network-first para HTML/navegación; cache-first para assets.
+// Red directa para Supabase y /api/.
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
@@ -81,21 +82,44 @@ self.addEventListener('fetch', (event) => {
     return; // la petición va directo a la red
   }
 
-  event.respondWith(
-    caches.match(req, { ignoreSearch: false }).then((cached) => {
-      if (cached) return cached;
-      return fetch(req).then((res) => {
-        // Cachear copias de respuestas válidas del mismo origen
+  // ── Detectar si es una petición de documento HTML / navegación ──
+  const esHTML = req.mode === 'navigate' ||
+    (req.headers.get('accept') || '').includes('text/html') ||
+    url.pathname.endsWith('.html') ||
+    url.pathname === '/' ||
+    url.pathname.endsWith('/');
+
+  if (esHTML) {
+    // NETWORK-FIRST: siempre intentar la red; caché solo como respaldo offline.
+    event.respondWith(
+      fetch(req).then((res) => {
         if (res && res.status === 200 && url.origin === self.location.origin) {
           const copy = res.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
         }
         return res;
       }).catch(() => {
-        // Fallback de navegación: servir index.html del cache
-        if (req.mode === 'navigate') {
-          return caches.match('./index.html');
+        // Sin red: servir la versión cacheada de esta página, o index como fallback
+        return caches.match(req, { ignoreSearch: true })
+          .then((cached) => cached || caches.match('./index.html'));
+      })
+    );
+    return;
+  }
+
+  // ── Resto (JS, CSS, imágenes, CDN): CACHE-FIRST ──
+  event.respondWith(
+    caches.match(req, { ignoreSearch: false }).then((cached) => {
+      if (cached) return cached;
+      return fetch(req).then((res) => {
+        if (res && res.status === 200 && url.origin === self.location.origin) {
+          const copy = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
         }
+        return res;
+      }).catch(() => {
+        // Sin red y sin caché: nada que servir
+        return undefined;
       });
     })
   );
