@@ -762,7 +762,19 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="modal-body">
     <div class="form-section">Animal</div>
     <div class="form-grid">
-      <div class="fg"><label class="fl">Animal (ID) *</label><input class="fi" id="ti-animal" placeholder="OV-0001" oninput="autoFillAnimal(this.value)"></div>
+      <div class="fg" style="position:relative">
+        <label class="fl">Animal *</label>
+        <input class="fi" id="ti-animal"
+          placeholder="Buscar oveja por ID, nombre o raza…"
+          autocomplete="off"
+          oninput="filtrarAnimalIndividual(this.value)"
+          onfocus="filtrarAnimalIndividual(this.value)">
+        <div id="ti-animal-dropdown"
+          style="display:none;position:absolute;z-index:300;background:var(--bg2);
+            border:1px solid var(--border2);border-radius:var(--r);max-height:170px;
+            overflow-y:auto;width:100%;box-shadow:0 4px 14px rgba(0,0,0,.4)">
+        </div>
+      </div>
       <div class="fg"><label class="fl">Peso actual (kg) *</label><input class="fi" type="number" id="ti-peso" placeholder="42" step="0.5" oninput="calcDosisTrat()"></div>
       <div class="fg"><label class="fl">Diagnóstico / Motivo *</label>
         <input class="fi" id="ti-dx" placeholder="Escribe o selecciona…" list="dx-sugerencias" autocomplete="off">
@@ -1249,6 +1261,48 @@ function calcDosisTrat(){
   if(sug) sug.value=dosis.toFixed(1)+' '+u+(via?(' vía '+via):'');
 }
 
+function filtrarAnimalIndividual(q){
+  var dd=document.getElementById('ti-animal-dropdown');
+  if(!dd) return;
+  var todos=(window.AppState&&window.AppState.animales)||[];
+  var activos=todos.filter(function(a){ return a.estado==='activo'||a.activo; });
+  var q2=(q||'').toLowerCase().trim();
+  var lista=q2
+    ? activos.filter(function(a){
+        return String(a.codigo||'').toLowerCase().includes(q2)
+          ||String(a.nombre||'').toLowerCase().includes(q2)
+          ||String(a.raza||'').toLowerCase().includes(q2);
+      })
+    : activos;
+  lista=lista.slice(0,40);
+  if(!lista.length){ dd.style.display='none'; return; }
+  dd.innerHTML=lista.map(function(a){
+    var peso=a.peso_actual?(' · '+a.peso_actual+'kg'):'';
+    var nom=a.nombre?(' · '+a.nombre):'';
+    return '<div onclick="seleccionarAnimalIndividual(\''+a.id+'\',\''+
+      (a.codigo||a.id)+'\','+(a.peso_actual||0)+')" '+
+      'style="padding:8px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '+
+      'onmouseover="this.style.background=\'var(--teal-bg)\'" '+
+      'onmouseout="this.style.background=\'\'">'
+      +'<b>'+_dEsc(a.codigo||a.id)+'</b>'+_dEsc(nom)
+      +' <span style="color:var(--teal)">'+_dEsc(a.raza||'')+'</span>'
+      +' <span style="color:var(--text3)">'+_dEsc(peso)+'</span>'
+      +'</div>';
+  }).join('');
+  dd.style.display='block';
+}
+
+function seleccionarAnimalIndividual(id,codigo,peso){
+  window._tiAnimalId=id;
+  var inp=document.getElementById('ti-animal');
+  if(inp){ inp.value=codigo; inp.blur(); }
+  var pesoEl=document.getElementById('ti-peso');
+  if(pesoEl&&peso){ pesoEl.value=peso; }
+  var dd=document.getElementById('ti-animal-dropdown');
+  if(dd) dd.style.display='none';
+  if(typeof calcDosisTrat==='function') calcDosisTrat();
+}
+
 // ── Poblar el selector de medicamentos del modal desde Supabase/AppState ──
 function _medEscAttr(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 function _medEscHtml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
@@ -1328,7 +1382,7 @@ function poblarCalculadoraMeds(){ _poblarMed6('calc-med'); _poblarMed6('tabla-me
   var _orig=window.openModal;
   window.openModal=function(id){
     if(typeof _orig==='function') _orig(id);
-    if(id==='modal-trat-individual') poblarMedicamentosModal();
+    if(id==='modal-trat-individual'){ window._tiAnimalId=null; poblarMedicamentosModal(); }
     if(id==='modal-trat-grupal'){
       // Populate first med row
       var firstSel = document.querySelector('#tg-meds-container .tg-med-sel');
@@ -1346,6 +1400,14 @@ function poblarCalculadoraMeds(){ _poblarMed6('calc-med'); _poblarMed6('tabla-me
 document.addEventListener('appstate:ready', function(){ setTimeout(function(){
   poblarMedicamentosModal(); poblarMedicamentosGrupal(); poblarCalculadoraMeds();
 }, 200); });
+
+// Cerrar el dropdown de búsqueda de animal al hacer clic fuera.
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#ti-animal-dropdown') && e.target.id!=='ti-animal'){
+    var dd=document.getElementById('ti-animal-dropdown');
+    if(dd) dd.style.display='none';
+  }
+});
 
 function calcDosisTratGrupal(){
   const medRaw=document.getElementById('tg-med')?.value;
@@ -1731,7 +1793,10 @@ function saveTratamiento(tipo){
     // ── PARTE 1C — Registrar tratamiento en Supabase ──
     if(window.DB && window.AppState && typeof window.DB.saveTratamiento==='function'){
       const _cod=String(animalId).replace(/^#/,'').trim();
-      const _a=(window.AppState.animales||[]).find(x=>x.codigo===_cod||x.id===_cod);
+      const _a = (window._tiAnimalId
+        ? (window.AppState.animales||[]).find(x=>x.id===window._tiAnimalId)
+        : null)
+        || (window.AppState.animales||[]).find(x=>x.codigo===_cod||x.id===_cod);
       const _med=(window.AppState.medicamentos||[]).find(m=>m.nombre===medNombre);
       const _fi=fecha||new Date().toISOString().slice(0,10);
       let _ffr=_fi;
@@ -2059,12 +2124,11 @@ async function loadFromSupabase(){
         const enRetiro=finRetiro&&finRetiro>=hoy;
         const animalLbl=t.animales?('#'+(t.animales.codigo||t.animales.nombre||'')):'—';
         var esGrupal=t.tipo==='grupal'||t.fuente==='grupal';
-        var grupoRef = esGrupal&&t.grupo_id ? '['+t.grupo_id.slice(-5)+']' : '';
         TRATAMIENTOS.push({
           id:t.id,
           fecha:inicio.toLocaleDateString('es-CO'),
           tipo:esGrupal?'Grupal':'Individual',
-          animales:esGrupal?(grupoRef+' '+animalLbl):animalLbl,
+          animales: animalLbl,
           dx:t.diagnostico||t.notas||'—',
           med:(t.medicamentos&&t.medicamentos.nombre)||'—',
           dosis:(t.dosis!=null?t.dosis+(t.unidad?' '+t.unidad:''):'—'),
