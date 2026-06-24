@@ -471,6 +471,47 @@ window.DB = {
   async saveCorte(c) {
     return await window._sb.from('cortes').insert(c).select().single();
   },
+  async getCanalesConSaldo(finca_id) {
+    // Canales (beneficios) aprobados con su kg_disponible
+    return await window._sb.from('beneficios')
+      .select('id,animal_id,fecha,peso_canal,kg_disponible,estado_aprobacion,animales(codigo,nombre)')
+      .eq('finca_id', finca_id)
+      .eq('estado_aprobacion','aprobado')
+      .order('fecha', { ascending: false });
+  },
+  async getCortesConUnidades(beneficio_id) {
+    const cortes = await window._sb.from('cortes')
+      .select('*').eq('beneficio_id', beneficio_id).order('created_at');
+    const unidades = await window._sb.from('unidades_corte')
+      .select('*').eq('beneficio_id', beneficio_id).order('numero');
+    return { cortes: cortes.data||[], unidades: unidades.data||[] };
+  },
+  // Crea un corte + sus unidades y descuenta kg de la canal (transaccional a nivel app)
+  async sacarCorteDeCanal({finca_id, beneficio_id, animal_id, tipo_corte, unidades}) {
+    // unidades: [{peso_kg}, ...]
+    const kgTotal = unidades.reduce((s,u)=> s + (Number(u.peso_kg)||0), 0);
+    // 1. crear el corte
+    const cRes = await window._sb.from('cortes').insert({
+      beneficio_id, animal_id, tipo_corte, peso_kg: kgTotal,
+      num_unidades: unidades.length, kg_vendidos: 0
+    }).select().single();
+    if (cRes.error) return { error: cRes.error };
+    const corte = cRes.data;
+    // 2. crear las unidades
+    const filas = unidades.map((u,i)=>({
+      finca_id, corte_id: corte.id, beneficio_id, numero: i+1,
+      peso_kg: Number(u.peso_kg)||0, estado: 'disponible'
+    }));
+    const uRes = await window._sb.from('unidades_corte').insert(filas).select();
+    if (uRes.error) return { error: uRes.error };
+    // 3. descontar kg de la canal
+    const bRes = await window._sb.from('beneficios')
+      .select('kg_disponible').eq('id', beneficio_id).single();
+    const nuevoDisp = Math.max(0, (Number(bRes.data?.kg_disponible)||0) - kgTotal);
+    const upd = await window._sb.from('beneficios')
+      .update({ kg_disponible: nuevoDisp }).eq('id', beneficio_id).select().single();
+    return { data: { corte, unidades: uRes.data, kg_disponible: nuevoDisp }, error: upd.error };
+  },
   async saveEmpaque(e) {
     return await window._sb.from('empaques').insert(e).select().single();
   },

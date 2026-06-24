@@ -193,6 +193,7 @@ tr:last-child td{border-bottom:none}
 
   <div class="tabs">
     <div class="tab active" data-tab="t1" onclick="setTab('t1')">1 · Registrar beneficio</div>
+    <div class="tab" data-tab="tc" onclick="setTab('tc')">Inventario Canales</div>
     <div class="tab" data-tab="t2" onclick="setTab('t2')">2 · Despiece</div>
     <div class="tab" data-tab="t3" onclick="setTab('t3')">3 · Empaques &amp; QR</div>
     <div class="tab" data-tab="t4" onclick="setTab('t4')">4 · Inventario</div>
@@ -297,6 +298,50 @@ tr:last-child td{border-bottom:none}
       </div>
     </div>
   </div>
+
+  <div class="tab-panel" id="tc">
+    <div class="card">
+      <div class="card-h"><div class="card-title">Inventario de Canales</div><div class="card-sub">Canales con kg disponibles · entra a una para sacar cortes</div></div>
+      <div class="card-b">
+        <div id="canales-lista"><div class="empty">Cargando canales…</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal/panel para sacar cortes de una canal -->
+  <div class="tab-panel" id="tc-detalle" style="display:none">
+    <div class="card">
+      <div class="card-h">
+        <div class="card-title" id="tcd-titulo">Canal</div>
+        <div class="card-sub"><a href="#" onclick="volverCanales();return false;">← Volver a canales</a></div>
+      </div>
+      <div class="card-b">
+        <div id="tcd-saldo" style="font-weight:700;margin-bottom:14px"></div>
+        <div class="card-title" style="font-size:14px;margin-bottom:8px">Sacar corte</div>
+        <div class="form-grid">
+          <div class="fg"><label class="fl">Tipo de corte</label>
+            <select class="fi" id="tcd-tipo">
+              <option value="pernil">Pernil</option>
+              <option value="paleta">Paleta</option>
+              <option value="cogote">Cogote</option>
+              <option value="costilla_rack">Costilla rack</option>
+              <option value="costilla_trasera">Costilla trasera</option>
+              <option value="espinazo">Espinazo</option>
+              <option value="carne_molida">Carne molida</option>
+              <option value="t_bone">T-Bone</option>
+              <option value="tomahawk">Tomahawk</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl"># Unidades</label><input class="fi" id="tcd-nunidades" type="number" min="1" step="1" value="1" oninput="renderPesosUnidades()"></div>
+        </div>
+        <div id="tcd-pesos" style="margin-top:10px"></div>
+        <div style="margin-top:12px"><button class="btn btn-primary" onclick="guardarCorteCanal()">+ Sacar corte de la canal</button></div>
+        <div class="msg" id="tcd-msg"></div>
+        <div class="card-title" style="font-size:14px;margin:18px 0 8px">Cortes ya sacados de esta canal</div>
+        <div id="tcd-cortes"><div class="empty">Sin cortes aún</div></div>
+      </div>
+    </div>
+  </div>
 </div>
 </div>
 
@@ -361,7 +406,7 @@ tr:last-child td{border-bottom:none}
 (function(){
   var FINCA_ID = (window.AppState && window.AppState._finca_id) || 'a1b2c3d4-0000-0000-0000-000000000001';
   var BASE_PUBLICA = 'https://app.laaambcorderos.com';
-  var TIPO_LABEL = {canal_completa:'Canal completa',cuarto_delantero:'Cuarto delantero',cuarto_trasero:'Cuarto trasero',rack:'Rack',paleta:'Paleta',pierna:'Pierna',costillar:'Costillar',lomo:'Lomo',cuello:'Cuello',menudencias:'Menudencias',otro:'Otro'};
+  var TIPO_LABEL = {canal_completa:'Canal completa',cuarto_delantero:'Cuarto delantero',cuarto_trasero:'Cuarto trasero',rack:'Rack',paleta:'Paleta',pierna:'Pierna',costillar:'Costillar',lomo:'Lomo',cuello:'Cuello',menudencias:'Menudencias',otro:'Otro',pernil:'Pernil',cogote:'Cogote',costilla_rack:'Costilla rack',costilla_trasera:'Costilla trasera',espinazo:'Espinazo',carne_molida:'Carne molida',t_bone:'T-Bone',tomahawk:'Tomahawk'};
 
   // Estado de la sesión de trabajo
   var beneficioActual = null;   // objeto beneficio insertado
@@ -377,8 +422,102 @@ tr:last-child td{border-bottom:none}
   window.setTab = function(id){
     document.querySelectorAll('.tab').forEach(function(t){ t.classList.toggle('active', t.getAttribute('data-tab')===id); });
     document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.toggle('active', p.id===id); });
+    // Sub-panel de detalle de canal: ocultarlo al cambiar de pestaña y dejar que la
+    // clase .active controle el panel #tc (limpiar el display inline que pone abrirCanal).
+    var _tcd=document.getElementById('tc-detalle'); if(_tcd){ _tcd.style.display='none'; _tcd.classList.remove('active'); }
+    var _tc=document.getElementById('tc'); if(_tc) _tc.style.display='';
     if(id==='t4') cargarInventario();
     if(id==='t3') refrescarSelectCortes();
+    if(id==='tc') cargarCanales();
+  };
+
+  // ── Inventario de Canales (fase 2a) ──
+  var canalActual = null;
+
+  window.cargarCanales = async function(){
+    var cont = document.getElementById('canales-lista');
+    cont.innerHTML = '<div class="empty">Cargando…</div>';
+    var r = await window.DB.getCanalesConSaldo(FINCA_ID);
+    var canales = r.data || [];
+    if(!canales.length){ cont.innerHTML='<div class="empty">No hay canales registradas.</div>'; return; }
+    cont.innerHTML = canales.map(function(c){
+      var animal = c.animales ? (c.animales.codigo||c.animales.nombre||'—') : '—';
+      var disp = Number(c.kg_disponible||0), tot = Number(c.peso_canal||0);
+      var pct = tot>0 ? Math.round(disp/tot*100) : 0;
+      return '<div class="lb-card" onclick="abrirCanal(\''+c.id+'\')" style="cursor:pointer">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center">'
+        + '<div><div style="font-weight:700">Canal · '+esc(animal)+'</div>'
+        + '<div style="font-size:12px;color:var(--text3,#8A9696)">'+esc(c.fecha||'')+'</div></div>'
+        + '<div style="text-align:right"><div style="font-weight:700;font-size:18px">'+disp.toFixed(1)+' kg</div>'
+        + '<div style="font-size:11px;color:var(--text3,#8A9696)">de '+tot.toFixed(1)+' kg · '+pct+'%</div></div>'
+        + '</div></div>';
+    }).join('');
+  };
+
+  window.abrirCanal = async function(id){
+    var r = await window.DB.getCanalesConSaldo(FINCA_ID);
+    canalActual = (r.data||[]).find(function(c){return c.id===id;});
+    if(!canalActual) return;
+    var animal = canalActual.animales ? (canalActual.animales.codigo||canalActual.animales.nombre||'—') : '—';
+    document.getElementById('tcd-titulo').textContent = 'Canal · '+animal;
+    document.getElementById('tcd-saldo').textContent = 'Disponible: '+Number(canalActual.kg_disponible||0).toFixed(1)+' kg';
+    document.getElementById('tc').classList.remove('active');
+    document.getElementById('tc-detalle').classList.add('active');
+    document.getElementById('tc-detalle').style.display='block';
+    document.getElementById('tc').style.display='none';
+    renderPesosUnidades();
+    refrescarCortesCanal();
+  };
+
+  window.volverCanales = function(){
+    document.getElementById('tc-detalle').classList.remove('active');
+    document.getElementById('tc-detalle').style.display='none';
+    document.getElementById('tc').classList.add('active');
+    document.getElementById('tc').style.display='block';
+    cargarCanales();
+  };
+
+  window.renderPesosUnidades = function(){
+    var n = parseInt(document.getElementById('tcd-nunidades').value)||0;
+    var cont = document.getElementById('tcd-pesos');
+    var html = '';
+    for(var i=1;i<=n;i++){
+      html += '<div class="fg" style="display:inline-block;width:48%;margin-right:2%"><label class="fl">Peso unidad '+i+' (kg)</label><input class="fi tcd-peso-u" type="number" step="0.01" min="0"></div>';
+    }
+    cont.innerHTML = html;
+  };
+
+  window.guardarCorteCanal = async function(){
+    if(!canalActual){ return; }
+    var tipo = document.getElementById('tcd-tipo').value;
+    var inputs = Array.prototype.slice.call(document.querySelectorAll('.tcd-peso-u'));
+    var unidades = inputs.map(function(inp){ return { peso_kg: parseFloat(inp.value)||0 }; }).filter(function(u){ return u.peso_kg>0; });
+    if(!unidades.length){ return msg('tcd-msg','Ingresa el peso de al menos una unidad.', false); }
+    var kgTotal = unidades.reduce(function(s,u){return s+u.peso_kg;},0);
+    if(kgTotal > Number(canalActual.kg_disponible||0) + 0.001){
+      return msg('tcd-msg','El total ('+kgTotal.toFixed(2)+' kg) supera lo disponible en la canal ('+Number(canalActual.kg_disponible).toFixed(2)+' kg).', false);
+    }
+    msg('tcd-msg','Guardando…', true);
+    var r = await window.DB.sacarCorteDeCanal({finca_id:FINCA_ID, beneficio_id:canalActual.id, animal_id:canalActual.animal_id, tipo_corte:tipo, unidades:unidades});
+    if(r.error){ return msg('tcd-msg','Error: '+r.error.message, false); }
+    canalActual.kg_disponible = r.data.kg_disponible;
+    document.getElementById('tcd-saldo').textContent = 'Disponible: '+Number(r.data.kg_disponible).toFixed(1)+' kg';
+    msg('tcd-msg','✓ Corte sacado · '+unidades.length+' unidad(es) · '+kgTotal.toFixed(2)+' kg. Canal queda en '+Number(r.data.kg_disponible).toFixed(1)+' kg.', true);
+    document.getElementById('tcd-nunidades').value=1; renderPesosUnidades();
+    refrescarCortesCanal();
+  };
+
+  window.refrescarCortesCanal = async function(){
+    if(!canalActual) return;
+    var cont = document.getElementById('tcd-cortes');
+    var r = await window.DB.getCortesConUnidades(canalActual.id);
+    if(!r.cortes.length){ cont.innerHTML='<div class="empty">Sin cortes aún</div>'; return; }
+    cont.innerHTML = r.cortes.map(function(c){
+      var us = r.unidades.filter(function(u){return u.corte_id===c.id;});
+      var disp = us.filter(function(u){return u.estado==='disponible';}).length;
+      return '<div class="lb-card"><div style="font-weight:700">'+esc(TIPO_LABEL[c.tipo_corte]||c.tipo_corte)+'</div>'
+        + '<div style="font-size:12px;color:var(--text3,#8A9696)">'+Number(c.peso_kg).toFixed(2)+' kg · '+c.num_unidades+' unidad(es) · '+disp+' disponible(s)</div></div>';
+    }).join('');
   };
 
   // ── Animales autocomplete ──
