@@ -29,11 +29,11 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=32"></script>
+<script src="js/approval.js?v=33"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=32"></script>
+<script src="js/db.js?v=33"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
@@ -195,6 +195,7 @@ tr:last-child td{border-bottom:none}
     <div class="tab active" data-tab="t1" onclick="setTab('t1')">1 · Registrar beneficio</div>
     <div class="tab" data-tab="tc" onclick="setTab('tc')">Inventario Canales</div>
     <div class="tab" data-tab="ti" onclick="setTab('ti')">Inventario Cortes</div>
+    <div class="tab" data-tab="tv" onclick="setTab('tv')">Ventas</div>
     <div class="tab" data-tab="t2" onclick="setTab('t2')">2 · Despiece</div>
     <div class="tab" data-tab="t3" onclick="setTab('t3')">3 · Empaques &amp; QR</div>
     <div class="tab" data-tab="t4" onclick="setTab('t4')">4 · Inventario</div>
@@ -381,6 +382,26 @@ tr:last-child td{border-bottom:none}
       </div>
     </div>
   </div>
+
+  <div class="tab-panel" id="tv">
+    <div class="card">
+      <div class="card-h"><div class="card-title">Registrar venta a cliente</div><div class="card-sub">Elige el cliente y marca las unidades que le vendes</div></div>
+      <div class="card-b">
+        <div class="fg" style="max-width:420px">
+          <label class="fl">Cliente</label>
+          <select class="fi" id="tv-cliente" onchange="tvClienteCambio()"><option value="">Selecciona…</option></select>
+        </div>
+        <div id="tv-inventario" style="margin-top:18px"><div class="empty">Selecciona un cliente para ver el inventario disponible.</div></div>
+        <div id="tv-footer" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid var(--border,#E5EAEA)">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <div style="font-weight:700" id="tv-resumen">0 unidades · $0</div>
+            <button class="btn btn-primary" onclick="confirmarVentaMultiple()">Registrar venta</button>
+          </div>
+          <div class="msg" id="tv-msg"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 </div>
 
@@ -472,6 +493,7 @@ tr:last-child td{border-bottom:none}
     if(id==='t3') refrescarSelectCortes();
     if(id==='tc') cargarCanales();
     if(id==='ti') cargarInventarioCortes();
+    if(id==='tv'){ tvCargarClientes(); var _tvc=document.getElementById('tv-cliente'); if(_tvc)_tvc.value=''; tvClienteCambio(); }
   };
 
   // ── Inventario de Canales (fase 2a) ──
@@ -752,6 +774,85 @@ tr:last-child td{border-bottom:none}
       msg('venta-msg','✓ Vendida a '+clienteNombre+' por $'+precio.toLocaleString('es-CO'), true);
     }
     setTimeout(function(){ cerrarVentaUnidad(); cargarInventarioCortes(); }, 1200);
+  };
+
+  // ── Pestaña Ventas orientada a cliente (fase 4) ──
+  var tvUnidades = [];  // unidades disponibles cacheadas
+
+  window.tvCargarClientes = async function(){
+    var sel = document.getElementById('tv-cliente');
+    var r = await window.DB.getClientesActivos(FINCA_ID);
+    var clientes = r.data || [];
+    sel.innerHTML = '<option value="">Selecciona…</option>' + clientes.map(function(c){
+      return '<option value="'+c.id+'" data-nombre="'+esc(c.razon_social)+'">'+esc(c.razon_social)+'</option>';
+    }).join('');
+  };
+
+  window.tvClienteCambio = async function(){
+    var sel = document.getElementById('tv-cliente');
+    var cont = document.getElementById('tv-inventario');
+    var footer = document.getElementById('tv-footer');
+    if(!sel.value){ cont.innerHTML='<div class="empty">Selecciona un cliente para ver el inventario disponible.</div>'; footer.style.display='none'; return; }
+    cont.innerHTML = '<div class="empty">Cargando inventario…</div>';
+    var r = await window.DB.getInventarioCortes(FINCA_ID);
+    tvUnidades = (r.unidades||[]).filter(function(u){ return u.estado==='disponible'; });
+    if(!tvUnidades.length){ cont.innerHTML='<div class="empty">No hay unidades disponibles en inventario.</div>'; footer.style.display='none'; return; }
+    cont.innerHTML = tvUnidades.map(function(u){
+      var tipo = (u.cortes&&u.cortes.tipo_corte)||'otro';
+      var animal = (u.beneficios&&u.beneficios.animales&&u.beneficios.animales.codigo)||'—';
+      return '<div class="lb-card" style="display:flex;align-items:center;gap:12px">'
+        + '<input type="checkbox" class="tv-chk" data-id="'+u.id+'" data-tipo="'+esc(tipo)+'" data-animal="'+esc(animal)+'" onchange="tvRecalcular()" style="width:18px;height:18px">'
+        + '<div style="flex:1"><div style="font-weight:700">'+esc(TIPO_LABEL[tipo]||tipo)+' · Unidad #'+(u.numero||'?')+'</div>'
+        + '<div style="font-size:12px;color:var(--text3,#8A9696)">'+(Number(u.peso_kg)||0).toFixed(2)+' kg · canal '+esc(animal)+'</div></div>'
+        + '<div class="fg" style="margin:0;width:140px"><input class="fi tv-precio" type="number" step="500" min="0" placeholder="Precio COP" data-id="'+u.id+'" oninput="tvRecalcular()" disabled></div>'
+        + '</div>';
+    }).join('');
+    footer.style.display='block';
+    tvRecalcular();
+  };
+
+  window.tvRecalcular = function(){
+    var chks = Array.prototype.slice.call(document.querySelectorAll('.tv-chk'));
+    var n=0, total=0;
+    chks.forEach(function(chk){
+      var precioInput = document.querySelector('.tv-precio[data-id="'+chk.getAttribute('data-id')+'"]');
+      if(chk.checked){
+        n++; precioInput.disabled=false;
+        total += parseFloat(precioInput.value)||0;
+      } else {
+        precioInput.disabled=true;
+      }
+    });
+    document.getElementById('tv-resumen').textContent = n+' unidad(es) · $'+total.toLocaleString('es-CO');
+  };
+
+  window.confirmarVentaMultiple = async function(){
+    var sel = document.getElementById('tv-cliente');
+    var clienteId = sel.value;
+    var clienteNombre = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].getAttribute('data-nombre') : '';
+    if(!clienteId){ return msg('tv-msg','Selecciona un cliente.', false); }
+    var chks = Array.prototype.slice.call(document.querySelectorAll('.tv-chk:checked'));
+    if(!chks.length){ return msg('tv-msg','Marca al menos una unidad.', false); }
+    var items = [];
+    for(var i=0;i<chks.length;i++){
+      var chk = chks[i];
+      var id = chk.getAttribute('data-id');
+      var precioInput = document.querySelector('.tv-precio[data-id="'+id+'"]');
+      var precio = parseFloat(precioInput.value);
+      if(isNaN(precio) || precio<=0){ return msg('tv-msg','Falta el precio de una unidad seleccionada.', false); }
+      items.push({ unidad_id:id, precio_venta:precio,
+        tipo_corte_label:(TIPO_LABEL[chk.getAttribute('data-tipo')]||chk.getAttribute('data-tipo')),
+        animal_codigo: chk.getAttribute('data-animal') });
+    }
+    var estado = window.Approval ? window.Approval.getEstadoInicial() : 'aprobado';
+    msg('tv-msg','Procesando '+items.length+' venta(s)…', true);
+    var r = await window.DB.venderUnidadesACliente({finca_id:FINCA_ID, cliente_id:clienteId, cliente_nombre:clienteNombre, items:items, estado:estado});
+    var errores = (r.resultados||[]).filter(function(x){return x.error;});
+    var diferidos = (r.resultados||[]).filter(function(x){return x.diferido;});
+    if(errores.length){ msg('tv-msg','Algunas ventas fallaron: '+errores.length+' error(es).', false); }
+    else if(diferidos.length){ msg('tv-msg','⏳ '+diferidos.length+' venta(s) pendiente(s) de aprobación del gerente.', true); }
+    else { msg('tv-msg','✓ '+items.length+' unidad(es) vendida(s) a '+clienteNombre+'.', true); }
+    setTimeout(function(){ tvClienteCambio(); }, 1400); // refrescar inventario
   };
 
   // ── Animales autocomplete ──

@@ -559,6 +559,21 @@ window.DB = {
     if (upd.error) return { data: ing.data, error: upd.error };
     return { data: { ingreso: ing.data, unidad: upd.data }, error: null };
   },
+  // Vende varias unidades a un cliente reutilizando venderUnidad (1 ingreso por unidad).
+  async venderUnidadesACliente({finca_id, cliente_id, cliente_nombre, items, estado}) {
+    // items: [{unidad_id, precio_venta, tipo_corte_label, animal_codigo}]
+    var resultados = [];
+    for (var i=0;i<items.length;i++){
+      var it = items[i];
+      var r = await this.venderUnidad({
+        finca_id, unidad_id: it.unidad_id, cliente_id, cliente_nombre,
+        precio_venta: it.precio_venta, tipo_corte_label: it.tipo_corte_label,
+        animal_codigo: it.animal_codigo, estado
+      });
+      resultados.push({ unidad_id: it.unidad_id, error: r.error ? r.error.message : null, diferido: r.data && r.data.diferido });
+    }
+    return { resultados };
+  },
   // Crea un corte + sus unidades y descuenta kg de la canal (transaccional a nivel app)
   async sacarCorteDeCanal({finca_id, beneficio_id, animal_id, tipo_corte, unidades}) {
     // unidades: [{peso_kg}, ...]
