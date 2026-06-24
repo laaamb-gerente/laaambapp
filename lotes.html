@@ -1044,12 +1044,42 @@ async function loadGeometries(){
     if(geo[key]) renderFincaLayer(f.id, geo[key]);
   });
 
+  // ── Polígonos de lotes desde Supabase (fuente de verdad, visible en todo dispositivo) ──
+  // Mismo patrón que el perímetro de finca: si Supabase tiene 'poligono', gana.
+  // Los objetos locales (d.lotes) no conservan 'poligono', así que se consulta
+  // la tabla 'lotes' y se indexa por id para inyectarlo en el render.
+  var _poligonoById = {};
+  try{
+    if(window.DB && typeof window.DB.getLotes==='function'){
+      var _resLotes = await window.DB.getLotes(_fincaUuid());
+      ((_resLotes && _resLotes.data) || []).forEach(function(sl){
+        if(sl && sl.id!=null && sl.poligono) _poligonoById[sl.id] = sl.poligono;
+      });
+    }
+  }catch(e){ /* offline o columna ausente → usar geometría local */ }
+
   // Lotes
+  var _geoDirty=false;
   lotes.filter(function(l){return l.activo;}).forEach(function(l,i){
     var key='lote_'+l.id;
-    if(!geo[key]&&l.geometry&&l.geometry.length>=3){geo[key]={type:'Polygon',coordinates:[l.geometry.map(function(p){return[p.lng,p.lat];})]}; geo[key].coordinates[0].push(geo[key].coordinates[0][0]);}
+    // 1º prioridad: polígono desde Supabase (campo poligono) — visible en todo dispositivo
+    var _rawPoly = l.poligono || _poligonoById[l.id];
+    if(_rawPoly){
+      var pg = (typeof _rawPoly==='string') ? (function(){ try{return JSON.parse(_rawPoly);}catch(e){return null;} })() : _rawPoly;
+      if(pg && pg.coordinates && pg.coordinates.length){
+        geo[key]=pg; _geoDirty=true;   // guardar local para que el re-render (renderLoteLayers) lo conserve
+      }
+    }
+    // 2º: geometría antigua en formato l.geometry (compat)
+    if(!geo[key] && l.geometry && l.geometry.length>=3){
+      geo[key]={type:'Polygon',coordinates:[l.geometry.map(function(p){return[p.lng,p.lat];})]};
+      geo[key].coordinates[0].push(geo[key].coordinates[0][0]);
+    }
     if(geo[key]) renderLoteLayer(l.id, l, geo[key]);
   });
+  // Persistir en AppData los polígonos traídos de Supabase (igual que el perímetro):
+  // así renderLoteLayers() (re-render por finca/tab) los conserva y quedan offline.
+  if(_geoDirty){ d.geo=geo; AppData.save(d); }
 
   // Pivotes dibujados (geometría en AppData; metadata en Supabase _pivotes)
   if(typeof renderPivotesOnMap==='function') renderPivotesOnMap();
@@ -1421,7 +1451,21 @@ function guardarEdicionPoligono(){
       AppData.save(d);
       renderLoteLayer(editingPolyId, d.lotes[lIdx], geojson);
     }
-    toast('Lote guardado · '+areaHa.toFixed(2)+' ha');
+    // Persistir el polígono en Supabase (para que se vea en todos los dispositivos)
+    (async function(){
+      try{
+        if(window.DB && typeof window.DB.saveLote==='function'){
+          var res=await window.DB.saveLote({ id: editingPolyId, poligono: geojson, hectareas: Math.round(areaHa*10)/10 });
+          if(res && res.error){ toast('Lote guardado local; error al subir a nube: '+res.error.message,'err'); }
+          else { toast('Lote guardado y sincronizado · '+areaHa.toFixed(2)+' ha'); }
+        } else {
+          toast('Lote guardado · '+areaHa.toFixed(2)+' ha');
+        }
+      }catch(e){
+        console.warn('[Lotes] saveLote poligono:', e&&e.message);
+        toast('Lote guardado local; sin conexión a nube','info');
+      }
+    })();
   }
 
   cerrarPanelEdicion();
