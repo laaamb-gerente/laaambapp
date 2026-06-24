@@ -416,15 +416,20 @@ tr:last-child td{border-bottom:none}
     var notas = document.getElementById('b-notas').value.trim();
     msg('b-msg','Registrando…', true);
     try{
-      var r = await window.DB.saveBeneficio({finca_id:FINCA_ID, animal_id:a.id, fecha:fecha, frigorifico:document.getElementById('b-frigo').value.trim()||null, peso_vivo_entrada:pv, peso_canal:pc, costo_beneficio:costo, registrado_por:nombreUsuario(), notas:notas||null});
+      var _aprob = (window.Approval ? window.Approval.getEstadoInicial() : 'aprobado');
+      var _prop = (window.Approval ? window.Approval.getPropuestoPor() : {propuesto_por:null, propuesto_por_rol:null});
+      var r = await window.DB.saveBeneficio({finca_id:FINCA_ID, animal_id:a.id, fecha:fecha, frigorifico:document.getElementById('b-frigo').value.trim()||null, peso_vivo_entrada:pv, peso_canal:pc, costo_beneficio:costo, registrado_por:nombreUsuario(), notas:notas||null, estado_aprobacion:_aprob, propuesto_por:_prop.propuesto_por, propuesto_por_rol:_prop.propuesto_por_rol});
       if(r.error) throw new Error(r.error.message||'Error');
       beneficioActual = r.data;
       cortesActual = [];
-      // Marcar animal como vendido
-      await window._sb.from('animales').update({estado:'vendido', updated_at:new Date()}).eq('id', a.id);
-      // Quitar de AppState local
-      if(window.AppState && window.AppState.animales){ window.AppState.animales = window.AppState.animales.filter(function(x){return x.id!==a.id;}); }
-      msg('b-msg','✓ Beneficio registrado. Animal '+(a.codigo||'')+' marcado como vendido.', true);
+      if(_aprob === 'aprobado'){
+        // Marcar animal como vendido (solo si el beneficio ya está aprobado)
+        await window._sb.from('animales').update({estado:'vendido', updated_at:new Date()}).eq('id', a.id);
+        if(window.AppState && window.AppState.animales){ window.AppState.animales = window.AppState.animales.filter(function(x){return x.id!==a.id;}); }
+        msg('b-msg','✓ Beneficio registrado. Animal '+(a.codigo||'')+' marcado como vendido.', true);
+      } else {
+        msg('b-msg','⏳ Beneficio registrado. Pendiente de aprobación del gerente. El animal se marcará como vendido al aprobarse.', true);
+      }
       document.getElementById('t2-sub').textContent = 'Beneficio de '+(a.codigo||a.nombre)+' · canal '+(pc||'?')+' kg';
       renderCortes();
       llenarAnimales();

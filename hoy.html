@@ -659,7 +659,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       var foto = (ev.datos && ev.datos.foto_url) ? ev.datos.foto_url : null;
       html += _card('🟣 REPRODUCCIÓN','eventos_reproductivos',ev.id,'#A855F7',String(ev.tipo||'evento').toUpperCase()+' · '+esc(cod),(ev.resultado||'')+(ev.notas?' · '+ev.notas:''),ev.created_at,ev.propuesto_por,ev.propuesto_por_rol,foto,{hembra_id:ev.hembra_id});
     });
-    var total = (data.bajas||[]).length+(data.tratamientos||[]).length+(data.pesajes||[]).length+(data.eventos||[]).length;
+    (data.beneficios||[]).forEach(function(bf){
+      var cod = (bf.animales && bf.animales.codigo) || bf.animal_id || '—';
+      var det = 'canal '+(bf.peso_canal!=null?bf.peso_canal+' kg':'—')+(bf.frigorifico?' · '+bf.frigorifico:'')+(bf.fecha?' · '+bf.fecha:'');
+      html += _card('⚫ SACRIFICIO','beneficios',bf.id,'#6B7280','SACRIFICIO · '+esc(cod),det,bf.created_at,bf.propuesto_por,bf.propuesto_por_rol,null,{animal_id:bf.animal_id});
+    });
+    var total = (data.bajas||[]).length+(data.tratamientos||[]).length+(data.pesajes||[]).length+(data.eventos||[]).length+(data.beneficios||[]).length;
     var badge = document.getElementById('badge-pendientes'); if(badge) badge.textContent = total;
     var lista = document.getElementById('bandeja-lista'); if(lista) lista.innerHTML = html;
     sec.style.display = total>0 ? '' : 'none';
@@ -686,6 +691,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
         if(tabla==='eventos_reproductivos' && extra.hembra_id){
           if(window.DB.updateEstadoReproductivo) await window.DB.updateEstadoReproductivo(extra.hembra_id,'vacia',null,null);
           if(window.DB.marcarMontaFallida) window.DB.marcarMontaFallida(extra.hembra_id).catch(function(){});
+        }
+        if(tabla==='beneficios' && extra.animal_id){
+          // Al aprobar el sacrificio, el animal pasa a vendido (lo que se difirió al registrar pendiente).
+          await window._sb.from('animales').update({estado:'vendido', updated_at:new Date()}).eq('id', extra.animal_id);
+          if(window.AppState && window.AppState.animales){ window.AppState.animales = window.AppState.animales.filter(function(x){return x.id!==extra.animal_id;}); }
         }
         card.remove(); _refreshBadge(); _bandejaToast('✅ Aprobado','#16A34A');
       }catch(e){ btn.disabled=false; _bandejaToast('Error: '+e.message,'#EF4444'); }

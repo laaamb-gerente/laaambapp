@@ -667,7 +667,7 @@ window.DB = {
   async getPendingApprovals(finca_id) {
     // Trae todos los registros pendientes de todas las
     // tablas críticas en una sola llamada usando Promise.all
-    const [bajas, tratos, pesajes, eventos] =
+    const [bajas, tratos, pesajes, eventos, beneficios] =
       await Promise.all([
         window._sb.from('bajas')
           .select('id,animal_id,tipo,causa,fecha,peso_salida,' +
@@ -698,13 +698,20 @@ window.DB = {
                   'datos,created_at,animales:hembra_id(codigo)')
           .eq('finca_id', finca_id)
           .eq('estado_aprobacion', 'pendiente')
+          .order('created_at', { ascending: false }),
+        window._sb.from('beneficios')
+          .select('id,animal_id,fecha,peso_canal,peso_vivo_entrada,frigorifico,' +
+                  'propuesto_por,propuesto_por_rol,created_at,animales(codigo)')
+          .eq('finca_id', finca_id)
+          .eq('estado_aprobacion', 'pendiente')
           .order('created_at', { ascending: false })
       ]);
     return {
       bajas: bajas.data || [],
       tratamientos: tratos.data || [],
       pesajes: pesajes.data || [],
-      eventos: eventos.data || []
+      eventos: eventos.data || [],
+      beneficios: beneficios.data || []
     };
   },
 
