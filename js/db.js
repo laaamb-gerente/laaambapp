@@ -486,6 +486,16 @@ window.DB = {
       .select('*').eq('beneficio_id', beneficio_id).order('numero');
     return { cortes: cortes.data||[], unidades: unidades.data||[] };
   },
+  // Todas las unidades de corte de la finca, con su corte y canal, para el
+  // inventario de cortes agrupado por tipo.
+  async getInventarioCortes(finca_id) {
+    const unidades = await window._sb.from('unidades_corte')
+      .select('id,corte_id,beneficio_id,numero,peso_kg,estado,cliente_id,precio_venta,fecha_venta,' +
+              'cortes(tipo_corte),beneficios(animales(codigo))')
+      .eq('finca_id', finca_id)
+      .order('created_at');
+    return { unidades: unidades.data || [], error: unidades.error };
+  },
   // Crea un corte + sus unidades y descuenta kg de la canal (transaccional a nivel app)
   async sacarCorteDeCanal({finca_id, beneficio_id, animal_id, tipo_corte, unidades}) {
     // unidades: [{peso_kg}, ...]
