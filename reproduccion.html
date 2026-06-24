@@ -2525,6 +2525,38 @@ function loadReproFromSupabase(){
       foto_url:e.foto_url||d.foto_url||null
     });
   });
+
+  // ── Abortos derivados de partos con 0 crías vivas ──
+  // Un parto sin crías vivas se considera aborto/pérdida total y se muestra aquí.
+  // NOTA: en este scope la variable PARTOS proviene de eventos_reproductivos y
+  // NO trae num_corderos_vivos; la fuente real de ese campo es la tabla 'partos'
+  // (getPartos), así que se consulta y se agrega de forma asíncrona y se re-pinta.
+  if(window.DB && typeof window.DB.getPartos==='function'){
+    window.DB.getPartos('a1b2c3d4-0000-0000-0000-000000000001', 200).then(function(rp){
+      var partosTabla = (rp && rp.data) || [];
+      // Evitar acumulación si la carga se repite: quitar los partos-aborto previos.
+      for(var i=ABORTOS.length-1;i>=0;i--){ if(ABORTOS[i] && ABORTOS[i]._origenParto) ABORTOS.splice(i,1); }
+      partosTabla.filter(function(p){
+        return Number(p.num_corderos_vivos) === 0;
+      }).forEach(function(p){
+        var m = p.madre || {};
+        ABORTOS.push({
+          fecha: p.fecha_parto || '',
+          animal: (m.codigo || p.madre_id || '—'),
+          dias: null,
+          causa: (p.notas && String(p.notas).trim()) ? p.notas : 'Pérdida en parto (0 crías vivas)',
+          feto: (p.num_corderos_nacidos!=null ? (p.num_corderos_nacidos + ' nacido(s), 0 vivo(s)') : '—'),
+          foto_url: null,
+          _origenParto: true   // marca para distinguir origen (no se muestra)
+        });
+      });
+      // TODO posible dedupe parto-evento si se vuelve necesario
+      // Ordenar ABORTOS por fecha desc para que la tabla quede consistente
+      ABORTOS.sort(function(a,b){ return String(b.fecha).localeCompare(String(a.fecha)); });
+      renderAbortos();
+    }).catch(function(err){ console.warn('[Repro] abortos desde partos:', err&&err.message); });
+  }
+
   renderAbortos();
 
   renderGestaciones(); renderMontas(MONTAS); renderPartos(PARTOS);
