@@ -496,6 +496,35 @@ window.DB = {
       .order('created_at');
     return { unidades: unidades.data || [], error: unidades.error };
   },
+  // Registra un ajuste de inventario. Si estado='aprobado', aplica el cambio.
+  // Si queda 'pendiente', solo registra (el cambio real se aplica al aprobar).
+  async registrarAjusteInventario({finca_id, beneficio_id, unidad_id, tipo, causal, kg_antes, kg_despues, estado, propuesto_por, propuesto_por_rol, notas}) {
+    // 1. Insertar el registro de ajuste
+    const ins = await window._sb.from('ajustes_inventario').insert({
+      finca_id, beneficio_id: beneficio_id||null, unidad_id: unidad_id||null,
+      tipo, causal: causal||null, kg_antes: kg_antes!=null?kg_antes:null,
+      kg_despues: kg_despues!=null?kg_despues:null,
+      estado_aprobacion: estado, propuesto_por: propuesto_por||null,
+      propuesto_por_rol: propuesto_por_rol||null, notas: notas||null
+    }).select().single();
+    if (ins.error) return { error: ins.error };
+    // 2. Si está aprobado, aplicar el cambio real
+    if (estado === 'aprobado') {
+      if (beneficio_id && kg_despues != null) {
+        // ajuste de kg de la canal
+        const upd = await window._sb.from('beneficios')
+          .update({ kg_disponible: kg_despues }).eq('id', beneficio_id);
+        if (upd.error) return { data: ins.data, error: upd.error };
+      }
+      if (unidad_id && tipo === 'descarte') {
+        // dar de baja la unidad: estado='baja' (requiere migración 0052) + causal en notas.
+        const upd = await window._sb.from('unidades_corte')
+          .update({ estado: 'baja', notas: 'BAJA: '+(causal||'descarte') }).eq('id', unidad_id);
+        if (upd.error) return { data: ins.data, error: upd.error };
+      }
+    }
+    return { data: ins.data, error: null };
+  },
   // Crea un corte + sus unidades y descuenta kg de la canal (transaccional a nivel app)
   async sacarCorteDeCanal({finca_id, beneficio_id, animal_id, tipo_corte, unidades}) {
     // unidades: [{peso_kg}, ...]

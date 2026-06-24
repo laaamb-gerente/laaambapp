@@ -29,11 +29,11 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=30"></script>
+<script src="js/approval.js?v=31"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=30"></script>
+<script src="js/db.js?v=31"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
@@ -336,7 +336,23 @@ tr:last-child td{border-bottom:none}
           <div class="fg"><label class="fl"># Unidades</label><input class="fi" id="tcd-nunidades" type="number" min="1" step="1" value="1" oninput="renderPesosUnidades()"></div>
         </div>
         <div id="tcd-pesos" style="margin-top:10px"></div>
-        <div style="margin-top:12px"><button class="btn btn-primary" onclick="guardarCorteCanal()">+ Sacar corte de la canal</button><button class="btn btn-ghost" onclick="convertirCanalEnUnidad()" style="margin-left:8px">Vender canal completa</button></div>
+        <div style="margin-top:12px"><button class="btn btn-primary" onclick="guardarCorteCanal()">+ Sacar corte de la canal</button><button class="btn btn-ghost" onclick="convertirCanalEnUnidad()" style="margin-left:8px">Vender canal completa</button><button class="btn btn-ghost" onclick="abrirAjusteCanal()" style="margin-left:8px">Ajustar inventario</button></div>
+        <div id="ajuste-canal-form" style="display:none;margin-top:14px;padding:14px;background:var(--bg2,#F4F6F6);border-radius:10px">
+          <div class="card-title" style="font-size:14px;margin-bottom:8px">Ajustar kg de la canal</div>
+          <div class="form-grid">
+            <div class="fg"><label class="fl">Tipo de ajuste</label>
+              <select class="fi" id="ajc-tipo">
+                <option value="merma">Merma (pérdida de peso)</option>
+                <option value="correccion">Corrección de captura</option>
+                <option value="descuadre">Descuadre (robo / venta no registrada)</option>
+              </select>
+            </div>
+            <div class="fg"><label class="fl">Nuevo kg disponible</label><input class="fi" id="ajc-kg" type="number" step="0.01" min="0"></div>
+            <div class="fg" style="grid-column:1/-1"><label class="fl">Causal / motivo</label><input class="fi" id="ajc-causal" placeholder="Ej. merma por refrigeración / robo confirmado"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn btn-primary" onclick="guardarAjusteCanal()">Guardar ajuste</button></div>
+          <div class="msg" id="ajc-msg"></div>
+        </div>
         <div class="msg" id="tcd-msg"></div>
         <div class="card-title" style="font-size:14px;margin:18px 0 8px">Cortes ya sacados de esta canal</div>
         <div id="tcd-cortes"><div class="empty">Sin cortes aún</div></div>
@@ -603,14 +619,17 @@ tr:last-child td{border-bottom:none}
     var cont = document.getElementById('tid-unidades');
     cont.innerHTML = unidades.map(function(u){
       var animal = (u.beneficios && u.beneficios.animales && u.beneficios.animales.codigo) || '—';
-      var vendida = u.estado==='vendida';
-      var badge = vendida
-        ? '<span style="background:#FDE8E8;color:#C0392B;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600">VENDIDA</span>'
-        : '<span style="background:#DCF2F3;color:#0A8A90;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600">Disponible</span>';
+      var badge;
+      if(u.estado==='vendida') badge = '<span style="background:#FDE8E8;color:#C0392B;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600">VENDIDA</span>';
+      else if(u.estado==='baja') badge = '<span style="background:#E5E7EB;color:#6B7280;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600">Baja</span>';
+      else badge = '<span style="background:#DCF2F3;color:#0A8A90;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600">Disponible</span>';
+      var btnBaja = (u.estado==='disponible')
+        ? '<button class="btn btn-ghost btn-sm" onclick="darBajaUnidad(\''+u.id+'\','+(Number(u.peso_kg)||0)+')">Dar de baja</button>'
+        : '';
       return '<div class="lb-card"><div style="display:flex;justify-content:space-between;align-items:center">'
         + '<div><div style="font-weight:700">Unidad #'+(u.numero||'?')+' · '+(Number(u.peso_kg)||0).toFixed(2)+' kg</div>'
         + '<div style="font-size:12px;color:var(--text3,#8A9696)">Canal '+esc(animal)+'</div></div>'
-        + '<div>'+badge+'</div></div></div>';
+        + '<div style="display:flex;align-items:center;gap:8px">'+badge+btnBaja+'</div></div></div>';
     }).join('');
     document.getElementById('ti').classList.remove('active');
     document.getElementById('ti').style.display='none';
@@ -624,6 +643,62 @@ tr:last-child td{border-bottom:none}
     document.getElementById('ti').classList.add('active');
     document.getElementById('ti').style.display='block';
     cargarInventarioCortes();
+  };
+
+  // ── Ajustes de inventario (fase 2c): merma/corrección/descuadre + descarte ──
+  window.abrirAjusteCanal = function(){
+    var f = document.getElementById('ajuste-canal-form');
+    if(f){ f.style.display = f.style.display==='none' ? 'block' : 'none';
+      if(canalActual) document.getElementById('ajc-kg').value = Number(canalActual.kg_disponible||0).toFixed(2);
+    }
+  };
+
+  window.guardarAjusteCanal = async function(){
+    if(!canalActual) return;
+    var tipo = document.getElementById('ajc-tipo').value;
+    var nuevoKg = parseFloat(document.getElementById('ajc-kg').value);
+    var causal = document.getElementById('ajc-causal').value.trim();
+    if(isNaN(nuevoKg) || nuevoKg<0){ return msg('ajc-msg','Ingresa un kg válido.', false); }
+    if(!causal){ return msg('ajc-msg','La causal es obligatoria.', false); }
+    var estado = window.Approval ? window.Approval.getEstadoInicial() : 'aprobado';
+    var prop = window.Approval ? window.Approval.getPropuestoPor() : {propuesto_por:null,propuesto_por_rol:null};
+    msg('ajc-msg','Guardando…', true);
+    var r = await window.DB.registrarAjusteInventario({
+      finca_id:FINCA_ID, beneficio_id:canalActual.id, unidad_id:null, tipo:tipo,
+      causal:causal, kg_antes:Number(canalActual.kg_disponible||0), kg_despues:nuevoKg,
+      estado:estado, propuesto_por:prop.propuesto_por, propuesto_por_rol:prop.propuesto_por_rol,
+      notas:null
+    });
+    if(r.error){ return msg('ajc-msg','Error: '+r.error.message, false); }
+    if(estado==='aprobado'){
+      canalActual.kg_disponible = nuevoKg;
+      document.getElementById('tcd-saldo').textContent = 'Disponible: '+nuevoKg.toFixed(1)+' kg';
+      msg('ajc-msg','✓ Ajuste aplicado. Canal ahora en '+nuevoKg.toFixed(1)+' kg.', true);
+    } else {
+      msg('ajc-msg','⏳ Ajuste registrado. Pendiente de aprobación del gerente.', true);
+    }
+    document.getElementById('ajc-causal').value='';
+  };
+
+  window.darBajaUnidad = async function(unidadId, peso){
+    var causal = prompt('Motivo de la baja de esta unidad (obligatorio):');
+    if(causal===null) return; // canceló
+    causal = (causal||'').trim();
+    if(!causal){ alert('La causal es obligatoria.'); return; }
+    var estado = window.Approval ? window.Approval.getEstadoInicial() : 'aprobado';
+    var prop = window.Approval ? window.Approval.getPropuestoPor() : {propuesto_por:null,propuesto_por_rol:null};
+    var r = await window.DB.registrarAjusteInventario({
+      finca_id:FINCA_ID, beneficio_id:null, unidad_id:unidadId, tipo:'descarte',
+      causal:causal, kg_antes:Number(peso)||0, kg_despues:null,
+      estado:estado, propuesto_por:prop.propuesto_por, propuesto_por_rol:prop.propuesto_por_rol, notas:null
+    });
+    if(r.error){ alert('Error: '+r.error.message); return; }
+    if(estado==='aprobado'){
+      alert('✓ Unidad dada de baja. Motivo: '+causal);
+    } else {
+      alert('⏳ Baja registrada. Pendiente de aprobación del gerente.');
+    }
+    cargarInventarioCortes(); // refrescar
   };
 
   // ── Animales autocomplete ──
