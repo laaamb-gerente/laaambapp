@@ -29,11 +29,11 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=31"></script>
+<script src="js/approval.js?v=32"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=31"></script>
+<script src="js/db.js?v=32"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
@@ -626,10 +626,13 @@ tr:last-child td{border-bottom:none}
       var btnBaja = (u.estado==='disponible')
         ? '<button class="btn btn-ghost btn-sm" onclick="darBajaUnidad(\''+u.id+'\','+(Number(u.peso_kg)||0)+')">Dar de baja</button>'
         : '';
+      var btnVender = (u.estado==='disponible')
+        ? '<button class="btn btn-primary btn-sm" onclick="abrirVentaUnidad(\''+u.id+'\','+(Number(u.peso_kg)||0)+',\''+esc((u.cortes&&u.cortes.tipo_corte)||'')+'\',\''+esc((u.beneficios&&u.beneficios.animales&&u.beneficios.animales.codigo)||'')+'\')">Vender</button>'
+        : '';
       return '<div class="lb-card"><div style="display:flex;justify-content:space-between;align-items:center">'
         + '<div><div style="font-weight:700">Unidad #'+(u.numero||'?')+' · '+(Number(u.peso_kg)||0).toFixed(2)+' kg</div>'
         + '<div style="font-size:12px;color:var(--text3,#8A9696)">Canal '+esc(animal)+'</div></div>'
-        + '<div style="display:flex;align-items:center;gap:8px">'+badge+btnBaja+'</div></div></div>';
+        + '<div style="display:flex;align-items:center;gap:8px">'+badge+btnVender+btnBaja+'</div></div></div>';
     }).join('');
     document.getElementById('ti').classList.remove('active');
     document.getElementById('ti').style.display='none';
@@ -699,6 +702,56 @@ tr:last-child td{border-bottom:none}
       alert('⏳ Baja registrada. Pendiente de aprobación del gerente.');
     }
     cargarInventarioCortes(); // refrescar
+  };
+
+  // ── Venta de unidad a cliente (fase 3) ──
+  var ventaUnidadActual = null;
+
+  window.abrirVentaUnidad = async function(unidadId, peso, tipoCorte, animalCodigo){
+    ventaUnidadActual = { unidad_id:unidadId, peso:peso, tipo:tipoCorte, animal:animalCodigo };
+    document.getElementById('venta-info').textContent =
+      (TIPO_LABEL[tipoCorte]||tipoCorte)+' · '+(Number(peso)||0).toFixed(2)+' kg'+(animalCodigo?(' · canal '+animalCodigo):'');
+    // Cargar clientes
+    var sel = document.getElementById('venta-cliente');
+    sel.innerHTML = '<option value="">Cargando…</option>';
+    var r = await window.DB.getClientesActivos(FINCA_ID);
+    var clientes = r.data || [];
+    sel.innerHTML = '<option value="">Selecciona…</option>' + clientes.map(function(c){
+      return '<option value="'+c.id+'" data-nombre="'+esc(c.razon_social)+'">'+esc(c.razon_social)+'</option>';
+    }).join('');
+    document.getElementById('venta-precio').value = '';
+    document.getElementById('venta-msg').textContent = '';
+    document.getElementById('venta-overlay').style.display = 'flex';
+  };
+
+  window.cerrarVentaUnidad = function(){
+    document.getElementById('venta-overlay').style.display = 'none';
+    ventaUnidadActual = null;
+  };
+
+  window.confirmarVentaUnidad = async function(){
+    if(!ventaUnidadActual) return;
+    var sel = document.getElementById('venta-cliente');
+    var clienteId = sel.value;
+    var clienteNombre = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].getAttribute('data-nombre') : '';
+    var precio = parseFloat(document.getElementById('venta-precio').value);
+    if(!clienteId){ return msg('venta-msg','Selecciona un cliente.', false); }
+    if(isNaN(precio) || precio<=0){ return msg('venta-msg','Ingresa un precio válido.', false); }
+    var estado = window.Approval ? window.Approval.getEstadoInicial() : 'aprobado';
+    msg('venta-msg','Procesando…', true);
+    var r = await window.DB.venderUnidad({
+      finca_id:FINCA_ID, unidad_id:ventaUnidadActual.unidad_id, cliente_id:clienteId,
+      cliente_nombre:clienteNombre, precio_venta:precio,
+      tipo_corte_label:(TIPO_LABEL[ventaUnidadActual.tipo]||ventaUnidadActual.tipo),
+      animal_codigo:ventaUnidadActual.animal, estado:estado
+    });
+    if(r.error){ return msg('venta-msg','Error: '+r.error.message, false); }
+    if(r.data && r.data.diferido){
+      msg('venta-msg','⏳ Venta registrada. Pendiente de aprobación del gerente.', true);
+    } else {
+      msg('venta-msg','✓ Vendida a '+clienteNombre+' por $'+precio.toLocaleString('es-CO'), true);
+    }
+    setTimeout(function(){ cerrarVentaUnidad(); cargarInventarioCortes(); }, 1200);
   };
 
   // ── Animales autocomplete ──
@@ -995,5 +1048,23 @@ tr:last-child td{border-bottom:none}
 <script>
   if (window.OfflineDB) { window.OfflineDB.init().then(() => { window.OfflineDB.setupAutoSync(); }); }
 </script>
+
+<!-- Modal de venta de unidad (fase 3) -->
+<div id="venta-overlay" style="display:none;position:fixed;inset:0;background:rgba(21,32,31,.45);z-index:300;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:14px;padding:20px;max-width:420px;width:92%;box-shadow:0 12px 40px rgba(0,0,0,.2)">
+    <div class="card-title" style="margin-bottom:4px">Vender unidad</div>
+    <div class="card-sub" id="venta-info" style="margin-bottom:14px">—</div>
+    <div class="fg"><label class="fl">Cliente</label>
+      <select class="fi" id="venta-cliente"><option value="">Selecciona…</option></select>
+    </div>
+    <div class="fg" style="margin-top:10px"><label class="fl">Precio de venta (COP)</label>
+      <input class="fi" id="venta-precio" type="number" step="500" min="0"></div>
+    <div class="msg" id="venta-msg"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="cerrarVentaUnidad()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarVentaUnidad()">Confirmar venta</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

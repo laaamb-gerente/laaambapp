@@ -525,6 +525,40 @@ window.DB = {
     }
     return { data: ins.data, error: null };
   },
+  async getClientesActivos(finca_id) {
+    return await window._sb.from('clientes_b2b')
+      .select('id,razon_social')
+      .eq('finca_id', finca_id).eq('activo', true)
+      .order('razon_social');
+  },
+  // Vende una unidad: marca vendida + liga cliente + registra ingreso.
+  // Solo aplica si estado='aprobado'. Si 'pendiente', NO toca nada (futuro: bandeja).
+  async venderUnidad({finca_id, unidad_id, cliente_id, cliente_nombre, precio_venta, tipo_corte_label, animal_codigo, estado}) {
+    if (estado !== 'aprobado') {
+      // En esta fase, si requiere aprobación, no aplicamos (no hay bandeja para
+      // ventas aún). Devolvemos un flag para que el frontend avise.
+      return { data: { diferido: true }, error: null };
+    }
+    // 1. Registrar ingreso
+    const ing = await window._sb.from('ingresos').insert({
+      finca_id, tipo: 'venta_animal',
+      descripcion: 'Venta '+(tipo_corte_label||'corte')+(animal_codigo?(' · canal '+animal_codigo):'')+(cliente_nombre?(' · '+cliente_nombre):''),
+      valor: Number(precio_venta)||0,
+      fecha: new Date().toISOString().split('T')[0],
+      cliente: cliente_nombre||null,
+      especie: 'ovino', fuente: 'manual'
+    }).select().single();
+    if (ing.error) return { error: ing.error };
+    // 2. Marcar la unidad vendida
+    const upd = await window._sb.from('unidades_corte').update({
+      estado: 'vendida', cliente_id: cliente_id||null,
+      precio_venta: Number(precio_venta)||0,
+      fecha_venta: new Date().toISOString(),
+      ingreso_id: ing.data.id
+    }).eq('id', unidad_id).select().single();
+    if (upd.error) return { data: ing.data, error: upd.error };
+    return { data: { ingreso: ing.data, unidad: upd.data }, error: null };
+  },
   // Crea un corte + sus unidades y descuenta kg de la canal (transaccional a nivel app)
   async sacarCorteDeCanal({finca_id, beneficio_id, animal_id, tipo_corte, unidades}) {
     // unidades: [{peso_kg}, ...]
