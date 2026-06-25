@@ -864,6 +864,9 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
           <div class="fg"><label class="fl">Dosis sugerida</label>
             <input class="fi tg-dosis-ref" readonly style="background:var(--bg4);color:var(--teal);font-weight:600" placeholder="Selecciona medicamento">
           </div>
+          <div class="fg"><label class="fl">Duración (días)</label>
+            <input class="fi tg-dur-input" type="number" min="1" step="1" value="1">
+          </div>
           <div class="fg"><label class="fl">Retiro (días)</label>
             <input class="fi tg-retiro-input" readonly style="background:var(--bg4);color:var(--amber);" placeholder="Auto">
           </div>
@@ -1632,6 +1635,8 @@ function agregarMedGrupal(){
     +'<select class="fi tg-med-sel"><option value="">— Seleccionar —</option></select>'
     +'</div><div class="fg"><label class="fl">Dosis sugerida</label>'
     +'<input class="fi tg-dosis-ref" readonly style="background:var(--bg4);color:var(--teal);font-weight:600" placeholder="Selecciona"></div>'
+    +'<div class="fg"><label class="fl">Duración (días)</label>'
+    +'<input class="fi tg-dur-input" type="number" min="1" step="1" value="1"></div>'
     +'<div class="fg"><label class="fl">Retiro (días)</label>'
     +'<input class="fi tg-retiro-input" readonly style="background:var(--bg4);color:var(--amber);" placeholder="Auto"></div>';
   div.appendChild(_closeBtn); div.appendChild(_grid);
@@ -2090,7 +2095,7 @@ function saveTratamiento(tipo){
     window._tgMedicamentos = _medRows.map(function(row){
       var sel=row.querySelector('.tg-med-sel');
       var parts=(sel?.value||'').split('|');
-      return {medId:parts[4]||'',medNombre:parts[5]||sel?.options[sel.selectedIndex]?.text||'—',retiroDias:parseInt(parts[2])||0,dosisTotal:parseFloat(document.getElementById('tg-dosis-total')?.value)||0};
+      return {medId:parts[4]||'',medNombre:parts[5]||sel?.options[sel.selectedIndex]?.text||'—',retiroDias:parseInt(parts[2])||0,durDias:parseInt(row.querySelector('.tg-dur-input')?.value)||1,dosisTotal:parseFloat(document.getElementById('tg-dosis-total')?.value)||0};
     }).filter(function(m){return m.medId;});
     // Compat: use first med for legacy fields
     var _firstMed=window._tgMedicamentos[0]||{};
@@ -2131,7 +2136,13 @@ function saveTratamiento(tipo){
         var _animal = window._tgSel[animalUuid]||{};
         return (_totalMeds.length>0 ? _totalMeds : [{medId:medId,medNombre:medNombre,retiroDias:retiroDias,dosisTotal:null}])
           .map(function(med){
-            return window.DB.saveTratamiento({
+            // Igual que el individual: fecha_fin = inicio + duración; el retiro corre DESPUÉS.
+            var _durDias = parseInt(med.durDias)||1;
+            var _ff = _fechaStr;
+            if(_durDias>0){ var _df=new Date(_fechaStr+'T00:00:00'); _df.setDate(_df.getDate()+_durDias); _ff=_df.toISOString().slice(0,10); }
+            var _ffr = _ff;
+            if(med.retiroDias>0){ var _dr=new Date(_ff+'T00:00:00'); _dr.setDate(_dr.getDate()+med.retiroDias); _ffr=_dr.toISOString().slice(0,10); }
+            var _payloadG = {
               finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
               animal_id: animalUuid,
               medicamento_id: med.medId||null,
@@ -2140,6 +2151,7 @@ function saveTratamiento(tipo){
               diagnostico: motivo,
               grupo_id: _grupoId,
               fecha_inicio: _fechaStr,
+              fecha_fin: _ff,
               dosis: (function(){
                 // Buscar el rowId de esta med en las rows actuales por medId
                 var _rows=document.querySelectorAll('#tg-meds-container .tg-med-row');
@@ -2156,11 +2168,19 @@ function saveTratamiento(tipo){
               })(),
               unidad: 'mL',
               dias_retiro: med.retiroDias||0,
-              fecha_fin_retiro: _fechaFin,
+              fecha_fin_retiro: _ffr,
               registrado_por: colab,
               notas: '[GRUPAL:'+_grupoId+'] '+motivo+' | '+med.medNombre+' | '+nAnimales+' animales',
-              estado: (_fechaFin&&retiroDias>0)?'en_retiro':'completado',
+              estado: (med.retiroDias>0)?'en_retiro':'completado',
               fuente: 'grupal'
+            };
+            return window.DB.saveTratamiento(_payloadG).then(function(res){
+              // Dosis programadas por medicamento (>1 día), por cada animal del grupo.
+              if(res && !res.error && res.data && _durDias>1 && typeof window.DB.crearDosisProgramadas==='function'){
+                return window.DB.crearDosisProgramadas(res.data.id, animalUuid, _fechaStr, _durDias, _payloadG.finca_id)
+                  .then(function(){ return res; }).catch(function(){ return res; });
+              }
+              return res;
             });
           });
       });
@@ -2170,6 +2190,7 @@ function saveTratamiento(tipo){
         // Descontar stock por medicamento
         _totalMeds.forEach(function(med){ if(med.medId&&window.DB.updateStockMedicamento) window.DB.updateStockMedicamento(med.medId,-med.dosisTotal); });
         toast('✓ Tratamiento grupal guardado · '+nAnimales+' animales · Retiro: '+retiroDias+'d');
+        if(typeof loadDosisHoy==='function') loadDosisHoy();
         if(typeof loadFromSupabase==='function') setTimeout(loadFromSupabase, 600);
       }).catch(function(e){toast('Error al guardar: '+(e&&e.message),'err');});
     } else if(typeof AppData!=='undefined'){
