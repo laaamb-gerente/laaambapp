@@ -602,6 +602,37 @@ window.DB = {
     if (upd.error) return { data: ing.data, error: upd.error };
     return { data: { ingreso: ing.data, unidad: upd.data }, error: null };
   },
+  // Vende la canal completa (kg restante) a un cliente, reutilizando venderUnidad.
+  async venderCanalCompleta({finca_id, beneficio_id, cliente_id, cliente_nombre, precio_venta, animal_codigo, estado}) {
+    // 1. Traer el saldo de la canal
+    const b = await window._sb.from('beneficios').select('id,kg_disponible,animal_id').eq('id', beneficio_id).single();
+    if (b.error) return { error: b.error };
+    const kg = Number(b.data.kg_disponible)||0;
+    if (kg <= 0) return { error: { message: 'La canal no tiene kg disponibles.' } };
+    // 2. Crear un corte 'canal_completa' + una unidad con todo el kg.
+    //    (cortes NO tiene finca_id; se replica el insert real de sacarCorteDeCanal.)
+    const corte = await window._sb.from('cortes').insert({
+      beneficio_id, animal_id: b.data.animal_id, tipo_corte: 'canal_completa',
+      peso_kg: kg, num_unidades: 1, kg_vendidos: 0
+    }).select().single();
+    if (corte.error) return { error: corte.error };
+    const unidad = await window._sb.from('unidades_corte').insert({
+      finca_id, corte_id: corte.data.id, beneficio_id, numero: 1, peso_kg: kg,
+      estado: 'disponible'
+    }).select().single();
+    if (unidad.error) return { error: unidad.error };
+    // 3. Vender esa unidad por la vía existente (maneja aprobación + ingreso)
+    const venta = await this.venderUnidad({
+      finca_id, unidad_id: unidad.data.id, cliente_id, cliente_nombre,
+      precio_venta, tipo_corte_label: 'Canal completa', animal_codigo, estado
+    });
+    if (venta.error) return { error: venta.error };
+    // 4. Si la venta se aplicó (aprobada), la canal queda en 0 kg.
+    if (!(venta.data && venta.data.diferido)) {
+      await window._sb.from('beneficios').update({ kg_disponible: 0 }).eq('id', beneficio_id);
+    }
+    return { data: { diferido: venta.data && venta.data.diferido }, error: null };
+  },
   // Vende varias unidades a un cliente reutilizando venderUnidad (1 ingreso por unidad).
   async venderUnidadesACliente({finca_id, cliente_id, cliente_nombre, items, estado}) {
     // items: [{unidad_id, precio_venta, tipo_corte_label, animal_codigo}]

@@ -29,11 +29,11 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=36"></script>
+<script src="js/approval.js?v=37"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=36"></script>
+<script src="js/db.js?v=37"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
@@ -339,7 +339,7 @@ tr:last-child td{border-bottom:none}
           <div class="fg"><label class="fl"># Unidades</label><input class="fi" id="tcd-nunidades" type="number" min="1" step="1" value="1" oninput="renderPesosUnidades()"></div>
         </div>
         <div id="tcd-pesos" style="margin-top:10px"></div>
-        <div style="margin-top:12px"><button class="btn btn-primary" onclick="guardarCorteCanal()">+ Sacar corte de la canal</button><button class="btn btn-ghost" onclick="convertirCanalEnUnidad()" style="margin-left:8px">Vender canal completa</button><button class="btn btn-ghost" onclick="abrirAjusteCanal()" style="margin-left:8px">Ajustar inventario</button></div>
+        <div style="margin-top:12px"><button class="btn btn-primary" onclick="guardarCorteCanal()">+ Sacar corte de la canal</button><button class="btn btn-ghost" onclick="abrirAjusteCanal()" style="margin-left:8px">Ajustar inventario</button></div>
         <div id="ajuste-canal-form" style="display:none;margin-top:14px;padding:14px;background:var(--bg2,#F4F6F6);border-radius:10px">
           <div class="card-title" style="font-size:14px;margin-bottom:8px">Ajustar kg de la canal</div>
           <div class="form-grid">
@@ -588,19 +588,8 @@ tr:last-child td{border-bottom:none}
   };
 
   // Vender la canal completa = crear 1 unidad tipo canal_completa con todo el saldo.
-  window.convertirCanalEnUnidad = async function(){
-    if(!canalActual) return;
-    var disp = Number(canalActual.kg_disponible||0);
-    if(disp<=0){ return msg('tcd-msg','La canal no tiene kg disponibles.', false); }
-    if(!confirm('¿Convertir el saldo de la canal ('+disp.toFixed(1)+' kg) en 1 unidad vendible de tipo "canal completa"? Esto deja la canal en 0 kg.')) return;
-    msg('tcd-msg','Procesando…', true);
-    var r = await window.DB.sacarCorteDeCanal({finca_id:FINCA_ID, beneficio_id:canalActual.id, animal_id:canalActual.animal_id, tipo_corte:'canal_completa', unidades:[{peso_kg:disp}]});
-    if(r.error){ return msg('tcd-msg','Error: '+r.error.message, false); }
-    canalActual.kg_disponible = r.data.kg_disponible;
-    document.getElementById('tcd-saldo').textContent = 'Disponible: '+Number(r.data.kg_disponible).toFixed(1)+' kg';
-    msg('tcd-msg','✓ Canal convertida en 1 unidad vendible de '+disp.toFixed(1)+' kg (tipo: canal completa). Disponible para venta en Inventario Cortes.', true);
-    refrescarCortesCanal();
-  };
+  // (Botón de venta de canal entera eliminado: ese flujo se hace ahora desde la
+  //  pestaña Ventas vía window.DB.venderCanalCompleta — flujo único.)
 
   // ── Inventario de Cortes (fase 2b) ──
   var inventarioCortesCache = [];  // unidades cacheadas
@@ -805,19 +794,38 @@ tr:last-child td{border-bottom:none}
     var footer = document.getElementById('tv-footer');
     if(!sel.value){ cont.innerHTML='<div class="empty">Selecciona un cliente para ver el inventario disponible.</div>'; footer.style.display='none'; return; }
     cont.innerHTML = '<div class="empty">Cargando inventario…</div>';
-    var r = await window.DB.getInventarioCortes(FINCA_ID);
-    tvUnidades = (r.unidades||[]).filter(function(u){ return u.estado==='disponible'; });
-    if(!tvUnidades.length){ cont.innerHTML='<div class="empty">No hay unidades disponibles en inventario.</div>'; footer.style.display='none'; return; }
-    cont.innerHTML = tvUnidades.map(function(u){
+    // El inventario vendible tiene DOS tipos de ítem:
+    //  · canal completa: beneficios con kg_disponible > 0 (se vende entera por su saldo)
+    //  · unidad de corte: unidades_corte en estado 'disponible'
+    var rc = await window.DB.getCanalesConSaldo(FINCA_ID);
+    var canales = (rc.data||[]).filter(function(b){ return Number(b.kg_disponible)>0; });
+    var ru = await window.DB.getInventarioCortes(FINCA_ID);
+    var unidades = (ru.unidades||[]).filter(function(u){ return u.estado==='disponible'; });
+    if(!canales.length && !unidades.length){ cont.innerHTML='<div class="empty">No hay canales ni unidades disponibles en inventario.</div>'; footer.style.display='none'; return; }
+    var html = '';
+    // Canales completas (vendibles aunque ya tengan cortes sacados: se vende el kg restante)
+    html += canales.map(function(b){
+      var animal = (b.animales && (b.animales.codigo||b.animales.nombre)) || b.animal_id || '—';
+      var kg = Number(b.kg_disponible)||0;
+      return '<div class="lb-card" style="display:flex;align-items:center;gap:12px">'
+        + '<input type="checkbox" class="tv-chk" data-itemtype="canal" data-id="'+b.id+'" data-animal="'+esc(animal)+'" onchange="tvRecalcular()" style="width:18px;height:18px">'
+        + '<div style="flex:1"><div style="font-weight:700">Canal completa · '+esc(animal)+'</div>'
+        + '<div style="font-size:12px;color:var(--text3,#8A9696)">'+kg.toFixed(2)+' kg disponibles</div></div>'
+        + '<div class="fg" style="margin:0;width:140px"><input class="fi tv-precio" type="number" step="500" min="0" placeholder="Precio COP" data-id="'+b.id+'" oninput="tvRecalcular()" disabled></div>'
+        + '</div>';
+    }).join('');
+    // Unidades de corte disponibles
+    html += unidades.map(function(u){
       var tipo = (u.cortes&&u.cortes.tipo_corte)||'otro';
       var animal = (u.beneficios&&u.beneficios.animales&&u.beneficios.animales.codigo)||'—';
       return '<div class="lb-card" style="display:flex;align-items:center;gap:12px">'
-        + '<input type="checkbox" class="tv-chk" data-id="'+u.id+'" data-tipo="'+esc(tipo)+'" data-animal="'+esc(animal)+'" onchange="tvRecalcular()" style="width:18px;height:18px">'
+        + '<input type="checkbox" class="tv-chk" data-itemtype="unidad" data-id="'+u.id+'" data-tipo="'+esc(tipo)+'" data-animal="'+esc(animal)+'" onchange="tvRecalcular()" style="width:18px;height:18px">'
         + '<div style="flex:1"><div style="font-weight:700">'+esc(TIPO_LABEL[tipo]||tipo)+' · Unidad #'+(u.numero||'?')+'</div>'
         + '<div style="font-size:12px;color:var(--text3,#8A9696)">'+(Number(u.peso_kg)||0).toFixed(2)+' kg · canal '+esc(animal)+'</div></div>'
         + '<div class="fg" style="margin:0;width:140px"><input class="fi tv-precio" type="number" step="500" min="0" placeholder="Precio COP" data-id="'+u.id+'" oninput="tvRecalcular()" disabled></div>'
         + '</div>';
     }).join('');
+    cont.innerHTML = html;
     footer.style.display='block';
     tvRecalcular();
   };
@@ -834,7 +842,7 @@ tr:last-child td{border-bottom:none}
         precioInput.disabled=true;
       }
     });
-    document.getElementById('tv-resumen').textContent = n+' unidad(es) · $'+total.toLocaleString('es-CO');
+    document.getElementById('tv-resumen').textContent = n+' ítem(es) · $'+total.toLocaleString('es-CO');
   };
 
   window.confirmarVentaMultiple = async function(){
@@ -843,26 +851,40 @@ tr:last-child td{border-bottom:none}
     var clienteNombre = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].getAttribute('data-nombre') : '';
     if(!clienteId){ return msg('tv-msg','Selecciona un cliente.', false); }
     var chks = Array.prototype.slice.call(document.querySelectorAll('.tv-chk:checked'));
-    if(!chks.length){ return msg('tv-msg','Marca al menos una unidad.', false); }
-    var items = [];
+    if(!chks.length){ return msg('tv-msg','Marca al menos un ítem.', false); }
+    var unidadItems = [], canalItems = [];
     for(var i=0;i<chks.length;i++){
       var chk = chks[i];
       var id = chk.getAttribute('data-id');
       var precioInput = document.querySelector('.tv-precio[data-id="'+id+'"]');
       var precio = parseFloat(precioInput.value);
-      if(isNaN(precio) || precio<=0){ return msg('tv-msg','Falta el precio de una unidad seleccionada.', false); }
-      items.push({ unidad_id:id, precio_venta:precio,
-        tipo_corte_label:(TIPO_LABEL[chk.getAttribute('data-tipo')]||chk.getAttribute('data-tipo')),
-        animal_codigo: chk.getAttribute('data-animal') });
+      if(isNaN(precio) || precio<=0){ return msg('tv-msg','Falta el precio de un ítem seleccionado.', false); }
+      if(chk.getAttribute('data-itemtype')==='canal'){
+        canalItems.push({ beneficio_id:id, precio_venta:precio, animal_codigo: chk.getAttribute('data-animal') });
+      } else {
+        unidadItems.push({ unidad_id:id, precio_venta:precio,
+          tipo_corte_label:(TIPO_LABEL[chk.getAttribute('data-tipo')]||chk.getAttribute('data-tipo')),
+          animal_codigo: chk.getAttribute('data-animal') });
+      }
     }
     var estado = window.Approval ? window.Approval.getEstadoInicial() : 'aprobado';
-    msg('tv-msg','Procesando '+items.length+' venta(s)…', true);
-    var r = await window.DB.venderUnidadesACliente({finca_id:FINCA_ID, cliente_id:clienteId, cliente_nombre:clienteNombre, items:items, estado:estado});
-    var errores = (r.resultados||[]).filter(function(x){return x.error;});
-    var diferidos = (r.resultados||[]).filter(function(x){return x.diferido;});
-    if(errores.length){ msg('tv-msg','Algunas ventas fallaron: '+errores.length+' error(es).', false); }
-    else if(diferidos.length){ msg('tv-msg','⏳ '+diferidos.length+' venta(s) pendiente(s) de aprobación del gerente.', true); }
-    else { msg('tv-msg','✓ '+items.length+' unidad(es) vendida(s) a '+clienteNombre+'.', true); }
+    var totalItems = unidadItems.length + canalItems.length;
+    msg('tv-msg','Procesando '+totalItems+' venta(s)…', true);
+    var errores=0, diferidos=0, ok=0;
+    // Unidades de corte (1 ingreso por unidad)
+    if(unidadItems.length){
+      var r = await window.DB.venderUnidadesACliente({finca_id:FINCA_ID, cliente_id:clienteId, cliente_nombre:clienteNombre, items:unidadItems, estado:estado});
+      (r.resultados||[]).forEach(function(x){ if(x.error)errores++; else if(x.diferido)diferidos++; else ok++; });
+    }
+    // Canales completas (una por una)
+    for(var c=0;c<canalItems.length;c++){
+      var ci = canalItems[c];
+      var rc = await window.DB.venderCanalCompleta({finca_id:FINCA_ID, beneficio_id:ci.beneficio_id, cliente_id:clienteId, cliente_nombre:clienteNombre, precio_venta:ci.precio_venta, animal_codigo:ci.animal_codigo, estado:estado});
+      if(rc.error)errores++; else if(rc.data && rc.data.diferido)diferidos++; else ok++;
+    }
+    if(errores){ msg('tv-msg','Algunas ventas fallaron: '+errores+' error(es)'+(diferidos?(' · '+diferidos+' pendiente(s)'):'')+(ok?(' · '+ok+' aplicada(s)'):''), false); }
+    else if(diferidos){ msg('tv-msg','⏳ '+diferidos+' venta(s) pendiente(s) de aprobación'+(ok?(' · '+ok+' aplicada(s)'):'')+'.', true); }
+    else { msg('tv-msg','✓ '+ok+' venta(s) registrada(s) a '+clienteNombre+'.', true); }
     setTimeout(function(){ tvClienteCambio(); }, 1400); // refrescar inventario
   };
 
@@ -921,7 +943,7 @@ tr:last-child td{border-bottom:none}
     try{
       var _aprob = (window.Approval ? window.Approval.getEstadoInicial() : 'aprobado');
       var _prop = (window.Approval ? window.Approval.getPropuestoPor() : {propuesto_por:null, propuesto_por_rol:null});
-      var r = await window.DB.saveBeneficio({finca_id:FINCA_ID, animal_id:(esNN?null:a.id), fecha:fecha, frigorifico:document.getElementById('b-frigo').value.trim()||null, peso_vivo_entrada:pv, peso_canal:pc, costo_beneficio:costo, registrado_por:nombreUsuario(), notas:notas||null, estado_aprobacion:_aprob, propuesto_por:_prop.propuesto_por, propuesto_por_rol:_prop.propuesto_por_rol});
+      var r = await window.DB.saveBeneficio({finca_id:FINCA_ID, animal_id:(esNN?null:a.id), fecha:fecha, frigorifico:document.getElementById('b-frigo').value.trim()||null, peso_vivo_entrada:pv, peso_canal:pc, kg_disponible:pc, costo_beneficio:costo, registrado_por:nombreUsuario(), notas:notas||null, estado_aprobacion:_aprob, propuesto_por:_prop.propuesto_por, propuesto_por_rol:_prop.propuesto_por_rol});
       if(r.error) throw new Error(r.error.message||'Error');
       beneficioActual = r.data;
       cortesActual = [];
