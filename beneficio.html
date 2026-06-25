@@ -207,11 +207,20 @@ tr:last-child td{border-bottom:none}
       <div class="card-h"><div class="card-title">Registrar beneficio</div><div class="card-sub">Registro del sacrificio de un animal</div></div>
       <div class="card-b">
         <div class="form-grid">
-          <div class="fg full"><label class="fl">Animal *</label>
-            <select class="fi" id="b-animal" onchange="onAnimalBeneficioCambio()">
-              <option value="">— Selecciona un animal —</option>
-              <option value="__NN__">NN — Sin identificar</option>
-            </select>
+          <div class="fg full" style="position:relative"><label class="fl">Animal *</label>
+            <input class="fi" id="b-animal-input"
+              placeholder="Buscar por código, nombre o raza…"
+              autocomplete="off"
+              oninput="filtrarAnimalBeneficio(this.value)"
+              onfocus="filtrarAnimalBeneficio(this.value)">
+            <div id="b-animal-dropdown"
+              style="display:none;position:absolute;z-index:300;background:var(--bg2);
+                border:1px solid var(--border2);border-radius:var(--r);max-height:200px;
+                overflow-y:auto;width:100%;box-shadow:0 4px 14px rgba(0,0,0,.4)">
+            </div>
+            <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);margin-top:5px;cursor:pointer">
+              <input type="checkbox" id="b-animal-nn" onchange="toggleBeneficioNN(this.checked)"> NN — Sin identificar (chapeta perdida)
+            </label>
             <div class="hint" id="b-animal-info">—</div>
           </div>
           <div class="fg"><label class="fl">Fecha de sacrificio</label><input class="fi" id="b-fecha" type="date"></div>
@@ -888,38 +897,92 @@ tr:last-child td{border-bottom:none}
     setTimeout(function(){ tvClienteCambio(); }, 1400); // refrescar inventario
   };
 
-  // ── Animales autocomplete ──
+  // ── Buscador de animal (tipo-y-sugiere, igual que tratamientos en salud.html) ──
+  // El animal seleccionado se guarda en window._bAnimalSel: id real, '__NN__' o ''.
   function animalesActivos(){ return ((window.AppState && window.AppState.animales)||[]).filter(function(a){return a.estado==='activo';}); }
-  // Pobla el <select> de animal: placeholder + NN + animales activos (value = id).
+
+  // Resetea el control de animal (se llama al iniciar y tras guardar un beneficio).
   function llenarAnimales(){
-    var sel = document.getElementById('b-animal'); if(!sel) return;
-    var prev = sel.value;
-    sel.innerHTML = '<option value="">— Selecciona un animal —</option>'
-      + '<option value="__NN__">NN — Sin identificar</option>'
-      + animalesActivos().map(function(a){
-          var label = (a.codigo||a.id) + (a.nombre?(' · '+a.nombre):'') + (a.raza?(' · '+a.raza):'');
-          return '<option value="'+esc(a.id)+'">'+esc(label)+'</option>';
-        }).join('');
-    // Conservar la selección previa si el animal sigue en la lista.
-    if(prev) sel.value = prev;
+    window._bAnimalSel = '';
+    var inp = document.getElementById('b-animal-input'); if(inp){ inp.value=''; inp.disabled=false; inp.placeholder='Buscar por código, nombre o raza…'; }
+    var nn = document.getElementById('b-animal-nn'); if(nn) nn.checked=false;
+    var dd = document.getElementById('b-animal-dropdown'); if(dd) dd.style.display='none';
+    var info = document.getElementById('b-animal-info'); if(info) info.textContent='—';
   }
-  // Resuelve el animal seleccionado (por id) o null si es NN / placeholder.
+
+  // Resuelve el animal seleccionado (por id) o null si es NN / sin selección.
   function animalSeleccionado(){
-    var val = (document.getElementById('b-animal')||{}).value || '';
+    var val = window._bAnimalSel || '';
     if(!val || val==='__NN__') return null;
     return animalesActivos().find(function(a){ return a.id===val; }) || null;
   }
-  window.onAnimalBeneficioCambio = function(){
-    var sel = document.getElementById('b-animal');
-    var info = document.getElementById('b-animal-info');
-    var val = sel.value;
-    if(val==='__NN__'){ info.textContent = 'Animal sin identificar (NN)'; return; }
-    if(!val){ info.textContent = '—'; return; }
-    var a = animalSeleccionado();
-    if(!a){ info.textContent = 'Animal no encontrado'; return; }
-    info.textContent = (a.raza||'—')+' · '+(a.sexo||'')+(a.peso_actual?' · '+a.peso_actual+' kg':'');
-    if(a.peso_actual && !document.getElementById('b-pvivo').value){ document.getElementById('b-pvivo').value=a.peso_actual; calcRend(); }
+
+  window.filtrarAnimalBeneficio = function(q){
+    var dd = document.getElementById('b-animal-dropdown'); if(!dd) return;
+    var nn = document.getElementById('b-animal-nn');
+    if(nn && nn.checked){ dd.style.display='none'; return; }
+    // Al teclear, la selección previa deja de ser válida hasta que se elija una sugerencia.
+    window._bAnimalSel = '';
+    var activos = animalesActivos();
+    var q2 = (q||'').toLowerCase().trim();
+    var lista = q2
+      ? activos.filter(function(a){
+          return String(a.codigo||'').toLowerCase().includes(q2)
+            || String(a.nombre||'').toLowerCase().includes(q2)
+            || String(a.raza||'').toLowerCase().includes(q2);
+        })
+      : activos;
+    lista = lista.slice(0,40);
+    if(!lista.length){ dd.style.display='none'; dd.innerHTML=''; return; }
+    dd.innerHTML = lista.map(function(a){
+      var peso = a.peso_actual?(' · '+a.peso_actual+'kg'):'';
+      var nom = a.nombre?(' · '+a.nombre):'';
+      return '<div onclick="seleccionarAnimalBeneficio(\''+esc(a.id)+'\',\''+esc(a.codigo||a.id)+'\','+(a.peso_actual||0)+')" '
+        + 'style="padding:8px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
+        + 'onmouseover="this.style.background=\'var(--teal-bg)\'" onmouseout="this.style.background=\'\'">'
+        + '<b>'+esc(a.codigo||a.id)+'</b>'+esc(nom)
+        + ' <span style="color:var(--teal)">'+esc(a.raza||'')+'</span>'
+        + ' <span style="color:var(--text3)">'+esc(peso)+'</span>'
+        + '</div>';
+    }).join('');
+    dd.style.display='block';
   };
+
+  window.seleccionarAnimalBeneficio = function(id, codigo, peso){
+    window._bAnimalSel = id;
+    var inp = document.getElementById('b-animal-input'); if(inp) inp.value = codigo;
+    var nn = document.getElementById('b-animal-nn'); if(nn) nn.checked = false;
+    var dd = document.getElementById('b-animal-dropdown'); if(dd) dd.style.display='none';
+    if(peso && !document.getElementById('b-pvivo').value){ document.getElementById('b-pvivo').value=peso; calcRend(); }
+    var a = animalSeleccionado();
+    var info = document.getElementById('b-animal-info');
+    if(info) info.textContent = a ? ((a.raza||'—')+' · '+(a.sexo||'')+(a.peso_actual?' · '+a.peso_actual+' kg':'')) : '—';
+  };
+
+  window.toggleBeneficioNN = function(checked){
+    var inp = document.getElementById('b-animal-input');
+    var dd = document.getElementById('b-animal-dropdown');
+    var info = document.getElementById('b-animal-info');
+    if(checked){
+      window._bAnimalSel = '__NN__';
+      if(inp){ inp.value=''; inp.disabled=true; inp.placeholder='Animal sin identificar (NN)'; }
+      if(dd) dd.style.display='none';
+      if(info) info.textContent='Animal sin identificar (NN)';
+    } else {
+      window._bAnimalSel = '';
+      if(inp){ inp.disabled=false; inp.placeholder='Buscar por código, nombre o raza…'; inp.value=''; }
+      if(info) info.textContent='—';
+    }
+  };
+
+  // Cerrar el dropdown al hacer clic fuera del campo de animal.
+  document.addEventListener('click', function(e){
+    var dd = document.getElementById('b-animal-dropdown');
+    var inp = document.getElementById('b-animal-input');
+    if(!dd || dd.style.display==='none') return;
+    if(e.target===inp || (dd.contains && dd.contains(e.target))) return;
+    dd.style.display='none';
+  });
 
   // ── Rendimiento ──
   window.calcRend = function(){
@@ -930,7 +993,7 @@ tr:last-child td{border-bottom:none}
 
   // ── Guardar beneficio ──
   window.guardarBeneficio = async function(){
-    var _selVal = (document.getElementById('b-animal')||{}).value || '';
+    var _selVal = window._bAnimalSel || '';
     var esNN = (_selVal === '__NN__');
     var a = esNN ? null : animalSeleccionado();
     if(!esNN && !a){ return msg('b-msg','Selecciona un animal de la lista o elige NN.', false); }
