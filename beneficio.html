@@ -207,9 +207,11 @@ tr:last-child td{border-bottom:none}
       <div class="card-h"><div class="card-title">Registrar beneficio</div><div class="card-sub">Registro del sacrificio de un animal</div></div>
       <div class="card-b">
         <div class="form-grid">
-          <div class="fg full"><label class="fl">Animal (código)</label>
-            <input class="fi" id="b-animal" list="animales-list" placeholder="Busca por código o nombre…" autocomplete="off">
-            <datalist id="animales-list"></datalist>
+          <div class="fg full"><label class="fl">Animal *</label>
+            <select class="fi" id="b-animal" onchange="onAnimalBeneficioCambio()">
+              <option value="">— Selecciona un animal —</option>
+              <option value="__NN__">NN — Sin identificar</option>
+            </select>
             <div class="hint" id="b-animal-info">—</div>
           </div>
           <div class="fg"><label class="fl">Fecha de sacrificio</label><input class="fi" id="b-fecha" type="date"></div>
@@ -866,20 +868,36 @@ tr:last-child td{border-bottom:none}
 
   // ── Animales autocomplete ──
   function animalesActivos(){ return ((window.AppState && window.AppState.animales)||[]).filter(function(a){return a.estado==='activo';}); }
+  // Pobla el <select> de animal: placeholder + NN + animales activos (value = id).
   function llenarAnimales(){
-    var dl = document.getElementById('animales-list');
-    dl.innerHTML = animalesActivos().map(function(a){ return '<option value="'+esc(a.codigo||a.nombre)+'">'+esc(a.nombre||'')+(a.raza?' · '+esc(a.raza):'')+'</option>'; }).join('');
+    var sel = document.getElementById('b-animal'); if(!sel) return;
+    var prev = sel.value;
+    sel.innerHTML = '<option value="">— Selecciona un animal —</option>'
+      + '<option value="__NN__">NN — Sin identificar</option>'
+      + animalesActivos().map(function(a){
+          var label = (a.codigo||a.id) + (a.nombre?(' · '+a.nombre):'') + (a.raza?(' · '+a.raza):'');
+          return '<option value="'+esc(a.id)+'">'+esc(label)+'</option>';
+        }).join('');
+    // Conservar la selección previa si el animal sigue en la lista.
+    if(prev) sel.value = prev;
   }
-  function buscarAnimal(valor){
-    valor=(valor||'').trim().toLowerCase();
-    return animalesActivos().find(function(a){ return (a.codigo&&a.codigo.toLowerCase()===valor) || (a.nombre&&a.nombre.toLowerCase()===valor); });
+  // Resuelve el animal seleccionado (por id) o null si es NN / placeholder.
+  function animalSeleccionado(){
+    var val = (document.getElementById('b-animal')||{}).value || '';
+    if(!val || val==='__NN__') return null;
+    return animalesActivos().find(function(a){ return a.id===val; }) || null;
   }
-  document.getElementById('b-animal').addEventListener('input', function(){
-    var a = buscarAnimal(this.value);
+  window.onAnimalBeneficioCambio = function(){
+    var sel = document.getElementById('b-animal');
     var info = document.getElementById('b-animal-info');
-    info.textContent = a ? (a.raza||'—')+' · '+(a.sexo||'')+(a.peso_actual?' · '+a.peso_actual+' kg':'') : 'Animal no encontrado';
-    if(a && a.peso_actual && !document.getElementById('b-pvivo').value){ document.getElementById('b-pvivo').value=a.peso_actual; calcRend(); }
-  });
+    var val = sel.value;
+    if(val==='__NN__'){ info.textContent = 'Animal sin identificar (NN)'; return; }
+    if(!val){ info.textContent = '—'; return; }
+    var a = animalSeleccionado();
+    if(!a){ info.textContent = 'Animal no encontrado'; return; }
+    info.textContent = (a.raza||'—')+' · '+(a.sexo||'')+(a.peso_actual?' · '+a.peso_actual+' kg':'');
+    if(a.peso_actual && !document.getElementById('b-pvivo').value){ document.getElementById('b-pvivo').value=a.peso_actual; calcRend(); }
+  };
 
   // ── Rendimiento ──
   window.calcRend = function(){
@@ -890,8 +908,10 @@ tr:last-child td{border-bottom:none}
 
   // ── Guardar beneficio ──
   window.guardarBeneficio = async function(){
-    var a = buscarAnimal(document.getElementById('b-animal').value);
-    if(!a){ return msg('b-msg','Selecciona un animal válido por código.', false); }
+    var _selVal = (document.getElementById('b-animal')||{}).value || '';
+    var esNN = (_selVal === '__NN__');
+    var a = esNN ? null : animalSeleccionado();
+    if(!esNN && !a){ return msg('b-msg','Selecciona un animal de la lista o elige NN.', false); }
     var fecha = document.getElementById('b-fecha').value || fechaISO(new Date());
     var pv = parseFloat(document.getElementById('b-pvivo').value)||null;
     var pc = parseFloat(document.getElementById('b-pcanal').value)||null;
@@ -901,19 +921,23 @@ tr:last-child td{border-bottom:none}
     try{
       var _aprob = (window.Approval ? window.Approval.getEstadoInicial() : 'aprobado');
       var _prop = (window.Approval ? window.Approval.getPropuestoPor() : {propuesto_por:null, propuesto_por_rol:null});
-      var r = await window.DB.saveBeneficio({finca_id:FINCA_ID, animal_id:a.id, fecha:fecha, frigorifico:document.getElementById('b-frigo').value.trim()||null, peso_vivo_entrada:pv, peso_canal:pc, costo_beneficio:costo, registrado_por:nombreUsuario(), notas:notas||null, estado_aprobacion:_aprob, propuesto_por:_prop.propuesto_por, propuesto_por_rol:_prop.propuesto_por_rol});
+      var r = await window.DB.saveBeneficio({finca_id:FINCA_ID, animal_id:(esNN?null:a.id), fecha:fecha, frigorifico:document.getElementById('b-frigo').value.trim()||null, peso_vivo_entrada:pv, peso_canal:pc, costo_beneficio:costo, registrado_por:nombreUsuario(), notas:notas||null, estado_aprobacion:_aprob, propuesto_por:_prop.propuesto_por, propuesto_por_rol:_prop.propuesto_por_rol});
       if(r.error) throw new Error(r.error.message||'Error');
       beneficioActual = r.data;
       cortesActual = [];
       if(_aprob === 'aprobado'){
-        // Marcar animal como vendido (solo si el beneficio ya está aprobado)
-        await window._sb.from('animales').update({estado:'vendido', updated_at:new Date()}).eq('id', a.id);
-        if(window.AppState && window.AppState.animales){ window.AppState.animales = window.AppState.animales.filter(function(x){return x.id!==a.id;}); }
-        msg('b-msg','✓ Beneficio registrado. Animal '+(a.codigo||'')+' marcado como vendido.', true);
+        if(!esNN){
+          // Marcar animal como vendido (solo si el beneficio ya está aprobado y hay animal real)
+          await window._sb.from('animales').update({estado:'vendido', updated_at:new Date()}).eq('id', a.id);
+          if(window.AppState && window.AppState.animales){ window.AppState.animales = window.AppState.animales.filter(function(x){return x.id!==a.id;}); }
+          msg('b-msg','✓ Beneficio registrado. Animal '+(a.codigo||'')+' marcado como vendido.', true);
+        } else {
+          msg('b-msg','✓ Beneficio registrado (animal NN, sin identificar).', true);
+        }
       } else {
-        msg('b-msg','⏳ Beneficio registrado. Pendiente de aprobación del gerente. El animal se marcará como vendido al aprobarse.', true);
+        msg('b-msg','⏳ Beneficio registrado. Pendiente de aprobación del gerente.'+(esNN?'':' El animal se marcará como vendido al aprobarse.'), true);
       }
-      document.getElementById('t2-sub').textContent = 'Beneficio de '+(a.codigo||a.nombre)+' · canal '+(pc||'?')+' kg';
+      document.getElementById('t2-sub').textContent = 'Beneficio de '+(esNN?'NN (sin identificar)':(a.codigo||a.nombre))+' · canal '+(pc||'?')+' kg';
       renderCortes();
       llenarAnimales();
       setTimeout(function(){ setTab('t2'); }, 700);
