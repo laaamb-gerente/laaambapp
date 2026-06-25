@@ -1689,6 +1689,46 @@ window.DB = {
       .order('numero_dosis', { ascending: true });
   },
 
+  // Tratamientos cuya última dosis se aplicó HOY (medicamento recién terminado).
+  async getMedicamentosTerminadosHoy(finca_id) {
+    const hoy = new Date().toISOString().split('T')[0];
+    // dosis aplicadas hoy que son la última (numero_dosis = total_dosis)
+    const d = await window._sb.from('dosis_programadas')
+      .select('tratamiento_id,numero_dosis,total_dosis,fecha_hora_aplicacion,estado')
+      .eq('finca_id', finca_id).eq('estado','aplicada');
+    if (d.error) return { data: [], error: d.error };
+    const terminadosHoy = (d.data||[]).filter(x =>
+      x.numero_dosis === x.total_dosis &&
+      x.fecha_hora_aplicacion && x.fecha_hora_aplicacion.split('T')[0] === hoy
+    );
+    const tratIds = [...new Set(terminadosHoy.map(x=>x.tratamiento_id))];
+    if (!tratIds.length) return { data: [], error: null };
+    const t = await window._sb.from('tratamientos')
+      .select('id,medicamento_nombre,fecha_fin_retiro,dias_retiro,animal_id,animales(codigo)')
+      .in('id', tratIds);
+    return { data: t.data || [], error: t.error };
+  },
+
+  // Tratamientos cuyo retiro ya se cumplió y siguen en_retiro (carne apta).
+  async getRetiroCumplido(finca_id) {
+    const hoy = new Date().toISOString().split('T')[0];
+    return await window._sb.from('tratamientos')
+      .select('id,medicamento_nombre,fecha_fin_retiro,animal_id,animales(codigo)')
+      .eq('finca_id', finca_id).eq('estado','en_retiro')
+      .lte('fecha_fin_retiro', hoy)
+      .order('fecha_fin_retiro');
+  },
+
+  // Marcar un tratamiento como completado (botón "Confirmar apto").
+  async marcarTratamientoCompletado(tratamiento_id) {
+    const upd = await window._sb.from('tratamientos')
+      .update({ estado: 'completado' }).eq('id', tratamiento_id).select().single();
+    if (!upd.error && upd.data) {
+      await this.logAudit(upd.data.finca_id, 'UPDATE', 'tratamientos', tratamiento_id, null, {estado:'completado'}, 'apto confirmado manualmente');
+    }
+    return upd;
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();

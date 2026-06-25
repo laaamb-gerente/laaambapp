@@ -30,11 +30,11 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=35"></script>
+<script src="js/approval.js?v=36"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=35"></script>
+<script src="js/db.js?v=36"></script>
 <script src="js/alertas-motor.js"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
@@ -216,6 +216,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     <div class="sec-title"><span class="dot" style="background:var(--red)"></span>Dosis de tratamiento hoy</div>
     <div id="dosis-hoy-hoylist"></div>
     <a href="salud.html" style="display:inline-block;margin-top:6px;font-size:11px;font-weight:600;color:var(--teal);text-decoration:none">→ Ver todos los tratamientos</a>
+  </div>
+
+  <!-- Medicamentos terminados hoy (informativo) — se oculta si no hay -->
+  <div class="sec" id="sec-meds-terminados" style="display:none">
+    <div class="sec-title"><span class="dot" style="background:#1D9E75"></span>Medicamentos terminados hoy</div>
+    <div id="meds-terminados-lista"></div>
+  </div>
+
+  <!-- Retiro cumplido · carne apta — se mantiene hasta que Juan confirme -->
+  <div class="sec" id="sec-retiro-cumplido" style="display:none">
+    <div class="sec-title"><span class="dot" style="background:#16A34A"></span>Retiro cumplido · carne apta</div>
+    <div id="retiro-cumplido-lista"></div>
   </div>
 
   <div class="sec">
@@ -867,6 +879,64 @@ navigator.serviceWorker?.addEventListener('message', function(e){
   }
   document.addEventListener('appstate:ready', renderDosisHoy);
   setTimeout(renderDosisHoy, 700);
+
+  // ── AVISO A — Medicamentos terminados hoy (informativo) ──
+  async function renderMedsTerminados(){
+    var sec = document.getElementById('sec-meds-terminados');
+    if(!sec) return;
+    if(!(window.DB && window.DB.getMedicamentosTerminadosHoy)){ sec.style.display='none'; return; }
+    var r;
+    try{ r = await window.DB.getMedicamentosTerminadosHoy(FINCA_ID); }catch(e){ sec.style.display='none'; return; }
+    var lista = (r&&r.data) || [];
+    if(!lista.length){ sec.style.display='none'; return; }
+    sec.style.display='';
+    var cont = document.getElementById('meds-terminados-lista');
+    cont.innerHTML = lista.map(function(t){
+      var cod = (t.animales && t.animales.codigo) || t.animal_id || '—';
+      return '<div class="agenda-card" style="border-left:4px solid #1D9E75">'
+        + '<div style="font-weight:700">💉 '+_esc(cod)+' · '+_esc(t.medicamento_nombre||'medicamento')+' completado</div>'
+        + '<div style="font-size:12px;color:var(--text3,#8A9696)">Ahora en retiro'+(t.fecha_fin_retiro?(' hasta '+_esc(t.fecha_fin_retiro)):'')+'</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  // ── AVISO B — Retiro cumplido · carne apta (se mantiene hasta confirmar) ──
+  async function renderRetiroCumplido(){
+    var sec = document.getElementById('sec-retiro-cumplido');
+    if(!sec) return;
+    if(!(window.DB && window.DB.getRetiroCumplido)){ sec.style.display='none'; return; }
+    var r;
+    try{ r = await window.DB.getRetiroCumplido(FINCA_ID); }catch(e){ sec.style.display='none'; return; }
+    var lista = (r&&r.data) || [];
+    if(!lista.length){ sec.style.display='none'; return; }
+    sec.style.display='';
+    var cont = document.getElementById('retiro-cumplido-lista');
+    cont.innerHTML = lista.map(function(t){
+      var cod = (t.animales && t.animales.codigo) || t.animal_id || '—';
+      return '<div class="agenda-card" data-trat="'+_esc(t.id)+'" style="border-left:4px solid #16A34A">'
+        + '<div style="font-weight:700">✅ '+_esc(cod)+' · '+_esc(t.medicamento_nombre||'')+': retiro cumplido</div>'
+        + '<div style="font-size:12px;color:var(--text3,#8A9696)">Carne apta para venta/sacrificio · retiro venció '+_esc(t.fecha_fin_retiro||'')+'</div>'
+        + '<div style="margin-top:8px"><button class="btn btn-sm" style="background:#16A34A;color:#fff" onclick="window._confirmarApto(this,\''+_esc(t.id)+'\')">Confirmar apto</button></div>'
+        + '</div>';
+    }).join('');
+  }
+
+  window._confirmarApto = async function(btn, tratId){
+    btn.disabled = true;
+    try{
+      var r = await window.DB.marcarTratamientoCompletado(tratId);
+      if(r.error) throw new Error(r.error.message||'Error');
+      var card = btn.closest('[data-trat]'); if(card) card.remove();
+      // si la sección quedó vacía, ocultarla
+      var cont = document.getElementById('retiro-cumplido-lista');
+      if(cont && !cont.querySelector('[data-trat]')){ document.getElementById('sec-retiro-cumplido').style.display='none'; }
+    }catch(e){ btn.disabled=false; alert('Error: '+e.message); }
+  };
+
+  document.addEventListener('appstate:ready', renderMedsTerminados);
+  document.addEventListener('appstate:ready', renderRetiroCumplido);
+  setTimeout(renderMedsTerminados, 700);
+  setTimeout(renderRetiroCumplido, 700);
 })();
 </script>
 </body>
