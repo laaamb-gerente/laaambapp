@@ -30,11 +30,11 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=33"></script>
+<script src="js/approval.js?v=34"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=33"></script>
+<script src="js/db.js?v=34"></script>
 <script src="js/alertas-motor.js"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
@@ -664,7 +664,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       var det = 'canal '+(bf.peso_canal!=null?bf.peso_canal+' kg':'—')+(bf.frigorifico?' · '+bf.frigorifico:'')+(bf.fecha?' · '+bf.fecha:'');
       html += _card('⚫ SACRIFICIO','beneficios',bf.id,'#6B7280','SACRIFICIO · '+esc(cod),det,bf.created_at,bf.propuesto_por,bf.propuesto_por_rol,null,{animal_id:bf.animal_id});
     });
-    var total = (data.bajas||[]).length+(data.tratamientos||[]).length+(data.pesajes||[]).length+(data.eventos||[]).length+(data.beneficios||[]).length;
+    (data.ventasUnidad||[]).forEach(function(v){
+      var tipo = (v.cortes && v.cortes.tipo_corte) || 'corte';
+      var animal = (v.beneficios && v.beneficios.animales && v.beneficios.animales.codigo) || '—';
+      var cliente = (v.clientes_b2b && v.clientes_b2b.razon_social) || '—';
+      var det = (Number(v.peso_kg)||0).toFixed(2)+' kg · canal '+esc(animal)+' · '+esc(cliente)+' · $'+(Number(v.precio_venta)||0).toLocaleString('es-CO');
+      html += _card('💰 VENTA','unidades_corte_venta',v.id,'#1D9E75','VENTA · '+esc(tipo),det,v.created_at,v.venta_propuesta_por,v.venta_propuesta_rol,null,{});
+    });
+    (data.ajustes||[]).forEach(function(a){
+      var det = a.tipo+(a.causal?(' · '+esc(a.causal)):'')+(a.kg_despues!=null?(' · → '+a.kg_despues+' kg'):'');
+      html += _card('⚖️ AJUSTE','ajustes_inventario',a.id,'#F18F22','AJUSTE · '+esc(a.tipo),det,a.created_at,a.propuesto_por,a.propuesto_por_rol,null,{});
+    });
+    var total = (data.bajas||[]).length+(data.tratamientos||[]).length+(data.pesajes||[]).length+(data.eventos||[]).length+(data.beneficios||[]).length+(data.ventasUnidad||[]).length+(data.ajustes||[]).length;
     var badge = document.getElementById('badge-pendientes'); if(badge) badge.textContent = total;
     var lista = document.getElementById('bandeja-lista'); if(lista) lista.innerHTML = html;
     sec.style.display = total>0 ? '' : 'none';
@@ -682,6 +693,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       var extra = {}; try{ extra = JSON.parse(card.getAttribute('data-extra')||'{}'); }catch(e){}
       btn.disabled = true;
       try{
+        if(tabla==='unidades_corte_venta'){
+          var rv = await window.DB.aprobarVentaUnidad(id);
+          if(rv.error) throw new Error(rv.error.message||'Error');
+          card.remove(); _refreshBadge(); _bandejaToast('✅ Venta aprobada','#16A34A'); return;
+        }
+        if(tabla==='ajustes_inventario'){
+          var ra = await window.DB.aprobarAjusteInventario(id);
+          if(ra.error) throw new Error(ra.error.message||'Error');
+          card.remove(); _refreshBadge(); _bandejaToast('✅ Ajuste aprobado','#16A34A'); return;
+        }
         var res = await window.DB.aprobarRegistro(tabla, id);
         if(res.error) throw new Error(res.error.message||'Error');
         // Efectos colaterales que SOLO ocurren al aprobar:
@@ -707,6 +728,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       if(nota===null) return;
       btn.disabled = true;
       try{
+        if(tabla==='unidades_corte_venta'){
+          var rv = await window.DB.rechazarVentaUnidad(id, nota||'');
+          if(rv.error) throw new Error(rv.error.message||'Error');
+          card.remove(); _refreshBadge(); _bandejaToast('Venta rechazada','#EF4444'); return;
+        }
+        if(tabla==='ajustes_inventario'){
+          var ra = await window.DB.rechazarAjusteInventario(id, nota||'');
+          if(ra.error) throw new Error(ra.error.message||'Error');
+          card.remove(); _refreshBadge(); _bandejaToast('Ajuste rechazado','#EF4444'); return;
+        }
         var res = await window.DB.rechazarRegistro(tabla, id, nota||'');
         if(res.error) throw new Error(res.error.message||'Error');
         card.remove(); _refreshBadge(); _bandejaToast('Rechazado','#EF4444');

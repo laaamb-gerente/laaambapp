@@ -29,11 +29,11 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=33"></script>
+<script src="js/approval.js?v=34"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=33"></script>
+<script src="js/db.js?v=34"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
@@ -644,6 +644,7 @@ tr:last-child td{border-bottom:none}
       var badge;
       if(u.estado==='vendida') badge = '<span style="background:#FDE8E8;color:#C0392B;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600">VENDIDA</span>';
       else if(u.estado==='baja') badge = '<span style="background:#E5E7EB;color:#6B7280;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600">Baja</span>';
+      else if(u.estado==='pendiente_venta') badge = '<span style="background:#FCF1DF;color:#B26A12;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600">Venta pendiente</span>';
       else badge = '<span style="background:#DCF2F3;color:#0A8A90;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600">Disponible</span>';
       var btnBaja = (u.estado==='disponible')
         ? '<button class="btn btn-ghost btn-sm" onclick="darBajaUnidad(\''+u.id+'\','+(Number(u.peso_kg)||0)+')">Dar de baja</button>'
@@ -773,7 +774,15 @@ tr:last-child td{border-bottom:none}
     } else {
       msg('venta-msg','✓ Vendida a '+clienteNombre+' por $'+precio.toLocaleString('es-CO'), true);
     }
-    setTimeout(function(){ cerrarVentaUnidad(); cargarInventarioCortes(); }, 1200);
+    setTimeout(async function(){
+      cerrarVentaUnidad();
+      await cargarInventarioCortes();
+      // Si el detalle de un tipo está abierto, re-renderizarlo con datos frescos
+      var det = document.getElementById('ti-detalle');
+      if(det && det.style.display!=='none' && typeof tipoActualCortes!=='undefined' && tipoActualCortes){
+        abrirTipoCorte(tipoActualCortes);
+      }
+    }, 1200);
   };
 
   // ── Pestaña Ventas orientada a cliente (fase 4) ──

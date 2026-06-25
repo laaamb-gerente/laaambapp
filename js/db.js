@@ -535,9 +535,17 @@ window.DB = {
   // Solo aplica si estado='aprobado'. Si 'pendiente', NO toca nada (futuro: bandeja).
   async venderUnidad({finca_id, unidad_id, cliente_id, cliente_nombre, precio_venta, tipo_corte_label, animal_codigo, estado}) {
     if (estado !== 'aprobado') {
-      // En esta fase, si requiere aprobación, no aplicamos (no hay bandeja para
-      // ventas aún). Devolvemos un flag para que el frontend avise.
-      return { data: { diferido: true }, error: null };
+      // Persistir la venta propuesta: unidad queda 'pendiente_venta' con cliente y
+      // precio guardados; el ingreso se registra al aprobar (en la bandeja).
+      const prop = window.Approval ? window.Approval.getPropuestoPor() : {propuesto_por:null, propuesto_por_rol:null};
+      const upd = await window._sb.from('unidades_corte').update({
+        estado: 'pendiente_venta',
+        cliente_id: cliente_id||null,
+        precio_venta: Number(precio_venta)||0,
+        venta_propuesta_por: prop.propuesto_por,
+        venta_propuesta_rol: prop.propuesto_por_rol
+      }).eq('id', unidad_id).select().single();
+      return { data: { diferido: true, unidad: upd.data }, error: upd.error };
     }
     // 1. Registrar ingreso
     const ing = await window._sb.from('ingresos').insert({
@@ -796,7 +804,7 @@ window.DB = {
   async getPendingApprovals(finca_id) {
     // Trae todos los registros pendientes de todas las
     // tablas críticas en una sola llamada usando Promise.all
-    const [bajas, tratos, pesajes, eventos, beneficios] =
+    const [bajas, tratos, pesajes, eventos, beneficios, ventasUnidad, ajustes] =
       await Promise.all([
         window._sb.from('bajas')
           .select('id,animal_id,tipo,causa,fecha,peso_salida,' +
@@ -833,6 +841,18 @@ window.DB = {
                   'propuesto_por,propuesto_por_rol,created_at,animales(codigo)')
           .eq('finca_id', finca_id)
           .eq('estado_aprobacion', 'pendiente')
+          .order('created_at', { ascending: false }),
+        // unidades con venta pendiente
+        window._sb.from('unidades_corte')
+          .select('id,numero,peso_kg,cliente_id,precio_venta,venta_propuesta_por,venta_propuesta_rol,created_at,cortes(tipo_corte),beneficios(animales(codigo)),clientes_b2b(razon_social)')
+          .eq('finca_id', finca_id)
+          .eq('estado', 'pendiente_venta')
+          .order('created_at', { ascending: false }),
+        // ajustes de inventario pendientes
+        window._sb.from('ajustes_inventario')
+          .select('id,beneficio_id,unidad_id,tipo,causal,kg_antes,kg_despues,propuesto_por,propuesto_por_rol,created_at')
+          .eq('finca_id', finca_id)
+          .eq('estado_aprobacion', 'pendiente')
           .order('created_at', { ascending: false })
       ]);
     return {
@@ -840,7 +860,9 @@ window.DB = {
       tratamientos: tratos.data || [],
       pesajes: pesajes.data || [],
       eventos: eventos.data || [],
-      beneficios: beneficios.data || []
+      beneficios: beneficios.data || [],
+      ventasUnidad: ventasUnidad.data || [],
+      ajustes: ajustes.data || []
     };
   },
 
@@ -886,6 +908,76 @@ window.DB = {
       );
     }
     return { data, error };
+  },
+
+  // Aprobar una venta pendiente: registra ingreso y marca unidad vendida.
+  async aprobarVentaUnidad(unidad_id) {
+    // Traer la unidad con su info para el ingreso
+    const u = await window._sb.from('unidades_corte')
+      .select('id,finca_id,precio_venta,cliente_id,peso_kg,cortes(tipo_corte),beneficios(animales(codigo)),clientes_b2b(razon_social)')
+      .eq('id', unidad_id).single();
+    if (u.error) return { error: u.error };
+    const unidad = u.data;
+    const tipo = (unidad.cortes && unidad.cortes.tipo_corte) || 'corte';
+    const animal = (unidad.beneficios && unidad.beneficios.animales && unidad.beneficios.animales.codigo) || '';
+    const cliente = (unidad.clientes_b2b && unidad.clientes_b2b.razon_social) || '';
+    // 1. Registrar ingreso
+    const ing = await window._sb.from('ingresos').insert({
+      finca_id: unidad.finca_id, tipo: 'venta_animal',
+      descripcion: 'Venta '+tipo+(animal?(' · canal '+animal):'')+(cliente?(' · '+cliente):''),
+      valor: Number(unidad.precio_venta)||0,
+      fecha: new Date().toISOString().split('T')[0],
+      cliente: cliente||null, especie: 'ovino', fuente: 'manual'
+    }).select().single();
+    if (ing.error) return { error: ing.error };
+    // 2. Marcar unidad vendida
+    const upd = await window._sb.from('unidades_corte').update({
+      estado: 'vendida', fecha_venta: new Date().toISOString(), ingreso_id: ing.data.id
+    }).eq('id', unidad_id).select().single();
+    if (!upd.error) await this.logAudit(unidad.finca_id, 'APPROVE', 'unidades_corte', unidad_id, null, {estado:'vendida'}, 'venta aprobada');
+    return { data: upd.data, error: upd.error };
+  },
+
+  // Rechazar venta pendiente: la unidad vuelve a 'disponible'.
+  async rechazarVentaUnidad(unidad_id, nota) {
+    const upd = await window._sb.from('unidades_corte').update({
+      estado: 'disponible', cliente_id: null, precio_venta: null,
+      venta_propuesta_por: null, venta_propuesta_rol: null
+    }).eq('id', unidad_id).select().single();
+    if (!upd.error) await this.logAudit(upd.data.finca_id, 'REJECT', 'unidades_corte', unidad_id, null, {estado:'disponible'}, nota||'venta rechazada');
+    return { data: upd.data, error: upd.error };
+  },
+
+  // Aprobar un ajuste de inventario: aplica el efecto diferido.
+  async aprobarAjusteInventario(ajuste_id) {
+    const a = await window._sb.from('ajustes_inventario').select('*').eq('id', ajuste_id).single();
+    if (a.error) return { error: a.error };
+    const aj = a.data;
+    // Aplicar efecto según tipo
+    if (aj.beneficio_id && aj.kg_despues != null) {
+      const upd = await window._sb.from('beneficios').update({ kg_disponible: aj.kg_despues }).eq('id', aj.beneficio_id);
+      if (upd.error) return { error: upd.error };
+    }
+    if (aj.unidad_id && aj.tipo === 'descarte') {
+      const upd = await window._sb.from('unidades_corte').update({ estado: 'baja', notas: 'BAJA: '+(aj.causal||'descarte') }).eq('id', aj.unidad_id);
+      if (upd.error) return { error: upd.error };
+    }
+    // Marcar el ajuste aprobado
+    const email = window.AUTH_PERFIL?.email || window.AUTH_PERFIL?.nombre || '';
+    const upd2 = await window._sb.from('ajustes_inventario').update({
+      estado_aprobacion: 'aprobado', aprobado_por: email, fecha_aprobacion: new Date().toISOString()
+    }).eq('id', ajuste_id).select().single();
+    if (!upd2.error) await this.logAudit(aj.finca_id, 'APPROVE', 'ajustes_inventario', ajuste_id, null, {estado_aprobacion:'aprobado'}, 'ajuste aprobado');
+    return { data: upd2.data, error: upd2.error };
+  },
+
+  async rechazarAjusteInventario(ajuste_id, nota) {
+    const email = window.AUTH_PERFIL?.email || window.AUTH_PERFIL?.nombre || '';
+    const upd = await window._sb.from('ajustes_inventario').update({
+      estado_aprobacion: 'rechazado', aprobado_por: email, fecha_aprobacion: new Date().toISOString(), nota_rechazo: nota||null
+    }).eq('id', ajuste_id).select().single();
+    if (!upd.error) await this.logAudit(upd.data.finca_id, 'REJECT', 'ajustes_inventario', ajuste_id, null, {estado_aprobacion:'rechazado'}, nota||'ajuste rechazado');
+    return { data: upd.data, error: upd.error };
   },
 
   async getAuditLog(finca_id, limit) {
