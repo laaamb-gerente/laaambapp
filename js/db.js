@@ -137,6 +137,41 @@ window.DB = {
       .order('fecha_entrada', { ascending: false });
   },
 
+  // ── ESTABULACIÓN (establos = pivotes tipo='establo'; cubículos = lotes tipo='cubiculo') ──
+  async getEstablos(finca_id) {
+    return await window._sb.from('pivotes')
+      .select('id,nombre,capacidad_animales')
+      .eq('finca_id', finca_id).eq('tipo','establo').order('nombre');
+  },
+  async getCubiculos(finca_id) {
+    return await window._sb.from('lotes')
+      .select('id,nombre,pivote_id')
+      .eq('finca_id', finca_id).eq('tipo','cubiculo').order('nombre');
+  },
+  // Cuántos animales activos hay en cada lote (cubículo o potrero)
+  async getConteoPorLote(finca_id) {
+    const r = await window._sb.from('animales')
+      .select('lote_actual_id').eq('finca_id', finca_id).eq('estado','activo');
+    const conteo = {};
+    (r.data||[]).forEach(a=>{ if(a.lote_actual_id){ conteo[a.lote_actual_id]=(conteo[a.lote_actual_id]||0)+1; } });
+    return { conteo, error: r.error };
+  },
+  // Mover TODOS los animales activos de un lote origen a un lote destino
+  async moverAnimalesDeLote(finca_id, lote_origen_id, lote_destino_id) {
+    const upd = await window._sb.from('animales')
+      .update({ lote_actual_id: lote_destino_id, updated_at: new Date() })
+      .eq('finca_id', finca_id).eq('estado','activo').eq('lote_actual_id', lote_origen_id)
+      .select('id');
+    return { movidos: upd.data ? upd.data.length : 0, error: upd.error };
+  },
+  // Mover un set específico de animales a un lote destino
+  async asignarAnimalesALote(finca_id, animal_ids, lote_destino_id) {
+    const upd = await window._sb.from('animales')
+      .update({ lote_actual_id: lote_destino_id, updated_at: new Date() })
+      .in('id', animal_ids).select('id');
+    return { movidos: upd.data ? upd.data.length : 0, error: upd.error };
+  },
+
   // ── LOTES ────────────────────────────────────────────
   async getLotes(finca_id) {
     return await window._sb.from('lotes').select('*').eq('finca_id', finca_id).order('nombre');

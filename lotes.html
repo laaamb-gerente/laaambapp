@@ -34,10 +34,10 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=34"></script>
+<script src="js/approval.js?v=35"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=34"></script>
+<script src="js/db.js?v=35"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
@@ -380,6 +380,7 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
     <button class="tab-btn" onclick="switchTab(this,'t-pivotes')">Pivotes</button>
     <button class="tab-btn" onclick="switchTab(this,'t-lotes')">Potreros</button>
     <button class="tab-btn" onclick="switchTab(this,'t-movimientos')">Movimientos</button>
+    <button class="tab-btn" onclick="switchTab(this,'t-establos')">Establos</button>
   </div>
 
   <!-- ═══ TAB MAPA ═══ -->
@@ -501,6 +502,41 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
         <tbody id="mov-tbody"></tbody></table>
       </div>
     </div>
+  </div>
+
+  <div class="tab-content" id="t-establos">
+    <div style="padding:16px 0">
+      <!-- Encerrar potrero -->
+      <div class="lb-card" style="margin-bottom:18px;padding:14px">
+        <div style="font-weight:700;margin-bottom:4px">Encerrar potrero</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Mueve TODOS los animales de un potrero a un cubículo en un solo paso.</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div class="fg" style="min-width:200px;flex:1;margin:0"><label class="fl">Potrero origen (con animales)</label>
+            <select class="fi" id="enc-origen"><option value="">—</option></select></div>
+          <div class="fg" style="min-width:200px;flex:1;margin:0"><label class="fl">Cubículo destino</label>
+            <select class="fi" id="enc-destino"><option value="">—</option></select></div>
+          <button class="btn btn-primary btn-sm" onclick="encerrarPotrero()">Encerrar</button>
+        </div>
+      </div>
+      <div id="establos-lista"><div style="padding:24px;text-align:center;color:var(--text3)">Cargando establos…</div></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══ MODAL ASIGNAR ANIMALES A CUBÍCULO ═══ -->
+<div class="overlay" id="modal-estabular" onclick="if(event.target===this)closeModal('modal-estabular')">
+<div class="modal modal-lg">
+  <div class="modal-head"><div class="modal-title">Asignar animales a <span id="est-cub-nombre">cubículo</span></div><button class="modal-close" onclick="closeModal('modal-estabular')">✕</button></div>
+  <div class="modal-body">
+    <input type="hidden" id="est-cub-id">
+    <input class="fi" id="est-buscar" placeholder="Buscar animal por código o nombre…" oninput="renderEstAnimales()" style="margin-bottom:10px">
+    <div id="est-animales" style="max-height:50vh;overflow:auto"></div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--border)">
+    <span id="est-sel-count" style="margin-right:auto;font-size:12px;color:var(--text3)">0 seleccionados</span>
+    <button class="btn btn-ghost" onclick="closeModal('modal-estabular')">Cancelar</button>
+    <button class="btn btn-primary" onclick="confirmarEstabular()">Asignar al cubículo</button>
   </div>
 </div>
 </div>
@@ -640,6 +676,7 @@ function switchTab(btn, tabId){
   if(tabId==='t-mapa') setTimeout(function(){if(MAP)MAP.invalidateSize();},50);
   if(tabId==='t-pivotes' && typeof renderPivotesTab==='function') renderPivotesTab();
   if(tabId==='t-lotes' && typeof renderHistorialRotacion==='function') renderHistorialRotacion();
+  if(tabId==='t-establos'){ if(typeof cargarEstablos==='function') cargarEstablos(); if(typeof llenarSelectsEncerrar==='function') llenarSelectsEncerrar(); }
 }
 
 // ══════════════════════════════════════════════════════
@@ -2245,6 +2282,144 @@ function confirmarMovimiento(){
   // Re-render map layers
   loadGeometries();
   toast(ids.length+' animal'+(ids.length>1?'es':'')+' movido'+(ids.length>1?'s':'')+' a '+ld+(fo!==fd?' ('+getFincaById(fd).nombre+')':''));
+}
+
+// ══════════════════════════════════════════════════════
+// TAB ESTABLOS (estabulación)
+// ══════════════════════════════════════════════════════
+function _escEst(s){ return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+var _estData = { establos:[], cubiculos:[], conteo:{} };
+var _estCubId = null;
+var _estSel = new Set();
+
+function _estAnimalesActivos(){
+  return (window.AppState && typeof window.AppState.getAnimalesActivos==='function') ? window.AppState.getAnimalesActivos() : [];
+}
+
+async function cargarEstablos(){
+  var cont = document.getElementById('establos-lista'); if(!cont) return;
+  if(!(window.DB && typeof window.DB.getEstablos==='function')){ cont.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3)">Sin conexión a Supabase.</div>'; return; }
+  cont.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3)">Cargando…</div>';
+  var fid = _fincaUuid();
+  try{
+    var er = await window.DB.getEstablos(fid);
+    var cr = await window.DB.getCubiculos(fid);
+    var nr = await window.DB.getConteoPorLote(fid);
+    _estData.establos = (er&&er.data)||[];
+    _estData.cubiculos = (cr&&cr.data)||[];
+    _estData.conteo = (nr&&nr.conteo)||{};
+    if(!_estData.establos.length){ cont.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3)">No hay establos registrados.</div>'; return; }
+    cont.innerHTML = _estData.establos.map(function(e){
+      var cubs = _estData.cubiculos.filter(function(c){return c.pivote_id===e.id;});
+      var cards = cubs.map(function(c){
+        var n = _estData.conteo[c.id]||0;
+        return '<div class="lb-card" style="padding:12px;display:flex;justify-content:space-between;align-items:center;gap:10px">'
+          + '<div><div style="font-weight:700">'+_escEst(c.nombre)+'</div>'
+          + '<div style="font-size:12px;color:var(--text3)">'+n+' animal(es)</div></div>'
+          + '<button class="btn btn-ghost btn-sm" onclick="abrirAsignarCubiculo(\''+c.id+'\')">Asignar animales</button>'
+          + '</div>';
+      }).join('') || '<div style="font-size:12px;color:var(--text3);padding:8px">Sin cubículos.</div>';
+      var totalEst = cubs.reduce(function(s,c){return s+(_estData.conteo[c.id]||0);},0);
+      var cap = (e.capacidad_animales!=null) ? (' / '+e.capacidad_animales) : '';
+      return '<div style="margin-bottom:18px">'
+        + '<div style="font-weight:700;font-size:15px;margin-bottom:8px">🏠 '+_escEst(e.nombre)+' · '+totalEst+cap+' animal(es)</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">'+cards+'</div></div>';
+    }).join('');
+  }catch(err){ console.warn('[Establos]', err&&err.message); cont.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3)">Error cargando establos.</div>'; }
+}
+
+async function llenarSelectsEncerrar(){
+  var origen = document.getElementById('enc-origen'), destino = document.getElementById('enc-destino');
+  if(!origen||!destino) return;
+  if(!(window.DB && typeof window.DB.getConteoPorLote==='function')) return;
+  var fid = _fincaUuid();
+  try{
+    var nr = await window.DB.getConteoPorLote(fid);
+    var conteo = (nr&&nr.conteo)||{};
+    var lotesR = await window.DB.getLotes(fid);
+    var lotes = (lotesR&&lotesR.data)||[];
+    // Origen: potreros (tipo='potrero' o sin tipo) que tienen animales activos.
+    var potreros = lotes.filter(function(l){ return (l.tipo==='potrero'||!l.tipo) && (conteo[l.id]||0)>0; });
+    origen.innerHTML = '<option value="">— Potrero con animales —</option>' + potreros.map(function(l){
+      return '<option value="'+l.id+'">'+_escEst(l.nombre)+' ('+(conteo[l.id]||0)+')</option>';
+    }).join('');
+    // Destino: cubículos (lote_actual_id debe ser un lote; un establo es un pivote, no un lote).
+    var cubs = lotes.filter(function(l){ return l.tipo==='cubiculo'; });
+    destino.innerHTML = '<option value="">— Cubículo destino —</option>' + cubs.map(function(l){
+      return '<option value="'+l.id+'">'+_escEst(l.nombre)+'</option>';
+    }).join('');
+  }catch(err){ console.warn('[Encerrar selects]', err&&err.message); }
+}
+
+async function encerrarPotrero(){
+  var origen = document.getElementById('enc-origen'), destino = document.getElementById('enc-destino');
+  var oid = origen.value, did = destino.value;
+  if(!oid){ return toast('Selecciona el potrero origen','err'); }
+  if(!did){ return toast('Selecciona el cubículo destino','err'); }
+  if(oid===did){ return toast('Origen y destino son iguales','err'); }
+  var oTxt = origen.options[origen.selectedIndex].text;
+  var dTxt = destino.options[destino.selectedIndex].text;
+  var fid = _fincaUuid();
+  var nr = await window.DB.getConteoPorLote(fid);
+  var n = (nr.conteo && nr.conteo[oid])||0;
+  if(n<=0){ return toast('Ese potrero no tiene animales activos','err'); }
+  if(!confirm('¿Mover los '+n+' animales del potrero '+oTxt+' a '+dTxt+'?')) return;
+  var r = await window.DB.moverAnimalesDeLote(fid, oid, did);
+  if(r.error){ return toast('Error: '+(r.error.message||'no se pudo mover'),'err'); }
+  // Actualizar cache local para que los conteos del resto reflejen el cambio.
+  if(window.AppState && window.AppState.animales){ window.AppState.animales.forEach(function(a){ if(a.lote_actual_id===oid) a.lote_actual_id=did; }); }
+  toast(r.movidos+' animal(es) encerrados en '+dTxt);
+  await cargarEstablos();
+  await llenarSelectsEncerrar();
+}
+
+function abrirAsignarCubiculo(cubId){
+  _estCubId = cubId; _estSel = new Set();
+  var cub = _estData.cubiculos.find(function(c){return c.id===cubId;});
+  document.getElementById('est-cub-id').value = cubId;
+  document.getElementById('est-cub-nombre').textContent = cub ? cub.nombre : 'cubículo';
+  document.getElementById('est-buscar').value = '';
+  document.getElementById('est-sel-count').textContent = '0 seleccionados';
+  renderEstAnimales();
+  openModal('modal-estabular');
+}
+
+function renderEstAnimales(){
+  var q = (document.getElementById('est-buscar').value||'').toLowerCase().trim();
+  var cont = document.getElementById('est-animales');
+  var list = _estAnimalesActivos().filter(function(a){
+    if(a.lote_actual_id===_estCubId) return false; // ya está en este cubículo
+    if(!q) return true;
+    return String(a.codigo||'').toLowerCase().indexOf(q)>=0 || String(a.nombre||'').toLowerCase().indexOf(q)>=0 || String(a.raza||'').toLowerCase().indexOf(q)>=0;
+  }).slice(0,200);
+  if(!list.length){ cont.innerHTML='<div style="padding:16px;color:var(--text3);font-size:13px">Sin animales que coincidan.</div>'; return; }
+  cont.innerHTML = list.map(function(a){
+    var checked = _estSel.has(a.id)?'checked':'';
+    return '<label class="lb-card" style="display:flex;align-items:center;gap:10px;padding:9px 11px;cursor:pointer;margin-bottom:6px">'
+      + '<input type="checkbox" '+checked+' onchange="_estToggle(\''+a.id+'\',this.checked)" style="width:17px;height:17px">'
+      + '<div><div style="font-weight:700">'+_escEst(a.codigo||a.id)+(a.nombre?(' · '+_escEst(a.nombre)):'')+'</div>'
+      + '<div style="font-size:12px;color:var(--text3)">'+_escEst(a.raza||'—')+(a.peso_actual?(' · '+a.peso_actual+' kg'):'')+'</div></div>'
+      + '</label>';
+  }).join('');
+}
+
+function _estToggle(id, checked){
+  if(checked) _estSel.add(id); else _estSel.delete(id);
+  document.getElementById('est-sel-count').textContent = _estSel.size+' seleccionados';
+}
+
+async function confirmarEstabular(){
+  if(!_estCubId) return;
+  if(_estSel.size===0){ return toast('Selecciona al menos un animal','err'); }
+  var ids = Array.from(_estSel);
+  var r = await window.DB.asignarAnimalesALote(_fincaUuid(), ids, _estCubId);
+  if(r.error){ return toast('Error: '+(r.error.message||'no se pudo asignar'),'err'); }
+  // Actualizar cache local para conteo inmediato y el filtro "ya en este cubículo".
+  if(window.AppState && window.AppState.animales){ window.AppState.animales.forEach(function(a){ if(ids.indexOf(a.id)>=0) a.lote_actual_id=_estCubId; }); }
+  toast(r.movidos+' animal(es) asignados al cubículo');
+  closeModal('modal-estabular');
+  cargarEstablos();
+  llenarSelectsEncerrar();
 }
 
 // ══════════════════════════════════════════════════════
