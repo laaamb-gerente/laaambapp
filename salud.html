@@ -776,58 +776,27 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
             overflow-y:auto;width:100%;box-shadow:0 4px 14px rgba(0,0,0,.4)">
         </div>
       </div>
-      <div class="fg"><label class="fl">Peso actual (kg) *</label><input class="fi" type="number" id="ti-peso" placeholder="42" step="0.5" oninput="calcDosisTrat()"></div>
+      <div class="fg"><label class="fl">Peso actual (kg) *</label><input class="fi" type="number" id="ti-peso" placeholder="42" step="0.5" oninput="recalcMedRowsIndividual()"></div>
       <div class="fg"><label class="fl">Diagnóstico / Motivo *</label>
-        <input class="fi" id="ti-dx" placeholder="Escribe o selecciona…" list="dx-sugerencias" autocomplete="off">
-        <datalist id="dx-sugerencias">
-          <option value="Parasitosis">Parasitosis (Gut Worms / Haemonchus)</option>
-          <option value="Miasis">Miasis (Flystrike)</option>
-          <option value="Hipotermia">Hipotermia</option>
-          <option value="Debilidad">Debilidad</option>
-          <option value="Asfixia">Asfixia</option>
-          <option value="Fiebre">Fiebre</option>
-          <option value="Indigestión">Indigestión</option>
-          <option value="Nacido muerto">Nacido muerto</option>
-          <option value="Accidente">Accidente</option>
-          <option value="Ahorcamiento">Ahorcamiento</option>
-          <option value="Rodamiento">Rodamiento</option>
-          <option value="Fractura">Fractura</option>
-          <option value="Trauma">Trauma</option>
-          <option value="Abandono">Abandono (olvidado en potrero)</option>
-          <option value="Julian">Julian (evento)</option>
-          <option value="Cody">Cody (evento)</option>
-          <option value="Neumonía">Neumonía</option>
-          <option value="Enterotoxemia">Enterotoxemia</option>
-          <option value="Coccidiosis">Coccidiosis</option>
-          <option value="Anemia">Anemia</option>
-          <option value="Timpanismo">Timpanismo</option>
-          <option value="Distocia">Distocia</option>
-          <option value="Diarrea neonatal">Diarrea neonatal</option>
-          <option value="Hipocalcemia">Hipocalcemia</option>
-          <option value="Toxemia de preñez">Toxemia de preñez</option>
-          <option value="Fasciola">Fasciola</option>
-          <option value="Depredación">Depredación</option>
-          <option value="Desparasitación preventiva">Desparasitación preventiva</option>
-          <option value="Vacunación">Vacunación</option>
-          <option value="Control rutinario">Control rutinario</option>
-        </datalist>
+        <select class="fi" id="ti-dx-sel" onchange="onTiDxChange()">
+          <option value="">— Selecciona —</option>
+          <option>Desparasitación</option>
+          <option>Vacunación</option>
+          <option>Vitaminas</option>
+          <option>Pesaje</option>
+          <option>Revisión veterinaria</option>
+          <option value="__OTRA__">Otra (especificar)</option>
+        </select>
+        <input class="fi" id="ti-dx-otro" placeholder="Especifica el diagnóstico…" autocomplete="off" style="display:none;margin-top:6px">
       </div>
 
     </div>
-    <div class="form-section">Medicamento</div>
-    <div class="form-grid">
-      <div class="fg"><label class="fl">Medicamento *</label>
-        <select class="fi" id="ti-med" onchange="calcDosisTrat()">
-          <option value="">— Cargando medicamentos… —</option>
-        </select>
-      </div>
-      <div class="fg"><label class="fl">Dosis sugerida</label>
-        <input class="fi" id="ti-dosis-sug" readonly style="background:var(--bg4);color:var(--teal);font-weight:700" placeholder="Ingresa peso primero">
-      </div>
-      <div class="fg"><label class="fl">Dosis aplicada (confirmar) *</label><input class="fi" id="ti-dosis" placeholder="21 mL"></div>
-      <div class="fg"><label class="fl">Vía administración</label><select class="fi"><option>IM</option><option>SC</option><option>IV</option><option>VO</option></select></div>
-      <div class="fg"><label class="fl">Duración tratamiento *</label><input class="fi" id="ti-dur" placeholder="5 días"></div>
-      <div class="fg"><label class="fl">Período retiro (días)</label><input class="fi" id="ti-retiro" readonly style="background:var(--bg4);color:var(--amber)" placeholder="Auto"></div>
+    <div class="form-section">Medicamentos</div>
+    <div id="ti-meds-container"></div>
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-top:4px">
+      <div class="fg" style="min-width:150px;margin:0"><label class="fl">Vía administración</label>
+        <select class="fi" id="ti-via"><option>IM</option><option>SC</option><option>IV</option><option>VO</option></select></div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="agregarMedIndividual()">+ Agregar otro medicamento</button>
     </div>
     <div class="form-section">Registro</div>
     <div class="form-grid">
@@ -1242,37 +1211,84 @@ function calcDosis(){
 }
 
 function usarDosisTratamiento(){
-  closeModal('modal-trat-individual');
   const d=document.getElementById('dosis-val').textContent;
+  openModal('modal-trat-individual'); // (re)genera una fila de medicamento fresca
   if(d!=='—'){
-    document.getElementById('ti-dosis').value=d+' mL';
-    document.getElementById('ti-dosis-sug').value=d+' mL';
+    var din=document.querySelector('#ti-meds-container .ti-med-row .ti-dosis-in');
+    if(din) din.value=d+' mL';
   }
-  openModal('modal-trat-individual');
   toast('Dosis cargada en el formulario de tratamiento','info');
 }
 
-function calcDosisTrat(){
-  const medRaw=document.getElementById('ti-med')?.value;
-  if(!medRaw)return;
-  const peso=parseFloat(document.getElementById('ti-peso')?.value)||0;
-  const parts=medRaw.split('|');
-  const factor=parseFloat(parts[0]);
-  const unidad=parts[1]||'';
-  const retiro=parts[2]||'0';
-  const via=parts[3]||'';
-  const sug=document.getElementById('ti-dosis-sug');
-  const ret=document.getElementById('ti-retiro');
-  if(ret) ret.value=retiro+' días';
-  if(isNaN(factor)){
-    // Sin factor numérico parseable: mostrar la dosis estándar tal cual.
-    if(sug) sug.value=(unidad||'según indicación')+(via?(' · vía '+via):'');
-    return;
-  }
+// Compat: al elegir animal/peso se recalculan todas las filas de medicamento.
+function calcDosisTrat(){ recalcMedRowsIndividual(); }
+
+// ── Diagnóstico de lista + "Otra (especificar)" ──
+function onTiDxChange(){
+  var sel=document.getElementById('ti-dx-sel'), otro=document.getElementById('ti-dx-otro');
+  if(!sel||!otro) return;
+  if(sel.value==='__OTRA__'){ otro.style.display='block'; otro.focus(); }
+  else { otro.style.display='none'; otro.value=''; }
+}
+function getTiDx(){
+  var sel=document.getElementById('ti-dx-sel'); if(!sel) return '';
+  if(sel.value==='__OTRA__') return (document.getElementById('ti-dx-otro')?.value||'').trim();
+  return sel.value||'';
+}
+
+// ── Múltiples medicamentos por tratamiento individual (mismo patrón que grupal) ──
+function _tiMedRowHTML(){
+  return '<div class="ti-med-row" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px;margin-bottom:8px;position:relative">'
+    + '<button type="button" onclick="quitarMedRowIndividual(this)" title="Quitar" style="position:absolute;top:6px;right:6px;background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>'
+    + '<div class="form-grid">'
+    + '<div class="fg"><label class="fl">Medicamento *</label>'
+    + '<select class="fi ti-med-sel" onchange="onTiMedRowChange(this)"><option value="">— Seleccionar —</option></select></div>'
+    + '<div class="fg"><label class="fl">Dosis sugerida</label>'
+    + '<input class="fi ti-dosis-sug-in" readonly style="background:var(--bg4);color:var(--teal);font-weight:700" placeholder="Ingresa peso"></div>'
+    + '<div class="fg"><label class="fl">Dosis aplicada (confirmar) *</label><input class="fi ti-dosis-in" placeholder="21 mL"></div>'
+    + '<div class="fg"><label class="fl">Duración (días) *</label><input class="fi ti-dur-in" type="number" min="1" step="1" placeholder="5"></div>'
+    + '<div class="fg"><label class="fl">Período retiro (días)</label><input class="fi ti-retiro-in" readonly style="background:var(--bg4);color:var(--amber)" placeholder="Auto"></div>'
+    + '</div></div>';
+}
+function agregarMedIndividual(){
+  var cont=document.getElementById('ti-meds-container'); if(!cont) return null;
+  var wrap=document.createElement('div'); wrap.innerHTML=_tiMedRowHTML();
+  var row=wrap.firstChild; cont.appendChild(row);
+  var sel=row.querySelector('.ti-med-sel');
+  if(typeof _llenarMedsSelect_byEl==='function') _llenarMedsSelect_byEl(sel);
+  return row;
+}
+function quitarMedRowIndividual(btn){
+  var cont=document.getElementById('ti-meds-container');
+  var rows=cont?cont.querySelectorAll('.ti-med-row'):[];
+  if(rows.length<=1){ toast('Debe haber al menos un medicamento','info'); return; }
+  var row=btn.closest('.ti-med-row'); if(row) row.remove();
+}
+function onTiMedRowChange(sel){
+  var row=sel.closest('.ti-med-row'); if(!row) return;
+  var parts=(sel.value||'').split('|');
+  var factor=parseFloat(parts[0]);
+  var unidad=parts[1]||'';
+  var retiro=parts[2]||'0';
+  var peso=parseFloat(document.getElementById('ti-peso')?.value)||0;
+  var retEl=row.querySelector('.ti-retiro-in'); if(retEl) retEl.value=retiro+' días';
+  var sug=row.querySelector('.ti-dosis-sug-in');
+  var din=row.querySelector('.ti-dosis-in');
+  if(isNaN(factor)){ if(sug) sug.value=(unidad||'según indicación'); return; }
   if(!peso){ if(sug) sug.value='Ingresa peso para calcular'; return; }
-  const dosis=unidad.includes('/10kg')?factor*peso/10:factor*peso;
-  const u=(unidad.split('/')[0]||'mL').trim();
-  if(sug) sug.value=dosis.toFixed(1)+' '+u+(via?(' vía '+via):'');
+  var dosis=unidad.includes('/10kg')?factor*peso/10:factor*peso;
+  var u=(unidad.split('/')[0]||'mL').trim();
+  var txt=dosis.toFixed(1)+' '+u;
+  if(sug) sug.value=txt;
+  if(din && !din.value) din.value=txt; // prefill dosis aplicada si está vacía
+}
+function recalcMedRowsIndividual(){
+  document.querySelectorAll('#ti-meds-container .ti-med-sel').forEach(function(sel){ onTiMedRowChange(sel); });
+}
+function poblarMedsIndividual(){
+  var cont=document.getElementById('ti-meds-container'); if(!cont) return;
+  cont.innerHTML=''; // reset a una sola fila al abrir el modal
+  agregarMedIndividual();
 }
 
 function filtrarAnimalIndividual(q){
@@ -1388,7 +1404,11 @@ function _poblarMed6(selId){
       .catch(function(){ _llenarMedsSelect(selId, []); });
   } else { _llenarMedsSelect(selId, []); }
 }
-function poblarMedicamentosModal(){ _poblarMed6('ti-med'); }            // individual (compat)
+function poblarMedicamentosModal(){            // individual: 1 fila fresca de medicamento + reset diagnóstico
+  poblarMedsIndividual();
+  var _s=document.getElementById('ti-dx-sel'); if(_s) _s.value='';
+  var _o=document.getElementById('ti-dx-otro'); if(_o){ _o.style.display='none'; _o.value=''; }
+}
 function poblarMedicamentosGrupal(){ _poblarMed6('tg-med'); }          // grupal
 function poblarCalculadoraMeds(){ _poblarMed6('calc-med'); _poblarMed6('tabla-med'); }
 // Poblar al abrir cada modal.
@@ -1843,104 +1863,113 @@ function saveTratamiento(tipo){
 
   if(tipo==='individual'){
     const animalId=document.getElementById('ti-animal')?.value?.trim();
-    const dx=document.getElementById('ti-dx')?.value?.trim();
-    const dosis=document.getElementById('ti-dosis')?.value?.trim();
-    const dur=document.getElementById('ti-dur')?.value?.trim();
-    const fecha=document.getElementById('ti-fecha')?.value;
-    const colabEl=document.querySelectorAll('#modal-trat-individual select')[1];
-    const colab=colabEl?.value||(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—';
-    const loteEl=document.querySelectorAll('#modal-trat-individual select')[0];
-    const lote=loteEl?.value||'';
+    const dx=getTiDx();
+    const fecha=document.getElementById('ti-fecha')?.value||new Date().toISOString().slice(0,10);
+    const colab=document.querySelector('#modal-trat-individual .colab-select')?.value||(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'—';
+    const via=document.getElementById('ti-via')?.value||'IM';
+    const _obs=document.querySelector('#modal-trat-individual textarea')?.value||'';
 
     if(typeof validateForm!=='undefined'){
       validateForm([
         {el:'ti-animal',label:'Animal ID',required:true},
-        {el:'ti-dx',label:'Diagnóstico',required:true},
         {el:'ti-peso',label:'Peso',required:true,type:'number',min:1},
       ]);
     }
-    if(!animalId||!dx){toast('Animal ID y diagnóstico son requeridos','err');return;}
+    if(!animalId){ toast('Selecciona un animal de la lista','err'); return; }
+    if(!dx){ toast('Selecciona o especifica el diagnóstico','err'); return; }
 
-    // Leer medicamento seleccionado
-    const medSel=document.getElementById('ti-med')?.value||'';
-    const medParts=medSel.split('|');
-    const retiroDias=parseInt(medParts[2])||0;
-    const medId=medParts[4]||'';
-    const medNombre=medParts[5]||document.getElementById('ti-med')?.options[document.getElementById('ti-med')?.selectedIndex]?.text||'—';
-    const dosisNum=parseFloat(document.getElementById('ti-dosis')?.value)||0;
+    // Leer TODAS las filas de medicamento (selección obligatoria de la lista)
+    var _meds = Array.prototype.slice.call(document.querySelectorAll('#ti-meds-container .ti-med-row')).map(function(row){
+      var sel = row.querySelector('.ti-med-sel');
+      var parts = (sel && sel.value || '').split('|');
+      var dosisTxt = (row.querySelector('.ti-dosis-in')?.value||'').trim();
+      return {
+        medId: parts[4]||'',
+        medNombre: parts[5] || (sel && sel.options[sel.selectedIndex] && sel.options[sel.selectedIndex].text) || '—',
+        unidad: parts[1]||'mL',
+        retiroDias: parseInt(parts[2])||0,
+        dosisTxt: dosisTxt,
+        dosisNum: parseFloat(dosisTxt)||0,
+        durDias: parseInt(row.querySelector('.ti-dur-in')?.value)||0
+      };
+    }).filter(function(m){ return m.medId; });
 
-    const tratData={
-      tipo:'Individual',
-      animales_ids: animalId,
-      lote,
-      diagnostico: dx,
-      medicamento_nombre: medNombre,
-      medicamento_id: medId,
-      dosis_aplicada: dosis,
-      via: document.querySelectorAll('#modal-trat-individual select')[2]?.value||'IM',
-      duracion_dias: parseInt(dur)||1,
-      dia_actual: 1,
-      fecha_inicio: fecha||new Date().toISOString().slice(0,10),
-      dias_retiro: retiroDias,
-      costo_total: 0,
-      colaborador: colab,
-      estado:'En curso',
-      observaciones: document.querySelector('#modal-trat-individual textarea')?.value||''
-    };
-
-    // El descuento de stock (local) NO ocurre si la acción queda pendiente:
-    // el stock se descuenta al APROBAR en la bandeja del gerente.
-    if(!window.Approval.requiresApproval()){
-      AppData.registrarTratamiento(tratData, medId, dosisNum);
+    if(!_meds.length){ toast('Selecciona al menos un medicamento de la lista','err'); return; }
+    for(var _i=0;_i<_meds.length;_i++){
+      if(!_meds[_i].dosisTxt){ toast('Falta la dosis de un medicamento','err'); return; }
+      if(_meds[_i].durDias<1){ toast('Indica la duración (días) de cada medicamento','err'); return; }
     }
 
-    // ── PARTE 1C — Registrar tratamiento en Supabase ──
+    // Descuento de stock local solo si NO requiere aprobación (uno por medicamento).
+    if(!window.Approval.requiresApproval()){
+      _meds.forEach(function(m){
+        AppData.registrarTratamiento({
+          tipo:'Individual', animales_ids:animalId, lote:'', diagnostico:dx,
+          medicamento_nombre:m.medNombre, medicamento_id:m.medId, dosis_aplicada:m.dosisTxt,
+          via:via, duracion_dias:m.durDias, dia_actual:1, fecha_inicio:fecha,
+          dias_retiro:m.retiroDias, costo_total:0, colaborador:colab, estado:'En curso',
+          observaciones:_obs
+        }, m.medId, m.dosisNum);
+      });
+    }
+
+    // ── Supabase: UNA FILA POR MEDICAMENTO, todas con el mismo grupo_id ──
     if(window.DB && window.AppState && typeof window.DB.saveTratamiento==='function'){
       const _cod=String(animalId).replace(/^#/,'').trim();
       const _a = (window._tiAnimalId
         ? (window.AppState.animales||[]).find(x=>x.id===window._tiAnimalId)
         : null)
         || (window.AppState.animales||[]).find(x=>x.codigo===_cod||x.id===_cod);
-      const _med=(window.AppState.medicamentos||[]).find(m=>m.nombre===medNombre);
-      const _fi=fecha||new Date().toISOString().slice(0,10);
-      let _ffr=_fi;
-      if(retiroDias>0){const _dd=new Date(_fi);_dd.setDate(_dd.getDate()+retiroDias);_ffr=_dd.toISOString().slice(0,10);}
+      const _fi=fecha;
       if(_a){
-        const _tPayload={
-          finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
-          animal_id:_a.id,
-          medicamento_id:_med?_med.id:null,
-          fecha_inicio:_fi,
-          dosis:dosisNum,
-          unidad:medParts[1]||'ml',
-          dias_retiro:retiroDias,
-          fecha_fin_retiro:_ffr,
-          registrado_por:'Juan Arbelaez',
-          notas:dx,
-          estado_aprobacion: window.Approval.getEstadoInicial(),
-          ...window.Approval.getPropuestoPor()
-        };
-        window.DB.saveTratamiento(_tPayload).then(function(res){
-          if(res && !res.error && res.data){
-            window.DB.logAudit(_tPayload.finca_id,'INSERT','tratamientos',res.data.id,null,_tPayload,null);
-            // Multi-dosis: generar la agenda diaria si el tratamiento dura > 1 día.
-            var _totalDias=parseInt(dur)||1;
-            if(_totalDias>1 && typeof window.DB.crearDosisProgramadas==='function'){
-              window.DB.crearDosisProgramadas(res.data.id,_a.id,_fi,_totalDias,_tPayload.finca_id)
-                .then(function(dr){
-                  if(dr && !dr.error && dr.data && dr.data.length){ toast('+ '+dr.data.length+' dosis programadas','ok'); }
-                  if(typeof loadDosisHoy==='function') loadDosisHoy();
-                }).catch(function(e){ console.warn('[Salud] crearDosisProgramadas:',e&&e.message); });
+        const _grupoId='ti-'+Date.now().toString(36);
+        _meds.forEach(function(m){
+          // fecha_fin = fin de la aplicación (inicio + duración); el retiro corre DESPUÉS.
+          var _ff=_fi;
+          if(m.durDias>0){ var _df=new Date(_fi); _df.setDate(_df.getDate()+m.durDias); _ff=_df.toISOString().slice(0,10); }
+          var _ffr=_ff;
+          if(m.retiroDias>0){ var _dr=new Date(_ff); _dr.setDate(_dr.getDate()+m.retiroDias); _ffr=_dr.toISOString().slice(0,10); }
+          var _medRow=(window.AppState.medicamentos||[]).find(function(x){return x.nombre===m.medNombre;});
+          var _payload={
+            finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
+            animal_id:_a.id,
+            medicamento_id: _medRow?_medRow.id:(m.medId||null),
+            medicamento_nombre:m.medNombre,
+            tipo:'individual',
+            grupo_id:_grupoId,
+            diagnostico:dx,
+            fecha_inicio:_fi,
+            fecha_fin:_ff,
+            dosis:m.dosisNum,
+            unidad:m.unidad||'mL',
+            dias_retiro:m.retiroDias,
+            fecha_fin_retiro:_ffr,
+            registrado_por:colab,
+            notas:_obs||dx,
+            estado_aprobacion: window.Approval.getEstadoInicial(),
+            ...window.Approval.getPropuestoPor()
+          };
+          window.DB.saveTratamiento(_payload).then(function(res){
+            if(res && !res.error && res.data){
+              window.DB.logAudit(_payload.finca_id,'INSERT','tratamientos',res.data.id,null,_payload,null);
+              if(m.durDias>1 && typeof window.DB.crearDosisProgramadas==='function'){
+                window.DB.crearDosisProgramadas(res.data.id,_a.id,_fi,m.durDias,_payload.finca_id)
+                  .then(function(dr){
+                    if(dr && !dr.error && dr.data && dr.data.length){ toast('+ '+dr.data.length+' dosis programadas','ok'); }
+                    if(typeof loadDosisHoy==='function') loadDosisHoy();
+                  }).catch(function(e){ console.warn('[Salud] crearDosisProgramadas:',e&&e.message); });
+              }
             }
-          }
-        }).catch(err=>console.warn('[Salud] saveTratamiento Supabase:',err&&err.message));
+          }).catch(function(err){ console.warn('[Salud] saveTratamiento Supabase:',err&&err.message); });
+        });
       }
     }
 
+    var _retiroMax=_meds.reduce(function(s,m){return Math.max(s,m.retiroDias||0);},0);
     closeModal('modal-trat-individual');
     window.Approval.toastAprobacion(
-      `Tratamiento registrado · #${animalId} en tratamiento · Retiro: ${retiroDias}d`,
-      `⏳ Tratamiento registrado · Pendiente de aprobación. El stock se descuenta al aprobar.`
+      'Tratamiento registrado · #'+animalId+' · '+_meds.length+' medicamento(s) · Retiro: '+_retiroMax+'d',
+      '⏳ Tratamiento registrado · Pendiente de aprobación. El stock se descuenta al aprobar.'
     );
     loadFromAppData();
 
