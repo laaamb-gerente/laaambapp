@@ -748,7 +748,25 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
   // Disparar render cuando AppState esté listo
   if(window.AppState && window.AppState._loaded){ render(); }
   document.addEventListener('appstate:ready', render);
+  // renderBandeja depende de window.AUTH_ROL, que carga async. Suscribir a
+  // appstate:ready (como las demás) y reintentar para no quedar oculta si la
+  // auth aún no estaba lista en la primera llamada.
+  document.addEventListener('appstate:ready', renderBandeja);
   renderBandeja();
+  // Reintento defensivo: si _rolPuedeAprobar() era false por auth no cargada,
+  // reintentar cuando AUTH_ROL ya exista (varios reintentos cortos).
+  (function(){
+    var intentos = 0;
+    var iv = setInterval(function(){
+      intentos++;
+      if(window.AUTH_ROL || (window.AUTH_PERFIL && window.AUTH_PERFIL.rol)){
+        renderBandeja();
+        clearInterval(iv);
+      } else if(intentos >= 10){
+        clearInterval(iv);
+      }
+    }, 500);
+  })();
 })();
 </script>
 
