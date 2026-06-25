@@ -234,6 +234,24 @@ window.DB = {
   async updateTratamiento(id, patch) {
     return await window._sb.from('tratamientos').update(patch).eq('id', id).select().single();
   },
+  // Eliminar un tratamiento completo por grupo_id: borra sus dosis_programadas y
+  // todas las filas del grupo. Si no hay grupo_id, borra por id individual.
+  async eliminarTratamientoGrupo(grupo_id, tratamiento_ids) {
+    // tratamiento_ids: array de ids de las filas del grupo (para borrar dosis)
+    if (tratamiento_ids && tratamiento_ids.length) {
+      await window._sb.from('dosis_programadas').delete().in('tratamiento_id', tratamiento_ids);
+    }
+    let q = window._sb.from('tratamientos').delete();
+    if (grupo_id) { q = q.eq('grupo_id', grupo_id); }
+    else if (tratamiento_ids && tratamiento_ids.length) { q = q.in('id', tratamiento_ids); }
+    else { return { error: { message: 'Sin grupo ni ids para eliminar.' } }; }
+    const r = await q.select('id');
+    return { data: r.data, error: r.error };
+  },
+  // Traer las filas de un grupo (para editar)
+  async getTratamientoGrupo(grupo_id) {
+    return await window._sb.from('tratamientos').select('*').eq('grupo_id', grupo_id).order('created_at');
+  },
 
   // ── PESAJES ──────────────────────────────────────────
   async getPesajes(finca_id, animal_id = null) {

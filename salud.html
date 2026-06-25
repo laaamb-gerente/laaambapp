@@ -31,10 +31,10 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=37"></script>
+<script src="js/approval.js?v=38"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=37"></script>
+<script src="js/db.js?v=38"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/alertas-motor.js"></script>
@@ -508,7 +508,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       <div class="card">
         <div style="overflow-x:auto">
           <table>
-            <thead><tr><th>Inicio</th><th>Tipo</th><th>Animal(es)</th><th>Medicamento</th><th>Dosis</th><th>Vía</th><th>Duración</th><th>Progreso</th><th>Retiro</th><th>Colaborador</th><th>Estado</th></tr></thead>
+            <thead><tr><th>Inicio</th><th>Tipo</th><th>Animal(es)</th><th>Medicamento</th><th>Dosis</th><th>Vía</th><th>Duración</th><th>Progreso</th><th>Retiro</th><th>Colaborador</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody id="activos-tbody"></tbody>
           </table>
         </div>
@@ -1054,8 +1054,18 @@ function renderActivos(){
   const tb=document.getElementById('activos-tbody');if(!tb)return;
   const EST={  'En curso':'b-sky','Completado':'b-green','En retiro':'b-amber'};
   const TIPO={'Individual':'b-teal','Grupal':'b-wine'};
+  // RBAC: editar/eliminar solo para gerente/admin (los que NO requieren aprobación).
+  const puedeEditar = !(window.Approval && typeof window.Approval.requiresApproval==='function' && window.Approval.requiresApproval());
   tb.innerHTML=TRATAMIENTOS.map(t=>{
     const pct=Math.round((t.dia/t.totalDias)*100);
+    const _g=t.grupo_id?_dEsc(t.grupo_id):'';
+    const _al=_dEsc((t.animalCodigo?('#'+t.animalCodigo):(t.animales||'—')));
+    const acciones = puedeEditar
+      ? `<td style="white-space:nowrap" onclick="event.stopPropagation()">
+          <button class="btn btn-ghost btn-xs" title="Editar tratamiento" onclick="editarTrat('${_g}','${_dEsc(t.id)}')">✏</button>
+          <button class="btn btn-ghost btn-xs" title="Eliminar tratamiento" style="color:var(--red)" onclick="eliminarTrat('${_g}','${_dEsc(t.id)}','${_al}')">🗑</button>
+        </td>`
+      : '<td class="td-muted">—</td>';
     return `<tr onclick="toast('Tratamiento ${t.id}','info')">
       <td class="td-muted">${t.fecha}</td>
       <td><span class="badge ${TIPO[t.tipo]||'b-gray'}">${t.tipo}</span></td>
@@ -1071,7 +1081,90 @@ function renderActivos(){
       <td>${t.retiro>0?`<span class="badge b-amber">${t.retiro}d</span>`:'<span class="badge b-green">Libre</span>'}</td>
       <td class="td-muted">${t.colaborador}</td>
       <td><span class="badge ${EST[t.estado]||'b-gray'}">${t.estado}</span></td>
+      ${acciones}
     </tr>`;}).join('');
+}
+
+// Eliminar todo un tratamiento (grupo_id) + sus dosis programadas.
+async function eliminarTrat(grupoId, id, animalLabel){
+  if(!(window.DB && typeof window.DB.eliminarTratamientoGrupo==='function')){ toast('No disponible','err'); return; }
+  var ids = grupoId
+    ? TRATAMIENTOS.filter(function(t){return t.grupo_id===grupoId;}).map(function(t){return t.id;})
+    : (id?[id]:[]);
+  if(!ids.length){ toast('No se pudo identificar el tratamiento','err'); return; }
+  // Contar dosis programadas del grupo (para el mensaje de confirmación).
+  var nDosis=0;
+  try{
+    for(var i=0;i<ids.length;i++){
+      var dr=await window.DB.getDosisPorTratamiento(ids[i]);
+      nDosis += ((dr&&dr.data)||[]).length;
+    }
+  }catch(e){}
+  if(!confirm('¿Eliminar este tratamiento de '+(animalLabel||'—')+' y sus '+nDosis+' dosis programadas? Esta acción no se puede deshacer.')) return;
+  var r = await window.DB.eliminarTratamientoGrupo(grupoId||null, ids);
+  if(r && r.error){ toast('Error al eliminar: '+(r.error.message||''),'err'); return; }
+  toast('Tratamiento eliminado'+(grupoId?(' ('+ids.length+' medicamento(s))'):''));
+  if(typeof loadFromSupabase==='function') loadFromSupabase();
+}
+
+// Editar: precarga el modal individual con los datos del grupo y, al guardar,
+// elimina el grupo viejo (delete-and-recreate). Auto-curativo: si el viejo no se
+// borra, queda un duplicado que se puede eliminar con 🗑.
+async function editarTrat(grupoId, id){
+  if(!(window.DB && typeof window.DB.getTratamientoGrupo==='function')){ toast('No disponible','err'); return; }
+  var filas=[];
+  if(grupoId){ var gr=await window.DB.getTratamientoGrupo(grupoId); filas=(gr&&gr.data)||[]; }
+  if(!filas.length){
+    // Sin grupo_id: editar la fila individual usando getTratamientoGrupo no aplica.
+    var one=(window.AppState&&window.AppState.tratamientos||[]).find(function(x){return x.id===id;});
+    if(one) filas=[one];
+  }
+  if(!filas.length){ toast('No se pudieron cargar los datos del tratamiento','err'); return; }
+  var base=filas[0];
+  openModal('modal-trat-individual');
+  setTimeout(function(){
+    // Animal
+    var _an=(window.AppState&&window.AppState.animales||[]).find(function(a){return a.id===base.animal_id;});
+    window._tiAnimalId=base.animal_id||null;
+    var inpA=document.getElementById('ti-animal'); if(inpA) inpA.value=(_an&&(_an.codigo||_an.nombre))||base.animal_id||'';
+    var pesoEl=document.getElementById('ti-peso'); if(pesoEl && _an && _an.peso_actual) pesoEl.value=_an.peso_actual;
+    // Diagnóstico
+    var dx=_limpiarDx(base.diagnostico||base.notas||'');
+    var dxSel=document.getElementById('ti-dx-sel');
+    if(dxSel){
+      var match=Array.prototype.slice.call(dxSel.options).some(function(o){ return o.value===dx; });
+      if(match){ dxSel.value=dx; if(typeof onTiDxChange==='function') onTiDxChange(); }
+      else { dxSel.value='__OTRA__'; if(typeof onTiDxChange==='function') onTiDxChange(); var dxO=document.getElementById('ti-dx-otro'); if(dxO) dxO.value=dx; }
+    }
+    // Fecha
+    var fe=document.getElementById('ti-fecha'); if(fe && base.fecha_inicio) fe.value=String(base.fecha_inicio).slice(0,10);
+    // Filas de medicamento (una por fila del grupo)
+    var cont=document.getElementById('ti-meds-container');
+    if(cont && typeof agregarMedIndividual==='function'){
+      cont.innerHTML='';
+      filas.forEach(function(f){ agregarMedIndividual(); });
+      // Esperar a que los selects se poblen y fijar valores.
+      setTimeout(function(){
+        var rows=cont.querySelectorAll('.ti-med-row');
+        filas.forEach(function(f,idx){
+          var row=rows[idx]; if(!row) return;
+          var sel=row.querySelector('.ti-med-sel');
+          if(sel){ // buscar la opción cuyo medId (parts[4]) coincide
+            var opt=Array.prototype.slice.call(sel.options).find(function(o){ return (o.value||'').split('|')[4]===f.medicamento_id; });
+            if(opt){ sel.value=opt.value; if(typeof onTiMedRowChange==='function') onTiMedRowChange(sel); }
+          }
+          var din=row.querySelector('.ti-dosis-in'); if(din) din.value=(f.dosis!=null?(f.dosis+(f.unidad?' '+f.unidad:'')):'');
+          // duración = fecha_fin - fecha_inicio (días); si no hay, 1.
+          var durDias=1;
+          if(f.fecha_fin && f.fecha_inicio){ durDias=Math.max(1, Math.round((new Date(f.fecha_fin)-new Date(f.fecha_inicio))/86400000)); }
+          var dur=row.querySelector('.ti-dur-in'); if(dur) dur.value=durDias;
+        });
+      }, 250);
+    }
+    // Marca para que saveTratamiento elimine el grupo viejo tras crear el nuevo.
+    window._editTratGrupo = { grupoId: grupoId||null, ids: filas.map(function(f){return f.id;}) };
+    toast('Editando tratamiento — corrige y guarda','info');
+  }, 60);
 }
 
 function renderHistorial(){
@@ -1416,7 +1509,7 @@ function poblarCalculadoraMeds(){ _poblarMed6('calc-med'); _poblarMed6('tabla-me
   var _orig=window.openModal;
   window.openModal=function(id){
     if(typeof _orig==='function') _orig(id);
-    if(id==='modal-trat-individual'){ window._tiAnimalId=null; poblarMedicamentosModal(); }
+    if(id==='modal-trat-individual'){ window._tiAnimalId=null; window._editTratGrupo=null; poblarMedicamentosModal(); }
     if(id==='modal-trat-grupal'){
       // Populate first med row
       var firstSel = document.querySelector('#tg-meds-container .tg-med-sel');
@@ -1965,6 +2058,16 @@ function saveTratamiento(tipo){
       }
     }
 
+    // Edición: tras crear el grupo nuevo, eliminar el grupo viejo (delete-and-recreate).
+    if(window._editTratGrupo){
+      var _ed=window._editTratGrupo; window._editTratGrupo=null;
+      if(window.DB && typeof window.DB.eliminarTratamientoGrupo==='function'){
+        window.DB.eliminarTratamientoGrupo(_ed.grupoId, _ed.ids)
+          .then(function(){ if(typeof loadFromSupabase==='function') setTimeout(loadFromSupabase, 800); })
+          .catch(function(e){ console.warn('[Salud] eliminar grupo viejo al editar:', e&&e.message); });
+      }
+    }
+
     var _retiroMax=_meds.reduce(function(s,m){return Math.max(s,m.retiroDias||0);},0);
     closeModal('modal-trat-individual');
     window.Approval.toastAprobacion(
@@ -2272,6 +2375,8 @@ async function loadFromSupabase(){
         var esGrupal=t.tipo==='grupal'||t.fuente==='grupal';
         TRATAMIENTOS.push({
           id:t.id,
+          grupo_id:t.grupo_id||null,
+          animalCodigo:(t.animales&&(t.animales.codigo||t.animales.nombre))||t.animal_id||'',
           fecha:inicio.toLocaleDateString('es-CO'),
           tipo:esGrupal?'Grupal':'Individual',
           animales: animalLbl,
