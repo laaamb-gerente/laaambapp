@@ -30,11 +30,11 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=39"></script>
+<script src="js/approval.js?v=40"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=39"></script>
+<script src="js/db.js?v=40"></script>
 <script src="js/alertas-motor.js"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
@@ -225,6 +225,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     <div style="font-size:10px;color:var(--text3);margin-top:4px">Los días de chequeo se configuran en Ajustes → Producción</div>
   </div>
 
+  <!-- Teteros de Sala Cuna hoy — se oculta si no hay -->
+  <div class="sec" id="hoy-teteros-sec" style="display:none">
+    <div class="sec-title"><span class="dot" style="background:var(--orange)"></span>🍼 Teteros de hoy · Sala Cuna</div>
+    <div id="hoy-teteros-lista"></div>
+    <a href="sala-cuna.html" style="display:inline-block;margin-top:6px;font-size:11px;font-weight:600;color:var(--teal);text-decoration:none">→ Ver Sala Cuna completa</a>
+  </div>
+
   <!-- Medicamentos terminados hoy (informativo) — se oculta si no hay -->
   <div class="sec" id="sec-meds-terminados" style="display:none">
     <div class="sec-title"><span class="dot" style="background:#1D9E75"></span>Medicamentos terminados hoy</div>
@@ -379,7 +386,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       var f = new Date(t.fecha_fin_retiro+'T00:00:00');
       if(f <= manana){
         var cod = (t.animales && t.animales.codigo) || '—';
-        items.push({tipo:'red', ico:'💊', t:'Retiro sanitario por vencer', s:'Animal '+esc(cod)+' · vence '+esc(t.fecha_fin_retiro)});
+        items.push({tipo:'red', ico:'💊', t:'Retiro sanitario por vencer', s:'Animal '+esc(cod)+' · vence '+esc(t.fecha_fin_retiro), href:'salud.html'});
       }
     });
 
@@ -390,7 +397,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       if(f <= en7){
         var dias = Math.floor((f - hoy)/86400000);
         var cod = g.codigo || g.nombre || '—';
-        items.push({tipo:'amber', ico:'🐑', t:'Parto próximo', s:'Hembra '+esc(cod)+' · '+(dias<=0?'¡hoy o vencido!':'en '+dias+' día'+(dias>1?'s':''))});
+        items.push({tipo:'amber', ico:'🐑', t:'Parto próximo', s:'Hembra '+esc(cod)+' · '+(dias<=0?'¡hoy o vencido!':'en '+dias+' día'+(dias>1?'s':'')), href:'reproduccion.html?accion=parto&madre='+encodeURIComponent(cod)});
       }
     });
 
@@ -401,7 +408,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       var ocup = animales.filter(function(a){return a.lote_actual_id===l.id;}).length;
       var pct = ocup/cap*100;
       if(pct > 90){
-        items.push({tipo:'amber', ico:'⚠️', t:'Lote en sobrecarga', s:esc(l.nombre)+' · '+ocup+'/'+cap+' ('+Math.round(pct)+'%)'});
+        items.push({tipo:'amber', ico:'⚠️', t:'Lote en sobrecarga', s:esc(l.nombre)+' · '+ocup+'/'+cap+' ('+Math.round(pct)+'%)', href:'lotes.html'});
       }
     });
 
@@ -417,18 +424,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       if(window.AlertasMotor && typeof window.AlertasMotor.generar === 'function'){
         var todas = await window.AlertasMotor.generar();
         var MAP = {
-          toma_perdida:     {tipo:'red',   ico:'⏰', t:'Toma perdida'},
-          calostro_faltante:{tipo:'red',   ico:'🍼', t:'Sin calostro'},
-          toma_pendiente:   {tipo:'amber', ico:'🍼', t:'Toma pendiente'},
-          cordero_bajo_peso:{tipo:'amber', ico:'📉', t:'Bajo crecimiento'},
-          rcs_alto:         {tipo:'amber', ico:'⚠️', t:'RCS alto'},
-          nueva_candidata_descarte:{tipo:'red', ico:'⛔', t:'Candidata a descarte'},
-          dosis_pendiente_hoy:{tipo:'amber', ico:'💉', t:'Dosis pendiente'},
-          dosis_atrasada:   {tipo:'red', ico:'⚠️', t:'Dosis atrasada'}
+          toma_perdida:     {tipo:'red',   ico:'⏰', t:'Toma perdida', href:'#hoy-teteros-sec'},
+          calostro_faltante:{tipo:'red',   ico:'🍼', t:'Sin calostro', href:'sala-cuna.html'},
+          toma_pendiente:   {tipo:'amber', ico:'🍼', t:'Toma pendiente', href:'#hoy-teteros-sec'},
+          cordero_bajo_peso:{tipo:'amber', ico:'📉', t:'Bajo crecimiento', href:'sala-cuna.html'},
+          rcs_alto:         {tipo:'amber', ico:'⚠️', t:'RCS alto', href:'leche.html'},
+          nueva_candidata_descarte:{tipo:'red', ico:'⛔', t:'Candidata a descarte', href:'reportes.html'},
+          dosis_pendiente_hoy:{tipo:'amber', ico:'💉', t:'Dosis pendiente', href:'#dosis-hoy-sec'},
+          dosis_atrasada:   {tipo:'red', ico:'⚠️', t:'Dosis atrasada', href:'#dosis-hoy-sec'}
         };
         (todas || []).forEach(function(a){
           var m = MAP[a.tipo];
-          if(m) salaCuna.push({tipo:m.tipo, ico:m.ico, t:m.t, s:esc(a.mensaje)});
+          if(m) salaCuna.push({tipo:m.tipo, ico:m.ico, t:m.t, s:esc(a.mensaje), href:m.href});
         });
       }
     }catch(e){ /* no romper la sección de alertas */ }
@@ -437,9 +444,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       cont.innerHTML = '<div class="alert-empty">✓ Sin alertas prioritarias hoy. Todo en orden.</div>';
       return;
     }
+    // Cada alerta es clickeable y lleva a donde se resuelve (misma página con
+    // scroll a la sección accionable, o el módulo correspondiente).
     cont.innerHTML = all.map(function(it){
-      return '<div class="alert-item '+it.tipo+'"><div class="alert-ico">'+it.ico+'</div>'+
-             '<div class="alert-txt"><b>'+it.t+'</b><div class="alert-sub">'+it.s+'</div></div></div>';
+      var inner = '<div class="alert-ico">'+it.ico+'</div>'+
+        '<div class="alert-txt"><b>'+it.t+'</b><div class="alert-sub">'+it.s+'</div></div>'+
+        (it.href?'<div style="margin-left:auto;align-self:center;color:var(--text3);font-size:14px;flex-shrink:0">→</div>':'');
+      if(!it.href) return '<div class="alert-item '+it.tipo+'">'+inner+'</div>';
+      return '<a class="alert-item '+it.tipo+'" href="'+it.href+'" '
+        +'onclick="if(this.getAttribute(\'href\').charAt(0)===\'#\'){var el=document.querySelector(this.getAttribute(\'href\'));if(el){el.scrollIntoView({behavior:\'smooth\'});el.style.outline=\'2px solid var(--teal)\';setTimeout(function(){el.style.outline=\'\';},1800);}return false;}" '
+        +'style="text-decoration:none;color:inherit;cursor:pointer">'+inner+'</a>';
     }).join('');
   }
 
@@ -863,7 +877,7 @@ navigator.serviceWorker?.addEventListener('message', function(e){
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', function(){ setTimeout(renderMisTareas, 600); });
   else setTimeout(renderMisTareas, 600);
 
-  // ── Dosis de tratamiento de hoy (multi-dosis) ──
+  // ── Dosis de tratamiento de hoy (multi-dosis) — ACCIONABLE ──
   async function renderDosisHoy(){
     var sec=document.getElementById('dosis-hoy-sec');
     var cont=document.getElementById('dosis-hoy-hoylist');
@@ -874,16 +888,45 @@ navigator.serviceWorker?.addEventListener('message', function(e){
     if(!rows.length){ sec.style.display='none'; return; }
     var hoy=_hoyISO();
     cont.innerHTML=rows.map(function(d){
-      var an=d.animales||{}; var nombre=an.nombre||an.codigo||'Animal';
+      var an=d.animales||{}; var nombre=an.codigo||an.nombre||'Animal';
       var atrasada=(d.fecha_programada < hoy);
       var c=atrasada?'var(--red)':'var(--orange)';
-      return '<div style="border:1px solid var(--border);border-left:3px solid '+c+';border-radius:8px;padding:11px 14px;margin-bottom:8px;background:var(--bg2)">'
+      return '<div style="border:1px solid var(--border);border-left:3px solid '+c+';border-radius:8px;padding:11px 14px;margin-bottom:8px;background:var(--bg2)" data-dosis="'+d.id+'">'
         +'<div style="font-size:14px;font-weight:600;color:var(--text)">💉 '+_esc(nombre)+' <span style="font-size:12px;color:var(--text2)">· día '+d.numero_dosis+'/'+d.total_dosis+'</span></div>'
         +'<div style="font-size:11px;color:'+c+';font-weight:600;margin-top:2px">'+(atrasada?'⚠ Atrasada (programada '+_esc(d.fecha_programada)+')':'Aplicar hoy')+'</div>'
+        +'<div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">'
+          +'<input type="number" step="0.1" min="0" placeholder="Dosis (mL)" id="dosis-val-'+d.id+'" '
+            +'style="width:110px;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font-family:inherit;font-size:12px">'
+          +'<button onclick="aplicarDosisHoy(\''+d.id+'\')" style="font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;background:var(--teal);color:#04181a;border:none;cursor:pointer;font-family:inherit">✓ Aplicar</button>'
+          +'<button onclick="saltarDosisHoy(\''+d.id+'\')" style="font-size:12px;font-weight:600;padding:6px 12px;border-radius:6px;background:transparent;color:var(--text3);border:1px solid var(--border2);cursor:pointer;font-family:inherit">Saltar</button>'
+        +'</div>'
         +'</div>';
     }).join('');
     sec.style.display='';
   }
+  window.aplicarDosisHoy=async function(id){
+    var inp=document.getElementById('dosis-val-'+id);
+    var val=inp?parseFloat(inp.value):null;
+    try{
+      var r=await window.DB.registrarDosis(id,{
+        dosis_aplicada:(val&&val>0)?String(val)+' mL':null,
+        colaborador:(window.AUTH_PERFIL&&window.AUTH_PERFIL.id)||null
+      });
+      if(r&&r.error) throw r.error;
+      var card=document.querySelector('[data-dosis="'+id+'"]');
+      if(card){ card.style.opacity='0.35'; card.innerHTML='<div style="font-size:13px;color:var(--green)">✓ Dosis aplicada'+(val?' · '+val+' mL':'')+'</div>'; }
+      setTimeout(renderDosisHoy, 1200);
+    }catch(e){ alert('No se pudo registrar la dosis: '+(e.message||e)); }
+  };
+  window.saltarDosisHoy=async function(id){
+    var motivo=prompt('¿Por qué se salta esta dosis? (opcional)','');
+    if(motivo===null) return;
+    try{
+      var r=await window.DB.saltarDosis(id,(motivo||'').trim()||null);
+      if(r&&r.error) throw r.error;
+      setTimeout(renderDosisHoy, 300);
+    }catch(e){ alert('Error: '+(e.message||e)); }
+  };
   document.addEventListener('appstate:ready', renderDosisHoy);
   setTimeout(renderDosisHoy, 700);
 
@@ -939,6 +982,64 @@ navigator.serviceWorker?.addEventListener('message', function(e){
   };
   document.addEventListener('appstate:ready', renderSeguimientos);
   setTimeout(renderSeguimientos, 800);
+
+  // ── Teteros de Sala Cuna hoy — registrar la toma sin salir de HOY ──
+  async function renderTeterosHoy(){
+    var sec=document.getElementById('hoy-teteros-sec');
+    var cont=document.getElementById('hoy-teteros-lista');
+    if(!sec||!cont||!window._sb) return;
+    var rows=[];
+    try{
+      var finDia=_hoyISO()+'T23:59:59';
+      var r=await window._sb.from('tomas_programadas')
+        .select('*, corderos_crianza(id, estado, cordero:cordero_id(codigo, nombre))')
+        .eq('estado','pendiente')
+        .lte('fecha_hora_programada', finDia)
+        .order('fecha_hora_programada',{ascending:true})
+        .limit(40);
+      rows=((r&&r.data)||[]).filter(function(t){ return t.corderos_crianza && t.corderos_crianza.estado==='activo'; });
+    }catch(e){}
+    if(!rows.length){ sec.style.display='none'; return; }
+    var ahora=Date.now();
+    cont.innerHTML=rows.map(function(t){
+      var cc=t.corderos_crianza||{}; var co=cc.cordero||{};
+      var nom=co.codigo||co.nombre||'Cordero';
+      var prog=new Date(t.fecha_hora_programada);
+      var vencida=(prog.getTime()+(Number(t.ventana_min)||0)*60000)<ahora;
+      var c=vencida?'var(--red)':'var(--orange)';
+      var hora=prog.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+      return '<div style="border:1px solid var(--border);border-left:3px solid '+c+';border-radius:8px;padding:11px 14px;margin-bottom:8px;background:var(--bg2)" data-toma="'+t.id+'">'
+        +'<div style="font-size:14px;font-weight:600;color:var(--text)">🍼 '+_esc(nom)+' <span style="font-size:12px;color:var(--text2)">· '+_esc(t.tipo)+' · objetivo '+t.cantidad_ml_objetivo+' mL · '+hora+'</span></div>'
+        +(vencida?'<div style="font-size:11px;color:var(--red);font-weight:600;margin-top:2px">⏰ Ventana vencida — registrar cuanto antes</div>':'')
+        +'<div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">'
+          +'<input type="number" step="10" min="0" value="'+t.cantidad_ml_objetivo+'" id="toma-ml-'+t.id+'" '
+            +'style="width:100px;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font-family:inherit;font-size:12px"> '
+          +'<span style="font-size:11px;color:var(--text3)">mL</span>'
+          +'<button onclick="registrarTeteroHoy(\''+t.id+'\',\''+cc.id+'\',\''+_esc(t.tipo)+'\')" style="font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;background:var(--teal);color:#04181a;border:none;cursor:pointer;font-family:inherit">✓ Registrar toma</button>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+    sec.style.display='';
+  }
+  window.registrarTeteroHoy=async function(tomaId, crianzaId, tipo){
+    var inp=document.getElementById('toma-ml-'+tomaId);
+    var ml=inp?parseFloat(inp.value):0;
+    if(!ml||ml<=0){ alert('Ingresa los mL que tomó el cordero'); return; }
+    try{
+      var real=await window.DB.createTomaRealizada({
+        corderos_crianza_id:crianzaId, tipo:tipo, cantidad_ml:ml,
+        responsable:(window.AUTH_PERFIL&&window.AUTH_PERFIL.id)||null
+      });
+      if(real&&real.error) throw real.error;
+      var mr=await window.DB.marcarTomaEstado(tomaId,'cumplida',(real&&real.data&&real.data.id)||null);
+      if(mr&&mr.error) throw mr.error;
+      var card=document.querySelector('[data-toma="'+tomaId+'"]');
+      if(card){ card.style.opacity='0.35'; card.innerHTML='<div style="font-size:13px;color:var(--green)">✓ Toma registrada · '+ml+' mL</div>'; }
+      setTimeout(renderTeterosHoy, 1200);
+    }catch(e){ alert('No se pudo registrar la toma: '+(e.message||e)); }
+  };
+  document.addEventListener('appstate:ready', renderTeterosHoy);
+  setTimeout(renderTeterosHoy, 900);
 
   // ── AVISO A — Medicamentos terminados hoy (informativo) ──
   async function renderMedsTerminados(){
