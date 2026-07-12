@@ -31,10 +31,10 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=38"></script>
+<script src="js/approval.js?v=39"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=38"></script>
+<script src="js/db.js?v=39"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
@@ -996,8 +996,12 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   <div class="modal-body">
     <div class="form-section">Animal y fecha</div>
     <div class="form-grid">
-      <div class="fg"><label class="fl">Hembra (ID) *</label>
-        <select class="fi" id="ab-animal" onchange="abOnAnimalChange()"><option value="">— Selecciona la hembra —</option></select>
+      <div class="fg" style="position:relative"><label class="fl">Hembra (ID) *</label>
+        <input class="fi" id="ab-animal-input" placeholder="Buscar por código, nombre o raza…"
+          autocomplete="off" oninput="buscarHembraAborto(this.value)" onfocus="buscarHembraAborto(this.value)">
+        <input type="hidden" id="ab-animal-id">
+        <div id="ab-animal-dropdown"
+          style="display:none;position:absolute;top:100%;left:0;right:0;z-index:60;max-height:220px;overflow-y:auto;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);box-shadow:0 8px 24px rgba(0,0,0,.25)"></div>
         <div id="ab-monta-info" style="font-size:10px;color:var(--text2);margin-top:3px"></div>
       </div>
       <div class="fg"><label class="fl">Fecha del aborto *</label>
@@ -1520,6 +1524,11 @@ function seleccionarMadre(id, codigo){
   if(hid) hid.value=id;
   var dd=document.getElementById('p-madre-dropdown');
   if(dd) dd.style.display='none';
+  // Bloqueo de especies: el padre solo puede ser de la especie de la madre.
+  var _mh=_espReproDe(id);
+  if(_mh && typeof filtrarReproductoresPorEspecie==='function'){
+    filtrarReproductoresPorEspecie('p-padre', _mh.esp);
+  }
   // Reutilizar la lógica existente de autoFillMadre con el código
   if(typeof autoFillMadre==='function') autoFillMadre(codigo);
 }
@@ -1580,6 +1589,48 @@ function abrirPartoConMadre(codigo){
   var f=document.getElementById('p-fecha');
   if(f&&!f.value) f.value=new Date().toISOString().slice(0,10);
 }
+// ── BLOQUEO DE ESPECIES · no mezclar ovino/bovino ─────────────────────────
+// Doble barrera: (1) los selectores de reproductor se filtran a la especie
+// de la hembra elegida; (2) al guardar se valida de nuevo (defensa en
+// profundidad — nunca debe entrar un cruce ovino×bovino a la base).
+function _espReproDe(codOId){
+  var cod=String(codOId||'').replace(/^#/,'').trim();
+  var todos=(window.AppState&&window.AppState.animales)||[];
+  var a=todos.find(function(x){return x.id===cod;})
+    ||((typeof _findAnimalRepro!=='undefined')?_findAnimalRepro(cod):null);
+  return a?{a:a,esp:(a.especie||'ovino')}:null;
+}
+function _validarEspecies(hembraRef, machoRef, contexto){
+  if(!machoRef||machoRef==='desconocido'||machoRef==='') return true;
+  var h=_espReproDe(hembraRef), m=_espReproDe(machoRef);
+  if(!h||!m) return true; // si no se resuelve el animal, no bloquear
+  if(h.esp!==m.esp){
+    toast('🚫 Especies incompatibles: la hembra '+(h.a.codigo||'')+' es '+h.esp
+      +' y el reproductor '+(m.a.codigo||'')+' es '+m.esp
+      +'. No se puede registrar '+(contexto||'el evento')+'.','err');
+    return false;
+  }
+  return true;
+}
+// Rellena un <select> de reproductores solo con machos activos de la especie dada.
+function filtrarReproductoresPorEspecie(selectId, especie, valorPor){
+  var sel=document.getElementById(selectId); if(!sel) return;
+  var machos=((window.AppState&&window.AppState.animales)||[]).filter(function(a){
+    return a.sexo==='macho'&&a.estado==='activo'&&(!especie||(a.especie||'ovino')===especie);
+  });
+  var actual=sel.value;
+  var opts=machos.map(function(m){
+    var v=(valorPor==='id')?m.id:(m.codigo||m.id);
+    return '<option value="'+v+'">'+_dEscRz(m.codigo||'')+(m.nombre?' — '+_dEscRz(m.nombre):'')+(m.raza?' ('+_dEscRz(m.raza)+')':'')+'</option>';
+  }).join('');
+  sel.innerHTML=opts+((valorPor==='id')?'':'<option value="desconocido">Desconocido</option>');
+  if(actual){
+    var sigue=Array.prototype.some.call(sel.options,function(o){return o.value===actual;});
+    if(sigue) sel.value=actual;
+    else if(valorPor!=='id') sel.value='desconocido';
+  }
+}
+
 async function saveParto(){
   const madreId = document.getElementById('p-madre')?.value?.trim();
   const fecha   = document.getElementById('p-fecha')?.value;
@@ -1601,6 +1652,8 @@ async function saveParto(){
   if(!window._madreNN && !madreId){
     toast('Selecciona la madre desde el buscador o marca "Madre NN"','err');return;
   }
+  // Bloqueo de especies: la madre y el padre deben ser de la misma especie.
+  if(!window._madreNN && !_validarEspecies(window._madreSelId||madreId, padreId, 'el parto')) return;
   // Block save if any chapeta is duplicate
   var chapetaErrors = Array.from(document.querySelectorAll('.chapeta-error'))
     .filter(function(el){ return el.style.display!=='none' && el.textContent.includes('⚠'); });
@@ -1797,6 +1850,9 @@ function saveMonta(){
     {el:'m-fecha',label:'Fecha',required:true},
   ]):[];
   if(!fecha){toast('Selecciona la fecha de monta','err');return;}
+  // Bloqueo de especies: hembra y reproductor deben ser de la misma especie.
+  const _machoSel=String(machoId||'').split(/[—–]/)[0].replace(/^#/,'').trim();
+  if(!_validarEspecies(hembraId, _machoSel, 'la monta')) return;
   // Días hasta ecografía según especie (28-30d ovino, 60-90d bovino)
   const especieMonta = (function(){
     if(typeof AppData==='undefined') return 'ovino';
@@ -1945,14 +2001,12 @@ function saveEco(){
 // ═══ ABORTOS ═══
 var ABORTOS = [];
 function abrirModalAborto(){
-  var sel=document.getElementById('ab-animal');
-  if(sel){
-    var AS=window.AppState;
-    var hembras=(AS&&AS.animales||[]).filter(function(a){return a.sexo==='hembra'&&a.estado==='activo';});
-    sel.innerHTML='<option value="">— Selecciona la hembra —</option>'+hembras.map(function(h){
-      return '<option value="'+(h.codigo||h.id)+'">'+(h.codigo||h.id)+(h.nombre?' — '+h.nombre:'')+'</option>';
-    }).join('');
-  }
+  // Buscador tipo-y-sugiere (mismo patrón que madre en parto / beneficio)
+  window._abSelId=null;
+  var inp=document.getElementById('ab-animal-input');
+  if(inp){ inp.value=''; inp.placeholder='Buscar por código, nombre o raza…'; }
+  var hid=document.getElementById('ab-animal-id'); if(hid) hid.value='';
+  var dd=document.getElementById('ab-animal-dropdown'); if(dd) dd.style.display='none';
   var f=document.getElementById('ab-fecha'); if(f) f.value=new Date().toISOString().slice(0,10);
   ['ab-dias','ab-obs'].forEach(function(id){var e=document.getElementById(id); if(e)e.value='';});
   var causa=document.getElementById('ab-causa'); if(causa) causa.value='';
@@ -1964,10 +2018,56 @@ function abrirModalAborto(){
   var subiendo=document.getElementById('ab-subiendo'); if(subiendo) subiendo.style.display='none';
   openModal('modal-aborto');
 }
+// ── Buscador tipo-y-sugiere de hembra para aborto ──
+function buscarHembraAborto(q){
+  var dd=document.getElementById('ab-animal-dropdown'); if(!dd) return;
+  // Al teclear, la selección previa deja de ser válida hasta elegir una sugerencia.
+  window._abSelId=null;
+  var hid=document.getElementById('ab-animal-id'); if(hid) hid.value='';
+  var todos=(window.AppState&&window.AppState.animales)||[];
+  var hembras=todos.filter(function(a){
+    return (a.estado==='activo'||a.activo) && (a.sexo==='hembra'||a.sexo==='H'||a.sexo==='F');
+  });
+  var q2=(q||'').toLowerCase().trim();
+  var lista=q2
+    ? hembras.filter(function(a){
+        return String(a.codigo||'').toLowerCase().includes(q2)
+          ||String(a.nombre||'').toLowerCase().includes(q2)
+          ||String(a.raza||'').toLowerCase().includes(q2);
+      })
+    : hembras;
+  lista=lista.slice(0,40);
+  if(!lista.length){ dd.style.display='none'; dd.innerHTML=''; return; }
+  dd.innerHTML=lista.map(function(a){
+    var nom=a.nombre?(' · '+a.nombre):'';
+    var esp=(a.especie==='bovino')?' 🐄':'';
+    return '<div onclick="seleccionarHembraAborto(\''+a.id+'\',\''+(a.codigo||a.id)+'\')" '
+      +'style="padding:8px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid var(--border)" '
+      +'onmouseover="this.style.background=\'var(--teal-bg)\'" onmouseout="this.style.background=\'\'">'
+      +'<b>'+_dEscRz(a.codigo||a.id)+'</b>'+_dEscRz(nom)+esp
+      +' <span style="color:var(--teal)">'+_dEscRz(a.raza||'')+'</span>'
+      +'</div>';
+  }).join('');
+  dd.style.display='block';
+}
+function seleccionarHembraAborto(id,codigo){
+  window._abSelId=id;
+  var inp=document.getElementById('ab-animal-input'); if(inp) inp.value=codigo;
+  var hid=document.getElementById('ab-animal-id'); if(hid) hid.value=id;
+  var dd=document.getElementById('ab-animal-dropdown'); if(dd) dd.style.display='none';
+  abOnAnimalChange();
+}
+// Cierre del dropdown de aborto al hacer clic fuera
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#ab-animal-dropdown') && e.target.id!=='ab-animal-input'){
+    var dd=document.getElementById('ab-animal-dropdown');
+    if(dd) dd.style.display='none';
+  }
+});
 function abOnAnimalChange(){
-  var cod=document.getElementById('ab-animal')?.value;
+  var cod=document.getElementById('ab-animal-input')?.value;
   var info=document.getElementById('ab-monta-info');
-  if(!cod){ if(info)info.textContent=''; return; }
+  if(!cod||!window._abSelId){ if(info)info.textContent=''; return; }
   var ctx=(typeof getMontaContext!=='undefined')?(getMontaContext(cod,{soloActiva:true})||getMontaContext(cod,{soloActiva:false})):null;
   if(ctx&&ctx.fecha){
     var fm=new Date(ctx.fecha);
@@ -1997,17 +2097,19 @@ function abPreviewFoto(input){
   reader.readAsDataURL(file);
 }
 async function saveAborto(){
-  var cod=document.getElementById('ab-animal')?.value||'';
+  var selId=window._abSelId||document.getElementById('ab-animal-id')?.value||'';
+  var cod=document.getElementById('ab-animal-input')?.value||'';
   var fecha=document.getElementById('ab-fecha')?.value||'';
   var causa=document.getElementById('ab-causa')?.value||'';
   var diasRaw=document.getElementById('ab-dias')?.value;
   var dias=(diasRaw!==''&&diasRaw!=null)?parseInt(diasRaw,10):null;
   var feto=document.getElementById('ab-feto')?.value||'';
   var obs=document.getElementById('ab-obs')?.value?.trim()||'';
-  if(!cod){toast('Selecciona la hembra','err');return;}
+  if(!selId){toast('Selecciona la hembra de la lista de sugerencias','err');return;}
   if(!fecha){toast('Selecciona la fecha del aborto','err');return;}
   if(!causa){toast('Selecciona la causa del aborto','err');return;}
-  var animal=(typeof _findAnimalRepro!=='undefined')?_findAnimalRepro(cod):null;
+  var animal=((window.AppState&&window.AppState.animales)||[]).find(function(a){return a.id===selId;})
+    ||((typeof _findAnimalRepro!=='undefined')?_findAnimalRepro(cod):null);
   if(!animal){toast('No se encontró el animal en el hato','err');return;}
   var btn=document.getElementById('ab-btn-guardar'); if(btn) btn.disabled=true;
 
@@ -2772,6 +2874,10 @@ function openNuevoGrupo(){
 function onGrupoMachoChange(){
   var sel=document.getElementById('g-macho');
   var m=_animalPorId(sel.value);
+  // Bloqueo de especies: re-render del checklist de hembras con el nuevo macho.
+  if(typeof renderHembrasChecklist==='function'){
+    renderHembrasChecklist(document.getElementById('g-hembras-buscar')?.value||'');
+  }
   var info=document.getElementById('g-macho-info');
   if(!m){ info.textContent=''; return; }
   var enGrupos=(window._grupos||[]).filter(function(g){return g.estado==='activo'&&g.macho_id===m.id;}).reduce(function(s,g){return s+(g.num_hembras||0);},0);
@@ -2800,6 +2906,9 @@ function _hembraEnGrupoActivo(uuid){
 function renderHembrasChecklist(filtro){
   var cont=document.getElementById('g-hembras-lista'); if(!cont) return;
   filtro=(filtro||'').toLowerCase().trim();
+  // Bloqueo de especies: si ya hay macho elegido, solo hembras de su especie.
+  var _machoG=_animalPorId(document.getElementById('g-macho')?.value||'');
+  var _espG=_machoG?(_machoG.especie||'ovino'):null;
   var hembras=_hembrasActivas().filter(function(h){
     if(!filtro) return true;
     return String(h.codigo||'').toLowerCase().indexOf(filtro)>=0 || String(h.nombre||'').toLowerCase().indexOf(filtro)>=0;
@@ -2809,9 +2918,14 @@ function renderHembrasChecklist(filtro){
     var ck=window._grupoSel[h.id]?'checked':'';
     var wk=_edadWk(h.fecha_nacimiento);
     var enGrupo=_hembraEnGrupoActivo(h.id);
-    var warn=enGrupo?'<span style="color:var(--red);font-size:11px;margin-left:4px" title="Ya en grupo de monta activo">🚫 En monta</span>':'';
-    return '<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);cursor:'+(enGrupo?'not-allowed':'pointer')+';font-size:13px;opacity:'+(enGrupo?'0.45':'1')+'">'
-      +'<input type="checkbox" data-hembra="'+h.id+'" '+ck+(enGrupo?' disabled title="Esta hembra ya está en un grupo de monta activo"':'')+' onchange="if(!this.disabled){window._grupoSel[this.getAttribute(\'data-hembra\')]=this.checked;_actualizarContadorHembras();}">'
+    var otraEspecie=(_espG && (h.especie||'ovino')!==_espG);
+    if(otraEspecie && window._grupoSel[h.id]) window._grupoSel[h.id]=false;
+    var deshab=enGrupo||otraEspecie;
+    var warn=enGrupo?'<span style="color:var(--red);font-size:11px;margin-left:4px" title="Ya en grupo de monta activo">🚫 En monta</span>'
+      :(otraEspecie?'<span style="color:var(--amber);font-size:11px;margin-left:4px" title="Especie distinta al reproductor del grupo">🚫 Otra especie</span>':'');
+    var titulo=enGrupo?'Esta hembra ya está en un grupo de monta activo':(otraEspecie?'Especie distinta a la del reproductor del grupo':'');
+    return '<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);cursor:'+(deshab?'not-allowed':'pointer')+';font-size:13px;opacity:'+(deshab?'0.45':'1')+'">'
+      +'<input type="checkbox" data-hembra="'+h.id+'" '+ck+(deshab?' disabled title="'+titulo+'"':'')+' onchange="if(!this.disabled){window._grupoSel[this.getAttribute(\'data-hembra\')]=this.checked;_actualizarContadorHembras();}">'
       +'<span><b>'+_gEsc(h.codigo||h.id)+'</b>'+(h.raza?' — '+_gEsc(h.raza):'')+(wk!=null?' · '+wk+' sem':'')+warn+'</span>'
       +'</label>';
   }).join('');
@@ -2837,6 +2951,15 @@ async function guardarGrupo(){
   var dias=parseInt(document.getElementById('g-dias').value)||35;
   var ids=Object.keys(window._grupoSel).filter(function(k){return window._grupoSel[k];});
   if(!ids.length){ toast('Selecciona al menos una hembra','err'); return; }
+  // Bloqueo de especies: ninguna hembra puede ser de especie distinta al macho.
+  var _espM=(m.especie||'ovino');
+  var _cruces=ids.map(_animalPorId).filter(function(h){ return h && (h.especie||'ovino')!==_espM; });
+  if(_cruces.length){
+    toast('🚫 '+_cruces.length+' hembra(s) de especie distinta al reproductor ('+_espM+'): '
+      +_cruces.slice(0,3).map(function(h){return h.codigo||h.id;}).join(', ')
+      +(_cruces.length>3?'…':'')+'. Quítalas del grupo.','err');
+    return;
+  }
   var codigos=ids.map(function(id){ var h=_animalPorId(id); return h?(h.codigo||h.id):id; });
   var payload={ nombre:nombre, macho_id:m.id, macho_codigo:m.codigo||null,
     fecha_inicio:inicio, fecha_fin:fin, dias_duracion:dias,
@@ -3092,7 +3215,13 @@ async function cerrarGrupo(grupoId){
 // ── EXTRA: en "Registrar monta" individual, auto-detectar el reproductor del
 // grupo de monta activo al escribir el código de la hembra ──
 async function detectarGrupoMonta(hembraId){
-  if(!hembraId || !window.DB) return;
+  if(!hembraId) return;
+  // Bloqueo de especies: el select de reproductor se limita a la especie de la hembra.
+  var _h=_espReproDe(hembraId);
+  if(_h && typeof filtrarReproductoresPorEspecie==='function'){
+    filtrarReproductoresPorEspecie('m-macho', _h.esp);
+  }
+  if(!window.DB) return;
   try{
     const FINCA_ID='a1b2c3d4-0000-0000-0000-000000000001';
     const res=await window.DB.getGruposMonta(FINCA_ID);
