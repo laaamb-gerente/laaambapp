@@ -31,10 +31,10 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=38"></script>
+<script src="js/approval.js?v=39"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=38"></script>
+<script src="js/db.js?v=39"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/alertas-motor.js"></script>
@@ -2057,6 +2057,14 @@ function saveTratamiento(tipo){
                     if(typeof loadDosisHoy==='function') loadDosisHoy();
                   }).catch(function(e){ console.warn('[Salud] crearDosisProgramadas:',e&&e.message); });
               }
+              // Seguimiento post-tratamiento (0053): chequeos a los días
+              // configurados (default 3,5,7,15,30) que aparecen en HOY.
+              if(typeof window.DB.crearSeguimientosTratamiento==='function'){
+                window.DB.crearSeguimientosTratamiento(res.data.id,_a.id,_fi,_payload.finca_id,m.medNombre)
+                  .then(function(sr){
+                    if(sr && !sr.error && sr.data && sr.data.length){ toast('👁 Seguimiento programado: días '+sr.data.map(function(s){return s.dia_seguimiento;}).join(', '),'ok'); }
+                  }).catch(function(e){ console.warn('[Salud] crearSeguimientos:',e&&e.message); });
+              }
             }
           }).catch(function(err){ console.warn('[Salud] saveTratamiento Supabase:',err&&err.message); });
         });
@@ -2178,6 +2186,13 @@ function saveTratamiento(tipo){
               // Dosis programadas por medicamento (>1 día), por cada animal del grupo.
               if(res && !res.error && res.data && _durDias>1 && typeof window.DB.crearDosisProgramadas==='function'){
                 return window.DB.crearDosisProgramadas(res.data.id, animalUuid, _fechaStr, _durDias, _payloadG.finca_id)
+                  .then(function(){ return res; }).catch(function(){ return res; });
+              }
+              return res;
+            }).then(function(res){
+              // Seguimiento post-tratamiento (0053) por animal.
+              if(res && !res.error && res.data && typeof window.DB.crearSeguimientosTratamiento==='function'){
+                return window.DB.crearSeguimientosTratamiento(res.data.id, animalUuid, _fechaStr, _payloadG.finca_id, med.medNombre)
                   .then(function(){ return res; }).catch(function(){ return res; });
               }
               return res;

@@ -31,10 +31,10 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=38"></script>
+<script src="js/approval.js?v=39"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=38"></script>
+<script src="js/db.js?v=39"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
@@ -1158,6 +1158,11 @@ async function saveBaja(){
       }catch(err){ console.warn('[Bajas] saveBaja Supabase:',err&&err.message); }
       const _estado=_tipoSb==='muerte'?'muerto':_tipoSb==='venta'?'vendido':'descartado';
       window.DB.saveAnimal({id:_a.id,estado:_estado}).catch(err=>console.warn('[Bajas] saveAnimal estado:',err&&err.message));
+      // Cerrar seguimientos post-tratamiento pendientes del animal (0053)
+      if(typeof window.DB.omitirSeguimientosAnimal==='function'){
+        window.DB.omitirSeguimientosAnimal(_a.id,'Animal dado de baja ('+_estado+')')
+          .catch(err=>console.warn('[Bajas] omitirSeguimientos:',err&&err.message));
+      }
       // Cerrar tratamiento relacionado (mortalidad bajo tratamiento)
       if(datosClinicos && datosClinicos.tratamiento_relacionado_id && typeof window.DB.updateTratamiento==='function'){
         window.DB.updateTratamiento(datosClinicos.tratamiento_relacionado_id,{estado:'cerrado_muerte',fecha_fin:datosClinicos.fecha_real_muerte})
@@ -1206,11 +1211,19 @@ async function saveBaja(){
             });
             if(_confirmar){
               const _ids=_crias.map(function(c){return c.id;});
-              await window.DB.enviarCriasASalaCuna(
-                _ids,'muerte_madre','a1b2c3d4-0000-0000-0000-000000000001'
+              const _rsc = await window.DB.enviarCriasASalaCuna(
+                _ids,'muerte_madre','a1b2c3d4-0000-0000-0000-000000000001', _a.id
               );
-              if(typeof toast==='function')
-                toast('🍼 '+_crias.length+' cría(s) enviadas a Sala Cuna','ok');
+              // FIX 0053: verificar resultado real — antes se mostraba éxito
+              // aunque el insert fallara (CHECK de motivo) y Sala Cuna quedaba vacía.
+              if(_rsc && _rsc.errores && _rsc.errores.length){
+                if(typeof toast==='function')
+                  toast('⚠️ Sala Cuna: '+_rsc.errores.length+' error(es) — '+_rsc.errores[0],'err');
+              } else {
+                const _n=(_rsc&&_rsc.creados)?_rsc.creados.length:0;
+                if(typeof toast==='function')
+                  toast('🍼 '+_n+' cría(s) enroladas en Sala Cuna','ok');
+              }
             }
           }
         }catch(e){

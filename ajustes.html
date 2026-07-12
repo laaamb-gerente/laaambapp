@@ -197,10 +197,10 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=38"></script>
+<script src="js/approval.js?v=39"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=38"></script>
+<script src="js/db.js?v=39"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
 <script src="AppData.js"></script>
@@ -373,6 +373,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
           <div class="fg"><label class="fl">Meta GDP (g/día)</label><input class="fi" type="number" id="cfg-gdp" placeholder="200"></div>
           <div class="fg"><label class="fl">Días de descanso de potrero (default)</label><input class="fi" type="number" id="cfg-descanso" placeholder="21"></div>
           <div class="fg"><label class="fl">Días de pastoreo de potrero (default)</label><input class="fi" type="number" id="cfg-pastoreo" placeholder="7"></div>
+          <div class="fg"><label class="fl">Días de seguimiento post-tratamiento</label><input class="fi" type="text" id="cfg-seguimiento" placeholder="3,5,7,15,30"><div style="font-size:11px;color:var(--text3);margin-top:4px;line-height:1.4">Días después de un tratamiento en los que HOY preguntará cómo está el animal. Lista separada por comas (ej. 3,5,7,15,30).</div></div>
         </div>
         <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
           <button class="btn btn-primary btn-sm" onclick="guardarConfigProduccion()">Guardar configuración</button>
@@ -1239,20 +1240,43 @@ async function cargarConfigProduccion(){
       var el = document.getElementById(id);
       if(el) el.value = cfg[CONFIG_CAMPOS[id]];
     });
+    // Días de seguimiento post-tratamiento (array → texto "3,5,7,15,30")
+    var segEl = document.getElementById('cfg-seguimiento');
+    if(segEl){
+      var dias = Array.isArray(cfg.dias_seguimiento_tratamiento) ? cfg.dias_seguimiento_tratamiento : [3,5,7,15,30];
+      segEl.value = dias.join(',');
+    }
   }catch(e){ console.warn('[Config] cargar', e && e.message); }
 }
 
 async function guardarConfigProduccion(){
   if(!window._sb){ toast('Supabase no disponible','err'); return; }
   var status = document.getElementById('cfg-status');
-  var config = {};
-  Object.keys(CONFIG_CAMPOS).forEach(function(id){
-    var el = document.getElementById(id);
-    var v = el ? parseFloat(el.value) : NaN;
-    config[CONFIG_CAMPOS[id]] = isNaN(v) ? CONFIG_DEFAULTS[CONFIG_CAMPOS[id]] : v;
-  });
   if(status){ status.style.color='var(--text3)'; status.textContent='Guardando…'; }
   try{
+    // FIX de raíz: leer la config actual y hacer MERGE — antes se reemplazaba
+    // el JSONB completo y se perdían claves ajenas a este formulario.
+    var prev = {};
+    try{
+      var rPrev = await window._sb.from('fincas').select('config').eq('id', FINCA_ID_AJ).maybeSingle();
+      prev = (rPrev && rPrev.data && rPrev.data.config) || {};
+    }catch(e){}
+    var config = Object.assign({}, prev);
+    Object.keys(CONFIG_CAMPOS).forEach(function(id){
+      var el = document.getElementById(id);
+      var v = el ? parseFloat(el.value) : NaN;
+      config[CONFIG_CAMPOS[id]] = isNaN(v) ? (prev[CONFIG_CAMPOS[id]] != null ? prev[CONFIG_CAMPOS[id]] : CONFIG_DEFAULTS[CONFIG_CAMPOS[id]]) : v;
+    });
+    // Días de seguimiento post-tratamiento: "3,5,7,15,30" → [3,5,7,15,30]
+    var segEl = document.getElementById('cfg-seguimiento');
+    if(segEl){
+      var dias = String(segEl.value||'').split(',')
+        .map(function(x){ return parseInt(x.trim(),10); })
+        .filter(function(x){ return x>0 && x<=365; })
+        .sort(function(a,b){ return a-b; });
+      config.dias_seguimiento_tratamiento = dias.length ? dias : [3,5,7,15,30];
+      segEl.value = config.dias_seguimiento_tratamiento.join(',');
+    }
     var r = await window._sb.from('fincas').update({ config: config }).eq('id', FINCA_ID_AJ);
     if(r.error) throw r.error;
     if(status){ status.style.color='var(--green)'; status.textContent='✓ Configuración guardada'; }

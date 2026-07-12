@@ -1112,32 +1112,42 @@ window.DB = {
       .or('peso_actual.is.null,peso_actual.lt.20');
   },
 
-  // Marca crías como en_sala_cuna y crea su registro en corderos_crianza
-  async enviarCriasASalaCuna(criasIds, motivo, fincaId) {
+  // Marca crías como en_sala_cuna y crea su registro en corderos_crianza.
+  // FIX 0053: antes los errores se tragaban en silencio (el CHECK de motivo
+  // rechazaba 'muerte_madre' y en_sala_cuna no existía), por lo que el toast
+  // decía "enviadas" sin haberse creado nada. Ahora devuelve
+  // { creados:[ids], errores:[mensajes] } y el caller DEBE revisarlos.
+  async enviarCriasASalaCuna(criasIds, motivo, fincaId, madreId) {
     const FINCA = fincaId || 'a1b2c3d4-0000-0000-0000-000000000001';
-    // 1. Marcar en animales
-    await window._sb.from('animales')
+    const creados = [];
+    const errores = [];
+    // 1. Marcar en animales (columna creada en 0053)
+    const upd = await window._sb.from('animales')
       .update({ en_sala_cuna: true })
       .in('id', criasIds);
+    if (upd.error) errores.push('animales.en_sala_cuna: ' + upd.error.message);
     // 2. Crear entrada en corderos_crianza si no tiene una activa
-    const creados = [];
     for (const criaId of criasIds) {
       try {
         const existing = await window._sb.from('corderos_crianza')
           .select('id').eq('cordero_id', criaId).eq('estado', 'activo')
           .maybeSingle();
+        if (existing.error) { errores.push(criaId + ': ' + existing.error.message); continue; }
         if (!existing.data) {
           const cc = await this.createCorderoCrianza({
             cordero_id: criaId,
+            madre_id: madreId || null,
             motivo: motivo || 'muerte_madre',
             finca_id: FINCA,
             fecha_inicio: new Date().toISOString().slice(0, 10)
           });
-          if (cc && cc.data) creados.push(cc.data.id);
+          if (cc && cc.error) { errores.push(criaId + ': ' + cc.error.message); }
+          else if (cc && cc.data) creados.push(cc.data.id);
         }
-      } catch (e) { /* continuar con las demás */ }
+      } catch (e) { errores.push(criaId + ': ' + (e && e.message)); }
     }
-    return creados;
+    if (errores.length) console.error('[DB] enviarCriasASalaCuna errores:', errores);
+    return { creados, errores };
   },
 
   async updateCorderoCrianza(id, cambios) {
@@ -1702,6 +1712,66 @@ window.DB = {
     }
     return await window._sb.from('dosis_programadas').insert(filas).select();
   },
+  // ── SEGUIMIENTOS POST-TRATAMIENTO (migración 0053) ────────────────────
+  // Días configurables en fincas.config.dias_seguimiento_tratamiento
+  // (default [3,5,7,15,30]). Cada tratamiento genera N chequeos que
+  // aparecen en HOY preguntando cómo sigue el animal.
+  _diasSeguimientoConfig() {
+    try {
+      var cfg = (window.AppState && window.AppState.finca && window.AppState.finca.config) || {};
+      var d = cfg.dias_seguimiento_tratamiento;
+      if (Array.isArray(d) && d.length) {
+        return d.map(function (x) { return parseInt(x, 10); })
+                .filter(function (x) { return x > 0; })
+                .sort(function (a, b) { return a - b; });
+      }
+    } catch (e) { }
+    return [3, 5, 7, 15, 30];
+  },
+  async crearSeguimientosTratamiento(tratamientoId, animalId, fechaInicio, fincaId, medicamentoNombre, dias) {
+    var lista = (Array.isArray(dias) && dias.length) ? dias : this._diasSeguimientoConfig();
+    if (!lista.length) return { data: [], error: null };
+    var FINCA = fincaId || 'a1b2c3d4-0000-0000-0000-000000000001';
+    var base = new Date((fechaInicio || new Date().toISOString().slice(0, 10)) + 'T00:00:00');
+    var filas = lista.map(function (dia) {
+      var d = new Date(base.getTime() + dia * 86400000);
+      return {
+        tratamiento_id: String(tratamientoId),
+        animal_id: animalId || null,
+        medicamento_nombre: medicamentoNombre || null,
+        dia_seguimiento: dia,
+        fecha_programada: d.toISOString().slice(0, 10),
+        estado: 'pendiente',
+        finca_id: FINCA
+      };
+    });
+    return await window._sb.from('seguimientos_tratamiento').insert(filas).select();
+  },
+  async getSeguimientosPendientesHoy(fincaId) {
+    var hoy = new Date().toISOString().slice(0, 10);
+    var q = window._sb.from('seguimientos_tratamiento')
+      .select('*, animales(codigo, nombre, estado)')
+      .eq('estado', 'pendiente')
+      .lte('fecha_programada', hoy);
+    if (fincaId) q = q.eq('finca_id', fincaId);
+    return await q.order('fecha_programada', { ascending: true });
+  },
+  async responderSeguimiento(id, respuesta, observacion, respondidoPor) {
+    return await window._sb.from('seguimientos_tratamiento').update({
+      estado: 'respondido',
+      respuesta: respuesta,
+      observacion: observacion || null,
+      respondido_por: respondidoPor || null,
+      fecha_respuesta: new Date().toISOString()
+    }).eq('id', id).select().single();
+  },
+  // Cierra los seguimientos futuros de un animal (p. ej. si murió).
+  async omitirSeguimientosAnimal(animalId, motivo) {
+    return await window._sb.from('seguimientos_tratamiento')
+      .update({ estado: 'omitido', observacion: motivo || 'Cerrado automáticamente' })
+      .eq('animal_id', animalId).eq('estado', 'pendiente');
+  },
+
   async getDosisPendientesHoy(fincaId) {
     var hoy = new Date().toISOString().slice(0, 10);
     var q = window._sb.from('dosis_programadas')

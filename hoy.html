@@ -30,11 +30,11 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=38"></script>
+<script src="js/approval.js?v=39"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=38"></script>
+<script src="js/db.js?v=39"></script>
 <script src="js/alertas-motor.js"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
@@ -216,6 +216,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     <div class="sec-title"><span class="dot" style="background:var(--red)"></span>Dosis de tratamiento hoy</div>
     <div id="dosis-hoy-hoylist"></div>
     <a href="salud.html" style="display:inline-block;margin-top:6px;font-size:11px;font-weight:600;color:var(--teal);text-decoration:none">→ Ver todos los tratamientos</a>
+  </div>
+
+  <!-- Seguimiento post-tratamiento (días 3/5/7/15/30) — se oculta si no hay -->
+  <div class="sec" id="seg-trat-sec" style="display:none">
+    <div class="sec-title"><span class="dot" style="background:var(--sky,#38b0d8)"></span>Seguimiento post-tratamiento · ¿Cómo está el animal?</div>
+    <div id="seg-trat-lista"></div>
+    <div style="font-size:10px;color:var(--text3);margin-top:4px">Los días de chequeo se configuran en Ajustes → Producción</div>
   </div>
 
   <!-- Medicamentos terminados hoy (informativo) — se oculta si no hay -->
@@ -879,6 +886,59 @@ navigator.serviceWorker?.addEventListener('message', function(e){
   }
   document.addEventListener('appstate:ready', renderDosisHoy);
   setTimeout(renderDosisHoy, 700);
+
+  // ── Seguimiento post-tratamiento (0053): días 3/5/7/15/30 configurables ──
+  async function renderSeguimientos(){
+    var sec=document.getElementById('seg-trat-sec');
+    var cont=document.getElementById('seg-trat-lista');
+    if(!sec || !cont) return;
+    if(!(window.DB && window.DB.getSeguimientosPendientesHoy)){ sec.style.display='none'; return; }
+    var rows=[];
+    try{ var r=await window.DB.getSeguimientosPendientesHoy(FINCA_ID); rows=(r&&r.data)||[]; }catch(e){}
+    // No preguntar por animales que ya salieron del inventario.
+    rows=rows.filter(function(s){ return !s.animales || s.animales.estado==='activo'; });
+    if(!rows.length){ sec.style.display='none'; return; }
+    var hoy=_hoyISO();
+    cont.innerHTML=rows.map(function(s){
+      var an=s.animales||{}; var nombre=an.codigo||an.nombre||'Animal';
+      var atras=(s.fecha_programada<hoy);
+      var c=atras?'var(--amber)':'var(--sky,#38b0d8)';
+      return '<div style="border:1px solid var(--border);border-left:3px solid '+c+';border-radius:8px;padding:11px 14px;margin-bottom:8px;background:var(--bg2)" data-seg="'+s.id+'">'
+        +'<div style="font-size:14px;font-weight:600;color:var(--text)">👁 '+_esc(nombre)
+          +' <span style="font-size:12px;color:var(--text2)">· día '+s.dia_seguimiento+' post-tratamiento'
+          +(s.medicamento_nombre?(' · '+_esc(s.medicamento_nombre)):'')+'</span></div>'
+        +(atras?'<div style="font-size:11px;color:var(--amber);font-weight:600;margin-top:2px">⚠ Chequeo atrasado (programado '+_esc(s.fecha_programada)+')</div>':'')
+        +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'
+          +'<button class="btn btn-sm" style="background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="responderSeg(\''+s.id+'\',\'bien\')">✅ Bien</button>'
+          +'<button class="btn btn-sm" style="background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber)" onclick="responderSeg(\''+s.id+'\',\'regular\')">⚠️ Regular</button>'
+          +'<button class="btn btn-sm" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red)" onclick="responderSeg(\''+s.id+'\',\'mal\')">🔴 Mal</button>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+    sec.style.display='';
+  }
+  window.responderSeg=async function(id, respuesta){
+    var obs=null;
+    if(respuesta!=='bien'){
+      obs=prompt('¿Qué observas en el animal? (síntomas, comportamiento…)')||null;
+    }
+    try{
+      var quien=(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||null;
+      var r=await window.DB.responderSeguimiento(id, respuesta, obs, quien);
+      if(r && r.error) throw r.error;
+      var card=document.querySelector('[data-seg="'+id+'"]');
+      if(card){ card.style.transition='opacity .4s'; card.style.opacity='0.35';
+        card.innerHTML='<div style="font-size:13px;color:var(--text2)">Registrado: '+(respuesta==='bien'?'✅ Bien':respuesta==='regular'?'⚠️ Regular':'🔴 Mal')+'</div>'; }
+      if(respuesta==='mal'){
+        alert('🔴 Registrado. Considera revisar el animal en Salud → Tratamientos y evaluar con el veterinario.');
+      }
+      setTimeout(renderSeguimientos, 1500);
+    }catch(e){
+      alert('No se pudo guardar el seguimiento: '+(e&&e.message));
+    }
+  };
+  document.addEventListener('appstate:ready', renderSeguimientos);
+  setTimeout(renderSeguimientos, 800);
 
   // ── AVISO A — Medicamentos terminados hoy (informativo) ──
   async function renderMedsTerminados(){
