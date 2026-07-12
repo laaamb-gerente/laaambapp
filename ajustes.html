@@ -197,10 +197,10 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=39"></script>
+<script src="js/approval.js?v=40"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=39"></script>
+<script src="js/db.js?v=40"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
 <script src="AppData.js"></script>
@@ -366,6 +366,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
           <div class="fg"><label class="fl">Días de gestación · ovinos</label><input class="fi" type="number" id="cfg-gest-ovino" placeholder="147"></div>
           <div class="fg"><label class="fl">Días de gestación · bovinos</label><input class="fi" type="number" id="cfg-gest-bovino" placeholder="283"></div>
           <div class="fg"><label class="fl">Edad de destete (días)</label><input class="fi" type="number" id="cfg-destete" placeholder="60"></div>
+          <div class="fg"><label class="fl">Peso de destete (kg)</label><input class="fi" type="number" step="0.5" id="cfg-peso-destete" placeholder="18"><div style="font-size:11px;color:var(--text3);margin-top:4px;line-height:1.4">Peso mínimo objetivo al destetar. Usado en el reporte de kg destetados por hectárea y vientre.</div></div>
           <div class="fg"><label class="fl">Peso objetivo de sacrificio (kg)</label><input class="fi" type="number" step="0.1" id="cfg-peso-sacrificio" placeholder="48"></div>
           <div class="fg"><label class="fl">Precio objetivo de venta (COP/kg)</label><input class="fi" type="number" id="cfg-precio-venta" placeholder="15000"></div>
           <div class="fg"><label class="fl">Carga animal objetivo (kg/ha)</label><input class="fi" type="number" step="1000" id="cfg-carga" placeholder="200000"><div style="font-size:11px;color:var(--text3);margin-top:4px;line-height:1.4">Carga instantánea máxima en kg de biomasa por hectárea. Sistema de pastoreo adaptativo — 200.000 kg/ha es referencia de alta densidad con rotación rápida (Greg Judy / Allen Williams).</div></div>
@@ -1208,6 +1209,7 @@ var CONFIG_DEFAULTS = {
   dias_gestacion_ovino: 147,
   dias_gestacion_bovino: 283,
   edad_destete_dias: 60,
+  peso_destete_kg: 18,
   peso_objetivo_sacrificio: 48,
   precio_objetivo_venta: 15000,
   carga_animal_kgha: 200000,
@@ -1220,6 +1222,7 @@ var CONFIG_CAMPOS = {
   'cfg-gest-ovino':'dias_gestacion_ovino',
   'cfg-gest-bovino':'dias_gestacion_bovino',
   'cfg-destete':'edad_destete_dias',
+  'cfg-peso-destete':'peso_destete_kg',
   'cfg-peso-sacrificio':'peso_objetivo_sacrificio',
   'cfg-precio-venta':'precio_objetivo_venta',
   'cfg-carga':'carga_animal_kgha',

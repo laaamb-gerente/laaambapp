@@ -946,22 +946,71 @@ async function excelCulling(){
 
 // ── 8. SANITARIO DEL PERÍODO ─────────────────────────────────────────────────
 async function _datosSanitario(R){
-  var trats=[], segs=[];
+  var trats=[], segs=[], bajas=[];
   try{ var rt=await window.DB.getTratamientos(FINCA_ID_R); trats=((rt&&rt.data)||[]).filter(function(t){ return _enRango(t.fecha||t.fecha_inicio,R); }); }catch(e){}
   try{
     var rs=await window._sb.from('seguimientos_tratamiento')
-      .select('*, animales(codigo,nombre)').eq('finca_id',FINCA_ID_R)
+      .select('*, animales(codigo,nombre,estado)').eq('finca_id',FINCA_ID_R)
       .gte('fecha_programada',R.ini).lte('fecha_programada',R.fin);
     segs=(rs&&rs.data)||[];
   }catch(e){}
-  return {trats:trats, segs:segs};
+  try{ var rb=await window.DB.getBajas(FINCA_ID_R,2000); bajas=((rb&&rb.data)||[]).filter(function(b){ return _enRango(b.fecha,R) && /muerte/i.test(b.tipo||b.motivo||''); }); }catch(e){}
+  return {trats:trats, segs:segs, bajas:bajas};
 }
+
+// Eficacia por medicamento cruzando cada tratamiento con su desenlace:
+//   EXITO  -> estado completado/apto, o seguimiento termino 'bien'
+//   FALLO  -> estado cerrado_muerte, o el animal murio, o seguimiento 'mal'/'muerto'
+//   CURSO  -> sin desenlace aun
+function _eficaciaMedicamentos(trats, segs, bajas){
+  var muertosPorAnimal={};
+  bajas.forEach(function(b){ if(b.animal_id) muertosPorAnimal[b.animal_id]=true; });
+  var peorSegPorTrat={};
+  var ordenResp={bien:1, regular:2, mal:3, muerto:4};
+  segs.forEach(function(s){
+    if(s.estado!=='respondido'||!s.respuesta) return;
+    var k=String(s.tratamiento_id);
+    var prev=peorSegPorTrat[k];
+    if(!prev || (ordenResp[s.respuesta]||0)>(ordenResp[prev]||0)) peorSegPorTrat[k]=s.respuesta;
+  });
+  var porMed={};
+  trats.forEach(function(t){
+    var med=(t.medicamentos&&t.medicamentos.nombre)||t.medicamento_nombre||'Sin especificar';
+    var o=porMed[med]||(porMed[med]={n:0, exito:0, fallo:0, curso:0, muertes:0});
+    o.n++;
+    var estado=String(t.estado||'').toLowerCase();
+    var seg=peorSegPorTrat[String(t.id)];
+    var murio=muertosPorAnimal[t.animal_id] || /muerte/.test(estado);
+    if(murio){ o.fallo++; o.muertes++; }
+    else if(seg==='mal'||seg==='muerto'){ o.fallo++; }
+    else if(/completad|apto|cerrado_apto|finalizado/.test(estado) || seg==='bien'){ o.exito++; }
+    else o.curso++;
+  });
+  return porMed;
+}
+
 async function generarSanitario(){
   var R=rangoSeleccionado();
   toast('Generando reporte sanitario…');
   var d=await _datosSanitario(R);
-  var porMed={};
-  d.trats.forEach(function(t){ var m=(t.medicamentos&&t.medicamentos.nombre)||t.medicamento_nombre||'Sin especificar'; porMed[m]=(porMed[m]||0)+1; });
+
+  var porCausa={};
+  d.bajas.forEach(function(b){
+    var c=(b.datos_clinicos&&(b.datos_clinicos.causa_muerte||b.datos_clinicos.enfermedad))||b.causa||'Sin clasificar';
+    var o=porCausa[c]||(porCausa[c]={n:0, conTrat:0, sinTrat:0});
+    o.n++;
+    var tt=b.datos_clinicos?b.datos_clinicos.tenia_tratamiento_previo:undefined;
+    if(tt===true) o.conTrat++; else if(tt===false) o.sinTrat++;
+  });
+  var causasOrden=Object.keys(porCausa).sort(function(a,b){return porCausa[b].n-porCausa[a].n;});
+
+  var efi=_eficaciaMedicamentos(d.trats, d.segs, d.bajas);
+  var medsOrden=Object.keys(efi).sort(function(a,b){
+    var ca=efi[a].exito+efi[a].fallo, cb=efi[b].exito+efi[b].fallo;
+    var ra=ca?efi[a].exito/ca:0, rb=cb?efi[b].exito/cb:0;
+    return rb-ra;
+  });
+
   var enRetiro=d.trats.filter(function(t){return t.estado==='en_retiro';});
   var segResp=d.segs.filter(function(s){return s.estado==='respondido';});
   var segMal=segResp.filter(function(s){return s.respuesta==='mal'||s.respuesta==='muerto';});
@@ -969,15 +1018,41 @@ async function generarSanitario(){
   var html=repHead('Reporte sanitario','Período: '+R.label);
   html+='<div class="kpi-grid">'
     +kpi(d.trats.length,'Tratamientos aplicados')
-    +kpi(Object.keys(porMed).length,'Medicamentos distintos')
+    +kpi(Object.keys(efi).length,'Medicamentos distintos')
+    +kpi(d.bajas.length,'Muertes del período')
     +kpi(enRetiro.length,'En retiro sanitario')
-    +kpi(d.segs.length,'Seguimientos programados')
     +kpi(segResp.length,'Seguimientos respondidos')
-    +kpi(segMal.length,'Animales reportados mal')
+    +kpi(segMal.length,'Reportados regular/mal')
     +'</div>';
-  html+='<h2>Medicamentos usados</h2><table><thead><tr><th>Medicamento</th><th>Aplicaciones</th></tr></thead><tbody>'
-    +Object.keys(porMed).sort(function(a,b){return porMed[b]-porMed[a];}).map(function(m){return '<tr><td>'+esc(m)+'</td><td>'+porMed[m]+'</td></tr>';}).join('')
-    +'</tbody></table>';
+
+  html+='<h2>🩺 Enfermedades y causas que más nos afectan</h2>';
+  if(causasOrden.length){
+    html+='<table><thead><tr><th>Causa / Enfermedad</th><th>Muertes</th><th>% del total</th><th>Con tratamiento previo</th><th>Sin tratamiento</th></tr></thead><tbody>'
+      +causasOrden.map(function(c){
+        var o=porCausa[c];
+        return '<tr><td><b>'+esc(c)+'</b></td><td>'+o.n+'</td><td>'+(d.bajas.length?Math.round(o.n/d.bajas.length*100):0)+'%</td><td>'+o.conTrat+'</td><td>'+o.sinTrat+'</td></tr>';
+      }).join('')+'</tbody></table>';
+    html+='<p style="font-size:11px;color:#5a8a90">"Con tratamiento previo" son animales que murieron a pesar de haber sido tratados — señal de que ese protocolo no está funcionando para esa condición.</p>';
+  } else {
+    html+='<p style="font-size:12px;color:#1a9455">✓ Sin muertes registradas en el período.</p>';
+  }
+
+  html+='<h2>💊 Eficacia de los medicamentos — ¿cuáles sacan al animal adelante?</h2>';
+  if(medsOrden.length){
+    html+='<table><thead><tr><th>Medicamento</th><th>Aplicaciones</th><th>Éxitos</th><th>Fallos</th><th>Muertes</th><th>En curso</th><th>Tasa de éxito</th></tr></thead><tbody>'
+      +medsOrden.map(function(m){
+        var o=efi[m];
+        var concluidos=o.exito+o.fallo;
+        var tasa=concluidos?Math.round(o.exito/concluidos*100):null;
+        var color=tasa==null?'#5a8a90':(tasa>=70?'#1a9455':(tasa>=40?'#e8a030':'#c0392b'));
+        var tasaTxt=tasa==null?'—':tasa+'%';
+        return '<tr><td><b>'+esc(m)+'</b></td><td>'+o.n+'</td><td>'+o.exito+'</td><td>'+o.fallo+'</td><td>'+o.muertes+'</td><td>'+o.curso+'</td><td style="font-weight:700;color:'+color+'">'+tasaTxt+'</td></tr>';
+      }).join('')+'</tbody></table>';
+    html+='<p style="font-size:11px;color:#5a8a90">Tasa de éxito sobre casos concluidos (éxito + fallo), no sobre los que siguen en curso. Éxito = tratamiento completado o seguimiento "Bien"; Fallo = el animal murió o seguimiento "Mal/Muerto". <b>Verde = tus mejores protocolos; rojo = revisar con el veterinario.</b></p>';
+  } else {
+    html+='<p style="font-size:12px;color:#5a8a90">Sin tratamientos concluidos en el período para evaluar eficacia. Registra los seguimientos post-tratamiento en HOY para alimentar este análisis.</p>';
+  }
+
   if(d.trats.length){
     html+='<h2>Tratamientos del período</h2><table><thead><tr><th>Fecha</th><th>Animal</th><th>Medicamento</th><th>Estado</th><th>Fin retiro</th></tr></thead><tbody>'
       +d.trats.slice(0,60).map(function(t){
@@ -998,9 +1073,24 @@ async function excelSanitario(){
   var R=rangoSeleccionado();
   toast('Exportando sanitario a Excel…');
   var d=await _datosSanitario(R);
-  var aoa=[['Fecha','Animal','Medicamento','Dosis','Estado','Fin retiro','Registrado por','Notas']];
+  var efi=_eficaciaMedicamentos(d.trats, d.segs, d.bajas);
+  var aoa=[['— EFICACIA POR MEDICAMENTO —'],['Medicamento','Aplicaciones','Éxitos','Fallos','Muertes','En curso','Tasa éxito (%)']];
+  Object.keys(efi).forEach(function(m){
+    var o=efi[m], concl=o.exito+o.fallo;
+    aoa.push([m, o.n, o.exito, o.fallo, o.muertes, o.curso, concl?Math.round(o.exito/concl*100):'']);
+  });
+  aoa.push([]);
+  aoa.push(['— TRATAMIENTOS DEL PERÍODO —']);
+  aoa.push(['Fecha','Animal','Medicamento','Dosis','Estado','Fin retiro','Registrado por','Notas']);
   d.trats.forEach(function(t){
     aoa.push([t.fecha||t.fecha_inicio||'', (t.animales&&t.animales.codigo)||t.animal_id||'', (t.medicamentos&&t.medicamentos.nombre)||t.medicamento_nombre||'', t.dosis||'', t.estado||'', t.fecha_fin_retiro||'', t.registrado_por||'', t.notas||'']);
+  });
+  aoa.push([]);
+  aoa.push(['— MUERTES POR CAUSA —']);
+  aoa.push(['Fecha','Animal','Causa','Con tratamiento previo']);
+  d.bajas.forEach(function(b){
+    var c=(b.datos_clinicos&&(b.datos_clinicos.causa_muerte||b.datos_clinicos.enfermedad))||b.causa||'';
+    aoa.push([b.fecha||'', (b.animales&&b.animales.codigo)||b.animal_id||'', c, (b.datos_clinicos&&b.datos_clinicos.tenia_tratamiento_previo)?'Sí':'']);
   });
   _excelDescargar(aoa,'Sanitario','laaamb-sanitario');
 }
@@ -1390,7 +1480,7 @@ async function generarHectarea(){
   var partos=[];
   try{ var rp=await window.DB.getPartos(FINCA_ID_R,1000); partos=((rp&&rp.data)||[]).filter(function(p){return _enRango(p.fecha_parto||p.fecha,R);}); }catch(e){}
   // kg destetados: aproximación = crías vivas × peso medio de destete configurado (o 12 kg)
-  var pesoDestete=(window.AppState&&window.AppState.finca&&window.AppState.finca.config&&window.AppState.finca.config.peso_destete_kg)||12;
+  var pesoDestete=(window.AppState&&window.AppState.finca&&window.AppState.finca.config&&window.AppState.finca.config.peso_destete_kg)||18;
   var vivas=0;
   partos.forEach(function(p){
     var cn=p.corderos_nacidos||[];
