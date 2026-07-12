@@ -29,11 +29,11 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=39"></script>
+<script src="js/approval.js?v=40"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=39"></script>
+<script src="js/db.js?v=40"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
@@ -319,6 +319,34 @@ tbody td{padding:9px 12px;color:var(--text);vertical-align:middle}
       </div>
 
       <div class="rep-card">
+        <div class="rep-ico"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="19" cy="17" r="2"/></svg></div>
+        <div class="rep-name">📅 Rendimiento en canal y despiece</div>
+        <div class="rep-desc">Transformación cárnica: rendimiento canal (%), merma, kg por corte, precio por kg vendible y margen por canal beneficiada. El corazón del negocio "información por kilo".</div>
+        <div class="rep-actions">
+          <button class="btn btn-primary btn-sm" onclick="generarCanal()">Generar PDF</button>
+          <button class="btn btn-ghost btn-sm" onclick="excelCanal()">Excel</button>
+        </div>
+      </div>
+
+      <div class="rep-card">
+        <div class="rep-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
+        <div class="rep-name">Eficiencia reproductiva (KPI industria)</div>
+        <div class="rep-desc">Los indicadores que la industria considera decisivos: tasa de parición, prolificidad, intervalo entre partos, mortalidad predestete y kg destetados por vientre — con referencias de la industria ovina.</div>
+        <div class="rep-actions">
+          <button class="btn btn-primary btn-sm" onclick="generarEficiencia()">Generar PDF</button>
+        </div>
+      </div>
+
+      <div class="rep-card">
+        <div class="rep-ico"><svg viewBox="0 0 24 24"><path d="M3 20h18M5 20V8l7-4 7 4v12"/><path d="M9 20v-6h6v6"/></svg></div>
+        <div class="rep-name">Productividad por hectárea</div>
+        <div class="rep-desc">Los indicadores integrales modernos: carga animal (kg/ha), kg destetados por hectárea y por vientre expuesto, sobre las 29 ha de la finca. Reproducción + producción + tierra en un solo número.</div>
+        <div class="rep-actions">
+          <button class="btn btn-primary btn-sm" onclick="generarHectarea()">Generar PDF</button>
+        </div>
+      </div>
+
+      <div class="rep-card">
         <div class="rep-ico"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h6"/></svg></div>
         <div class="rep-name">Inventario animal</div>
         <div class="rep-desc">Lista completa de animales activos con peso, lote, edad, estado reproductivo y valor estimado.</div>
@@ -389,7 +417,7 @@ function fincaInfo(){
     nombre: f.nombre || 'La Marinilla',
     municipio: f.municipio || 'Ibagué',
     departamento: f.departamento || 'Tolima',
-    area_ha: f.area_ha || 50,
+    area_ha: f.area_ha || f.hectareas || f.area || 29,
     ica: f.ica || f.registro_ica || '—',
     propietario: f.propietario || 'Juan Manuel Arbeláez'
   };
@@ -1207,6 +1235,198 @@ async function excelPesajes(){
     aoa.push([p.fecha||'', (p.animales&&p.animales.codigo)||p.animal_id||'', p.peso||p.peso_kg||'', p.tipo||'', p.fuente||'', p.registrado_por||'']);
   });
   _excelDescargar(aoa,'Pesajes','laaamb-pesajes');
+}
+
+// ── 13. RENDIMIENTO EN CANAL Y DESPIECE ──────────────────────────────────────
+async function _datosCanal(R){
+  var benef=[], unidades=[];
+  try{
+    var rb=await window._sb.from('beneficios')
+      .select('id,animal_id,fecha,peso_vivo_entrada,peso_canal,kg_disponible,costo_beneficio,frigorifico,animales(codigo,nombre,raza)')
+      .eq('finca_id',FINCA_ID_R).gte('fecha',R.ini).lte('fecha',R.fin).order('fecha',{ascending:false});
+    benef=(rb&&rb.data)||[];
+  }catch(e){}
+  try{ var ic=await window.DB.getInventarioCortes(FINCA_ID_R); unidades=(ic&&ic.unidades)||[]; }catch(e){}
+  return {benef:benef, unidades:unidades};
+}
+async function generarCanal(){
+  var R=rangoSeleccionado();
+  toast('Generando reporte de canal y despiece…');
+  var d=await _datosCanal(R);
+  if(!d.benef.length){ toast('No hay beneficios registrados en el período','err'); return; }
+
+  var pvTot=0, pcTot=0, rends=[];
+  d.benef.forEach(function(b){
+    var pv=b.peso_vivo_entrada||0, pc=b.peso_canal||0;
+    pvTot+=pv; pcTot+=pc;
+    if(pv>0&&pc>0) rends.push(pc/pv*100);
+  });
+  var rendProm=rends.length?(rends.reduce(function(s,x){return s+x;},0)/rends.length):0;
+
+  // Cortes vendidos del período (por las unidades con fecha_venta en rango)
+  var vendidas=d.unidades.filter(function(u){ return u.estado==='vendido' && _enRango(u.fecha_venta,R); });
+  var ingresoCortes=vendidas.reduce(function(s,u){return s+(u.precio_venta||0);},0);
+  var kgVendidos=vendidas.reduce(function(s,u){return s+(u.peso_kg||0);},0);
+  var porCorte={};
+  vendidas.forEach(function(u){
+    var t=(u.cortes&&u.cortes.tipo_corte)||'Sin clasificar';
+    var o=porCorte[t]||(porCorte[t]={kg:0,val:0,n:0});
+    o.kg+=(u.peso_kg||0); o.val+=(u.precio_venta||0); o.n++;
+  });
+
+  var html=repHead('Rendimiento en canal y despiece','Período: '+R.label+' · Transformación cárnica');
+  html+='<div class="kpi-grid">'
+    +kpi(d.benef.length,'Animales beneficiados')
+    +kpi(rendProm.toFixed(1)+'%','Rendimiento canal promedio')
+    +kpi(pcTot.toFixed(1)+' kg','Total canal producida')
+    +kpi(kgVendidos.toFixed(1)+' kg','Kg de cortes vendidos')
+    +kpi(fmtCOP(ingresoCortes),'Ingreso por cortes')
+    +kpi(kgVendidos>0?fmtCOP(ingresoCortes/kgVendidos):'—','Precio medio / kg vendible')
+    +'</div>';
+  html+='<p style="font-size:11px;color:#5a8a90">Referencia industria: rendimiento canal ovino típico 45–55% del peso vivo. La merma de frío (2–3% en 3 días de cámara) reduce el peso de canal aprovechable.</p>';
+
+  html+='<h2>Beneficios del período</h2><table><thead><tr><th>Fecha</th><th>Animal</th><th>Peso vivo</th><th>Peso canal</th><th>Rendimiento</th><th>Frigorífico</th></tr></thead><tbody>'
+    +d.benef.map(function(b){
+      var pv=b.peso_vivo_entrada||0, pc=b.peso_canal||0;
+      var r=(pv>0&&pc>0)?(pc/pv*100).toFixed(1)+'%':'—';
+      return '<tr><td>'+fmtFecha(b.fecha)+'</td><td>'+esc((b.animales&&b.animales.codigo)||b.animal_id||'—')+'</td><td>'+(pv||'—')+' kg</td><td>'+(pc||'—')+' kg</td><td>'+r+'</td><td>'+esc(b.frigorifico||'—')+'</td></tr>';
+    }).join('')+'</tbody></table>';
+
+  if(Object.keys(porCorte).length){
+    html+='<h2>Ventas por tipo de corte</h2><table><thead><tr><th>Corte</th><th>Unidades</th><th>Kg vendidos</th><th>Ingreso</th><th>Precio/kg</th></tr></thead><tbody>'
+      +Object.keys(porCorte).sort(function(a,b){return porCorte[b].val-porCorte[a].val;}).map(function(t){
+        var o=porCorte[t];
+        return '<tr><td>'+esc(t)+'</td><td>'+o.n+'</td><td>'+o.kg.toFixed(1)+' kg</td><td>'+fmtCOP(o.val)+'</td><td>'+(o.kg>0?fmtCOP(o.val/o.kg):'—')+'</td></tr>';
+      }).join('')+'</tbody></table>';
+  }
+  html+=repFoot();
+  imprimirReporte(html,false);
+}
+async function excelCanal(){
+  var R=rangoSeleccionado();
+  toast('Exportando canal a Excel…');
+  var d=await _datosCanal(R);
+  var aoa=[['Fecha','Animal','Raza','Peso vivo (kg)','Peso canal (kg)','Rendimiento (%)','Kg disponible','Costo beneficio','Frigorífico']];
+  d.benef.forEach(function(b){
+    var pv=b.peso_vivo_entrada||0, pc=b.peso_canal||0;
+    aoa.push([b.fecha||'', (b.animales&&b.animales.codigo)||b.animal_id||'', (b.animales&&b.animales.raza)||'', pv, pc, (pv>0&&pc>0)?(pc/pv*100).toFixed(1):'', b.kg_disponible||'', b.costo_beneficio||'', b.frigorifico||'']);
+  });
+  _excelDescargar(aoa,'Canal','laaamb-canal-despiece');
+}
+
+// ── 14. EFICIENCIA REPRODUCTIVA (KPI de industria) ───────────────────────────
+async function generarEficiencia(){
+  var R=rangoSeleccionado();
+  toast('Calculando eficiencia reproductiva…');
+  var eventos=[], partos=[];
+  try{ var re=await window.DB.getEventosReproductivos(FINCA_ID_R,2000); eventos=(re&&re.data)||[]; }catch(e){}
+  try{ var rp=await window.DB.getPartos(FINCA_ID_R,1000); partos=(rp&&rp.data)||[]; }catch(e){}
+  var partosP=partos.filter(function(p){return _enRango(p.fecha_parto||p.fecha,R);});
+  var montasP=eventos.filter(function(e){return e.tipo==='monta'&&_enRango(e.fecha,R);});
+  var abortosP=eventos.filter(function(e){return e.tipo==='aborto'&&_enRango(e.fecha,R);});
+
+  // Prolificidad y mortalidad predestete
+  var vivas=0, muertasNac=0;
+  partosP.forEach(function(p){
+    var cn=p.corderos_nacidos||[];
+    vivas+=cn.length?cn.filter(function(c){return c.estado_al_nacer!=='muerto';}).length:(p.num_corderos_vivos||p.crias_vivas||0);
+    muertasNac+=cn.length?cn.filter(function(c){return c.estado_al_nacer==='muerto';}).length:(p.num_corderos_muertos||p.crias_muertas||0);
+  });
+  var prolif=partosP.length?(vivas/partosP.length):0;
+  var tasaParicion=montasP.length?(partosP.length/montasP.length*100):0;
+  var tasaAborto=(partosP.length+abortosP.length)>0?(abortosP.length/(partosP.length+abortosP.length)*100):0;
+
+  // Intervalo entre partos (promedio, por madre con 2+ partos en todo el histórico)
+  var porMadre={};
+  partos.forEach(function(p){ var m=p.madre_id; if(!m)return; (porMadre[m]=porMadre[m]||[]).push(p.fecha_parto||p.fecha); });
+  var iep=[];
+  Object.keys(porMadre).forEach(function(m){
+    var fs=porMadre[m].filter(Boolean).sort();
+    for(var i=1;i<fs.length;i++){ var dd=(new Date(fs[i])-new Date(fs[i-1]))/86400000; if(dd>60&&dd<600) iep.push(dd); }
+  });
+  var iepProm=iep.length?Math.round(iep.reduce(function(s,x){return s+x;},0)/iep.length):null;
+
+  // Mortalidad predestete: crías nacidas vivas que murieron antes del destete
+  var mortPredestete=null;
+  try{
+    var rb=await window.DB.getBajas(FINCA_ID_R,2000);
+    var bajas=(rb&&rb.data)||[];
+    var criasMuertas=bajas.filter(function(b){ return /muerte/i.test(b.tipo||b.motivo||'') && _enRango(b.fecha,R) && b.animales && b.animales.fecha_nacimiento; });
+    if(vivas>0) mortPredestete=(criasMuertas.length/vivas*100);
+  }catch(e){}
+
+  function ref(v,ok,txt){ return '<span style="color:'+(ok?'#1a9455':'#c0392b')+';font-weight:700">'+v+'</span> <span style="font-size:10px;color:#5a8a90">'+txt+'</span>'; }
+  var html=repHead('Eficiencia reproductiva','Período: '+R.label+' · Indicadores clave de la industria ovina');
+  html+='<div class="kpi-grid">'
+    +kpi(montasP.length,'Montas del período')
+    +kpi(partosP.length,'Partos del período')
+    +kpi(tasaParicion.toFixed(0)+'%','Tasa de parición')
+    +kpi(prolif.toFixed(2),'Prolificidad (vivas/parto)')
+    +kpi(iepProm!=null?iepProm+' d':'—','Intervalo entre partos')
+    +kpi(tasaAborto.toFixed(1)+'%','Tasa de abortos')
+    +'</div>';
+  html+='<h2>Lectura contra referencias de industria</h2><table><thead><tr><th>Indicador</th><th>Tu finca</th><th>Referencia industria ovina</th></tr></thead><tbody>'
+    +'<tr><td>Tasa de parición</td><td>'+ref(tasaParicion.toFixed(0)+'%',tasaParicion>=70,'')+'</td><td>≈ 70% o más (sistemas eficientes)</td></tr>'
+    +'<tr><td>Prolificidad</td><td>'+ref(prolif.toFixed(2),prolif>=1.3,'crías vivas/parto')+'</td><td>1.2 – 1.5 en razas de pelo (Katahdin/Pelibuey)</td></tr>'
+    +'<tr><td>Intervalo entre partos</td><td>'+ref(iepProm!=null?iepProm+' d':'—',iepProm!=null&&iepProm<=245,'')+'</td><td>≈ 240–268 d (partos acelerados ideal ≤ 245)</td></tr>'
+    +'<tr><td>Mortalidad predestete</td><td>'+(mortPredestete!=null?ref(mortPredestete.toFixed(1)+'%',mortPredestete<=10,''):'—')+'</td><td>&lt; 10% (referencia 8–9%)</td></tr>'
+    +'<tr><td>Tasa de abortos</td><td>'+ref(tasaAborto.toFixed(1)+'%',tasaAborto<=5,'')+'</td><td>&lt; 5% (8% ya se considera alto)</td></tr>'
+    +'</tbody></table>';
+  html+='<p style="font-size:11px;color:#5a8a90">Nota: la industria moderna prioriza cada vez más los <b>kg destetados por vientre expuesto</b> sobre el intervalo entre partos aislado — ver el reporte "Productividad por hectárea".</p>';
+  html+=repFoot();
+  imprimirReporte(html,false);
+}
+
+// ── 15. PRODUCTIVIDAD POR HECTÁREA ───────────────────────────────────────────
+async function generarHectarea(){
+  var R=rangoSeleccionado();
+  toast('Calculando productividad por hectárea…');
+  var f=fincaInfo();
+  var ha=parseFloat(f.area_ha)||29;
+  var activos=animalesActivos();
+  var pesoTotal=activos.reduce(function(s,a){return s+(a.peso_actual||a.peso||0);},0);
+  var cargaKgHa=ha>0?(pesoTotal/ha):0;
+
+  var partos=[];
+  try{ var rp=await window.DB.getPartos(FINCA_ID_R,1000); partos=((rp&&rp.data)||[]).filter(function(p){return _enRango(p.fecha_parto||p.fecha,R);}); }catch(e){}
+  // kg destetados: aproximación = crías vivas × peso medio de destete configurado (o 12 kg)
+  var pesoDestete=(window.AppState&&window.AppState.finca&&window.AppState.finca.config&&window.AppState.finca.config.peso_destete_kg)||12;
+  var vivas=0;
+  partos.forEach(function(p){
+    var cn=p.corderos_nacidos||[];
+    vivas+=cn.length?cn.filter(function(c){return c.estado_al_nacer!=='muerto';}).length:(p.num_corderos_vivos||p.crias_vivas||0);
+  });
+  var kgDestetados=vivas*pesoDestete;
+  var kgDestetadosHa=ha>0?(kgDestetados/ha):0;
+
+  // Vientres expuestos = hembras adultas activas (>12m)
+  var vientres=activos.filter(function(a){
+    if(a.sexo!=='hembra'&&a.sexo!=='H') return false;
+    var em=edadMeses(a.fecha_nacimiento); return em==null||em>=12;
+  }).length;
+  var kgPorVientre=vientres>0?(kgDestetados/vientres):0;
+
+  var html=repHead('Productividad por hectárea','Período: '+R.label+' · Finca de '+ha+' ha');
+  html+='<div class="kpi-grid">'
+    +kpi(Math.round(cargaKgHa).toLocaleString('es-CO')+' kg/ha','Carga animal instantánea')
+    +kpi(Math.round(kgDestetadosHa)+' kg/ha','Kg destetados por hectárea')
+    +kpi(Math.round(kgPorVientre)+' kg','Kg destetados por vientre')
+    +kpi(vientres,'Vientres expuestos')
+    +kpi(vivas,'Crías destetadas (est.)')
+    +kpi(activos.length,'Animales en la finca')
+    +'</div>';
+  html+='<p style="font-size:11px;color:#5a8a90">Los kg destetados usan un peso de destete de '+pesoDestete+' kg (configurable). "Kg destetados por vientre expuesto" y "por hectárea" son los indicadores integrales que la ganadería moderna usa para medir reproducción + producción + uso de la tierra en un solo número.</p>';
+  html+='<h2>Detalle del cálculo</h2><table><tbody>'
+    +'<tr><th>Área productiva</th><td>'+ha+' ha</td></tr>'
+    +'<tr><th>Peso vivo total del hato</th><td>'+Math.round(pesoTotal).toLocaleString('es-CO')+' kg</td></tr>'
+    +'<tr><th>Partos del período</th><td>'+partos.length+'</td></tr>'
+    +'<tr><th>Crías vivas destetadas (est.)</th><td>'+vivas+'</td></tr>'
+    +'<tr><th>Peso de destete usado</th><td>'+pesoDestete+' kg/cría</td></tr>'
+    +'<tr><th>Kg destetados totales</th><td>'+Math.round(kgDestetados).toLocaleString('es-CO')+' kg</td></tr>'
+    +'</tbody></table>';
+  html+='<p style="font-size:11px;color:#5a8a90">Sistema de pastoreo adaptativo multipadock — la carga objetivo de la finca es la carga instantánea configurada en Ajustes. Aumentar kg destetados/ha sin degradar el forraje es la meta central del modelo.</p>';
+  html+=repFoot();
+  imprimirReporte(html,false);
 }
 
 // ── Init: período por defecto = últimos 30 días ──
