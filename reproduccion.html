@@ -31,10 +31,10 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=39"></script>
+<script src="js/approval.js?v=40"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=39"></script>
+<script src="js/db.js?v=40"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
@@ -1417,6 +1417,13 @@ function autoFillMadre(val){
   const box=document.getElementById('p-genealogía-info');
   if(!box) return;
   const m=_findAnimalRepro(val);
+  // Bloqueo de especies (raíz): SIEMPRE que se resuelve la madre, el select
+  // de padre queda limitado a machos de su misma especie. autoFillMadre es
+  // el punto común de todos los caminos de entrada al parto (buscador,
+  // ficha del animal, gestantes urgentes, cambio de padre).
+  if(m && typeof filtrarReproductoresPorEspecie==='function'){
+    filtrarReproductoresPorEspecie('p-padre', m.especie||'ovino');
+  }
   // Auto-fill N° de parto desde Supabase
   if(m && m.id && window.DB && typeof window.DB.getPartosPorAnimal==='function'){
     window.DB.getPartosPorAnimal(m.id).then(function(r){
@@ -1593,12 +1600,14 @@ function abrirPartoConMadre(codigo){
 // Doble barrera: (1) los selectores de reproductor se filtran a la especie
 // de la hembra elegida; (2) al guardar se valida de nuevo (defensa en
 // profundidad — nunca debe entrar un cruce ovino×bovino a la base).
+// Normaliza especie para comparar: null/espacios/mayúsculas → 'ovino'/'bovino'.
+function _espNorm(e){ return String(e==null?'ovino':e).toLowerCase().trim()||'ovino'; }
 function _espReproDe(codOId){
   var cod=String(codOId||'').replace(/^#/,'').trim();
   var todos=(window.AppState&&window.AppState.animales)||[];
   var a=todos.find(function(x){return x.id===cod;})
     ||((typeof _findAnimalRepro!=='undefined')?_findAnimalRepro(cod):null);
-  return a?{a:a,esp:(a.especie||'ovino')}:null;
+  return a?{a:a,esp:_espNorm(a.especie)}:null;
 }
 function _validarEspecies(hembraRef, machoRef, contexto){
   if(!machoRef||machoRef==='desconocido'||machoRef==='') return true;
@@ -1615,8 +1624,9 @@ function _validarEspecies(hembraRef, machoRef, contexto){
 // Rellena un <select> de reproductores solo con machos activos de la especie dada.
 function filtrarReproductoresPorEspecie(selectId, especie, valorPor){
   var sel=document.getElementById(selectId); if(!sel) return;
+  var espN=_espNorm(especie);
   var machos=((window.AppState&&window.AppState.animales)||[]).filter(function(a){
-    return a.sexo==='macho'&&a.estado==='activo'&&(!especie||(a.especie||'ovino')===especie);
+    return a.sexo==='macho'&&a.estado==='activo'&&(!especie||_espNorm(a.especie)===espN);
   });
   var actual=sel.value;
   var opts=machos.map(function(m){
@@ -2535,7 +2545,12 @@ function loadReproFromSupabase(){
   }
 
   // ── Selectores de reproductores (machos activos) en modales monta/parto ──
-  const machos = (AS.animales||[]).filter(a=>a.sexo==='macho' && a.estado==='activo');
+  // Bloqueo de especies: el llenado inicial ya respeta la pestaña de especie
+  // activa (ovino/bovino). Con "todas" se muestran todos, pero al resolver la
+  // hembra/madre el select se re-filtra a su especie (autoFillMadre /
+  // detectarGrupoMonta) y saveParto/saveMonta validan de nuevo.
+  const _espActiva = (function(){ try{ var e=localStorage.getItem('laaamb-active-especie'); return (e==='ovino'||e==='bovino')?e:null; }catch(err){ return null; } })();
+  const machos = (AS.animales||[]).filter(a=>a.sexo==='macho' && a.estado==='activo' && (!_espActiva || _espNorm(a.especie)===_espActiva));
   if(machos.length){
     const opts = machos.map(m=>`<option value="${m.codigo||m.id}">${m.codigo||''}${m.nombre?' — '+m.nombre:''}${m.raza?' ('+m.raza+')':''}</option>`).join('');
     const montaRepro = document.querySelector('#modal-monta select');   // 1er select = reproductor
@@ -2908,7 +2923,7 @@ function renderHembrasChecklist(filtro){
   filtro=(filtro||'').toLowerCase().trim();
   // Bloqueo de especies: si ya hay macho elegido, solo hembras de su especie.
   var _machoG=_animalPorId(document.getElementById('g-macho')?.value||'');
-  var _espG=_machoG?(_machoG.especie||'ovino'):null;
+  var _espG=_machoG?_espNorm(_machoG.especie):null;
   var hembras=_hembrasActivas().filter(function(h){
     if(!filtro) return true;
     return String(h.codigo||'').toLowerCase().indexOf(filtro)>=0 || String(h.nombre||'').toLowerCase().indexOf(filtro)>=0;
@@ -2918,7 +2933,7 @@ function renderHembrasChecklist(filtro){
     var ck=window._grupoSel[h.id]?'checked':'';
     var wk=_edadWk(h.fecha_nacimiento);
     var enGrupo=_hembraEnGrupoActivo(h.id);
-    var otraEspecie=(_espG && (h.especie||'ovino')!==_espG);
+    var otraEspecie=(_espG && _espNorm(h.especie)!==_espG);
     if(otraEspecie && window._grupoSel[h.id]) window._grupoSel[h.id]=false;
     var deshab=enGrupo||otraEspecie;
     var warn=enGrupo?'<span style="color:var(--red);font-size:11px;margin-left:4px" title="Ya en grupo de monta activo">🚫 En monta</span>'
@@ -2952,8 +2967,8 @@ async function guardarGrupo(){
   var ids=Object.keys(window._grupoSel).filter(function(k){return window._grupoSel[k];});
   if(!ids.length){ toast('Selecciona al menos una hembra','err'); return; }
   // Bloqueo de especies: ninguna hembra puede ser de especie distinta al macho.
-  var _espM=(m.especie||'ovino');
-  var _cruces=ids.map(_animalPorId).filter(function(h){ return h && (h.especie||'ovino')!==_espM; });
+  var _espM=_espNorm(m.especie);
+  var _cruces=ids.map(_animalPorId).filter(function(h){ return h && _espNorm(h.especie)!==_espM; });
   if(_cruces.length){
     toast('🚫 '+_cruces.length+' hembra(s) de especie distinta al reproductor ('+_espM+'): '
       +_cruces.slice(0,3).map(function(h){return h.codigo||h.id;}).join(', ')
