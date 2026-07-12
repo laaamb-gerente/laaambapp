@@ -32,10 +32,10 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=38"></script>
+<script src="js/approval.js?v=39"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=38"></script>
+<script src="js/db.js?v=39"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
@@ -1119,8 +1119,26 @@ function savePesaje(){
     if(_sa) _sa.peso_actual = peso;
   }
   applyFilters(); // Re-render tabla sin destruir allAnimales
-  // Si hay perfil abierto, recargar performance para mostrar nuevo GDP
-  if(window._fichaCurrentAnimal){
+  // ── Feedback visual inmediato (UX) ──
+  // 1) Flash en la fila del animal recién pesado.
+  try{
+    var _codBusq=String(animalId).replace(/^#/,'').trim().toLowerCase();
+    document.querySelectorAll('#tbody tr').forEach(function(tr){
+      if((tr.textContent||'').toLowerCase().indexOf(_codBusq)>=0){
+        tr.style.transition='background .3s'; tr.style.background='var(--teal-bg)';
+        setTimeout(function(){ tr.style.background=''; }, 1600);
+      }
+    });
+  }catch(e){}
+  // 2) Si el pesaje se inició desde la ficha del animal, reabrirla ya
+  //    actualizada (peso en el header + gráfico) — sin cerrar y volver a entrar.
+  if(window._pesajeDesdeFicha){
+    var _fid=window._pesajeDesdeFicha; window._pesajeDesdeFicha=null;
+    var _fa=allAnimales.find(function(a){ return a.id===_fid||a.codigo===_fid; });
+    if(_fa){ setTimeout(function(){ verPerfilFicha(_fa.id); }, 250); }
+  } else if(window._fichaCurrentAnimal){
+    // Ficha abierta en segundo plano: refrescar peso del header y performance.
+    var _pe=document.getElementById('ficha-peso-actual'); if(_pe) _pe.textContent=peso+' kg';
     var _raw = _rawAnimal(window._fichaCurrentAnimal)||{};
     var _fn = _raw.fecha_nacimiento||window._fichaCurrentAnimal.fecha_nacimiento||null;
     setTimeout(function(){ _fichaLoadPerformance(window._fichaCurrentAnimal,_raw,_fn); }, 400);
@@ -1420,7 +1438,7 @@ async function verPerfilFicha(id){
       +'<div><span>Edad</span>'+(sem!=null?sem+' sem':'--')+(fechaNac?' ('+_fmtF(fechaNac)+')':'')+'</div>'
       +'<div><span>Grupo</span>'+_escF(raw.categoria||a.categoria||'--')+'</div>'
       +'<div><span>Potrero</span><span id="ficha-potrero">'+_escF(a.lote||'--')+'</span></div>'
-      +'<div><span>Peso actual</span>'+(pesoAct!=null&&pesoAct!==''?_escF(pesoAct)+' kg':'--')+'</div>'
+      +'<div><span>Peso actual</span><span id="ficha-peso-actual">'+(pesoAct!=null&&pesoAct!==''?_escF(pesoAct)+' kg':'--')+'</span></div>'
     +'</div></div>';
   var tabs =
     '<div class="ficha-tabs">'
@@ -1553,6 +1571,8 @@ function fichaSub(name){
   });
 }
 function fichaRegistrarPesaje(cod){
+  // Recordar el animal para reabrir su ficha actualizada tras guardar (UX).
+  window._pesajeDesdeFicha = (window._fichaCurrentAnimal && window._fichaCurrentAnimal.id) || cod;
   closeModal('m-perfil');
   var w=document.getElementById('w-animal');
   if(w){ w.value=cod; if(typeof autoFillPesaje==='function') autoFillPesaje(cod); }

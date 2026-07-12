@@ -29,11 +29,11 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=38"></script>
+<script src="js/approval.js?v=39"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=38"></script>
+<script src="js/db.js?v=39"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
@@ -211,20 +211,41 @@ tbody td{padding:9px 12px;color:var(--text);vertical-align:middle}
     <div>
       <div class="ph-eyebrow">La Marinilla · Gestión</div>
       <div class="ph-title">Reportes ejecutivos</div>
-      <div class="ph-sub">Genera y descarga informes en PDF (imprimir) o Excel</div>
+      <div class="ph-sub">Informes en PDF o Excel · Producción, sanidad, reproducción, culling, bajas y finanzas — filtrables por período</div>
     </div>
   </div>
 
   <div class="content">
+    <!-- SELECTOR DE PERÍODO GLOBAL -->
+    <div class="section-label">Período de análisis</div>
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-body" style="padding:16px">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+          <div class="fg" style="min-width:150px"><label class="fl">Desde</label><input class="fi" type="date" id="rep-desde" onchange="_repPresetOff()"></div>
+          <div class="fg" style="min-width:150px"><label class="fl">Hasta</label><input class="fi" type="date" id="rep-hasta" onchange="_repPresetOff()"></div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;padding-bottom:2px" id="rep-presets">
+            <button class="btn btn-ghost btn-sm" data-preset="7" onclick="repPreset(this)">7 días</button>
+            <button class="btn btn-ghost btn-sm" data-preset="30" onclick="repPreset(this)">30 días</button>
+            <button class="btn btn-ghost btn-sm" data-preset="mes" onclick="repPreset(this)">Mes actual</button>
+            <button class="btn btn-ghost btn-sm" data-preset="mes-1" onclick="repPreset(this)">Mes anterior</button>
+            <button class="btn btn-ghost btn-sm" data-preset="90" onclick="repPreset(this)">Trimestre</button>
+            <button class="btn btn-ghost btn-sm" data-preset="anio" onclick="repPreset(this)">Año</button>
+            <button class="btn btn-ghost btn-sm" data-preset="todo" onclick="repPreset(this)">Todo</button>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px">El período aplica a todos los reportes marcados con 📅. Los reportes de inventario y culling siempre usan el estado actual del hato.</div>
+      </div>
+    </div>
+
     <div class="section-label">Tipos de reporte</div>
     <div class="rep-grid">
 
       <div class="rep-card">
         <div class="rep-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>
-        <div class="rep-name">Reporte semanal de producción</div>
-        <div class="rep-desc">KPIs de los últimos 7 días: animales activos, muertes, pesajes, tratamientos, eventos reproductivos y alertas.</div>
+        <div class="rep-name">📅 Producción del período</div>
+        <div class="rep-desc">KPIs del período seleccionado: animales activos, muertes, pesajes, tratamientos, eventos reproductivos y alertas.</div>
         <div class="rep-actions">
-          <button class="btn btn-primary btn-sm" onclick="generarSemanal()">Generar y descargar</button>
+          <button class="btn btn-primary btn-sm" onclick="generarSemanal()">Generar PDF</button>
         </div>
       </div>
 
@@ -234,6 +255,66 @@ tbody td{padding:9px 12px;color:var(--text);vertical-align:middle}
         <div class="rep-desc">Finanzas (ingresos, costos, balance, margen), producción (GDP, mortalidad, partos) y comparativo vs mes anterior.</div>
         <div class="rep-actions">
           <button class="btn btn-primary btn-sm" onclick="generarMensual()">Generar y descargar</button>
+        </div>
+      </div>
+
+      <div class="rep-card">
+        <div class="rep-ico"><svg viewBox="0 0 24 24"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.6L12 15.7l-4.9 2.6.9-5.6-4-3.9L9.5 8z"/></svg></div>
+        <div class="rep-name">Descarte de hembras · Culling</div>
+        <div class="rep-desc">Análisis multicriterio de cada hembra activa: edad, abortos, fertilidad, prolificidad, mortalidad de crías, score materno y salud. Recomienda descartar, observar o mantener — con el porqué de cada una.</div>
+        <div class="rep-actions">
+          <button class="btn btn-primary btn-sm" onclick="generarCulling()">Generar PDF</button>
+          <button class="btn btn-ghost btn-sm" onclick="excelCulling()">Excel</button>
+        </div>
+      </div>
+
+      <div class="rep-card">
+        <div class="rep-ico"><svg viewBox="0 0 24 24"><path d="M12 21s-7-4.5-9-9a5.2 5.2 0 019-3.5A5.2 5.2 0 0121 12c-2 4.5-9 9-9 9z"/></svg></div>
+        <div class="rep-name">📅 Sanitario del período</div>
+        <div class="rep-desc">Tratamientos aplicados, medicamentos usados, animales en retiro sanitario y resultados de los seguimientos post-tratamiento.</div>
+        <div class="rep-actions">
+          <button class="btn btn-primary btn-sm" onclick="generarSanitario()">Generar PDF</button>
+          <button class="btn btn-ghost btn-sm" onclick="excelSanitario()">Excel</button>
+        </div>
+      </div>
+
+      <div class="rep-card">
+        <div class="rep-ico"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="5"/><circle cx="17" cy="15" r="5"/></svg></div>
+        <div class="rep-name">📅 Reproductivo del período</div>
+        <div class="rep-desc">Montas, ecografías, partos, abortos, prolificidad (crías/parto), tasa de abortos y hembras gestantes al cierre.</div>
+        <div class="rep-actions">
+          <button class="btn btn-primary btn-sm" onclick="generarReproductivo()">Generar PDF</button>
+          <button class="btn btn-ghost btn-sm" onclick="excelReproductivo()">Excel</button>
+        </div>
+      </div>
+
+      <div class="rep-card">
+        <div class="rep-ico"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 19V9m4 10V5m4 14v-8m4 8V7"/></svg></div>
+        <div class="rep-name">📅 Bajas y mortalidad</div>
+        <div class="rep-desc">Muertes, ventas y descartes del período agrupados por causa, con pérdida económica estimada y tendencia de mortalidad.</div>
+        <div class="rep-actions">
+          <button class="btn btn-primary btn-sm" onclick="generarBajas()">Generar PDF</button>
+          <button class="btn btn-ghost btn-sm" onclick="excelBajas()">Excel</button>
+        </div>
+      </div>
+
+      <div class="rep-card">
+        <div class="rep-ico"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M8 15h4"/></svg></div>
+        <div class="rep-name">📅 Financiero del período</div>
+        <div class="rep-desc">Ingresos y costos por categoría, balance, margen y detalle de los movimientos más grandes del período.</div>
+        <div class="rep-actions">
+          <button class="btn btn-primary btn-sm" onclick="generarFinanciero()">Generar PDF</button>
+          <button class="btn btn-ghost btn-sm" onclick="excelFinanciero()">Excel</button>
+        </div>
+      </div>
+
+      <div class="rep-card">
+        <div class="rep-ico"><svg viewBox="0 0 24 24"><path d="M6 20V10m6 10V4m6 16v-7"/><circle cx="6" cy="7" r="2"/></svg></div>
+        <div class="rep-name">📅 Pesajes y GDP</div>
+        <div class="rep-desc">Pesajes del período, ganancia diaria promedio del hato, mejores y peores GDP, y avance hacia el peso objetivo de sacrificio.</div>
+        <div class="rep-actions">
+          <button class="btn btn-primary btn-sm" onclick="generarPesajes()">Generar PDF</button>
+          <button class="btn btn-ghost btn-sm" onclick="excelPesajes()">Excel</button>
         </div>
       </div>
 
@@ -353,29 +434,66 @@ function animalesActivos(){
   return arr.filter(function(a){ return a.estado === 'activo'; });
 }
 
-// ── 1. REPORTE SEMANAL ────────────────────────────────────────────────────────
+// ── PERÍODO GLOBAL DE REPORTES ────────────────────────────────────────────────
+function _repPresetOff(){
+  document.querySelectorAll('#rep-presets .btn').forEach(function(b){ b.classList.remove('btn-primary'); b.classList.add('btn-ghost'); });
+}
+function repPreset(btn){
+  _repPresetOff();
+  btn.classList.remove('btn-ghost'); btn.classList.add('btn-primary');
+  var p=btn.getAttribute('data-preset');
+  var hoy=new Date(); var d=document.getElementById('rep-desde'), h=document.getElementById('rep-hasta');
+  h.value=hoyISO();
+  if(p==='7'){ d.value=diasAtras(7); }
+  else if(p==='30'){ d.value=diasAtras(30); }
+  else if(p==='90'){ d.value=diasAtras(90); }
+  else if(p==='mes'){ d.value=new Date(hoy.getFullYear(),hoy.getMonth(),1).toISOString().slice(0,10); }
+  else if(p==='mes-1'){
+    d.value=new Date(hoy.getFullYear(),hoy.getMonth()-1,1).toISOString().slice(0,10);
+    h.value=new Date(hoy.getFullYear(),hoy.getMonth(),0).toISOString().slice(0,10);
+  }
+  else if(p==='anio'){ d.value=new Date(hoy.getFullYear(),0,1).toISOString().slice(0,10); }
+  else if(p==='todo'){ d.value='2020-01-01'; }
+}
+function rangoSeleccionado(){
+  var d=document.getElementById('rep-desde')?.value;
+  var h=document.getElementById('rep-hasta')?.value;
+  if(!d){ d=diasAtras(30); var el=document.getElementById('rep-desde'); if(el) el.value=d; }
+  if(!h){ h=hoyISO(); var el2=document.getElementById('rep-hasta'); if(el2) el2.value=h; }
+  return { ini:d, fin:h, label:fmtFecha(d)+' → '+fmtFecha(h) };
+}
+function _enRango(f, r){ return f && f.slice(0,10)>=r.ini && f.slice(0,10)<=r.fin; }
+// Descarga un array-of-arrays como Excel con la marca LAAAMB.
+function _excelDescargar(aoa, hoja, archivo){
+  var ws=XLSX.utils.aoa_to_sheet(aoa);
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, hoja);
+  XLSX.writeFile(wb, archivo+'-'+hoyISO()+'.xlsx');
+}
+
+// ── 1. REPORTE DE PRODUCCIÓN DEL PERÍODO ─────────────────────────────────────
 async function generarSemanal(){
-  toast('Generando reporte semanal…');
-  var desde = diasAtras(7);
+  var R = rangoSeleccionado();
+  toast('Generando reporte de producción…');
   var activos = animalesActivos();
   var muertes=[], pesajes=[], tratamientos=[], eventosRep=[];
-  try{ var b = await window.DB.getBajas(FINCA_ID_R); muertes = (b.data||[]).filter(function(x){ return x.fecha>=desde && (x.motivo==='muerte'||x.tipo==='muerte'||/muerte|mortalidad/i.test(x.motivo||x.tipo||'')); }); }catch(e){}
-  try{ var p = await window.DB.getPesajes(FINCA_ID_R); pesajes = (p.data||[]).filter(function(x){ return (x.fecha||'')>=desde; }); }catch(e){}
-  try{ var t = await window.DB.getTratamientos(FINCA_ID_R); tratamientos = (t.data||[]).filter(function(x){ return (x.fecha||x.fecha_inicio||'')>=desde; }); }catch(e){}
-  try{ var er = await window.DB.getEventosReproductivos(FINCA_ID_R, 200); eventosRep = (er.data||[]).filter(function(x){ return (x.fecha||'')>=desde; }); }catch(e){}
+  try{ var b = await window.DB.getBajas(FINCA_ID_R); muertes = (b.data||[]).filter(function(x){ return _enRango(x.fecha,R) && (x.motivo==='muerte'||x.tipo==='muerte'||/muerte|mortalidad/i.test(x.motivo||x.tipo||'')); }); }catch(e){}
+  try{ var p = await window.DB.getPesajes(FINCA_ID_R); pesajes = (p.data||[]).filter(function(x){ return _enRango(x.fecha,R); }); }catch(e){}
+  try{ var t = await window.DB.getTratamientos(FINCA_ID_R); tratamientos = (t.data||[]).filter(function(x){ return _enRango(x.fecha||x.fecha_inicio,R); }); }catch(e){}
+  try{ var er = await window.DB.getEventosReproductivos(FINCA_ID_R, 500); eventosRep = (er.data||[]).filter(function(x){ return _enRango(x.fecha,R); }); }catch(e){}
 
   var alertas = [];
-  if(muertes.length>0) alertas.push(muertes.length+' muerte(s) registradas esta semana');
-  if(pesajes.length===0) alertas.push('Sin pesajes registrados en los últimos 7 días');
+  if(muertes.length>0) alertas.push(muertes.length+' muerte(s) registradas en el período');
+  if(pesajes.length===0) alertas.push('Sin pesajes registrados en el período');
   var gestantes = (window.AppState && window.AppState.gestantes) || [];
   if(gestantes.length>0) alertas.push(gestantes.length+' hembra(s) gestante(s) en seguimiento');
 
-  var html = repHead('Reporte semanal de producción', 'Período: '+fmtFecha(desde)+' a '+fmtFecha(hoyISO()));
+  var html = repHead('Reporte de producción', 'Período: '+R.label);
   html += '<div class="kpi-grid">'
     +kpi(activos.length,'Animales activos')
-    +kpi(muertes.length,'Muertes (7 días)')
-    +kpi(pesajes.length,'Pesajes (7 días)')
-    +kpi(tratamientos.length,'Tratamientos (7 días)')
+    +kpi(muertes.length,'Muertes del período')
+    +kpi(pesajes.length,'Pesajes del período')
+    +kpi(tratamientos.length,'Tratamientos')
     +kpi(eventosRep.length,'Eventos reproductivos')
     +kpi(gestantes.length,'Gestantes')
     +'</div>';
@@ -384,7 +502,7 @@ async function generarSemanal(){
   else { html += '<p style="font-size:12px;color:#5a8a90">Sin alertas. Operación normal.</p>'; }
 
   if(pesajes.length){
-    html += '<h2>Pesajes de la semana</h2><table><thead><tr><th>Fecha</th><th>Animal</th><th>Peso (kg)</th></tr></thead><tbody>'
+    html += '<h2>Pesajes del período</h2><table><thead><tr><th>Fecha</th><th>Animal</th><th>Peso (kg)</th></tr></thead><tbody>'
       +pesajes.slice(0,40).map(function(x){ return '<tr><td>'+fmtFecha(x.fecha)+'</td><td>'+esc((x.animales&&x.animales.codigo)||x.animal_id||'—')+'</td><td>'+esc(x.peso||x.peso_kg||'—')+'</td></tr>'; }).join('')
       +'</tbody></table>';
   }
@@ -649,6 +767,460 @@ async function exportarSIGMA(){
   setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
   toast(movs.length+' movilización(es) exportadas a CSV');
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+//  REPORTES NUEVOS · Culling, Sanitario, Reproductivo, Bajas, Financiero, Pesajes
+// ══════════════════════════════════════════════════════════════════════════════
+
+// ── 7. DESCARTE DE HEMBRAS (CULLING) ─────────────────────────────────────────
+// Análisis multicriterio: cada hembra activa recibe un puntaje 0-100+ con la
+// LISTA DE RAZONES que lo justifican. Nunca "sacar por sacar".
+//   Criterios y pesos:
+//   · Flag veterinario candidata_descarte (evaluación materna) ... +30
+//   · Score materno < 60 .......................................... +25
+//   · Cada aborto registrado (máx 2) .............................. +20 c/u
+//   · Vacía repetidora (2+ montas fallidas 12m) ................... +25
+//   · Mortalidad de crías ≥ 25% en sus partos ..................... +20
+//   · Prolificidad < 1.2 crías vivas/parto (con 2+ partos) ........ +15
+//   · Improductiva: adulta (>18m) sin parto en 12+ meses .......... +20
+//   · Edad avanzada (> 6 años) .................................... +20
+//   · 3+ tratamientos en 12 meses (salud crónica) ................. +15
+//   Recomendación: ≥50 DESCARTAR · 30-49 OBSERVAR · <30 MANTENER
+async function _analizarCulling(){
+  var hoy = new Date();
+  var hace12m = new Date(hoy.getTime()-365*86400000).toISOString().slice(0,10);
+
+  // Hembras activas con columnas de evaluación materna directo de Supabase
+  var hembras=[];
+  try{
+    var rh = await window._sb.from('animales')
+      .select('id,codigo,nombre,raza,especie,fecha_nacimiento,peso_actual,score_materno,candidata_descarte,motivo_descarte')
+      .eq('finca_id',FINCA_ID_R).eq('estado','activo').eq('sexo','hembra');
+    hembras=(rh&&rh.data)||[];
+  }catch(e){}
+  if(!hembras.length){
+    hembras=animalesActivos().filter(function(a){return a.sexo==='hembra';});
+  }
+
+  var partos=[], eventos=[], tratamientos=[];
+  try{ var rp=await window.DB.getPartos(FINCA_ID_R, 500); partos=(rp&&rp.data)||[]; }catch(e){}
+  try{ var re=await window.DB.getEventosReproductivos(FINCA_ID_R, 1000); eventos=(re&&re.data)||[]; }catch(e){}
+  try{ var rt=await window.DB.getTratamientos(FINCA_ID_R); tratamientos=(rt&&rt.data)||[]; }catch(e){}
+
+  var res = hembras.map(function(h){
+    var razones=[], score=0;
+    var em = edadMeses(h.fecha_nacimiento);
+
+    // Flag veterinario (evaluaciones maternas)
+    if(h.candidata_descarte){ score+=30; razones.push('Marcada candidata a descarte'+(h.motivo_descarte?(': '+h.motivo_descarte):' (evaluación materna)')); }
+    if(h.score_materno!=null && h.score_materno<60){ score+=25; razones.push('Score materno bajo ('+h.score_materno+'/100)'); }
+
+    // Abortos
+    var abortos = eventos.filter(function(e){ return e.tipo==='aborto' && e.hembra_id===h.id; });
+    if(abortos.length){ var pa=Math.min(abortos.length,2)*20; score+=pa; razones.push(abortos.length+' aborto(s) registrado(s)'); }
+
+    // Montas fallidas (vacía repetidora, últimos 12 meses)
+    var montasFallidas = eventos.filter(function(e){
+      return e.tipo==='monta' && e.hembra_id===h.id && (e.fecha||'')>=hace12m
+        && /fallid|vac[ií]a|negativ/i.test(String(e.resultado||''));
+    });
+    if(montasFallidas.length>=2){ score+=25; razones.push(montasFallidas.length+' montas sin preñez en 12 meses (repetidora)'); }
+
+    // Partos de la hembra
+    var pts = partos.filter(function(p){ return p.madre_id===h.id; });
+    var vivasTot=0, muertasTot=0, ultimoParto=null;
+    pts.forEach(function(p){
+      var cn=p.corderos_nacidos||[];
+      var v=cn.length?cn.filter(function(c){return c.estado_al_nacer!=='muerto';}).length:(p.num_corderos_vivos||p.crias_vivas||0);
+      var m=cn.length?cn.filter(function(c){return c.estado_al_nacer==='muerto';}).length:(p.num_corderos_muertos||p.crias_muertas||0);
+      vivasTot+=v; muertasTot+=m;
+      var f=p.fecha_parto||p.fecha; if(f && (!ultimoParto||f>ultimoParto)) ultimoParto=f;
+    });
+    var nacTot=vivasTot+muertasTot;
+    if(nacTot>0 && muertasTot/nacTot>=0.25){ score+=20; razones.push('Mortalidad de crías del '+Math.round(muertasTot/nacTot*100)+'% ('+muertasTot+'/'+nacTot+')'); }
+    if(pts.length>=2){
+      var prolif=vivasTot/pts.length;
+      if(prolif<1.2){ score+=15; razones.push('Prolificidad baja: '+prolif.toFixed(2)+' crías vivas/parto en '+pts.length+' partos'); }
+    }
+
+    // Improductiva: adulta sin parto reciente
+    if(em!=null && em>18){
+      if(!ultimoParto){ score+=20; razones.push('Adulta ('+em+' meses) sin ningún parto registrado'); }
+      else if(ultimoParto<hace12m){ score+=20; razones.push('Último parto hace más de 12 meses ('+fmtFecha(ultimoParto)+')'); }
+    }
+
+    // Edad avanzada
+    if(em!=null && em>72){ score+=20; razones.push('Edad avanzada: '+Math.round(em/12)+' años'); }
+
+    // Salud crónica
+    var trats = tratamientos.filter(function(t){ return t.animal_id===h.id && (t.fecha||t.fecha_inicio||'')>=hace12m; });
+    if(trats.length>=3){ score+=15; razones.push(trats.length+' tratamientos en 12 meses (salud crónica)'); }
+
+    var rec = score>=50?'DESCARTAR':(score>=30?'OBSERVAR':'MANTENER');
+    return { h:h, em:em, score:score, razones:razones, rec:rec,
+      partos:pts.length, vivas:vivasTot, muertas:muertasTot, ultimoParto:ultimoParto };
+  });
+
+  res.sort(function(a,b){ return b.score-a.score; });
+  return res;
+}
+
+async function generarCulling(){
+  toast('Analizando el hato para el culling report…');
+  var res = await _analizarCulling();
+  if(!res.length){ toast('No hay hembras activas para analizar','err'); return; }
+  var descartar=res.filter(function(r){return r.rec==='DESCARTAR';});
+  var observar=res.filter(function(r){return r.rec==='OBSERVAR';});
+
+  var html = repHead('Descarte de hembras · Culling report',
+    'Análisis multicriterio de '+res.length+' hembras activas · Generado con datos reales del hato');
+  html += '<div class="kpi-grid">'
+    +kpi(res.length,'Hembras analizadas')
+    +kpi(descartar.length,'Recomendadas descartar')
+    +kpi(observar.length,'En observación')
+    +kpi(res.length?Math.round(descartar.length/res.length*100)+'%':'—','Tasa de descarte sugerida')
+    +kpi((res.length-descartar.length-observar.length),'Mantener')
+    +kpi(new Date().getFullYear(),'Campaña')
+    +'</div>';
+  html += '<p style="font-size:11px;color:#5a8a90">Criterios: flag veterinario, score materno, abortos, montas fallidas, mortalidad de crías, prolificidad, improductividad, edad y salud crónica. La decisión final (venta o sacrificio) es del gerente — este reporte entrega el <b>porqué</b> de cada recomendación.</p>';
+
+  function bloque(titulo, lista, color){
+    if(!lista.length) return '';
+    var s='<h2>'+titulo+' ('+lista.length+')</h2>';
+    s+='<table><thead><tr><th>Hembra</th><th>Edad</th><th>Partos</th><th>Puntaje</th><th>Razones (el porqué)</th></tr></thead><tbody>';
+    s+=lista.map(function(r){
+      return '<tr><td><b>'+esc(r.h.codigo||r.h.id)+'</b>'+(r.h.nombre?' · '+esc(r.h.nombre):'')+'<br><span style="font-size:10px;color:#5a8a90">'+esc(r.h.raza||'')+'</span></td>'
+        +'<td>'+(r.em!=null?(r.em<24?r.em+' m':(r.em/12).toFixed(1)+' a'):'—')+'</td>'
+        +'<td>'+r.partos+' ('+r.vivas+'v/'+r.muertas+'m)</td>'
+        +'<td style="font-weight:700;color:'+color+'">'+r.score+'</td>'
+        +'<td style="font-size:11px">'+r.razones.map(function(z){return '• '+esc(z);}).join('<br>')+'</td></tr>';
+    }).join('');
+    return s+'</tbody></table>';
+  }
+  html += bloque('🔴 Recomendadas para descarte (venta o sacrificio)', descartar, '#c0392b');
+  html += bloque('🟡 En observación — revisar próximo ciclo', observar, '#e8a030');
+  if(!descartar.length && !observar.length){
+    html+='<p style="font-size:12px;color:#1a9455"><b>✓ Ninguna hembra alcanza umbral de descarte.</b> El hato reproductivo está sano según los criterios configurados.</p>';
+  }
+  html += repFoot();
+  imprimirReporte(html, false);
+}
+async function excelCulling(){
+  toast('Exportando culling a Excel…');
+  var res = await _analizarCulling();
+  var aoa=[['Código','Nombre','Raza','Edad (meses)','Partos','Crías vivas','Crías muertas','Último parto','Puntaje','Recomendación','Razones']];
+  res.forEach(function(r){
+    aoa.push([r.h.codigo||r.h.id, r.h.nombre||'', r.h.raza||'', r.em!=null?r.em:'', r.partos, r.vivas, r.muertas, r.ultimoParto||'', r.score, r.rec, r.razones.join(' | ')]);
+  });
+  _excelDescargar(aoa,'Culling','laaamb-culling');
+  toast('Culling exportado a Excel');
+}
+
+// ── 8. SANITARIO DEL PERÍODO ─────────────────────────────────────────────────
+async function _datosSanitario(R){
+  var trats=[], segs=[];
+  try{ var rt=await window.DB.getTratamientos(FINCA_ID_R); trats=((rt&&rt.data)||[]).filter(function(t){ return _enRango(t.fecha||t.fecha_inicio,R); }); }catch(e){}
+  try{
+    var rs=await window._sb.from('seguimientos_tratamiento')
+      .select('*, animales(codigo,nombre)').eq('finca_id',FINCA_ID_R)
+      .gte('fecha_programada',R.ini).lte('fecha_programada',R.fin);
+    segs=(rs&&rs.data)||[];
+  }catch(e){}
+  return {trats:trats, segs:segs};
+}
+async function generarSanitario(){
+  var R=rangoSeleccionado();
+  toast('Generando reporte sanitario…');
+  var d=await _datosSanitario(R);
+  var porMed={};
+  d.trats.forEach(function(t){ var m=(t.medicamentos&&t.medicamentos.nombre)||t.medicamento_nombre||'Sin especificar'; porMed[m]=(porMed[m]||0)+1; });
+  var enRetiro=d.trats.filter(function(t){return t.estado==='en_retiro';});
+  var segResp=d.segs.filter(function(s){return s.estado==='respondido';});
+  var segMal=segResp.filter(function(s){return s.respuesta==='mal'||s.respuesta==='muerto';});
+
+  var html=repHead('Reporte sanitario','Período: '+R.label);
+  html+='<div class="kpi-grid">'
+    +kpi(d.trats.length,'Tratamientos aplicados')
+    +kpi(Object.keys(porMed).length,'Medicamentos distintos')
+    +kpi(enRetiro.length,'En retiro sanitario')
+    +kpi(d.segs.length,'Seguimientos programados')
+    +kpi(segResp.length,'Seguimientos respondidos')
+    +kpi(segMal.length,'Animales reportados mal')
+    +'</div>';
+  html+='<h2>Medicamentos usados</h2><table><thead><tr><th>Medicamento</th><th>Aplicaciones</th></tr></thead><tbody>'
+    +Object.keys(porMed).sort(function(a,b){return porMed[b]-porMed[a];}).map(function(m){return '<tr><td>'+esc(m)+'</td><td>'+porMed[m]+'</td></tr>';}).join('')
+    +'</tbody></table>';
+  if(d.trats.length){
+    html+='<h2>Tratamientos del período</h2><table><thead><tr><th>Fecha</th><th>Animal</th><th>Medicamento</th><th>Estado</th><th>Fin retiro</th></tr></thead><tbody>'
+      +d.trats.slice(0,60).map(function(t){
+        return '<tr><td>'+fmtFecha(t.fecha||t.fecha_inicio)+'</td><td>'+esc((t.animales&&t.animales.codigo)||t.animal_id||'—')+'</td><td>'
+          +esc((t.medicamentos&&t.medicamentos.nombre)||t.medicamento_nombre||'—')+'</td><td>'+esc(t.estado||'—')+'</td><td>'+fmtFecha(t.fecha_fin_retiro)+'</td></tr>';
+      }).join('')+'</tbody></table>';
+  }
+  if(segMal.length){
+    html+='<h2>⚠ Seguimientos con novedad (regular / mal)</h2><table><thead><tr><th>Fecha</th><th>Animal</th><th>Día post-trat.</th><th>Respuesta</th><th>Observación</th></tr></thead><tbody>'
+      +segResp.filter(function(s){return s.respuesta!=='bien';}).map(function(s){
+        return '<tr><td>'+fmtFecha(s.fecha_programada)+'</td><td>'+esc((s.animales&&s.animales.codigo)||'—')+'</td><td>'+s.dia_seguimiento+'</td><td>'+esc(s.respuesta)+'</td><td>'+esc(s.observacion||'')+'</td></tr>';
+      }).join('')+'</tbody></table>';
+  }
+  html+=repFoot();
+  imprimirReporte(html,false);
+}
+async function excelSanitario(){
+  var R=rangoSeleccionado();
+  toast('Exportando sanitario a Excel…');
+  var d=await _datosSanitario(R);
+  var aoa=[['Fecha','Animal','Medicamento','Dosis','Estado','Fin retiro','Registrado por','Notas']];
+  d.trats.forEach(function(t){
+    aoa.push([t.fecha||t.fecha_inicio||'', (t.animales&&t.animales.codigo)||t.animal_id||'', (t.medicamentos&&t.medicamentos.nombre)||t.medicamento_nombre||'', t.dosis||'', t.estado||'', t.fecha_fin_retiro||'', t.registrado_por||'', t.notas||'']);
+  });
+  _excelDescargar(aoa,'Sanitario','laaamb-sanitario');
+}
+
+// ── 9. REPRODUCTIVO DEL PERÍODO ──────────────────────────────────────────────
+async function _datosReproductivo(R){
+  var eventos=[], partos=[];
+  try{ var re=await window.DB.getEventosReproductivos(FINCA_ID_R,1000); eventos=((re&&re.data)||[]).filter(function(e){return _enRango(e.fecha,R);}); }catch(e){}
+  try{ var rp=await window.DB.getPartos(FINCA_ID_R,500); partos=((rp&&rp.data)||[]).filter(function(p){return _enRango(p.fecha_parto||p.fecha,R);}); }catch(e){}
+  return {eventos:eventos, partos:partos};
+}
+async function generarReproductivo(){
+  var R=rangoSeleccionado();
+  toast('Generando reporte reproductivo…');
+  var d=await _datosReproductivo(R);
+  var montas=d.eventos.filter(function(e){return e.tipo==='monta';});
+  var ecos=d.eventos.filter(function(e){return e.tipo==='ecografia';});
+  var abortos=d.eventos.filter(function(e){return e.tipo==='aborto';});
+  var vivas=0, muertas=0;
+  d.partos.forEach(function(p){
+    var cn=p.corderos_nacidos||[];
+    vivas+=cn.length?cn.filter(function(c){return c.estado_al_nacer!=='muerto';}).length:(p.num_corderos_vivos||p.crias_vivas||0);
+    muertas+=cn.length?cn.filter(function(c){return c.estado_al_nacer==='muerto';}).length:(p.num_corderos_muertos||p.crias_muertas||0);
+  });
+  var prolif=d.partos.length?(vivas/d.partos.length):0;
+  var gest=(window.AppState&&window.AppState.gestantes)||[];
+  var tasaAb=(d.partos.length+abortos.length)>0?(abortos.length/(d.partos.length+abortos.length)*100):0;
+
+  var html=repHead('Reporte reproductivo','Período: '+R.label);
+  html+='<div class="kpi-grid">'
+    +kpi(montas.length,'Montas')
+    +kpi(ecos.length,'Ecografías')
+    +kpi(d.partos.length,'Partos')
+    +kpi(vivas,'Crías nacidas vivas')
+    +kpi(prolif?prolif.toFixed(2):'—','Prolificidad (vivas/parto)')
+    +kpi(abortos.length+' ('+tasaAb.toFixed(0)+'%)','Abortos · tasa')
+    +'</div>';
+  html+='<p style="font-size:11px;color:#5a8a90">Gestantes al cierre del reporte: <b>'+gest.length+'</b> · Crías muertas al nacer en el período: <b>'+muertas+'</b></p>';
+  if(d.partos.length){
+    html+='<h2>Partos del período</h2><table><thead><tr><th>Fecha</th><th>Madre</th><th>Tipo</th><th>Vivas</th><th>Muertas</th></tr></thead><tbody>'
+      +d.partos.slice(0,60).map(function(p){
+        var cn=p.corderos_nacidos||[];
+        var v=cn.length?cn.filter(function(c){return c.estado_al_nacer!=='muerto';}).length:(p.num_corderos_vivos||p.crias_vivas||0);
+        var m=cn.length?cn.filter(function(c){return c.estado_al_nacer==='muerto';}).length:(p.num_corderos_muertos||p.crias_muertas||0);
+        return '<tr><td>'+fmtFecha(p.fecha_parto||p.fecha)+'</td><td>'+esc((p.madre&&p.madre.codigo)||p.madre_id||'—')+'</td><td>'+esc(p.tipo_parto||'—')+'</td><td>'+v+'</td><td>'+m+'</td></tr>';
+      }).join('')+'</tbody></table>';
+  }
+  if(abortos.length){
+    html+='<h2>Abortos del período</h2><table><thead><tr><th>Fecha</th><th>Hembra</th><th>Causa</th></tr></thead><tbody>'
+      +abortos.map(function(a){ return '<tr><td>'+fmtFecha(a.fecha)+'</td><td>'+esc((a.hembra&&a.hembra.codigo)||a.hembra_id||'—')+'</td><td>'+esc(a.resultado||'—')+'</td></tr>'; }).join('')
+      +'</tbody></table>';
+  }
+  html+=repFoot();
+  imprimirReporte(html,false);
+}
+async function excelReproductivo(){
+  var R=rangoSeleccionado();
+  toast('Exportando reproductivo a Excel…');
+  var d=await _datosReproductivo(R);
+  var aoa=[['Fecha','Tipo','Hembra','Macho','Resultado','Notas']];
+  d.eventos.forEach(function(e){
+    aoa.push([e.fecha||'', e.tipo||'', (e.hembra&&e.hembra.codigo)||e.hembra_id||'', (e.macho&&e.macho.codigo)||e.macho_id||'', e.resultado||'', e.notas||'']);
+  });
+  aoa.push([]);
+  aoa.push(['— PARTOS —']);
+  aoa.push(['Fecha','Madre','Tipo parto','Crías vivas','Crías muertas']);
+  d.partos.forEach(function(p){
+    var cn=p.corderos_nacidos||[];
+    var v=cn.length?cn.filter(function(c){return c.estado_al_nacer!=='muerto';}).length:(p.num_corderos_vivos||p.crias_vivas||0);
+    var m=cn.length?cn.filter(function(c){return c.estado_al_nacer==='muerto';}).length:(p.num_corderos_muertos||p.crias_muertas||0);
+    aoa.push([p.fecha_parto||p.fecha||'', (p.madre&&p.madre.codigo)||p.madre_id||'', p.tipo_parto||'', v, m]);
+  });
+  _excelDescargar(aoa,'Reproductivo','laaamb-reproductivo');
+}
+
+// ── 10. BAJAS Y MORTALIDAD DEL PERÍODO ───────────────────────────────────────
+async function _datosBajas(R){
+  var bajas=[];
+  try{ var rb=await window.DB.getBajas(FINCA_ID_R, 1000); bajas=((rb&&rb.data)||[]).filter(function(b){return _enRango(b.fecha,R);}); }catch(e){}
+  return bajas;
+}
+async function generarBajas(){
+  var R=rangoSeleccionado();
+  toast('Generando reporte de bajas…');
+  var bajas=await _datosBajas(R);
+  var muertes=bajas.filter(function(b){return /muerte/i.test(b.tipo||b.motivo||'');});
+  var ventas=bajas.filter(function(b){return /venta/i.test(b.tipo||b.motivo||'');});
+  var otras=bajas.length-muertes.length-ventas.length;
+  var porCausa={};
+  muertes.forEach(function(b){ var c=b.causa||'Sin causa registrada'; porCausa[c]=(porCausa[c]||0)+1; });
+  var activos=animalesActivos().length;
+  var mortalidad=(activos+muertes.length)>0?(muertes.length/(activos+muertes.length)*100):0;
+  var perdida=muertes.reduce(function(s,b){ return s+((b.peso_salida||0)*precioObjetivo()); },0);
+
+  var html=repHead('Reporte de bajas y mortalidad','Período: '+R.label);
+  html+='<div class="kpi-grid">'
+    +kpi(bajas.length,'Bajas totales')
+    +kpi(muertes.length,'Muertes')
+    +kpi(ventas.length,'Ventas')
+    +kpi(otras,'Otras (descartes)')
+    +kpi(mortalidad.toFixed(1)+'%','Mortalidad del período')
+    +kpi(fmtCOP(perdida),'Pérdida estimada')
+    +'</div>';
+  html+='<h2>Muertes por causa</h2><table><thead><tr><th>Causa</th><th>Casos</th><th>% de muertes</th></tr></thead><tbody>'
+    +Object.keys(porCausa).sort(function(a,b){return porCausa[b]-porCausa[a];}).map(function(c){
+      return '<tr><td>'+esc(c)+'</td><td>'+porCausa[c]+'</td><td>'+(muertes.length?Math.round(porCausa[c]/muertes.length*100):0)+'%</td></tr>';
+    }).join('')+'</tbody></table>';
+  if(bajas.length){
+    html+='<h2>Detalle de bajas</h2><table><thead><tr><th>Fecha</th><th>Animal</th><th>Tipo</th><th>Causa</th><th>Peso salida</th></tr></thead><tbody>'
+      +bajas.slice(0,80).map(function(b){
+        return '<tr><td>'+fmtFecha(b.fecha)+'</td><td>'+esc((b.animales&&b.animales.codigo)||b.animal_id||'—')+'</td><td>'+esc(b.tipo||b.motivo||'—')+'</td><td>'+esc(b.causa||'—')+'</td><td>'+esc(b.peso_salida||'—')+'</td></tr>';
+      }).join('')+'</tbody></table>';
+  }
+  html+=repFoot();
+  imprimirReporte(html,false);
+}
+async function excelBajas(){
+  var R=rangoSeleccionado();
+  toast('Exportando bajas a Excel…');
+  var bajas=await _datosBajas(R);
+  var aoa=[['Fecha','Animal','Tipo','Causa','Peso salida (kg)','Notas','Registrado por']];
+  bajas.forEach(function(b){
+    aoa.push([b.fecha||'', (b.animales&&b.animales.codigo)||b.animal_id||'', b.tipo||b.motivo||'', b.causa||'', b.peso_salida||'', b.notas||'', b.registrado_por||'']);
+  });
+  _excelDescargar(aoa,'Bajas','laaamb-bajas');
+}
+
+// ── 11. FINANCIERO DEL PERÍODO ───────────────────────────────────────────────
+async function _datosFinanciero(R){
+  var costos=[], ingresos=[];
+  try{ var rc=await window.DB.getCostos(FINCA_ID_R, 1000); costos=((rc&&rc.data)||[]).filter(function(c){return _enRango(c.fecha,R);}); }catch(e){ costos=((window.AppState&&window.AppState.costos)||[]).filter(function(c){return _enRango(c.fecha,R);}); }
+  try{ var ri=await window.DB.getIngresos(FINCA_ID_R, 1000); ingresos=((ri&&ri.data)||[]).filter(function(i){return _enRango(i.fecha,R);}); }catch(e){ ingresos=((window.AppState&&window.AppState.ingresos)||[]).filter(function(i){return _enRango(i.fecha,R);}); }
+  return {costos:costos, ingresos:ingresos};
+}
+async function generarFinanciero(){
+  var R=rangoSeleccionado();
+  toast('Generando reporte financiero…');
+  var d=await _datosFinanciero(R);
+  var totIng=d.ingresos.reduce(function(s,x){return s+(x.valor||x.monto||0);},0);
+  var totCos=d.costos.reduce(function(s,x){return s+(x.valor||x.monto||0);},0);
+  var bal=totIng-totCos, margen=totIng>0?(bal/totIng*100):0;
+  function porCat(arr){ var m={}; arr.forEach(function(x){var c=x.categoria||x.concepto||'Sin categoría'; m[c]=(m[c]||0)+(x.valor||x.monto||0);}); return m; }
+  var cIng=porCat(d.ingresos), cCos=porCat(d.costos);
+
+  var html=repHead('Reporte financiero','Período: '+R.label);
+  html+='<div class="kpi-grid">'
+    +kpi(fmtCOP(totIng),'Ingresos')
+    +kpi(fmtCOP(totCos),'Costos')
+    +kpi(fmtCOP(bal),'Balance')
+    +kpi(margen.toFixed(1)+'%','Margen')
+    +kpi(d.ingresos.length,'Movimientos de ingreso')
+    +kpi(d.costos.length,'Movimientos de costo')
+    +'</div>';
+  html+='<h2>Ingresos por categoría</h2><table><thead><tr><th>Categoría</th><th>Total</th></tr></thead><tbody>'
+    +Object.keys(cIng).sort(function(a,b){return cIng[b]-cIng[a];}).map(function(c){return '<tr><td>'+esc(c)+'</td><td>'+fmtCOP(cIng[c])+'</td></tr>';}).join('')+'</tbody></table>';
+  html+='<h2>Costos por categoría</h2><table><thead><tr><th>Categoría</th><th>Total</th></tr></thead><tbody>'
+    +Object.keys(cCos).sort(function(a,b){return cCos[b]-cCos[a];}).map(function(c){return '<tr><td>'+esc(c)+'</td><td>'+fmtCOP(cCos[c])+'</td></tr>';}).join('')+'</tbody></table>';
+  html+=repFoot();
+  imprimirReporte(html,false);
+}
+async function excelFinanciero(){
+  var R=rangoSeleccionado();
+  toast('Exportando financiero a Excel…');
+  var d=await _datosFinanciero(R);
+  var aoa=[['Tipo','Fecha','Categoría','Concepto','Valor']];
+  d.ingresos.forEach(function(x){ aoa.push(['Ingreso', x.fecha||'', x.categoria||'', x.concepto||x.descripcion||'', x.valor||x.monto||0]); });
+  d.costos.forEach(function(x){ aoa.push(['Costo', x.fecha||'', x.categoria||'', x.concepto||x.descripcion||'', x.valor||x.monto||0]); });
+  _excelDescargar(aoa,'Financiero','laaamb-financiero');
+}
+
+// ── 12. PESAJES Y GDP DEL PERÍODO ────────────────────────────────────────────
+async function _datosPesajes(R){
+  var pesajes=[];
+  try{
+    // Consulta directa con filtro de rango en el servidor (getPesajes trae máx 200)
+    var rp=await window._sb.from('pesajes').select('*, animales(codigo,nombre)')
+      .eq('finca_id',FINCA_ID_R).gte('fecha',R.ini).lte('fecha',R.fin)
+      .order('fecha',{ascending:false}).limit(3000);
+    pesajes=(rp&&rp.data)||[];
+  }catch(e){
+    try{ var rp2=await window.DB.getPesajes(FINCA_ID_R); pesajes=((rp2&&rp2.data)||[]).filter(function(p){return _enRango(p.fecha,R);}); }catch(e2){}
+  }
+  return pesajes;
+}
+async function generarPesajes(){
+  var R=rangoSeleccionado();
+  toast('Generando reporte de pesajes…');
+  var pesajes=await _datosPesajes(R);
+  // GDP por animal dentro del período (primer vs último pesaje)
+  var porAnimal={};
+  pesajes.forEach(function(p){ (porAnimal[p.animal_id]=porAnimal[p.animal_id]||[]).push(p); });
+  var gdps=[];
+  Object.keys(porAnimal).forEach(function(id){
+    var list=porAnimal[id].sort(function(a,b){return new Date(a.fecha)-new Date(b.fecha);});
+    if(list.length>=2){
+      var a=list[0],z=list[list.length-1];
+      var dd=(new Date(z.fecha)-new Date(a.fecha))/86400000;
+      var pa=a.peso||a.peso_kg, pz=z.peso||z.peso_kg;
+      if(dd>0&&pa&&pz) gdps.push({cod:(z.animales&&z.animales.codigo)||id, gdp:Math.round((pz-pa)*1000/dd), pi:pa, pf:pz, dias:Math.round(dd)});
+    }
+  });
+  gdps.sort(function(a,b){return b.gdp-a.gdp;});
+  var gdpProm=gdps.length?Math.round(gdps.reduce(function(s,g){return s+g.gdp;},0)/gdps.length):null;
+  var metaGdp=(window.AppState&&window.AppState.finca&&window.AppState.finca.config&&window.AppState.finca.config.meta_gdp)||300;
+
+  var html=repHead('Reporte de pesajes y GDP','Período: '+R.label);
+  html+='<div class="kpi-grid">'
+    +kpi(pesajes.length,'Pesajes registrados')
+    +kpi(Object.keys(porAnimal).length,'Animales pesados')
+    +kpi(gdpProm!=null?gdpProm+' g/día':'—','GDP promedio')
+    +kpi(metaGdp+' g/día','Meta GDP')
+    +kpi(gdps.filter(function(g){return g.gdp>=metaGdp;}).length,'Animales ≥ meta')
+    +kpi(gdps.filter(function(g){return g.gdp<metaGdp;}).length,'Animales < meta')
+    +'</div>';
+  if(gdps.length){
+    html+='<h2>🏆 Mejores GDP del período</h2><table><thead><tr><th>Animal</th><th>Peso inicial</th><th>Peso final</th><th>Días</th><th>GDP</th></tr></thead><tbody>'
+      +gdps.slice(0,15).map(function(g){return '<tr><td>'+esc(g.cod)+'</td><td>'+g.pi+' kg</td><td>'+g.pf+' kg</td><td>'+g.dias+'</td><td class="pos">'+g.gdp+' g/día</td></tr>';}).join('')+'</tbody></table>';
+    html+='<h2>⚠ Peores GDP del período</h2><table><thead><tr><th>Animal</th><th>Peso inicial</th><th>Peso final</th><th>Días</th><th>GDP</th></tr></thead><tbody>'
+      +gdps.slice(-15).reverse().map(function(g){return '<tr><td>'+esc(g.cod)+'</td><td>'+g.pi+' kg</td><td>'+g.pf+' kg</td><td>'+g.dias+'</td><td class="'+(g.gdp<metaGdp?'neg':'pos')+'">'+g.gdp+' g/día</td></tr>';}).join('')+'</tbody></table>';
+  } else {
+    html+='<p style="font-size:12px;color:#5a8a90">No hay animales con 2+ pesajes dentro del período para calcular GDP.</p>';
+  }
+  html+=repFoot();
+  imprimirReporte(html,false);
+}
+async function excelPesajes(){
+  var R=rangoSeleccionado();
+  toast('Exportando pesajes a Excel…');
+  var pesajes=await _datosPesajes(R);
+  var aoa=[['Fecha','Animal','Peso (kg)','Tipo','Fuente','Registrado por']];
+  pesajes.forEach(function(p){
+    aoa.push([p.fecha||'', (p.animales&&p.animales.codigo)||p.animal_id||'', p.peso||p.peso_kg||'', p.tipo||'', p.fuente||'', p.registrado_por||'']);
+  });
+  _excelDescargar(aoa,'Pesajes','laaamb-pesajes');
+}
+
+// ── Init: período por defecto = últimos 30 días ──
+(function(){
+  function initFechas(){
+    var d=document.getElementById('rep-desde'), h=document.getElementById('rep-hasta');
+    if(d&&!d.value) d.value=diasAtras(30);
+    if(h&&!h.value) h.value=hoyISO();
+    var btn=document.querySelector('#rep-presets [data-preset="30"]');
+    if(btn){ btn.classList.remove('btn-ghost'); btn.classList.add('btn-primary'); }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initFechas);
+  else initFechas();
+})();
 </script>
 
 <script>
