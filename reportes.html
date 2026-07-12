@@ -29,11 +29,11 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=40"></script>
+<script src="js/approval.js?v=41"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=40"></script>
+<script src="js/db.js?v=41"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
@@ -221,19 +221,24 @@ tbody td{padding:9px 12px;color:var(--text);vertical-align:middle}
     <div class="card" style="margin-bottom:20px">
       <div class="card-body" style="padding:16px">
         <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-          <div class="fg" style="min-width:150px"><label class="fl">Desde</label><input class="fi" type="date" id="rep-desde" onchange="_repPresetOff()"></div>
-          <div class="fg" style="min-width:150px"><label class="fl">Hasta</label><input class="fi" type="date" id="rep-hasta" onchange="_repPresetOff()"></div>
+          <div class="fg" style="min-width:150px"><label class="fl">Desde</label><input class="fi" type="date" id="rep-desde" onchange="_repPresetOffManual()"></div>
+          <div class="fg" style="min-width:150px"><label class="fl">Hasta</label><input class="fi" type="date" id="rep-hasta" onchange="_repPresetOffManual()"></div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;padding-bottom:2px" id="rep-presets">
-            <button class="btn btn-ghost btn-sm" data-preset="7" onclick="repPreset(this)">7 días</button>
-            <button class="btn btn-ghost btn-sm" data-preset="30" onclick="repPreset(this)">30 días</button>
-            <button class="btn btn-ghost btn-sm" data-preset="mes" onclick="repPreset(this)">Mes actual</button>
+            <button class="btn btn-ghost btn-sm" data-preset="semana" onclick="repPreset(this)">Esta semana</button>
+            <button class="btn btn-ghost btn-sm" data-preset="semana-1" onclick="repPreset(this)">Semana pasada</button>
+            <button class="btn btn-ghost btn-sm" data-preset="mes" onclick="repPreset(this)">Este mes</button>
             <button class="btn btn-ghost btn-sm" data-preset="mes-1" onclick="repPreset(this)">Mes anterior</button>
-            <button class="btn btn-ghost btn-sm" data-preset="90" onclick="repPreset(this)">Trimestre</button>
-            <button class="btn btn-ghost btn-sm" data-preset="anio" onclick="repPreset(this)">Año</button>
-            <button class="btn btn-ghost btn-sm" data-preset="todo" onclick="repPreset(this)">Todo</button>
+            <button class="btn btn-ghost btn-sm" data-preset="anio" onclick="repPreset(this)">Este año</button>
+            <button class="btn btn-ghost btn-sm" data-preset="anio-1" onclick="repPreset(this)">Año anterior</button>
+            <button class="btn btn-ghost btn-sm" data-preset="30" onclick="repPreset(this)">Últimos 30 días</button>
+            <button class="btn btn-ghost btn-sm" data-preset="90" onclick="repPreset(this)">Últimos 90 días</button>
+            <button class="btn btn-ghost btn-sm" data-preset="todo" onclick="repPreset(this)">Todo el histórico</button>
           </div>
         </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:8px">El período aplica a todos los reportes marcados con 📅. Los reportes de inventario y culling siempre usan el estado actual del hato.</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:10px;padding:8px 12px;background:var(--teal-bg2);border:1px solid var(--border2);border-radius:var(--r)">
+          <span style="font-weight:600">Período activo:</span> <span id="rep-etiqueta" style="color:var(--teal);font-weight:600">últimos 30 días</span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">Los reportes marcados con 📅 usan este período. <b>Inventario, Descarte (Culling), Productividad y RSPP/ICA</b> siempre reflejan el <b>estado actual del hato</b> (foto de hoy), y el <b>Reporte mensual ejecutivo</b> compara el mes en curso con el anterior — por eso no dependen del selector.</div>
       </div>
     </div>
 
@@ -330,7 +335,7 @@ tbody td{padding:9px 12px;color:var(--text);vertical-align:middle}
 
       <div class="rep-card">
         <div class="rep-ico"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></div>
-        <div class="rep-name">Eficiencia reproductiva (KPI industria)</div>
+        <div class="rep-name">📅 Eficiencia reproductiva (KPI industria)</div>
         <div class="rep-desc">Los indicadores que la industria considera decisivos: tasa de parición, prolificidad, intervalo entre partos, mortalidad predestete y kg destetados por vientre — con referencias de la industria ovina.</div>
         <div class="rep-actions">
           <button class="btn btn-primary btn-sm" onclick="generarEficiencia()">Generar PDF</button>
@@ -466,22 +471,43 @@ function animalesActivos(){
 function _repPresetOff(){
   document.querySelectorAll('#rep-presets .btn').forEach(function(b){ b.classList.remove('btn-primary'); b.classList.add('btn-ghost'); });
 }
+function _repActualizarEtiqueta(){
+  var el=document.getElementById('rep-etiqueta'); if(!el) return;
+  var d=document.getElementById('rep-desde')?.value, h=document.getElementById('rep-hasta')?.value;
+  if(!d||!h){ el.textContent='—'; return; }
+  el.textContent=fmtFecha(d)+' → '+fmtFecha(h);
+}
+function _repPresetOffManual(){ _repPresetOff(); _repActualizarEtiqueta(); }
 function repPreset(btn){
   _repPresetOff();
   btn.classList.remove('btn-ghost'); btn.classList.add('btn-primary');
   var p=btn.getAttribute('data-preset');
   var hoy=new Date(); var d=document.getElementById('rep-desde'), h=document.getElementById('rep-hasta');
-  h.value=hoyISO();
-  if(p==='7'){ d.value=diasAtras(7); }
-  else if(p==='30'){ d.value=diasAtras(30); }
-  else if(p==='90'){ d.value=diasAtras(90); }
-  else if(p==='mes'){ d.value=new Date(hoy.getFullYear(),hoy.getMonth(),1).toISOString().slice(0,10); }
-  else if(p==='mes-1'){
-    d.value=new Date(hoy.getFullYear(),hoy.getMonth()-1,1).toISOString().slice(0,10);
-    h.value=new Date(hoy.getFullYear(),hoy.getMonth(),0).toISOString().slice(0,10);
-  }
-  else if(p==='anio'){ d.value=new Date(hoy.getFullYear(),0,1).toISOString().slice(0,10); }
-  else if(p==='todo'){ d.value='2020-01-01'; }
+  function iso(dt){ return dt.toISOString().slice(0,10); }
+  // Lunes de la semana de una fecha dada (semana calendario lunes→domingo)
+  function lunesDe(dt){ var x=new Date(dt); var dow=(x.getDay()+6)%7; x.setDate(x.getDate()-dow); x.setHours(0,0,0,0); return x; }
+  h.value=iso(hoy); // por defecto hasta hoy; algunos presets lo sobreescriben
+
+  if(p==='semana'){
+    d.value=iso(lunesDe(hoy));
+  } else if(p==='semana-1'){
+    var lunPasado=lunesDe(hoy); lunPasado.setDate(lunPasado.getDate()-7);
+    var domPasado=new Date(lunPasado); domPasado.setDate(domPasado.getDate()+6);
+    d.value=iso(lunPasado); h.value=iso(domPasado);
+  } else if(p==='mes'){
+    d.value=iso(new Date(hoy.getFullYear(),hoy.getMonth(),1));
+  } else if(p==='mes-1'){
+    d.value=iso(new Date(hoy.getFullYear(),hoy.getMonth()-1,1));
+    h.value=iso(new Date(hoy.getFullYear(),hoy.getMonth(),0)); // último día del mes anterior
+  } else if(p==='anio'){
+    d.value=iso(new Date(hoy.getFullYear(),0,1));
+  } else if(p==='anio-1'){
+    d.value=iso(new Date(hoy.getFullYear()-1,0,1));
+    h.value=iso(new Date(hoy.getFullYear()-1,11,31));
+  } else if(p==='30'){ d.value=diasAtras(30);
+  } else if(p==='90'){ d.value=diasAtras(90);
+  } else if(p==='todo'){ d.value='2020-01-01'; }
+  _repActualizarEtiqueta();
 }
 function rangoSeleccionado(){
   var d=document.getElementById('rep-desde')?.value;
@@ -1527,6 +1553,7 @@ async function generarHectarea(){
     if(h&&!h.value) h.value=hoyISO();
     var btn=document.querySelector('#rep-presets [data-preset="30"]');
     if(btn){ btn.classList.remove('btn-ghost'); btn.classList.add('btn-primary'); }
+    if(typeof _repActualizarEtiqueta==='function') _repActualizarEtiqueta();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initFechas);
   else initFechas();
