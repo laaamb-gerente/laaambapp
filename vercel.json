@@ -1,6 +1,6 @@
 {
   "crons": [
-    { "path": "/api/cron-alertas", "schedule": "0 11 * * *" }
+    { "path": "/api/cron-alertas", "schedule": "0 16 * * *" }
   ],
   "rewrites": [
     { "source": "/qr/:code", "destination": "/qr.html?code=:code" }

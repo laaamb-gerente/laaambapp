@@ -115,11 +115,94 @@ export default async function handler(req, res) {
       tomas = tomas.filter(t => t.corderos_crianza && t.corderos_crianza.estado === 'activo');
     } catch (e) { }
 
+    // 5. Medicamentos próximos a agotarse o vencer.
+    //    Dos criterios (avisa si CUALQUIERA se cumple):
+    //    a) Vencimiento por FECHA: el lote comprado caduca en ≤30 días.
+    //    b) Vencimiento por AGOTAMIENTO: se estima el consumo diario real
+    //       (mL usados en tratamientos de los últimos 60 días) y se proyecta
+    //       cuántos días de stock quedan. Alerta si queda ≤10% del stock
+    //       inicial estimado O ≤14 días de existencia al ritmo actual.
+    //       Así, un medicamento muy usado avisa aunque quede >10%, y uno
+    //       poco usado no molesta antes de tiempo.
+    let medsAlerta = [];
+    try {
+      const meds = await sbGet(
+        `medicamentos?finca_id=eq.${FINCA_ID}&select=id,nombre,unidad,stock_actual,stock_minimo`
+      );
+      // Consumo de los últimos 60 días por medicamento
+      const hace60 = new Date(Date.now() - 60 * 86400000).toISOString().slice(0, 10);
+      let trats = [];
+      try {
+        trats = await sbGet(
+          `tratamientos?finca_id=eq.${FINCA_ID}&fecha_inicio=gte.${hace60}` +
+          `&select=medicamento_id,dosis&limit=1000`
+        );
+      } catch (e) { }
+      const consumo = {}; // medicamento_id → mL en 60 días
+      trats.forEach(t => {
+        const v = parseFloat(t.dosis);
+        if (t.medicamento_id && !isNaN(v)) consumo[t.medicamento_id] = (consumo[t.medicamento_id] || 0) + v;
+      });
+      // Compras: fecha de vencimiento más próxima por medicamento
+      let compras = [];
+      try {
+        compras = await sbGet(
+          `compras_medicamentos?finca_id=eq.${FINCA_ID}&fecha_vencimiento=not.is.null` +
+          `&select=medicamento_id,medicamento_nombre,fecha_vencimiento,cantidad&order=fecha_vencimiento.asc&limit=200`
+        );
+      } catch (e) { }
+      const vencProx = {}; // medicamento_id → fecha_vencimiento más próxima futura
+      compras.forEach(c => {
+        if (c.fecha_vencimiento >= hoy && (!vencProx[c.medicamento_id] || c.fecha_vencimiento < vencProx[c.medicamento_id])) {
+          vencProx[c.medicamento_id] = c.fecha_vencimiento;
+        }
+      });
+
+      (meds || []).forEach(m => {
+        const stock = parseFloat(m.stock_actual) || 0;
+        const razones = [];
+        // a) Vencimiento por fecha
+        const fv = vencProx[m.id];
+        if (fv) {
+          const diasVenc = Math.round((new Date(fv) - new Date(hoy)) / 86400000);
+          if (diasVenc <= 30) razones.push(`vence en ${diasVenc} día(s) (${fv})`);
+        }
+        // b) Agotamiento con ritmo de consumo
+        const mlDia = (consumo[m.id] || 0) / 60;
+        if (stock > 0 && mlDia > 0) {
+          const diasRestantes = Math.floor(stock / mlDia);
+          if (diasRestantes <= 14) razones.push(`~${diasRestantes} día(s) de stock al ritmo actual (${mlDia.toFixed(1)} ${m.unidad || 'mL'}/día)`);
+        }
+        // Stock bajo por umbral (stock_minimo o 10% si no hay mínimo)
+        if (stock > 0 && m.stock_minimo && stock <= m.stock_minimo) {
+          razones.push(`stock ${stock} ${m.unidad || ''} ≤ mínimo ${m.stock_minimo}`);
+        }
+        if (stock === 0) razones.push('sin stock');
+        if (razones.length) {
+          medsAlerta.push({ nombre: m.nombre, stock, unidad: m.unidad || '', razones });
+        }
+      });
+    } catch (e) { }
+
+    // 6. Registro diario de asistencia (¿ya se marcó hoy?)
+    let asistencia = { empleados: 0, marcados: 0, faltan: [] };
+    try {
+      const emps = await sbGet(`empleados?finca_id=eq.${FINCA_ID}&activo=eq.true&select=id,nombre`);
+      const asisHoy = await sbGet(`asistencia?finca_id=eq.${FINCA_ID}&fecha=eq.${hoy}&select=empleado_id`);
+      const marcadosSet = new Set((asisHoy || []).map(a => a.empleado_id));
+      asistencia.empleados = (emps || []).length;
+      asistencia.marcados = marcadosSet.size;
+      asistencia.faltan = (emps || []).filter(e => !marcadosSet.has(e.id)).map(e => e.nombre);
+    } catch (e) { }
+
     resumen.seguimientos = seguimientos.length;
     resumen.dosis = dosis.length;
     resumen.retiros = retiros.length;
     resumen.tomas = tomas.length;
-    const total = seguimientos.length + dosis.length + retiros.length + tomas.length;
+    resumen.medicamentos = medsAlerta.length;
+    resumen.asistencia_faltan = asistencia.faltan.length;
+    const total = seguimientos.length + dosis.length + retiros.length + tomas.length
+      + medsAlerta.length + (asistencia.empleados > 0 ? 1 : 0);
 
     if (total === 0) {
       return res.status(200).json({ ok: true, enviado: false, motivo: 'Sin alertas hoy', resumen });
@@ -149,6 +232,17 @@ export default async function handler(req, res) {
     ${seccion('🍼 Tetero / Sala Cuna — tomas pendientes', tomas.map(t =>
       fila('🍼', `${cod(t.corderos_crianza && t.corderos_crianza.cordero)} · ${t.cantidad_ml_objetivo} mL (${t.tipo})`,
         `programada ${String(t.fecha_hora_programada).replace('T', ' ').slice(0, 16)}`)))}
+    ${seccion('💊 Medicamentos por vencer o agotarse', medsAlerta.map(m =>
+      fila('💊', `${m.nombre} · stock ${m.stock} ${m.unidad}`, m.razones.join(' · '))))}
+    ${asistencia.empleados > 0 ? `
+    <h2 style="font-family:Arial,sans-serif;font-size:15px;color:#9C3F66;margin:22px 0 8px;border-left:4px solid #F18F22;padding-left:10px">📋 Registro de asistencia de hoy</h2>
+    <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5eeef;border-radius:8px">
+      ${fila(asistencia.faltan.length === 0 ? '✅' : '⏰',
+        asistencia.faltan.length === 0
+          ? `Asistencia completa (${asistencia.marcados}/${asistencia.empleados} marcados)`
+          : `Falta marcar ${asistencia.faltan.length} de ${asistencia.empleados}`,
+        asistencia.faltan.length === 0 ? 'Todo el equipo registrado hoy' : 'Pendientes: ' + asistencia.faltan.join(', '))}
+    </table>` : ''}
     <div style="margin-top:20px;text-align:center">
       <a href="https://app.laaambcorderos.com/hoy.html" style="display:inline-block;background:#00AFB6;color:#fff;text-decoration:none;padding:11px 26px;border-radius:8px;font-weight:700;font-size:14px">Abrir HOY en LAAAMBAPP →</a>
     </div>
@@ -173,7 +267,7 @@ export default async function handler(req, res) {
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         from, to,
-        subject: `🐑 LAAAMB · ${total} alerta(s) hoy — ${resumen.seguimientos} seguimientos · ${resumen.dosis} dosis · ${resumen.retiros} retiros · ${resumen.tomas} teteros`,
+        subject: `🐑 LAAAMB · ${resumen.seguimientos} seguim. · ${resumen.dosis} dosis · ${resumen.retiros} retiros · ${resumen.tomas} teteros · ${resumen.medicamentos} medic.`,
         html
       })
     });
