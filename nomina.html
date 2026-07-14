@@ -29,11 +29,11 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=39"></script>
+<script src="js/approval.js?v=41"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=39"></script>
+<script src="js/db.js?v=41"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
@@ -135,7 +135,7 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 .asis-cell{padding:3px 4px!important}
 .asis-sel{width:62px;background:var(--surface);border:1px solid var(--border2);border-radius:6px;padding:3px 4px;color:var(--text);font-size:11px;font-family:'Changa',sans-serif;cursor:pointer;outline:none}
 .asis-sel:focus{border-color:var(--teal)}
-.asis-A{color:var(--green)}.asis-AM{color:var(--sky)}.asis-AI{color:var(--red)}.asis-AJ{color:var(--amber)}.asis-INC{color:var(--wine)}.asis-F{color:var(--text3)}
+.asis-A{color:var(--green)}.asis-AM{color:var(--sky)}.asis-FI{color:var(--red)}.asis-FJ{color:var(--amber)}.asis-INC{color:var(--wine)}.asis-F{color:var(--text3)}
 #lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);width:46px;height:46px;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 16px rgba(0,0,0,.45)}
 #lham svg{width:22px;height:22px;stroke:var(--text);stroke-width:2;fill:none;stroke-linecap:round}
 #lov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990}
@@ -221,11 +221,16 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
           <div><label class="fl">Mes</label><select class="fi" id="asis-mes" style="width:130px" onchange="renderAsistencia()"></select></div>
           <div><label class="fl">Año</label><input class="fi" type="number" id="asis-anio" style="width:100px" onchange="renderAsistencia()"></div>
         </div>
-        <button class="btn btn-ghost btn-sm" onclick="exportAsistencia()">↓ Exportar Excel</button>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span id="asis-estado-badge"></span>
+          <button class="btn btn-ghost btn-sm" onclick="exportAsistencia()">↓ Exportar Excel</button>
+          <button class="btn btn-primary btn-sm" id="asis-cerrar-btn" onclick="cerrarMesActual()">🔒 Cerrar mes</button>
+        </div>
       </div>
+      <div id="asis-historial-bar" style="display:none;background:var(--teal-bg2,rgba(0,175,182,.08));border:1px solid var(--border2);border-radius:var(--r);padding:8px 12px;margin-bottom:12px;font-size:12px;color:var(--text2)"></div>
       <div style="display:flex;gap:12px;font-size:10px;color:var(--text3);margin-bottom:12px;flex-wrap:wrap">
-        <span class="asis-A">A = Completo</span><span class="asis-AM">AM = Medio día</span><span class="asis-AI">AI = Ausente injustif.</span>
-        <span class="asis-AJ">AJ = Ausente justif.</span><span class="asis-INC">INC = Incapacidad</span><span class="asis-F">F = Festivo</span>
+        <span class="asis-A">A = Asistió</span><span class="asis-AM">AM = Medio día</span><span class="asis-FI">FI = Falla injustificada</span>
+        <span class="asis-FJ">FJ = Falla justificada</span><span class="asis-INC">INC = Incapacidad</span><span class="asis-F">F = Festivo</span>
       </div>
       <div class="card">
         <div style="overflow-x:auto">
@@ -303,14 +308,17 @@ const MESES_ES=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto
 // Festivos Colombia 2026 (formato 'MM-DD')
 const FESTIVOS_2026=['01-01','01-12','03-23','04-02','04-03','05-01','05-18','06-08','06-29','07-20','08-07','08-17','10-12','11-02','11-16','12-08','12-25'];
 const CARGO_LBL={auxiliar_campo:'Auxiliar de campo',veterinario:'Veterinario',administrador:'Administrador',mayordomo:'Mayordomo',otro:'Otro'};
-// Mapa tipo asistencia ↔ código corto
+// Mapa tipo asistencia ↔ código corto.
+// FI = Falla injustificada, FJ = Falla justificada (etiquetas visibles).
+// El valor 'tipo' guardado en Supabase NO cambia (ausente_injustificado /
+// ausente_justificado) — solo cambia lo que ve el usuario.
 const ASIS_TIPOS=[
-  {code:'A',tipo:'completo',cls:'asis-A'},
-  {code:'AM',tipo:'medio_dia',cls:'asis-AM'},
-  {code:'AI',tipo:'ausente_injustificado',cls:'asis-AI'},
-  {code:'AJ',tipo:'ausente_justificado',cls:'asis-AJ'},
-  {code:'INC',tipo:'incapacidad',cls:'asis-INC'},
-  {code:'F',tipo:'festivo',cls:'asis-F'}
+  {code:'A',tipo:'completo',cls:'asis-A',label:'A · Asistió'},
+  {code:'AM',tipo:'medio_dia',cls:'asis-AM',label:'AM · Medio día'},
+  {code:'FI',tipo:'ausente_injustificado',cls:'asis-FI',label:'FI · Falla injustificada'},
+  {code:'FJ',tipo:'ausente_justificado',cls:'asis-FJ',label:'FJ · Falla justificada'},
+  {code:'INC',tipo:'incapacidad',cls:'asis-INC',label:'INC · Incapacidad'},
+  {code:'F',tipo:'festivo',cls:'asis-F',label:'F · Festivo'}
 ];
 const TIPO_TO_CODE={}; ASIS_TIPOS.forEach(t=>TIPO_TO_CODE[t.tipo]=t.code);
 const CODE_TO_TIPO={}; ASIS_TIPOS.forEach(t=>CODE_TO_TIPO[t.code]=t.tipo);
@@ -336,7 +344,7 @@ function switchTab(el,id){
   el.classList.add('active');
   document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none');
   document.getElementById(id).style.display='block';
-  if(id==='t-asistencia') renderAsistencia();
+  if(id==='t-asistencia'){ renderAsistencia(); cargarHistorialCierres(); }
 }
 
 // ═══ EQUIPO ═══
@@ -388,6 +396,15 @@ async function renderAsistencia(){
   const mes=parseInt(document.getElementById('asis-mes').value);
   const año=parseInt(document.getElementById('asis-anio').value);
   const nDias=diasEnMes(año,mes);
+  // ¿Mes cerrado? Si lo está, la grilla queda en solo-lectura.
+  window._asisCerrado=false;
+  if(window.DB&&window.DB.getCierreAsistencia){
+    try{
+      const {data:cierre}=await window.DB.getCierreAsistencia(FINCA_ID,año,mes);
+      window._asisCerrado=!!(cierre && !cierre.reabierto);
+    }catch(e){}
+  }
+  _renderEstadoCierre(año,mes);
   // Cargar asistencia del mes
   ASIS_MAP={};
   if(window.DB&&window.DB.getAsistencia){
@@ -416,7 +433,8 @@ async function renderAsistencia(){
       const code=TIPO_TO_CODE[tipo]||'';
       if(tipo==='completo'||tipo==='medio_dia') trabajados+=(tipo==='completo'?1:0.5);
       let opts='<option value="">·</option>'+ASIS_TIPOS.map(t=>'<option value="'+t.code+'"'+(t.code===code?' selected':'')+'>'+t.code+'</option>').join('');
-      cells+='<td class="asis-cell"><select class="asis-sel '+(code?('asis-'+code):'')+'" data-emp="'+e.id+'" data-fecha="'+fecha+'" onchange="onAsisChange(this)">'+opts+'</select></td>';
+      const _dis=window._asisCerrado?' disabled':'';
+      cells+='<td class="asis-cell"><select class="asis-sel '+(code?('asis-'+code):'')+'" data-emp="'+e.id+'" data-fecha="'+fecha+'" onchange="onAsisChange(this)"'+_dis+'>'+opts+'</select></td>';
     }
     cells+='<td style="text-align:center;font-weight:700;color:var(--teal)" id="dias-'+e.id+'">'+trabajados+'</td>';
     body+='<tr>'+cells+'</tr>';
@@ -424,6 +442,7 @@ async function renderAsistencia(){
   document.getElementById('asis-tbody').innerHTML=body;
 }
 async function onAsisChange(sel){
+  if(window._asisCerrado){ toast('Mes cerrado. Reábrelo para editar.','info'); renderAsistencia(); return; }
   const empleado_id=sel.dataset.emp; const fecha=sel.dataset.fecha; const code=sel.value;
   // Actualizar color
   sel.className='asis-sel '+(code?('asis-'+code):'');
@@ -443,6 +462,88 @@ function recalcDiasFila(empleado_id){
   const cell=document.getElementById('dias-'+empleado_id);
   if(cell) cell.textContent=trabajados;
 }
+
+// ── CIERRE DE MES + HISTORIAL (0054) ──
+function _renderEstadoCierre(año,mes){
+  const badge=document.getElementById('asis-estado-badge');
+  const btn=document.getElementById('asis-cerrar-btn');
+  if(!badge||!btn) return;
+  if(window._asisCerrado){
+    badge.innerHTML='<span style="background:var(--wine-bg,rgba(150,40,80,.15));color:var(--wine);border:1px solid var(--wine);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">🔒 Mes cerrado</span>';
+    btn.textContent='🔓 Reabrir mes';
+    btn.onclick=reabrirMesActual;
+    btn.className='btn btn-ghost btn-sm';
+  } else {
+    badge.innerHTML='<span style="background:var(--green-bg,rgba(30,160,90,.12));color:var(--green);border:1px solid var(--green);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">✎ Abierto</span>';
+    btn.textContent='🔒 Cerrar mes';
+    btn.onclick=cerrarMesActual;
+    btn.className='btn btn-primary btn-sm';
+  }
+}
+// Resumen por empleado del mes en pantalla, contando FI/FJ/etc.
+function _resumenMesActual(año,mes){
+  const nDias=diasEnMes(año,mes);
+  return EMPLEADOS.map(e=>{
+    const map=ASIS_MAP[e.id]||{};
+    let dias=0,fi=0,fj=0,inc=0,fest=0,medio=0;
+    for(let d=1;d<=nDias;d++){
+      const fecha=año+'-'+String(mes).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+      const t=map[fecha]|| (esFestivo(año,mes,d)?'festivo':'');
+      if(t==='completo') dias+=1;
+      else if(t==='medio_dia'){ dias+=0.5; medio++; }
+      else if(t==='ausente_injustificado') fi++;
+      else if(t==='ausente_justificado') fj++;
+      else if(t==='incapacidad') inc++;
+      else if(t==='festivo') fest++;
+    }
+    return {empleado_id:e.id,nombre:e.nombre||'—',cargo:e.cargo||'',dias_trabajados:dias,fi:fi,fj:fj,incapacidades:inc,festivos:fest,medio_dia:medio};
+  });
+}
+async function cerrarMesActual(){
+  const mes=parseInt(document.getElementById('asis-mes').value);
+  const año=parseInt(document.getElementById('asis-anio').value);
+  const resumen=_resumenMesActual(año,mes);
+  const totFI=resumen.reduce((s,r)=>s+r.fi,0);
+  const totFJ=resumen.reduce((s,r)=>s+r.fj,0);
+  const totDias=resumen.reduce((s,r)=>s+r.dias_trabajados,0);
+  if(!confirm('¿Cerrar '+_nombreMes(mes)+' '+año+'?\n\nSe congela el resumen ('+totDias+' días trabajados · '+totFI+' FI · '+totFJ+' FJ). Podrás revisitarlo en el historial y reabrirlo si necesitas corregir.')) return;
+  if(!(window.DB&&window.DB.cerrarMesAsistencia)){ toast('Ejecuta primero la migración 0054','err'); return; }
+  const {error}=await window.DB.cerrarMesAsistencia({
+    finca_id:FINCA_ID, anio:año, mes:mes, resumen:resumen,
+    total_dias_trabajados:totDias, total_fi:totFI, total_fj:totFJ,
+    cerrado_por:(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||null
+  });
+  if(error){ toast('Error al cerrar: '+error.message,'err'); return; }
+  toast('🔒 '+_nombreMes(mes)+' '+año+' cerrado');
+  renderAsistencia(); cargarHistorialCierres();
+}
+async function reabrirMesActual(){
+  const mes=parseInt(document.getElementById('asis-mes').value);
+  const año=parseInt(document.getElementById('asis-anio').value);
+  if(!confirm('¿Reabrir '+_nombreMes(mes)+' '+año+' para editar la asistencia?')) return;
+  const {error}=await window.DB.reabrirMesAsistencia(FINCA_ID,año,mes);
+  if(error){ toast('Error: '+error.message,'err'); return; }
+  toast('🔓 Mes reabierto para edición');
+  renderAsistencia(); cargarHistorialCierres();
+}
+async function cargarHistorialCierres(){
+  const bar=document.getElementById('asis-historial-bar');
+  if(!bar||!(window.DB&&window.DB.listCierresAsistencia)) return;
+  let cierres=[];
+  try{ const {data}=await window.DB.listCierresAsistencia(FINCA_ID,36); cierres=data||[]; }catch(e){}
+  if(!cierres.length){ bar.style.display='none'; return; }
+  bar.innerHTML='<b>📅 Meses cerrados (clic para revisar):</b> '+cierres.map(c=>
+    '<a onclick="irAMesCerrado('+c.anio+','+c.mes+')" style="cursor:pointer;color:var(--teal);font-weight:600;text-decoration:underline;margin-right:10px;white-space:nowrap">'
+    +_nombreMes(c.mes).slice(0,3)+' '+c.anio+' <span style="color:var(--text3);font-weight:400">('+(c.total_dias_trabajados||0)+'d · '+(c.total_fi||0)+'FI · '+(c.total_fj||0)+'FJ)</span></a>'
+  ).join('');
+  bar.style.display='block';
+}
+function irAMesCerrado(año,mes){
+  document.getElementById('asis-mes').value=mes;
+  document.getElementById('asis-anio').value=año;
+  renderAsistencia();
+}
+function _nombreMes(m){ return ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'][m]||m; }
 function exportAsistencia(){
   const mes=parseInt(document.getElementById('asis-mes').value);
   const año=parseInt(document.getElementById('asis-anio').value);

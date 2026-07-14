@@ -500,6 +500,32 @@ window.DB = {
       .select().single();
   },
 
+  // ── CIERRES DE ASISTENCIA · historial mes a mes (0054) ──
+  async getCierreAsistencia(finca_id, anio, mes) {
+    return await window._sb.from('cierres_asistencia')
+      .select('*').eq('finca_id', finca_id).eq('anio', anio).eq('mes', mes)
+      .maybeSingle();
+  },
+  async listCierresAsistencia(finca_id, limit = 36) {
+    return await window._sb.from('cierres_asistencia')
+      .select('anio, mes, total_dias_trabajados, total_fi, total_fj, fecha_cierre, reabierto')
+      .eq('finca_id', finca_id).eq('reabierto', false)
+      .order('anio', { ascending: false }).order('mes', { ascending: false })
+      .limit(limit);
+  },
+  async cerrarMesAsistencia(payload) {
+    // payload: {finca_id, anio, mes, resumen[], total_*, cerrado_por}
+    return await window._sb.from('cierres_asistencia')
+      .upsert(Object.assign({ reabierto: false, fecha_cierre: new Date().toISOString() }, payload),
+              { onConflict: 'finca_id,anio,mes' })
+      .select().single();
+  },
+  async reabrirMesAsistencia(finca_id, anio, mes) {
+    return await window._sb.from('cierres_asistencia')
+      .update({ reabierto: true })
+      .eq('finca_id', finca_id).eq('anio', anio).eq('mes', mes);
+  },
+
   // ── ICA / SIGMA · MOVILIZACIONES ─────────────────────
   async getMovilizaciones(finca_id, limit = 100) {
     return await window._sb.from('movilizaciones')
