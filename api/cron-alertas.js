@@ -97,10 +97,22 @@ export default async function handler(req, res) {
     // 3. Retiros sanitarios vencidos pendientes de confirmación manual
     let retiros = [];
     try {
-      retiros = await sbGet(
+      const rawRetiros = await sbGet(
         `tratamientos?estado=eq.en_retiro&fecha_fin_retiro=lte.${hoy}` +
-        `&finca_id=eq.${FINCA_ID}&select=medicamento_nombre,fecha_fin_retiro,animales(codigo,nombre)&limit=50`
+        `&finca_id=eq.${FINCA_ID}&select=medicamento_nombre,fecha_fin_retiro,animal_id,animales(codigo,nombre,estado)&limit=100`
       );
+      // Agrupar por animal (un aviso por animal) y excluir muertos/vendidos.
+      const porAnimal = {};
+      (rawRetiros || []).forEach(t => {
+        if (t.animales && t.animales.estado && t.animales.estado !== 'activo') return;
+        const aid = t.animal_id || 'sin';
+        const g = porAnimal[aid] || (porAnimal[aid] = {
+          cod: (t.animales && (t.animales.codigo || t.animales.nombre)) || '—', meds: [], fechaMax: ''
+        });
+        if (t.medicamento_nombre) g.meds.push(t.medicamento_nombre);
+        if ((t.fecha_fin_retiro || '') > g.fechaMax) g.fechaMax = t.fecha_fin_retiro || '';
+      });
+      retiros = Object.keys(porAnimal).map(k => porAnimal[k]);
     } catch (e) { }
 
     // 4. Tomas de tetero (Sala Cuna) pendientes de hoy o perdidas
@@ -226,9 +238,9 @@ export default async function handler(req, res) {
     ${seccion('💉 Dosis de tratamiento pendientes', dosis.map(d =>
       fila('💉', `${cod(d.animales)} · dosis ${d.numero_dosis}/${d.total_dosis}`,
         d.fecha_programada < hoy ? `⚠ atrasada (${d.fecha_programada})` : 'aplicar hoy')))}
-    ${seccion('🛑 Retiros sanitarios cumplidos — confirmar apto', retiros.map(t =>
-      fila('🛑', `${cod(t.animales)} · ${t.medicamento_nombre || ''}`,
-        `retiro venció ${t.fecha_fin_retiro} · confirma en HOY → "Confirmar apto"`)))}
+    ${seccion('Retiros sanitarios cumplidos — confirmar apto', retiros.map(g =>
+      fila('•', `${g.cod}${g.meds.length > 1 ? ` · ${g.meds.length} medicamentos` : (g.meds.length ? ` · ${g.meds[0]}` : '')}`,
+        `carne apta · retiro venció ${g.fechaMax} · confirma en HOY → "Confirmar apto"`)))}
     ${seccion('🍼 Tetero / Sala Cuna — tomas pendientes', tomas.map(t =>
       fila('🍼', `${cod(t.corderos_crianza && t.corderos_crianza.cordero)} · ${t.cantidad_ml_objetivo} mL (${t.tipo})`,
         `programada ${String(t.fecha_hora_programada).replace('T', ' ').slice(0, 16)}`)))}

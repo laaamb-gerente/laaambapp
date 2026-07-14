@@ -217,7 +217,7 @@ window.DB = {
 
   // ── TRATAMIENTOS ─────────────────────────────────────
   async getTratamientos(finca_id, solo_activos = false) {
-    let q = window._sb.from('tratamientos').select('*, animales(codigo, nombre), medicamentos(nombre)').eq('finca_id', finca_id);
+    let q = window._sb.from('tratamientos').select('*, animales(codigo, nombre, estado), medicamentos(nombre)').eq('finca_id', finca_id);
     if (solo_activos) q = q.gte('fecha_fin_retiro', new Date().toISOString().split('T')[0]);
     return await q.order('fecha_inicio', { ascending: false });
   },
@@ -1857,11 +1857,33 @@ window.DB = {
   // Tratamientos cuyo retiro ya se cumplió y siguen en_retiro (carne apta).
   async getRetiroCumplido(finca_id) {
     const hoy = new Date().toISOString().split('T')[0];
-    return await window._sb.from('tratamientos')
-      .select('id,medicamento_nombre,fecha_fin_retiro,animal_id,animales(codigo)')
+    const r = await window._sb.from('tratamientos')
+      .select('id,medicamento_nombre,fecha_fin_retiro,animal_id,animales(codigo,estado)')
       .eq('finca_id', finca_id).eq('estado','en_retiro')
       .lte('fecha_fin_retiro', hoy)
       .order('fecha_fin_retiro');
+    // Excluir tratamientos de animales que ya no están activos (murieron/vendidos):
+    // no tiene sentido pedir "confirmar apto" de un animal que murió en retiro.
+    if (r.data) {
+      r.data = r.data.filter(t => !t.animales || t.animales.estado === 'activo');
+    }
+    return r;
+  },
+
+  // Confirmar apto TODOS los tratamientos en retiro cumplido de un animal
+  // en una sola acción (evita confirmar medicamento por medicamento).
+  async marcarAnimalApto(animal_id, finca_id) {
+    const hoy = new Date().toISOString().split('T')[0];
+    const upd = await window._sb.from('tratamientos')
+      .update({ estado: 'completado' })
+      .eq('finca_id', finca_id).eq('animal_id', animal_id)
+      .eq('estado', 'en_retiro').lte('fecha_fin_retiro', hoy)
+      .select();
+    if (!upd.error && upd.data && upd.data.length) {
+      await this.logAudit(finca_id, 'UPDATE', 'tratamientos', animal_id, null,
+        {estado:'completado', n:upd.data.length}, 'apto confirmado (todos los medicamentos del animal)');
+    }
+    return upd;
   },
 
   // Marcar un tratamiento como completado (botón "Confirmar apto").

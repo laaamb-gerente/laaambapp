@@ -30,11 +30,11 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=40"></script>
+<script src="js/approval.js?v=42"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=40"></script>
+<script src="js/db.js?v=42"></script>
 <script src="js/alertas-motor.js"></script>
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
@@ -254,7 +254,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
         <div class="agenda-list" id="eco-list"></div>
       </div>
       <div class="agenda-card">
-        <h4><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="var(--teal)" stroke-width="1.8"><path d="M3 10h14M10 3v14"/><circle cx="10" cy="10" r="8"/></svg>Pesajes programados</h4>
+        <h4><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="var(--teal)" stroke-width="1.8"><path d="M3 10h14M10 3v14"/><circle cx="10" cy="10" r="8"/></svg>Pesajes pendientes</h4>
         <div class="big" id="pes-count">—</div>
         <div class="unit">sin pesaje hace +30 días</div>
         <div class="agenda-list" id="pes-list"></div>
@@ -380,14 +380,31 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     var cont = document.getElementById('alertas');
     var items = [];
 
-    // Retiro sanitario venciendo hoy/mañana
+    // Retiro sanitario venciendo hoy/mañana — agrupado por animal (un aviso
+    // por animal aunque tenga varios medicamentos en retiro). Distinto de
+    // "Confirmar apto": aquí el retiro AÚN NO se cumple, solo está por vencer.
+    var retiroPorAnimal = {};
     tratamientos.forEach(function(t){
       if(!t.fecha_fin_retiro) return;
       var f = new Date(t.fecha_fin_retiro+'T00:00:00');
       if(f <= manana){
-        var cod = (t.animales && t.animales.codigo) || '—';
-        items.push({tipo:'red', ico:'💊', t:'Retiro sanitario por vencer', s:'Animal '+esc(cod)+' · vence '+esc(t.fecha_fin_retiro), href:'salud.html'});
+        var an = t.animales || {};
+        if(an.estado && an.estado !== 'activo') return; // no avisar por muertos/vendidos
+        var aid = t.animal_id || 'sin';
+        var g = retiroPorAnimal[aid] || (retiroPorAnimal[aid] = {
+          cod: an.codigo || '—', ref: t.animal_id || '', meds: [], fechaMax: ''
+        });
+        if(t.medicamento_nombre) g.meds.push(t.medicamento_nombre);
+        if((t.fecha_fin_retiro||'') > g.fechaMax) g.fechaMax = t.fecha_fin_retiro;
       }
+    });
+    Object.keys(retiroPorAnimal).forEach(function(k){
+      var g = retiroPorAnimal[k];
+      var detalle = g.meds.length > 1
+        ? g.meds.length+' medicamentos · vence '+esc(g.fechaMax)
+        : (g.meds.length? esc(g.meds[0])+' · ' : '')+'vence '+esc(g.fechaMax);
+      items.push({tipo:'red', t:'Retiro sanitario por vencer', s:'Animal '+esc(g.cod)+' · '+detalle,
+        href:'animales.html?ficha='+encodeURIComponent(g.ref)});
     });
 
     // Gestantes con parto en ≤7 días
@@ -425,9 +442,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
         var todas = await window.AlertasMotor.generar();
         var MAP = {
           toma_perdida:     {tipo:'red',   ico:'⏰', t:'Toma perdida', href:'#hoy-teteros-sec'},
-          calostro_faltante:{tipo:'red',   ico:'🍼', t:'Sin calostro', href:'sala-cuna.html'},
+          calostro_faltante:{tipo:'red',   ico:'🍼', t:'Sin calostro', href:'#hoy-teteros-sec'},
           toma_pendiente:   {tipo:'amber', ico:'🍼', t:'Toma pendiente', href:'#hoy-teteros-sec'},
-          cordero_bajo_peso:{tipo:'amber', ico:'📉', t:'Bajo crecimiento', href:'sala-cuna.html'},
+          cordero_bajo_peso:{tipo:'amber', ico:'📉', t:'Bajo crecimiento', href:'#hoy-teteros-sec'},
           rcs_alto:         {tipo:'amber', ico:'⚠️', t:'RCS alto', href:'leche.html'},
           nueva_candidata_descarte:{tipo:'red', ico:'⛔', t:'Candidata a descarte', href:'reportes.html'},
           dosis_pendiente_hoy:{tipo:'amber', ico:'💉', t:'Dosis pendiente', href:'#dosis-hoy-sec'},
@@ -441,13 +458,18 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     }catch(e){ /* no romper la sección de alertas */ }
     var all = salaCuna.concat(items);   // Sala Cuna primero (incluye las críticas)
     if(all.length === 0){
-      cont.innerHTML = '<div class="alert-empty">✓ Sin alertas prioritarias hoy. Todo en orden.</div>';
+      cont.innerHTML = '<div class="alert-empty">Sin alertas prioritarias hoy. Todo en orden.</div>';
       return;
     }
     // Cada alerta es clickeable y lleva a donde se resuelve (misma página con
     // scroll a la sección accionable, o el módulo correspondiente).
     cont.innerHTML = all.map(function(it){
-      var inner = '<div class="alert-ico">'+it.ico+'</div>'+
+      // Sin emoji → indicador de color de marca (punto). Con emoji (Sala Cuna)
+      // se respeta el que trae.
+      var icoHtml = it.ico
+        ? it.ico
+        : '<span style="width:9px;height:9px;border-radius:50%;background:currentColor;display:block"></span>';
+      var inner = '<div class="alert-ico">'+icoHtml+'</div>'+
         '<div class="alert-txt"><b>'+it.t+'</b><div class="alert-sub">'+it.s+'</div></div>'+
         (it.href?'<div style="margin-left:auto;align-self:center;color:var(--text3);font-size:14px;flex-shrink:0">→</div>':'');
       if(!it.href) return '<div class="alert-item '+it.tipo+'">'+inner+'</div>';
@@ -1070,27 +1092,46 @@ navigator.serviceWorker?.addEventListener('message', function(e){
     try{ r = await window.DB.getRetiroCumplido(FINCA_ID); }catch(e){ sec.style.display='none'; return; }
     var lista = (r&&r.data) || [];
     if(!lista.length){ sec.style.display='none'; return; }
+    // Agrupar por animal: un solo aviso por animal aunque tenga varios
+    // medicamentos en retiro. Se muestra la fecha de retiro mas larga.
+    var porAnimal = {};
+    lista.forEach(function(t){
+      var aid = t.animal_id || 'sin';
+      var g = porAnimal[aid] || (porAnimal[aid] = {
+        animal_id: t.animal_id,
+        cod: (t.animales && t.animales.codigo) || t.animal_id || '\u2014',
+        meds: [], fechaMax: ''
+      });
+      if(t.medicamento_nombre) g.meds.push(t.medicamento_nombre);
+      if((t.fecha_fin_retiro||'') > g.fechaMax) g.fechaMax = t.fecha_fin_retiro||'';
+    });
+    var grupos = Object.keys(porAnimal).map(function(k){ return porAnimal[k]; });
     sec.style.display='';
     var cont = document.getElementById('retiro-cumplido-lista');
-    cont.innerHTML = lista.map(function(t){
-      var cod = (t.animales && t.animales.codigo) || t.animal_id || '—';
-      return '<div class="agenda-card" data-trat="'+_esc(t.id)+'" style="border-left:4px solid #16A34A">'
-        + '<div style="font-weight:700">✅ '+_esc(cod)+' · '+_esc(t.medicamento_nombre||'')+': retiro cumplido</div>'
-        + '<div style="font-size:12px;color:var(--text3,#8A9696)">Carne apta para venta/sacrificio · retiro venció '+_esc(t.fecha_fin_retiro||'')+'</div>'
-        + '<div style="margin-top:8px"><button class="btn btn-sm" style="background:#16A34A;color:#fff" onclick="window._confirmarApto(this,\''+_esc(t.id)+'\')">Confirmar apto</button></div>'
+    cont.innerHTML = grupos.map(function(g){
+      var nMeds = g.meds.length;
+      var medTxt = nMeds > 1
+        ? nMeds + ' medicamentos (' + g.meds.map(_esc).join(', ') + ')'
+        : (_esc(g.meds[0] || 'tratamiento'));
+      var subTxt = nMeds > 1
+        ? 'Carne apta \u00b7 se cumpli\u00f3 el retiro de los ' + nMeds + ' medicamentos \u00b7 \u00faltimo venci\u00f3 ' + _esc(g.fechaMax)
+        : 'Carne apta para venta/sacrificio \u00b7 retiro venci\u00f3 ' + _esc(g.fechaMax);
+      return '<div class="agenda-card" data-animal="'+_esc(g.animal_id)+'" style="border-left:4px solid #16A34A">'
+        + '<div style="font-weight:700">'+_esc(g.cod)+' \u00b7 '+medTxt+': retiro cumplido</div>'
+        + '<div style="font-size:12px;color:var(--text3,#8A9696)">'+subTxt+'</div>'
+        + '<div style="margin-top:8px"><button class="btn btn-sm" style="background:#16A34A;color:#fff" onclick="window._confirmarApto(this,\''+_esc(g.animal_id)+'\')">Confirmar apto</button></div>'
         + '</div>';
     }).join('');
   }
 
-  window._confirmarApto = async function(btn, tratId){
+  window._confirmarApto = async function(btn, animalId){
     btn.disabled = true;
     try{
-      var r = await window.DB.marcarTratamientoCompletado(tratId);
+      var r = await window.DB.marcarAnimalApto(animalId, FINCA_ID);
       if(r.error) throw new Error(r.error.message||'Error');
-      var card = btn.closest('[data-trat]'); if(card) card.remove();
-      // si la sección quedó vacía, ocultarla
+      var card = btn.closest('[data-animal]'); if(card) card.remove();
       var cont = document.getElementById('retiro-cumplido-lista');
-      if(cont && !cont.querySelector('[data-trat]')){ document.getElementById('sec-retiro-cumplido').style.display='none'; }
+      if(cont && !cont.querySelector('[data-animal]')){ document.getElementById('sec-retiro-cumplido').style.display='none'; }
     }catch(e){ btn.disabled=false; alert('Error: '+e.message); }
   };
 
