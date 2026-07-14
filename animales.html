@@ -32,10 +32,10 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=39"></script>
+<script src="js/approval.js?v=41"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=39"></script>
+<script src="js/db.js?v=41"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
@@ -1682,7 +1682,9 @@ async function _fichaLoadTratamientos(a){
     var medR=(top.medicamentos&&top.medicamentos.nombre)||top.medicamento_nombre||'medicamento';
     bn.innerHTML='<div class="retiro-banner">⚠️ EN PERÍODO DE RETIRO · hasta '+_fmtF(top.fecha_fin_retiro)+' · '+_escF(medR)+' · No apto para sacrificio</div>';
   })();
-  var linkBtn='<div style="text-align:center"><a class="btn btn-ghost btn-xs" href="salud.html">+ Registrar tratamiento</a></div>';
+  var _aRef=encodeURIComponent(a._uuid||a.id||a.codigo||'');
+  var _aCod=encodeURIComponent(a.codigo||'');
+  var linkBtn='<div style="text-align:center"><a class="btn btn-ghost btn-xs" href="salud.html?nuevo=1&animal='+_aRef+'&codigo='+_aCod+'">+ Registrar tratamiento</a></div>';
   if(!trts.length){
     cont.innerHTML='<div class="ficha-skel">Sin tratamientos registrados</div>'+linkBtn;
     return;

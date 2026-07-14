@@ -31,10 +31,10 @@
 </script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/approval.js?v=39"></script>
+<script src="js/approval.js?v=41"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=39"></script>
+<script src="js/db.js?v=41"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/alertas-motor.js"></script>
@@ -2462,6 +2462,33 @@ async function loadFromSupabase(){
   }
 }
 document.addEventListener('appstate:ready', loadFromSupabase);
+
+// Preselección de animal al llegar desde la ficha (animales.html):
+//   salud.html?nuevo=1&animal=<uuid|id>&codigo=<codigo>
+// Abre el modal de tratamiento individual con el animal ya cargado para
+// seguir ingresando la info sin buscarlo de nuevo.
+function _abrirTratamientoDesdeURL(){
+  try{
+    var p=new URLSearchParams(window.location.search);
+    if(p.get('nuevo')!=='1') return;
+    var ref=p.get('animal')||''; var cod=p.get('codigo')||'';
+    var todos=(window.AppState&&window.AppState.animales)||[];
+    if(!todos.length){ return; } // aún sin datos; se reintenta en el próximo ready
+    var a=todos.find(function(x){ return x.id===ref || x._uuid===ref || x.codigo===ref || (cod && x.codigo===cod); });
+    if(!a){ return; }
+    if(typeof openModal==='function') openModal('modal-trat-individual');
+    if(typeof seleccionarAnimalIndividual==='function'){
+      seleccionarAnimalIndividual(a.id, a.codigo||a.id, a.peso_actual||0);
+    }
+    // Foco al diagnóstico para continuar el ingreso
+    setTimeout(function(){ var dx=document.getElementById('ti-dx-sel'); if(dx) dx.focus(); }, 250);
+    // Limpiar la query para que un refresh no reabra el modal
+    if(window.history&&window.history.replaceState){
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }catch(e){ console.warn('[Salud] preseleccion URL:', e&&e.message); }
+}
+document.addEventListener('appstate:ready', function(){ setTimeout(_abrirTratamientoDesdeURL, 350); });
 </script>
 <script>
 
