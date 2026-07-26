@@ -34,6 +34,13 @@ window.SIDEBAR = [
     { t: 'Ventas & Salidas',       href: 'bajas.html',        ico: 'bajas' },
     { t: 'Clientes B2B',           href: 'b2b.html',          ico: 'b2b' },
   ]},
+  // APARCERÍA: grupo propio, NO colgado de Hato. Estos animales pertenecen a
+  // terceros y viven en aportantes_animales, fuera del inventario de la finca;
+  // la separación visual en el menú es intencional.
+  { grupo: 'Aparcería', items: [
+    { t: 'Animales',               href: 'aportantes-animales.html', ico: 'aparceria' },
+    { t: 'Reportes',               href: 'reporte-aportantes.html',  ico: 'aparceriarep' },
+  ]},
   { grupo: 'Finanzas', items: [
     { t: 'Costos & Finanzas',      href: 'finanzas.html',     ico: 'finanzas' },
     { t: 'Nómina & Asistencia',    href: 'nomina.html',       ico: 'nomina' },
@@ -67,6 +74,8 @@ window.SIDEBAR_ICONS = {
   beneficio:    '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="6" height="6" rx="1"/><rect x="11" y="3" width="6" height="6" rx="1"/><rect x="3" y="11" width="6" height="6" rx="1"/><path d="M11 11h2v2h-2zM15 11h2v2h-2zM11 15h2v2h-2zM15 15h2v2h-2z"/></svg>',
   bajas:        '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 6 6 6 16 6"/><path d="M15 6v11a1 1 0 01-1 1H6a1 1 0 01-1-1V6"/></svg>',
   b2b:          '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="9" height="14" rx="1"/><path d="M12 8h5v9h-5"/><path d="M6 6h3M6 9h3M6 12h3"/></svg>',
+  aparceria:    '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 5.5a2.5 2.5 0 1 1 5 0"/><circle cx="6.5" cy="8" r="2.2"/><circle cx="13.5" cy="8" r="2.2"/><path d="M2.5 17c0-2.2 1.8-4 4-4s4 1.8 4 4"/><path d="M11 17c0-2.2 1.5-4 3.5-4s3 1.8 3 4"/></svg>',
+  aparceriarep: '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 3h7l4 4v10a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"/><path d="M12 3v4h4"/><path d="M7 15V11M10 15V9.5M13 15v-2.5"/></svg>',
   finanzas:     '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="2" x2="10" y2="18"/><path d="M14 5H8a3 3 0 000 6h4a3 3 0 010 6H6"/></svg>',
   nomina:       '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="6" r="3"/><path d="M2 17c0-2.8 2.2-5 5-5s5 2.2 5 5"/><path d="M14 8h4M14 11h4M14 14h2"/></svg>',
   okr:          '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="3 14 7 9 11 12 17 5"/><polyline points="14 5 17 5 17 8"/></svg>',

@@ -2,13 +2,18 @@
 // Cache-first para assets estáticos. NUNCA intercepta peticiones
 // a Supabase ni a /api/ (auth y datos deben ir siempre a la red).
 
-const CACHE_NAME = 'laaambapp-v13';
+// v14: módulo APARCERÍA (js/aparceria.js) + grupo nuevo en js/sidebar.js.
+// El bump es OBLIGATORIO aquí: las otras 22 páginas cargan './js/sidebar.js'
+// sin ?v y el SW lo sirve cache-first, así que sin cambiar CACHE_NAME no
+// verían el grupo nuevo del menú.
+const CACHE_NAME = 'laaambapp-v14';
 
 // Paths relativos: resuelven contra la ubicación del SW en cada host
 // (raíz en Vercel, /laaambapp/ en GitHub Pages).
 const STATIC_ASSETS = [
   './js/supabase-client.js',
   './js/sidebar.js',
+  './js/aparceria.js',
   './js/auth.js',
   './js/db.js',
   './js/app-state.js',
