@@ -25,7 +25,7 @@
 <script src="js/roles.js"></script>
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/aparceria.js?v=2"></script>
+<script src="js/aparceria.js?v=3"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);
@@ -319,7 +319,8 @@ table.rt td.num,table.rt th.num{text-align:right}
             + 'que no se pudieron ubicar en campo durante el corte y quedan fuera del hato actual '
             + 'hasta que se confirme su estado.'
             + (k.noLocalizadosDetalle.length
-                ? ' Chapetas: '+k.noLocalizadosDetalle.map(function(a){return esc(a.codigo);}).join(', ')+'.'
+                ? ' Chapetas: '+k.noLocalizadosDetalle.map(function(a){
+                    return esc(a.codigo_original||a.codigo); }).join(', ')+'.'
                 : '')
             + '</div>'
           : '');
@@ -560,13 +561,13 @@ table.rt td.num,table.rt th.num{text-align:right}
         });
       });
 
-      var det = [['Chapeta','Origen','Raza','Sexo','Tipo','Grupo','Estado salida',
+      var det = [['Chapeta','Codigo interno','Origen','Raza','Sexo','Tipo','Grupo','Estado salida',
                   'Fecha salida','Motivo salida','Peso salida','Estado reproductivo',
                   'Fecha nacimiento','Madre','Peso vigente kg','Tipo peso','Fecha peso',
                   'Estado origen','Estado actualizado','Notas']];
       ACTUAL.rows.forEach(function(a){
         var p = window.APARCERIA.pesoVigente(a);
-        det.push([a.codigo, a.origen, a.raza, a.sexo, a.tipo, a.grupo, a.estado_salida,
+        det.push([a.codigo_original||a.codigo, a.codigo, a.origen, a.raza, a.sexo, a.tipo, a.grupo, a.estado_salida,
                   a.fecha_salida, a.motivo_salida, a.peso_salida,
                   a.estado_reproductivo, a.fecha_nacimiento, a.madre_codigo,
                   p?p.peso_kg:null, p?p.tipo:null, p?p.fecha:null,

@@ -153,25 +153,44 @@ var filas=[
 filas.forEach(function(f,i){f.fila=i+2;});
 
 var a=L.detectarAnomalias(filas);
-console.log('DUPLICADOS INTRA-HATO (violan el UNIQUE)');
+console.log('DUPLICADOS INTRA-HATO → se DESAMBIGUAN con sufijo, no se descartan');
 t('casos detectados', a.duplicadosIntraHato.length, 6);
-var d558=a.duplicadosIntraHato.filter(function(d){return d.codigo==='558';})[0];
-t('558 tiene 3 filas', d558&&d558.n, 3);
-t('filas descartadas totales', a.filasDescartadas.length, 7);  // 5x1 + 1x2(558)
+t('NINGUNA fila descartada', a.filasDescartadas.length, 0);
+// 21 filas de entrada → 21 conservadas. Antes se perdian 7.
+t('todas las filas se conservan', a.filasConservadas.length, filas.length);
+var d558=a.duplicadosIntraHato.filter(function(d){return d.chapeta==='558';})[0];
+t('558 detectado con 3 filas', d558&&d558.n, 3);
+t('558 → codigos 558-1/558-2/558-3', d558&&d558.codigosAsignados.join('/'), '558-1/558-2/558-3');
+// Los tres animales de 558 SIGUEN EXISTIENDO, con sus tres estados distintos.
+var c558=a.filasConservadas.filter(function(f){return f.codigo_original==='558';});
+t('los 3 animales de 558 se cargan', c558.length, 3);
+t('estados de los 3 preservados',
+  c558.map(function(f){return f.estado_salida;}).sort().join(','), 'muerte,muerte,no_localizado');
+t('chapeta real en codigo_original', c558.every(function(f){return f.codigo_original==='558';}), true);
+t('ninguno conserva la chapeta pelada', c558.some(function(f){return f.codigo==='558';}), false);
+t('nota explica el sufijo', /compartida por 3 animales/.test(c558[0].notas||''), true);
 a.duplicadosIntraHato.forEach(function(d){
-  console.log('     '+d.hato.padEnd(10)+d.codigo.padEnd(6)+'n='+d.n
-    +'  conserva fila '+d.elegida+'  estados: '
-    +d.estados.map(function(e){return '['+e.estado_actualizado+']';}).join(' '));
+  console.log('     '+d.hato.padEnd(10)+d.chapeta.padEnd(6)+'n='+d.n
+    +'  → '+d.codigosAsignados.join(' ')
+    +'  estados: '+d.estados.map(function(e){return '['+e.estado_actualizado+']';}).join(' '));
 });
-// Regla: se conserva la fila con ESTADO ACTUALIZADO no vacio
-var d330=a.duplicadosIntraHato.filter(function(d){return d.codigo==='330';})[0];
-var elegida330=filas.filter(function(f){return f.fila===d330.elegida;})[0];
-t('330 conserva la de ESTADO no vacio', elegida330.estado_actualizado, 'Vacia');
-var d432=a.duplicadosIntraHato.filter(function(d){return d.codigo==='432';})[0];
-t('432 (ambos vacios) conserva la primera', d432.elegida, filas.filter(function(f){return f.codigo==='432';})[0].fila);
-var d560=a.duplicadosIntraHato.filter(function(d){return d.codigo==='560';})[0];
-var el560=filas.filter(function(f){return f.fila===d560.elegida;})[0];
-t('560 conserva la de ESTADO no vacio', el560.estado_actualizado, 'Vacia no tiene info');
+// Sufijo determinista: el mismo archivo produce los mismos codigos, que es lo
+// que sostiene la idempotencia por (finca_id, aportante_id, codigo).
+// Se reconstruye la entrada ORIGINAL: codigo = la chapeta, sin sufijo ni
+// codigo_original, tal como sale del parseo. (detectarAnomalias muta sus
+// filas, así que `filas` ya viene sufijado a estas alturas.)
+var a2=L.detectarAnomalias(filas.map(function(f){
+  var c=Object.assign({},f);
+  c.codigo=f.codigo_original||f.codigo;   // leer ANTES de borrar
+  delete c.codigo_original; delete c.duplicado;
+  c.notas=null; return c;}));
+t('sufijos deterministas al reprocesar',
+  a2.duplicadosIntraHato.filter(function(d){return d.chapeta==='558';})[0].codigosAsignados.join('/'),
+  '558-1/558-2/558-3');
+// Chapetas NO duplicadas conservan su codigo intacto.
+var c410=a.filasConservadas.filter(function(f){return f.codigo_original==='410';});
+t('410 (no duplicada en su hato) sin sufijo',
+  c410.every(function(f){return f.codigo==='410';}), true);
 
 console.log('\nCHAPETAS EN MAS DE UN HATO (advertencia, NO bloquean)');
 t('detectadas', a.duplicadosEntreHatos.length, 2);

@@ -4,10 +4,11 @@
 
 // v14: módulo APARCERÍA (js/aparceria.js) + grupo nuevo en js/sidebar.js.
 // v15: cargador (js/aportantes-loader.js) + motor sobre estado_salida.
+// v16: desambiguación de chapetas repetidas (codigo_original + sufijo).
 // El bump es OBLIGATORIO aquí: las otras 22 páginas cargan './js/sidebar.js'
 // sin ?v y el SW lo sirve cache-first, así que sin cambiar CACHE_NAME no
 // verían el grupo nuevo del menú.
-const CACHE_NAME = 'laaambapp-v15';
+const CACHE_NAME = 'laaambapp-v16';
 
 // Paths relativos: resuelven contra la ubicación del SW en cada host
 // (raíz en Vercel, /laaambapp/ en GitHub Pages).

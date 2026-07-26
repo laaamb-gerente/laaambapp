@@ -366,37 +366,52 @@
   // ── ANOMALÍAS ───────────────────────────────────────────────────────
   // Se DETECTAN y se reportan. No se corrigen.
   function detectarAnomalias(filas) {
-    // Duplicados DENTRO del mismo hato: violan el UNIQUE
-    // (finca_id, aportante_id, codigo). Regla acordada: se conserva la fila
-    // con ESTADO ACTUALIZADO no vacío; si empatan, la primera. Las demás NO
-    // se cargan y van al listado de excepciones con su contenido completo.
+    // ── Duplicados DENTRO del mismo hato ──
+    // Son animales DISTINTOS que comparten la marca física (558 en MAURICIO
+    // son tres animales). NO se descarta ninguno: se desambiguan con sufijo
+    // numérico en 'codigo' y la chapeta se conserva verbatim en
+    // 'codigo_original'.
+    //
+    // Se sufijan TODAS las filas del grupo, ninguna conserva la chapeta
+    // pelada: si una quedara como '558' parecería la "verdadera" y las otras
+    // derivadas. Sufijo numérico, no a/b/c, para no chocar con las marcas de
+    // campo; y un codigo con sufijo nunca se confunde con una chapeta del
+    // hato propio.
+    //
+    // El orden del sufijo sigue el orden de filas del Excel, que sheet_to_json
+    // preserva: recargar el MISMO archivo asigna los MISMOS sufijos, así que
+    // la idempotencia por (finca_id, aportante_id, codigo) se mantiene.
     var porClave = {};
     filas.forEach(function (f) {
       var k = f.hato + '||' + f.codigo;
       (porClave[k] = porClave[k] || []).push(f);
     });
-    var dupIntra = [], descartadas = [], conservadas = {};
+    var dupIntra = [], descartadas = [], conservadas = [];
     Object.keys(porClave).forEach(function (k) {
       var g = porClave[k];
-      if (g.length < 2) { conservadas[k] = g[0]; return; }
-      var conEstado = g.filter(function (f) { return !!f.estado_actualizado; });
-      var elegida = conEstado.length ? conEstado[0] : g[0];
-      conservadas[k] = elegida;
+      // codigo_original SIEMPRE se fija, repetida o no la chapeta.
+      g.forEach(function (f) { f.codigo_original = f.codigo_original || f.codigo; });
+      if (g.length < 2) { conservadas.push(g[0]); return; }
+
+      var chapeta = g[0].codigo_original;
+      g.forEach(function (f, i) {
+        f.codigo = chapeta + '-' + (i + 1);
+        f.duplicado = { chapeta: chapeta, indice: i + 1, total: g.length };
+        var nota = 'Chapeta ' + chapeta + ' compartida por ' + g.length
+          + ' animales distintos en ' + f.hato + ' — cargado como ' + f.codigo
+          + ' para distinguirlos. La chapeta real está en codigo_original.';
+        f.notas = f.notas ? (f.notas + ' · ' + nota) : nota;
+        conservadas.push(f);
+      });
       dupIntra.push({
-        hato: g[0].hato, codigo: g[0].codigo, n: g.length,
-        elegida: elegida.fila,
+        hato: g[0].hato, chapeta: chapeta, n: g.length,
+        codigosAsignados: g.map(function (f) { return f.codigo; }),
         estados: g.map(function (f) {
-          return { fila: f.fila, estado_actualizado: f.estado_actualizado || '(vacío)',
+          return { fila: f.fila, codigo: f.codigo,
+                   estado_actualizado: f.estado_actualizado || '(vacío)',
                    estado_origen: f.estado_origen || '(vacío)',
                    estado_salida: f.estado_salida };
         })
-      });
-      g.forEach(function (f) {
-        if (f !== elegida) {
-          descartadas.push({ fila: f.fila, codigo: f.codigo, hato: f.hato,
-            motivo: 'chapeta duplicada dentro de ' + f.hato
-              + ' — se conservó la fila ' + elegida.fila, crudo: f });
-        }
       });
     });
 
@@ -414,22 +429,43 @@
 
     // Madres referenciadas que no existen como fila. Se cargan igual
     // (madre_codigo es texto libre, no una FK) y se listan.
+    // Se compara contra codigo_original: MADRE trae la chapeta física, no el
+    // codigo con sufijo, así que buscar por 'codigo' daría huérfanas falsas.
     var existe = {};
-    filas.forEach(function (f) { existe[f.hato + '||' + f.codigo] = true; });
+    filas.forEach(function (f) {
+      existe[f.hato + '||' + (f.codigo_original || f.codigo)] = true;
+    });
     var madresHuerfanas = filas
       .filter(function (f) {
         return f.madre_codigo && !existe[f.hato + '||' + f.madre_codigo];
       })
       .map(function (f) {
-        return { hato: f.hato, madre_codigo: f.madre_codigo, cria: f.codigo, fila: f.fila };
+        return { hato: f.hato, madre_codigo: f.madre_codigo,
+                 cria: f.codigo_original || f.codigo, fila: f.fila };
+      });
+
+    // Una madre cuya chapeta está duplicada es AMBIGUA: madre_codigo apunta
+    // a la marca física y hay varios animales con ella. No se resuelve por
+    // adivinanza; se reporta para que Juan decida.
+    var chapetasDup = {};
+    dupIntra.forEach(function (d) { chapetasDup[d.hato + '||' + d.chapeta] = d; });
+    var madresAmbiguas = filas
+      .filter(function (f) {
+        return f.madre_codigo && chapetasDup[f.hato + '||' + f.madre_codigo];
+      })
+      .map(function (f) {
+        var d = chapetasDup[f.hato + '||' + f.madre_codigo];
+        return { hato: f.hato, madre_codigo: f.madre_codigo,
+                 cria: f.codigo, fila: f.fila, candidatos: d.codigosAsignados };
       });
 
     return {
       duplicadosIntraHato: dupIntra,
-      filasDescartadas: descartadas,
+      filasDescartadas: descartadas,   // vacío con la regla de sufijo
       duplicadosEntreHatos: dupEntreHatos,
       madresHuerfanas: madresHuerfanas,
-      filasConservadas: Object.keys(conservadas).map(function (k) { return conservadas[k]; })
+      madresAmbiguas: madresAmbiguas,
+      filasConservadas: conservadas
     };
   }
 
@@ -491,16 +527,35 @@
     for (var i = 0; i < bloques.length; i++) {
       var b = bloques[i];
       var res = await window._sb.from('aportantes_animales')
-        .select('id, codigo, estado_salida, carga_id')
+        .select('id, codigo, codigo_original, estado_salida, carga_id')
         .eq('finca_id', FINCA_ID).eq('aportante_id', b.aportante.id);
       if (res.error) throw new Error('Consultar existentes de ' + b.aportante.nombre
         + ': ' + res.error.message);
-      var yaHay = {};
-      (res.data || []).forEach(function (r) { yaHay[r.codigo] = r; });
-      b.aCrear = []; b.aActualizar = [];
+
+      // Índice doble: por codigo (clave de idempotencia) y por chapeta física.
+      // La tabla de sacrificios trae la CHAPETA, no el codigo con sufijo, así
+      // que la fase 3 tiene que poder resolver por codigo_original.
+      var porCodigo = {}, porChapeta = {};
+      (res.data || []).forEach(function (r) {
+        porCodigo[r.codigo] = r;
+        var ch = r.codigo_original || r.codigo;
+        (porChapeta[ch] = porChapeta[ch] || []).push(r);
+      });
+
+      b.aCrear = []; b.aActualizar = []; b.ambiguos = [];
       b.filas.forEach(function (f) {
-        if (yaHay[f.codigo]) { f._existente = yaHay[f.codigo]; b.aActualizar.push(f); }
-        else b.aCrear.push(f);
+        var exacto = porCodigo[f.codigo];
+        if (exacto) { f._existente = exacto; b.aActualizar.push(f); return; }
+        // Sin match exacto: probar por chapeta física.
+        var porCh = porChapeta[f.codigo_original || f.codigo] || [];
+        if (porCh.length === 1) { f._existente = porCh[0]; b.aActualizar.push(f); return; }
+        if (porCh.length > 1) {
+          // Varios animales comparten esa chapeta: NO se adivina cuál es.
+          b.ambiguos.push({ codigo: f.codigo_original || f.codigo, fila: f.fila,
+            candidatos: porCh.map(function (r) { return r.codigo; }) });
+          return;
+        }
+        b.aCrear.push(f);
       });
       b.existentesTotal = (res.data || []).length;
     }
@@ -514,6 +569,16 @@
 
     // Bloqueantes: impiden ejecutar. Advertencias: informan y dejan seguir.
     var bloqueantes = [];
+    var ambiguos = bloques.reduce(function (acc, b) { return acc.concat(b.ambiguos || []); }, []);
+    if (ambiguos.length) {
+      // No se resuelve por adivinanza: actualizar el animal equivocado con un
+      // sacrificio es peor que no cargarlo.
+      bloqueantes.push({ tipo: 'chapeta_ambigua_en_base', n: ambiguos.length,
+        detalle: ambiguos.length + ' chapeta(s) coinciden con VARIOS animales ya '
+          + 'cargados y no se puede saber a cuál corresponden: '
+          + ambiguos.slice(0, 6).map(function (a) {
+              return a.codigo + ' → ' + a.candidatos.join('/'); }).join(', ') });
+    }
     if (sinResolver.length) {
       bloqueantes.push({ tipo: 'hato_sin_aportante', n: sinResolver.length,
         detalle: 'No se pudo resolver el aportante de ' + sinResolver.length
@@ -541,6 +606,7 @@
       avisos: parseado.avisos,
       excepcionesParseo: parseado.excepciones,
       insertsEnFase3: insertsEnFase3,
+      ambiguos: ambiguos,
       sinResolver: sinResolver,
       bloqueantes: bloqueantes,
       resumenParseo: parseado.resumen
@@ -625,9 +691,11 @@
 
       // ── AUDITORÍA DE LA CARGA ──
       if (!dryRun) {
-        var omitidos = pf.anomalias.filasDescartadas
-          .filter(function (d) { return sinTildes(d.hato) === sinTildes(b.aportante.nombre); })
-          .map(function (d) { return d.codigo; });
+        // Con la regla de sufijo no se descarta ninguna fila por duplicado.
+        // codigos_omitidos guarda las que el PARSEO no pudo interpretar.
+        var omitidos = pf.excepcionesParseo
+          .filter(function (e) { return e.hato && sinTildes(e.hato) === sinTildes(b.aportante.nombre); })
+          .map(function (e) { return e.codigo || ('fila ' + e.fila); });
         var car = await window._sb.from('aportantes_cargas').insert({
           finca_id: FINCA_ID, aportante_id: b.aportante.id, carga_id: carga_id,
           etiqueta: pf.etiqueta, animales_creados: creados,
@@ -644,11 +712,9 @@
       }
     }
 
-    reporte.omitidos = pf.anomalias.filasDescartadas.map(function (d) {
-      return { codigo: d.codigo, hato: d.hato, fila: d.fila, motivo: d.motivo };
-    }).concat(pf.excepcionesParseo.map(function (e) {
+    reporte.omitidos = pf.excepcionesParseo.map(function (e) {
       return { codigo: e.codigo, hato: e.hato, fila: e.fila, motivo: e.motivo };
-    }));
+    });
 
     return reporte;
   }
@@ -686,6 +752,7 @@
     var p = {
       aportante_id: aportante_id,
       codigo: f.codigo,
+      codigo_original: f.codigo_original || f.codigo,
       criadero_origen: f.criadero_origen,
       raza: f.raza,
       sexo: f.sexo,

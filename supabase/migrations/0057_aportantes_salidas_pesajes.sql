@@ -33,6 +33,39 @@
 
 begin;
 
+-- ── 0. CHAPETA ORIGINAL (desambiguación de duplicados) ───────
+-- En el export hay 6 chapetas repetidas DENTRO del mismo hato (558 aparece
+-- 3 veces en MAURICIO; 330, 432, 433, N55 en SALATIEL y 560 en PAOLA, 2
+-- veces cada una). Son animales DISTINTOS que comparten la marca física.
+--
+-- Descartar los repetidos perdía animales reales. Quitar el UNIQUE rompía
+-- la clave de idempotencia (finca_id, aportante_id, codigo) y volvía
+-- ambiguo el UPDATE de la fase 3. La solución: sufijo numérico en 'codigo'
+-- y la chapeta tal cual en 'codigo_original'.
+--
+--   codigo_original → SIEMPRE la chapeta del export, verbatim.
+--   codigo          → único por aportante. Igual a codigo_original cuando la
+--                     chapeta no se repite; '558-1','558-2','558-3' cuando sí.
+--
+-- Se sufijan TODAS las filas del grupo, ninguna conserva la chapeta pelada:
+-- si una quedara como '558' parecería la "verdadera" y las otras derivadas.
+-- Sufijo NUMÉRICO a propósito, no a/b/c, para no chocar con las marcas de
+-- campo. Y un codigo con sufijo no puede confundirse con una chapeta del
+-- hato propio de La Marinilla.
+--
+-- El reporte del aportante muestra codigo_original (él ve su chapeta limpia);
+-- el listado operativo muestra codigo, que es el que distingue los animales.
+ALTER TABLE aportantes_animales
+  ADD COLUMN IF NOT EXISTS codigo_original text;
+
+-- Backfill: en las filas ya existentes la chapeta es el propio codigo.
+UPDATE aportantes_animales
+  SET codigo_original = codigo
+  WHERE codigo_original IS NULL;
+
+CREATE INDEX IF NOT EXISTS idx_aportantes_animales_codigo_original
+  ON aportantes_animales (finca_id, aportante_id, codigo_original);
+
 -- ── 1. ESTADO DE SALIDA ──────────────────────────────────────
 ALTER TABLE aportantes_animales
   ADD COLUMN IF NOT EXISTS estado_salida text NOT NULL DEFAULT 'activo',

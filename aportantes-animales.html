@@ -27,8 +27,8 @@
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="js/aparceria.js?v=2"></script>
-<script src="js/aportantes-loader.js?v=1"></script>
+<script src="js/aparceria.js?v=3"></script>
+<script src="js/aportantes-loader.js?v=2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -358,8 +358,18 @@ tr.muerto{opacity:.5}
       if(a.origen === 'proyectado') cls.push('proy');
       if(a.estado_salida === 'muerte') cls.push('muerto');
       else if(a.estado_salida === 'no_localizado') cls.push('noloc');
+      // Cuando la chapeta la comparten varios animales, el codigo lleva sufijo
+      // y se muestra la chapeta real debajo: el operario necesita distinguir
+      // los animales, y el aportante necesita reconocer su marca.
+      var codSufijado = a.codigo_original && a.codigo_original !== a.codigo;
       h += '<tr class="'+cls.join(' ')+'">'
-        + '<td class="cod">'+esc(a.codigo)+'</td>'
+        + '<td class="cod">'+esc(a.codigo)
+        +   (codSufijado
+              ? '<div style="font-size:9.5px;font-weight:400;color:var(--amber)" '
+                + 'title="Chapeta compartida por varios animales — se cargó con sufijo para distinguirlos">'
+                + 'chapeta '+esc(a.codigo_original)+'</div>'
+              : '')
+        + '</td>'
         + '<td>'+(a.origen==='proyectado'
             ? '<span class="bdg proy">⚠ Simulado</span>'
             : '<span class="bdg real">Real</span>')+'</td>'
@@ -556,6 +566,7 @@ tr.muerto{opacity:.5}
     if(estado) rows = rows.filter(function(a){ return a.estado_salida === estado; });
     if(q) rows = rows.filter(function(a){
       return (a.codigo||'').toLowerCase().indexOf(q) >= 0
+          || (a.codigo_original||'').toLowerCase().indexOf(q) >= 0
           || (a.grupo||'').toLowerCase().indexOf(q) >= 0
           || (a.madre_codigo||'').toLowerCase().indexOf(q) >= 0;
     });
@@ -709,14 +720,24 @@ tr.muerto{opacity:.5}
     }
 
     // Anomalías — se reportan, no se corrigen
-    h += bloqueAnom('Chapetas duplicadas dentro del mismo hato',
+    h += bloqueAnom('Chapetas compartidas por varios animales del mismo hato',
       a.duplicadosIntraHato.length, 'var(--amber)',
       a.duplicadosIntraHato.map(function(d){
-        return d.hato+' · '+d.codigo+' ('+d.n+' filas: '
-          + d.estados.map(function(e){ return e.estado_actualizado; }).join(' / ')
-          + ') → se conserva la fila '+d.elegida;
+        return d.hato+' · chapeta '+d.chapeta+' → '+d.codigosAsignados.join(', ')
+          + '  ['+d.estados.map(function(e){ return e.estado_actualizado; }).join(' / ')+']';
       }),
-      'Violan el UNIQUE. Se conserva la de ESTADO ACTUALIZADO no vacío; las demás NO se cargan.');
+      'Son animales DISTINTOS con la misma marca física. Se cargan TODOS con '
+      + 'sufijo numérico para distinguirlos; la chapeta real queda en '
+      + 'codigo_original y el reporte del aportante muestra esa. No se descarta ninguno.');
+
+    h += bloqueAnom('Madres con chapeta ambigua',
+      (a.madresAmbiguas||[]).length, 'var(--amber)',
+      (a.madresAmbiguas||[]).map(function(m){
+        return m.hato+' · cría '+m.cria+' declara madre '+m.madre_codigo
+          + ', que corresponde a '+m.candidatos.length+' animales ('+m.candidatos.join(', ')+')';
+      }),
+      'La chapeta de la madre la comparten varios animales. Se carga el texto tal '
+      + 'cual, sin adivinar cuál es: la prolificidad los agrupa por chapeta.');
 
     h += bloqueAnom('Chapetas en más de un hato',
       a.duplicadosEntreHatos.length, 'var(--sky)',
@@ -735,6 +756,17 @@ tr.muerto{opacity:.5}
     h += bloqueAnom('Filas que no se pudieron interpretar', p.excepcionesParseo.length, 'var(--red)',
       p.excepcionesParseo.map(function(e){ return 'fila '+e.fila+' · '+(e.codigo||'(sin chapeta)')+' · '+e.motivo; }),
       'Estas filas quedan fuera de la carga.');
+
+    if((p.ambiguos||[]).length){
+      h += bloqueAnom('Chapetas que ya coinciden con varios animales en base',
+        p.ambiguos.length, 'var(--red)',
+        p.ambiguos.map(function(x){
+          return 'fila '+x.fila+' · chapeta '+x.codigo+' → candidatos: '+x.candidatos.join(', ');
+        }),
+        'BLOQUEANTE. No se puede saber a cuál de los animales ya cargados corresponde. '
+        + 'Actualizar el equivocado con un sacrificio es peor que no cargarlo: resuélvelo '
+        + 'usando el codigo con sufijo en vez de la chapeta.');
+    }
 
     if(p.fase === 3 && p.insertsEnFase3.length){
       h += bloqueAnom('Sacrificios sin animal previo cargado', p.insertsEnFase3.length, 'var(--amber)',
