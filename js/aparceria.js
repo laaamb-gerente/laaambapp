@@ -14,6 +14,44 @@
 // ⚠️ El destino del animal se lee SOLO de estado_salida (0057). Las columnas
 //    'vivo' y 'localizado' de la 0056 fueron eliminadas a propósito: dos
 //    columnas describiendo el mismo hecho pueden desincronizarse.
+//
+// ── POR QUÉ LOS REPORTES DE FINCA NO APLICAN A APARCERÍA ───────────────
+// Decisión de arquitectura, no una limitación pendiente de arreglar.
+//
+// Se evaluó agregar un selector de fuente en reportes.html para correr los
+// reportes de la finca sobre estos animales. Se descartó por tres razones,
+// en orden de peso:
+//
+//   1. ICA / RSPP queda fuera con CUALQUIER diseño. Radicar animales de
+//      terceros bajo el registro ICA de La Marinilla es exposición
+//      regulatoria, no un hueco de datos. Ningún adaptador arregla eso.
+//   2. ROLES. reportes.html es visible para veterinario y socio (ver
+//      roles.js PAGE_ACCESS). Un selector ahí filtraría datos de los
+//      aparceros a dos roles que se decidió excluir del módulo. Blindarlo
+//      es complejidad añadida para habilitar un solo reporte.
+//   3. LA UNIDAD REAL DE reportes.html ES EL GENERADOR, NO EL TEMA. Solo
+//      hay 5 (Semanal, Mensual, Inventario, Trazabilidad, ICA) y cada uno
+//      agrupa varios temas. Composición, mortalidad y crecimiento no son
+//      reportes: son secciones DENTRO de Semanal y Mensual, que dependen de
+//      tratamientos, partos, costos e ingresos. Solo Inventario sería
+//      compatible — 1 de 5 — y duplicaría lo que ya exporta
+//      reporte-aportantes.html.
+//
+// La razón de fondo: estos animales son un CORTE DE VITRINA. No tienen
+// tratamientos, ni partos registrados, ni costos, ni movilizaciones, ni
+// trazabilidad de beneficio. Los reportes de finca leen precisamente esas
+// tablas hijas, así que correrlos aquí devolvería ceros — y un reporte en
+// cero se lee como "no hubo tratamientos", que es falso y peor que no
+// ofrecer el reporte.
+//
+// El día que estos animales se manejen de verdad en el sistema (con sus
+// tratamientos y partos reales), esto cambia. Ese día es una decisión de
+// arquitectura nueva, no un parche a este archivo.
+//
+// Por eso las vistas temáticas que sí aplican (composición por sexo y raza,
+// distribución por grupo, mortalidad con causas, sacrificios en línea
+// aparte) viven en reporte-aportantes.html y se calculan aquí abajo.
+// reportes.html NO se toca.
 
 (function () {
   'use strict';

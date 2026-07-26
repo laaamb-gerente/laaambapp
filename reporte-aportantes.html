@@ -324,6 +324,18 @@ table.rt td.num,table.rt th.num{text-align:right}
             + '</div>'
           : '');
 
+    // Composición del hato activo: sexo y raza. Sobre el hato ACTUAL, no
+    // sobre el total registrado — un animal muerto no compone el hato.
+    var compos = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px">'
+      + '<div><div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#8A9696;margin-bottom:7px">Por sexo</div>'
+      +   distribucion(k.porSexo, k.hatoActual, 'Sexo', MAPA_SEXO) + '</div>'
+      + '<div><div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#8A9696;margin-bottom:7px">Por raza</div>'
+      +   distribucion(k.porRaza, k.hatoActual, 'Raza') + '</div>'
+      + '</div>';
+
+    // Distribución por grupo de manejo.
+    var grupos = distribucion(k.porGrupo, k.hatoActual, 'Grupo de manejo');
+
     // Escenario proyectado — SIEMPRE aparte y rotulado.
     var esc_sec = k.proyectados
       ? '<div class="esc-box">'
@@ -386,8 +398,10 @@ table.rt td.num,table.rt th.num{text-align:right}
       +   sec('Crecimiento del hato', crec, 'aportaron madres; lo nacido es del proyecto')
       +   sec('Cumplimiento de meta', meta)
       +   sec('Composición y productividad', comp)
+      +   sec('Composición del hato', compos, 'sobre el hato actual')
+      +   sec('Distribución por grupo', grupos, 'sobre el hato actual')
       +   sec('Estado reproductivo', repro, 'sobre el hato actual')
-      +   sec('Mortalidad y no localizados', mort, 'sobre el total registrado')
+      +   sec('Salidas: mortalidad, sacrificios y no localizados', mort, 'sobre el total registrado')
       +   (esc_sec ? sec('Escenario proyectado', esc_sec, 'fuera de los KPIs') : '')
       +   foot
       + '</div>';
@@ -397,6 +411,39 @@ table.rt td.num,table.rt th.num{text-align:right}
     return '<div class="rep-sec"><div class="rep-sec-t"><span>'+esc(titulo)+'</span>'
       + (hint?'<span class="hint">'+esc(hint)+'</span>':'')+'</div>'+html+'</div>';
   }
+
+  // ── VISTAS TEMÁTICAS ────────────────────────────────────────────
+  // Estas secciones existen aquí y NO en reportes.html a propósito: la
+  // unidad de reportes.html es el generador, no el tema, y sus 5
+  // generadores dependen de tratamientos / partos / costos / movilizaciones,
+  // tablas que aparcería no tiene. Ver el encabezado de js/aparceria.js.
+  //
+  // Tabla de distribución con barra proporcional. `grupos` viene del motor
+  // ya ordenado de mayor a menor. Etiquetas legibles vía `mapa` opcional.
+  function distribucion(grupos, total, etiquetaCol, mapa){
+    if(!grupos || !grupos.length){
+      return '<div style="font-size:12px;color:#8A9696;padding:10px 0">Sin datos para agrupar.</div>';
+    }
+    var filas = grupos.map(function(g){
+      var p = total ? Math.round((g.n/total)*1000)/10 : 0;
+      var nombre = (mapa && mapa[g.clave]) ? mapa[g.clave] : g.clave;
+      return '<tr>'
+        + '<td>'+esc(nombre)+'</td>'
+        + '<td class="num">'+g.n+'</td>'
+        + '<td class="num">'+String(p).replace('.',',')+'%</td>'
+        + '<td style="width:34%">'
+        +   '<div style="height:8px;background:#EAEEEE;border-radius:99px;overflow:hidden">'
+        +     '<div style="height:100%;width:'+Math.max(p,1)+'%;background:#1AA6A6"></div>'
+        +   '</div>'
+        + '</td></tr>';
+    }).join('');
+    return '<table class="rt"><thead><tr>'
+      + '<th>'+esc(etiquetaCol)+'</th><th class="num">Animales</th>'
+      + '<th class="num">%</th><th></th></tr></thead><tbody>'
+      + filas + '</tbody></table>';
+  }
+
+  var MAPA_SEXO = { hembra: 'Hembras', macho: 'Machos' };
   function kc(cls, n, l, s){
     return '<div class="kc '+cls+'"><div class="n">'+n+'</div><div class="l">'+esc(l)+'</div>'
       + (s?'<div class="s">'+esc(s)+'</div>':'')+'</div>';
@@ -501,6 +548,17 @@ table.rt td.num,table.rt th.num{text-align:right}
         kpiRows.push([], ['CAUSAS DE BAJA'], ['Causa','Animales']);
         k.causasBaja.forEach(function(c){ kpiRows.push([c.clave, c.n]); });
       }
+      // Distribuciones temáticas, sobre el hato ACTUAL (no el total).
+      [['COMPOSICION POR SEXO', k.porSexo, 'Sexo'],
+       ['COMPOSICION POR RAZA', k.porRaza, 'Raza'],
+       ['DISTRIBUCION POR GRUPO', k.porGrupo, 'Grupo']].forEach(function(bl){
+        if(!bl[1] || !bl[1].length) return;
+        kpiRows.push([], [bl[0]+' (hato actual)'], [bl[2],'Animales','%']);
+        bl[1].forEach(function(g){
+          kpiRows.push([ (bl[2]==='Sexo' && MAPA_SEXO[g.clave]) || g.clave, g.n,
+                         k.hatoActual ? Math.round((g.n/k.hatoActual)*1000)/10 : 0 ]);
+        });
+      });
 
       var det = [['Chapeta','Origen','Raza','Sexo','Tipo','Grupo','Estado salida',
                   'Fecha salida','Motivo salida','Peso salida','Estado reproductivo',
