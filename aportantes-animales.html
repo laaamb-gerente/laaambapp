@@ -26,7 +26,9 @@
 <script src="js/roles.js"></script>
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="js/aparceria.js?v=2"></script>
+<script src="js/aportantes-loader.js?v=1"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -171,7 +173,10 @@ tr.muerto{opacity:.5}
       <div class="ph-title">Animales Aportantes</div>
       <div class="ph-date" id="ph-date"></div>
     </div>
-    <a class="btn" href="reporte-aportantes.html">Ver reportes →</a>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" id="btn-cargar">⬆ Cargar animales</button>
+      <a class="btn" href="reporte-aportantes.html">Ver reportes →</a>
+    </div>
   </div>
 
   <!-- Banner permanente: nunca se oculta ni se descarta. -->
@@ -604,12 +609,228 @@ tr.muerto{opacity:.5}
   }
   window.cargar = cargar;
 
+  // ═══ CARGADOR ═══════════════════════════════════════════════════
+  // Flujo obligatorio: elegir archivo → Analizar (pre-flight, no escribe
+  // nada) → confirmar → Ejecutar. Sin el clic de confirmación no se inserta.
+  var _pf = null, _parseado = null;
+
+  function abrirCargador(){
+    _pf = null; _parseado = null;
+    $('modal-title').textContent = 'Cargar animales de aparcería';
+    $('modal-body').innerHTML =
+        '<div style="font-size:12.5px;color:var(--text2);line-height:1.6;margin-bottom:14px">'
+      +   'La carga es por <b>fases</b>, cada una con su propio <code>carga_id</code>: '
+      +   'borrar una fase no toca las otras.'
+      + '</div>'
+      + fld('Archivo Excel', '<input id="ld-file" type="file" accept=".xlsx,.xls">')
+      + fld('Hoja', '<input id="ld-hoja" type="text" value="'
+          + esc(window.APORTANTES_LOADER.HOJA_DEFECTO) + '">')
+      + fld('Fase', '<select id="ld-fase">'
+          + '<option value="1">1 · Fundadoras (madres del lote aportado)</option>'
+          + '<option value="2">2 · Nacimientos (incluye proyectados)</option>'
+          + '<option value="3">3 · Salidas por sacrificio (actualiza)</option>'
+          + '</select>')
+      + fld('Hato (vacío = todos)', '<input id="ld-hato" type="text" placeholder="ej. SALATIEL">')
+      + fld('Etiqueta de la carga', '<input id="ld-etiqueta" type="text" '
+          + 'value="DEMO INVERSIONISTAS ' + fmtFecha(new Date().toISOString()) + '">')
+      + '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text);margin:12px 0">'
+      +   '<input id="ld-dry" type="checkbox" checked style="width:18px;height:18px;accent-color:var(--teal)">'
+      +   'Dry-run (no escribe nada en la base)'
+      + '</label>'
+      + '<button class="btn" id="ld-analizar" style="width:100%;border-color:var(--teal);color:var(--teal)">Analizar archivo</button>'
+      + '<div id="ld-out" style="margin-top:14px"></div>';
+    $('modal-ov').classList.add('on');
+    $('ld-analizar').addEventListener('click', analizar);
+  }
+  function fld(label, control){
+    return '<div style="margin-bottom:12px">'
+      + '<label style="display:block;font-size:10px;font-weight:700;color:var(--text3);'
+      + 'text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">'+esc(label)+'</label>'
+      + control.replace('<input ', '<input style="width:100%;background:var(--bg3);'
+          + 'border:1px solid var(--border2);border-radius:var(--r);padding:9px 11px;'
+          + 'color:var(--text);font-family:inherit;font-size:13px" ')
+        .replace('<select ', '<select style="width:100%;background:var(--bg3);'
+          + 'border:1px solid var(--border2);border-radius:var(--r);padding:9px 11px;'
+          + 'color:var(--text);font-family:inherit;font-size:13px" ')
+      + '</div>';
+  }
+
+  async function analizar(){
+    var out = $('ld-out');
+    var file = $('ld-file').files[0];
+    if(!file){ out.innerHTML = err('Elige un archivo .xlsx primero.'); return; }
+    out.innerHTML = '<div class="empty-box">Leyendo y analizando…</div>';
+    try{
+      if(!window.XLSX) throw new Error('SheetJS no cargó (revisa la conexión)');
+      var buf = await file.arrayBuffer();
+      var wb = window.XLSX.read(buf, { type:'array', cellDates:true });
+      _parseado = window.APORTANTES_LOADER.parsear(wb, { hoja: $('ld-hoja').value.trim() });
+      _pf = await window.APORTANTES_LOADER.preflight(_parseado, {
+        fase: parseInt($('ld-fase').value, 10),
+        hato: $('ld-hato').value.trim() || null,
+        etiqueta: $('ld-etiqueta').value.trim() || null
+      });
+      pintarPreflight();
+    }catch(e){
+      out.innerHTML = err(fallo('Analizar archivo', e));
+    }
+  }
+  function err(m){
+    return '<div style="background:var(--red-bg);border:1px solid var(--red);border-radius:var(--r);'
+      + 'padding:10px 12px;font-size:12.5px;color:var(--red)">'+esc(m)+'</div>';
+  }
+
+  function pintarPreflight(){
+    var p = _pf, a = p.anomalias, t = p.totales;
+    var h = '';
+    h += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;'
+       + 'color:var(--text3);margin-bottom:8px">Pre-flight · nada se ha escrito</div>';
+
+    // Resumen por aportante
+    h += '<div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);'
+       + 'padding:12px 14px;font-size:12.5px;margin-bottom:10px">';
+    h += '<div><b>Fase '+p.fase+'</b> · a crear: <b>'+t.aCrear+'</b> · a actualizar: <b>'+t.aActualizar+'</b></div>';
+    p.bloques.forEach(function(b){
+      h += '<div style="color:var(--text2);margin-top:4px">'+esc(b.aportante.nombre)+': '
+        + b.aCrear.length+' nuevos, '+b.aActualizar.length+' actualizables '
+        + '<span style="color:var(--text4)">('+b.existentesTotal+' ya en base)</span></div>';
+    });
+    h += '<div style="color:var(--text4);margin-top:6px;font-size:11px">carga_id: <code>'
+       + esc(p.carga_id||'—')+'</code></div>';
+    h += '</div>';
+
+    // Bloqueantes
+    if(p.bloqueantes.length){
+      h += '<div style="background:var(--red-bg);border:1px solid var(--red);border-radius:var(--r);'
+        + 'padding:10px 12px;font-size:12.5px;color:var(--red);margin-bottom:10px">'
+        + '<b>Bloqueado.</b><ul style="margin:6px 0 0 16px">'
+        + p.bloqueantes.map(function(b){ return '<li>'+esc(b.detalle)+'</li>'; }).join('')
+        + '</ul></div>';
+    }
+
+    // Anomalías — se reportan, no se corrigen
+    h += bloqueAnom('Chapetas duplicadas dentro del mismo hato',
+      a.duplicadosIntraHato.length, 'var(--amber)',
+      a.duplicadosIntraHato.map(function(d){
+        return d.hato+' · '+d.codigo+' ('+d.n+' filas: '
+          + d.estados.map(function(e){ return e.estado_actualizado; }).join(' / ')
+          + ') → se conserva la fila '+d.elegida;
+      }),
+      'Violan el UNIQUE. Se conserva la de ESTADO ACTUALIZADO no vacío; las demás NO se cargan.');
+
+    h += bloqueAnom('Chapetas en más de un hato',
+      a.duplicadosEntreHatos.length, 'var(--sky)',
+      a.duplicadosEntreHatos.map(function(d){ return d.codigo+' → '+d.hatos.join(' ∩ '); }),
+      'Informativo: el UNIQUE es por aportante, así que conviven. No bloquean.');
+
+    h += bloqueAnom('Madres que no existen en la tabla',
+      a.madresHuerfanas.length, 'var(--sky)',
+      a.madresHuerfanas.map(function(m){ return m.hato+' · '+m.madre_codigo+' → cría '+m.cria; }),
+      'madre_codigo es texto libre, no una FK: se cargan igual.');
+
+    h += bloqueAnom('Avisos del parseo', p.avisos.length, 'var(--sky)',
+      p.avisos.map(function(v){ return 'fila '+v.fila+' · '+(v.codigo||'')+' · '+v.detalle; }),
+      'No se corrige nada automáticamente.');
+
+    h += bloqueAnom('Filas que no se pudieron interpretar', p.excepcionesParseo.length, 'var(--red)',
+      p.excepcionesParseo.map(function(e){ return 'fila '+e.fila+' · '+(e.codigo||'(sin chapeta)')+' · '+e.motivo; }),
+      'Estas filas quedan fuera de la carga.');
+
+    if(p.fase === 3 && p.insertsEnFase3.length){
+      h += bloqueAnom('Sacrificios sin animal previo cargado', p.insertsEnFase3.length, 'var(--amber)',
+        p.insertsEnFase3.map(function(f){ return f.hato+' · '+f.codigo; }),
+        'En fase 3 lo normal es ACTUALIZAR. Estos se insertarían porque no están en base.');
+    }
+
+    // Calidad del dato
+    var r = p.resumenParseo;
+    h += '<div style="font-size:11.5px;color:var(--text2);background:var(--bg3);border:1px solid '
+      + 'var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:10px">'
+      + 'Del archivo completo: <b>'+r.totalFilas+'</b> filas interpretadas · '
+      + '<b>'+r.sinFechaNacimiento+'</b> sin fecha de nacimiento · '
+      + '<b>'+r.sinPeso+'</b> sin peso · <b>'+r.pesosReales+'</b> con peso real embebido.'
+      + '<div style="color:var(--text4);margin-top:4px">Las fechas nunca se estiman; '
+      + 'los pesos sin dato quedan en NULL.</div></div>';
+
+    // Confirmación explícita
+    var dry = $('ld-dry').checked;
+    h += '<div style="display:flex;gap:8px;margin-top:12px">'
+      + '<button class="btn" id="ld-cancel" style="flex:1">Cerrar</button>'
+      + '<button class="btn" id="ld-go" style="flex:1;'
+      +   (dry ? 'border-color:var(--teal);color:var(--teal)'
+             : 'background:var(--orange);border-color:var(--orange);color:#fff')+'"'
+      +   (p.bloqueantes.length ? ' disabled' : '')+'>'
+      + (dry ? 'Simular (dry-run)' : 'CONFIRMAR y escribir')+'</button></div>'
+      + '<div id="ld-msg" style="font-size:12px;margin-top:10px"></div>';
+
+    $('ld-out').innerHTML = h;
+    $('ld-cancel').addEventListener('click', cerrarModal);
+    $('ld-go').addEventListener('click', function(){ ejecutarCarga(this); });
+  }
+
+  function bloqueAnom(titulo, n, color, items, nota){
+    if(!n) return '';
+    var lista = items.slice(0, 40).map(function(s){
+      return '<li style="margin-bottom:2px">'+esc(s)+'</li>'; }).join('');
+    var mas = items.length > 40 ? '<li style="color:var(--text4)">… y '+(items.length-40)+' más</li>' : '';
+    return '<details style="margin-bottom:8px;border:1px solid '+color+';border-radius:var(--r);'
+      + 'padding:9px 12px;background:var(--bg3)">'
+      + '<summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:'+color+'">'
+      +   esc(titulo)+' · '+n+'</summary>'
+      + (nota ? '<div style="font-size:11px;color:var(--text3);margin:6px 0">'+esc(nota)+'</div>' : '')
+      + '<ul style="margin:6px 0 0 16px;font-size:11.5px;color:var(--text2)">'+lista+mas+'</ul>'
+      + '</details>';
+  }
+
+  async function ejecutarCarga(btn){
+    var dry = $('ld-dry').checked;
+    btn.disabled = true; btn.textContent = dry ? 'Simulando…' : 'Escribiendo…';
+    var msg = $('ld-msg');
+    try{
+      var rep = await window.APORTANTES_LOADER.ejecutar(_pf, {
+        dryRun: dry,
+        perfil_id: (window.AUTH_PERFIL && window.AUTH_PERFIL.id) || null
+      });
+      var descuadre = rep.conteos.filter(function(c){ return !c.coincide; });
+      var h = '<div style="background:'+(descuadre.length?'var(--red-bg)':'var(--green-bg)')
+        + ';border:1px solid '+(descuadre.length?'var(--red)':'var(--green)')
+        + ';border-radius:var(--r);padding:11px 13px;font-size:12.5px">'
+        + '<b>'+(dry ? 'Simulación (no se escribió nada)' : 'Carga ejecutada')+'</b><br>'
+        + 'Creados: '+rep.creados+' · Actualizados: '+rep.actualizados
+        + ' · Pesajes: '+rep.pesajes+' · Fallidos: '+rep.fallidos.length
+        + ' · Omitidos: '+rep.omitidos.length;
+      rep.conteos.forEach(function(c){
+        h += '<div style="margin-top:6px;font-family:ui-monospace,Menlo,monospace;font-size:11.5px">'
+          + esc(c.aportante)+'<br>'
+          + 'antes: '+String(c.antes).padStart(5)+'<br>'
+          + 'creados: '+String(c.creados).padStart(3)+'<br>'
+          + 'después: '+String(c.despues).padStart(3)+'  '
+          + (c.coincide ? '✅ coincide' : '⚠ NO COINCIDE (esperado '+c.esperado+')')
+          + '</div>';
+      });
+      h += '</div>';
+      if(rep.fallidos.length){
+        h += bloqueAnom('Fallidos', rep.fallidos.length, 'var(--red)',
+          rep.fallidos.map(function(f){
+            return (f.codigo||'—')+' ('+f.accion+'): '+f.motivo; }), null);
+      }
+      msg.innerHTML = h;
+      btn.textContent = dry ? 'Simular otra vez' : 'Listo';
+      btn.disabled = dry ? false : true;
+      if(!dry) setTimeout(function(){ cargar(); }, 800);
+    }catch(e){
+      btn.disabled = false; btn.textContent = 'Reintentar';
+      msg.innerHTML = err(fallo('Ejecutar carga', e));
+    }
+  }
+
   function whenReady(cb){
     if(window.AUTH_ROL){ cb(); return; }
     var n=0;
     var iv=setInterval(function(){ if(window.AUTH_ROL || n>50){ clearInterval(iv); cb(); } n++; }, 100);
   }
   document.addEventListener('DOMContentLoaded', function(){
+    $('btn-cargar').addEventListener('click', abrirCargador);
     $('ph-date').textContent = 'Corte: ' + new Date().toLocaleDateString('es-CO',
       { day:'2-digit', month:'long', year:'numeric' });
     whenReady(function(){ cargar(); });
