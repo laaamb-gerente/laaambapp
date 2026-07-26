@@ -22,8 +22,6 @@ if(!L) throw new Error('aportantes-loader.js no expuso window.APORTANTES_LOADER'
 var fail=0;
 function t(l,g,e){var ok=String(g)===String(e);if(!ok)fail++;console.log('  '+(ok?'OK ':'XX ')+String(l).padEnd(46)+String(g).padStart(4)+(ok?'':'  ESPERADO '+e));}
 
-var ctx={window:{_sb:{}},console:console};ctx.globalThis=ctx;vm.createContext(ctx);
-
 // Las 7 filas con peso embebido reportadas por Juan (todas de MAURICIO).
 var CASOS=[
  ['197','42k 02-02-26',   42,'2026-02-02'],
@@ -34,7 +32,6 @@ var CASOS=[
  ['237','35k 31-12-25',   35,'2025-12-31'],
  ['241','31k 31-12-25',   31,'2025-12-31'],
 ];
-var fail=0;
 console.log('CHAPETA  ESTADO crudo      peso  fecha extraida   esperado');
 CASOS.forEach(function(c){
   var r=L._pesoEmbebido(c[1]);
@@ -211,7 +208,44 @@ t('fase 1 = fundadoras reales', L.filtrarPorFase(a.filasConservadas,1).length,
 t('fase 2 = crias', L.filtrarPorFase(a.filasConservadas,2).length,
    a.filasConservadas.filter(function(f){return f.tipo==='cria';}).length);
 console.log(fail?'\n'+fail+' FALLOS':'\nDeteccion de anomalias: todo OK');
-process.exit(fail?1:0);
+// Sin process.exit aquí: el resumen y el código de salida van UNA sola vez al
+// final del archivo. Un exit intermedio dejaría los bloques siguientes como
+// código muerto que nunca corre y que parecería estar pasando.
+
+
+// ── COLUMNA CODIGO EXPLICITA (escape hatch de desambiguacion) ──────────
+// Caso real: la fase 1 carga 558-1 y 558-2. Despues aparece una TERCERA 558
+// (cria de madre 437) en otra hoja. En esa hoja 558 sale una sola vez, asi
+// que sin CODIGO explicito derivaria codigo='558' y el pre-flight bloquearia
+// contra los dos animales ya cargados. Con CODIGO se resuelve.
+console.log('\nCOLUMNA CODIGO EXPLICITA');
+function filaExp(hato,chapeta,codigoExp,extra){
+  return Object.assign({hato:hato,codigo:codigoExp||chapeta,codigo_original:chapeta,
+    codigo_explicito:!!codigoExp,estado_actualizado:null,estado_origen:null,
+    estado_salida:'activo',tipo:'cria',origen:'real',madre_codigo:null,fila:0,
+    pesajes:[],notas:null},extra||{});
+}
+var fx=[
+  filaExp('MAURICIO','558',null),          // sin CODIGO → se sufija
+  filaExp('MAURICIO','558',null),          // sin CODIGO → se sufija
+  filaExp('MAURICIO','558','558-9'),       // CON CODIGO → intacto
+  filaExp('SALATIEL','N55','N55-1'),       // CON CODIGO, unico en su hato
+];
+fx.forEach(function(f,i){f.fila=i+2;});
+var ax=L.detectarAnomalias(fx);
+var g558=fx.filter(function(f){return f.codigo_original==='558';});
+t('CODIGO explicito se respeta', g558.filter(function(f){return f.codigo_explicito;})[0].codigo, '558-9');
+t('no colisiona con el explicito',
+  g558.filter(function(f){return !f.codigo_explicito;}).map(function(f){return f.codigo;}).join('/'),
+  '558-1/558-2');
+t('todos los 558 conservan la chapeta fisica',
+  g558.every(function(f){return f.codigo_original==='558';}), true);
+t('las 4 filas se conservan', ax.filasConservadas.length, 4);
+// Una chapeta unica en su hato con CODIGO explicito no se toca ni se marca dup.
+var n55=fx.filter(function(f){return f.hato==='SALATIEL';})[0];
+t('N55 con CODIGO y sin repetir queda intacto', n55.codigo, 'N55-1');
+t('N55 no cuenta como duplicado',
+  ax.duplicadosIntraHato.filter(function(d){return d.chapeta==='N55';}).length, 0);
 
 console.log(fail?'\n\u2717 '+fail+' FALLOS':'\n\u2713 parseo del cargador: todo OK');
 process.exit(fail?1:0);

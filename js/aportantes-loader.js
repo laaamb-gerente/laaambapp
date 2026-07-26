@@ -170,6 +170,10 @@
     hato: ['HATO'],
     criadero: ['CRIADERO'],
     codigo: ['CHAPETA'],
+    // Columna OPCIONAL. Es la vía para resolver del lado del Excel una chapeta
+    // que ya está desambiguada en base: si viene, manda sobre el sufijo
+    // derivado. CHAPETA sigue siendo la marca física (→ codigo_original).
+    codigoExp: ['CODIGO', 'CÓDIGO', 'CODIGO INTERNO'],
     raza: ['RAZA'],
     sexo: ['SEXO'],
     madre: ['MADRE'],
@@ -236,6 +240,10 @@
           motivo: 'HATO vacío — no se puede resolver el aportante', crudo: f });
         return;
       }
+
+      // CODIGO explícito: si la hoja lo trae, ese es el codigo y NO se le
+      // aplica sufijo. CHAPETA sigue siendo la marca física.
+      var codigoExp = txt(val(f, 'codigoExp'));
 
       var sexoRaw = sinTildes(val(f, 'sexo'));
       var sexo = /^hembra/.test(sexoRaw) ? 'hembra'
@@ -316,7 +324,9 @@
       filas.push({
         fila: nFila,
         hato: hato,
-        codigo: codigo,
+        codigo: codigoExp || codigo,
+        codigo_original: codigo,
+        codigo_explicito: !!codigoExp,
         criadero_origen: criadero || null,
         raza: txt(val(f, 'raza')) || null,     // se guarda tal cual: text libre
         sexo: sexo,
@@ -383,7 +393,10 @@
     // la idempotencia por (finca_id, aportante_id, codigo) se mantiene.
     var porClave = {};
     filas.forEach(function (f) {
-      var k = f.hato + '||' + f.codigo;
+      // Se agrupa por la CHAPETA FÍSICA: es la marca que se repite. Agrupar
+      // por 'codigo' no detectaría nada cuando el Excel ya trae CODIGO.
+      f.codigo_original = f.codigo_original || f.codigo;
+      var k = f.hato + '||' + f.codigo_original;
       (porClave[k] = porClave[k] || []).push(f);
     });
     var dupIntra = [], descartadas = [], conservadas = [];
@@ -394,7 +407,15 @@
       if (g.length < 2) { conservadas.push(g[0]); return; }
 
       var chapeta = g[0].codigo_original;
-      g.forEach(function (f, i) {
+      // Las filas con CODIGO explícito quedan intactas y sus codigos se
+      // reservan para no colisionar al numerar las demás.
+      var tomados = {};
+      g.forEach(function (f) { if (f.codigo_explicito) tomados[f.codigo] = true; });
+      var idx = 0;
+      g.forEach(function (f) {
+        if (f.codigo_explicito) { conservadas.push(f); return; }
+        do { idx++; } while (tomados[chapeta + '-' + idx]);
+        var i = idx - 1;
         f.codigo = chapeta + '-' + (i + 1);
         f.duplicado = { chapeta: chapeta, indice: i + 1, total: g.length };
         var nota = 'Chapeta ' + chapeta + ' compartida por ' + g.length
@@ -572,12 +593,16 @@
     var ambiguos = bloques.reduce(function (acc, b) { return acc.concat(b.ambiguos || []); }, []);
     if (ambiguos.length) {
       // No se resuelve por adivinanza: actualizar el animal equivocado con un
-      // sacrificio es peor que no cargarlo.
+      // sacrificio es peor que no cargarlo. La salida es del lado del Excel:
+      // una columna CODIGO con el codigo ya desambiguado (558-2, N55-1…), o
+      // uno nuevo si el animal es distinto de los que ya están cargados.
       bloqueantes.push({ tipo: 'chapeta_ambigua_en_base', n: ambiguos.length,
         detalle: ambiguos.length + ' chapeta(s) coinciden con VARIOS animales ya '
           + 'cargados y no se puede saber a cuál corresponden: '
           + ambiguos.slice(0, 6).map(function (a) {
-              return a.codigo + ' → ' + a.candidatos.join('/'); }).join(', ') });
+              return a.codigo + ' → ' + a.candidatos.join('/'); }).join(', ')
+          + '. Resuélvelo agregando una columna CODIGO en la hoja con el codigo '
+          + 'exacto de cada fila (CHAPETA sigue siendo la marca física).' });
     }
     if (sinResolver.length) {
       bloqueantes.push({ tipo: 'hato_sin_aportante', n: sinResolver.length,
