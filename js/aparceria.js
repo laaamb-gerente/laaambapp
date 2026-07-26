@@ -2,18 +2,37 @@
 // Capa de datos y motor de KPIs del módulo APARCERÍA.
 //
 // Fuente ÚNICA de verdad de los cálculos: la usan aportantes-animales.html,
-// reporte-aportantes.html y el cargador. Si un KPI se calcula en dos sitios
-// con dos fórmulas, el reporte y el listado se contradicen; por eso todo
-// pasa por APARCERIA.kpis().
+// reporte-aportantes.html, el adaptador de REPORTES y el cargador. Si un KPI
+// se calculara en dos sitios con dos fórmulas, el reporte y el listado se
+// contradirían; por eso todo pasa por APARCERIA.kpis().
 //
 // ⚠️ Este módulo NUNCA lee ni escribe la tabla 'animales' del hato real.
-//    Solo aportantes / aportantes_animales / aportantes_cargas.
-//    Los animales de aparcería no son inventario de La Marinilla.
+//    Solo aportantes / aportantes_animales / aportantes_cargas /
+//    aportantes_pesajes. Los animales de aparcería no son inventario de
+//    La Marinilla y no entran en ningún agregado de la finca.
+//
+// ⚠️ El destino del animal se lee SOLO de estado_salida (0057). Las columnas
+//    'vivo' y 'localizado' de la 0056 fueron eliminadas a propósito: dos
+//    columnas describiendo el mismo hecho pueden desincronizarse.
 
 (function () {
   'use strict';
 
   var FINCA_ID = 'a1b2c3d4-0000-0000-0000-000000000001';
+
+  // Multiplicador contractual: meta_anual = hato_inicial × 2.7.
+  // Se verifica, no se usa para calcular: meta_anual es dato de contrato y
+  // vive en la tabla. Si dejan de cuadrar, es un error de captura y el
+  // reporte lo debe avisar en vez de recalcular por su cuenta.
+  var META_MULT = 2.7;
+
+  // Fases de carga. Mientras falte alguna, los indicadores no son
+  // representativos y la UI lo advierte.
+  var FASES = {
+    1: { clave: 'fundadoras',  etiqueta: 'Fundadoras' },
+    2: { clave: 'nacimientos', etiqueta: 'Nacimientos' },
+    3: { clave: 'salidas',     etiqueta: 'Salidas por sacrificio' }
+  };
 
   function sb() {
     if (!window._sb) throw new Error('Supabase no inicializado (window._sb)');
@@ -38,7 +57,9 @@
   }
 
   async function getAnimales(aportante_id) {
-    var q = sb().from('aportantes_animales').select('*').eq('finca_id', FINCA_ID);
+    var q = sb().from('aportantes_animales')
+      .select('*, pesajes:aportantes_pesajes(fecha, peso_kg, tipo, nota)')
+      .eq('finca_id', FINCA_ID);
     if (aportante_id) q = q.eq('aportante_id', aportante_id);
     return chk(await q.order('codigo'), 'cargar animales de aparcería') || [];
   }
@@ -52,151 +73,270 @@
   }
 
   // ── PREDICADOS ──────────────────────────────────────────────────────
-  // 'real' vs 'proyectado': los proyectados son filas SIMULADAS y quedan
-  // fuera de TODO KPI de portada. Se subtotalizan aparte como escenario.
-  function esReal(a)  { return a.origen === 'real'; }
-  function esProy(a)  { return a.origen === 'proyectado'; }
+  // 'proyectado' son filas SIMULADAS: quedan fuera de TODO KPI de portada y
+  // se subtotalizan aparte como escenario.
+  function esReal(a) { return a.origen === 'real'; }
+  function esProy(a) { return a.origen === 'proyectado'; }
 
-  // Un animal cuenta en el hato actual solo si está vivo Y localizado.
-  // 'No existe' / 'No esta' / 'Moved off' → vivo=true, localizado=false:
-  // no son bajas, son animales que no se pudieron ubicar en campo. Nunca
-  // se suman a las muertes ni se cuentan en el hato.
-  function enHato(a)  { return esReal(a) && a.vivo === true && a.localizado === true; }
-  function esMuerto(a){ return esReal(a) && a.vivo === false; }
-  function esNoLoc(a) { return esReal(a) && a.vivo === true && a.localizado === false; }
+  // Un animal está en el hato solo si su estado_salida es 'activo'.
+  function enHato(a)   { return esReal(a) && a.estado_salida === 'activo'; }
+  function esMuerto(a) { return esReal(a) && a.estado_salida === 'muerte'; }
+  function esSacrif(a) { return esReal(a) && a.estado_salida === 'sacrificio'; }
+  function esVenta(a)  { return esReal(a) && a.estado_salida === 'venta'; }
+  function esNoLoc(a)  { return esReal(a) && a.estado_salida === 'no_localizado'; }
 
-  // tipo: 'madre_lote_inicial' = del lote aportado al inicio.
-  //       'cria' = nacida bajo el manejo del proyecto (crecimiento).
-  function esLoteInicial(a) { return a.tipo === 'madre_lote_inicial'; }
-  function esNacida(a)      { return a.tipo === 'cria'; }
+  function esFundadora(a) { return a.tipo === 'madre_lote_inicial'; }
+  function esCria(a)      { return a.tipo === 'cria'; }
 
+  // pct devuelve null si el denominador es 0 o nulo: nunca Infinity ni NaN.
+  // La UI imprime '—' ante null, así que un dataset vacío no muestra basura.
   function pct(num, den) {
-    if (!den || den === 0) return null;
+    if (den == null || den === 0) return null;
     return Math.round((num / den) * 1000) / 10;
+  }
+
+  // ── PESO VIGENTE ────────────────────────────────────────────────────
+  // Jerarquía sacrificio > real > estimado. Ante empate de tipo, gana la
+  // fecha más reciente. No se promedia ni se interpola: se elige un pesaje
+  // concreto y se reporta su tipo, para que un estimado nunca se lea como
+  // un pesaje de balanza.
+  var PRIORIDAD = { sacrificio: 3, real: 2, estimado: 1 };
+  function pesoVigente(a) {
+    var ps = a.pesajes || [];
+    if (!ps.length) {
+      // Fallback documentado al snapshot de la 0056 mientras
+      // aportantes_pesajes esté vacía. El cargador escribe en la tabla
+      // hija, así que este camino desaparece en cuanto haya datos.
+      if (a.peso_kg == null) return null;
+      return { peso_kg: Number(a.peso_kg), tipo: a.peso_tipo || 'estimado',
+               fecha: a.peso_fecha || null, nota: a.peso_nota || null };
+    }
+    var mejor = null;
+    ps.forEach(function (p) {
+      if (!mejor) { mejor = p; return; }
+      var dp = (PRIORIDAD[p.tipo] || 0) - (PRIORIDAD[mejor.tipo] || 0);
+      if (dp > 0 || (dp === 0 && String(p.fecha) > String(mejor.fecha))) mejor = p;
+    });
+    return { peso_kg: Number(mejor.peso_kg), tipo: mejor.tipo,
+             fecha: mejor.fecha, nota: mejor.nota || null };
   }
 
   // ── MOTOR DE KPIs ───────────────────────────────────────────────────
   // rows = filas de UN aportante. aportante = fila de 'aportantes'.
+  // Diseñado para dar resultados coherentes con rows = [] (fase 0).
   function kpis(rows, aportante) {
     rows = rows || [];
     var reales = rows.filter(esReal);
     var proyectados = rows.filter(esProy);
 
-    var hato       = reales.filter(enHato);
+    var activos    = reales.filter(enHato);
     var muertos    = reales.filter(esMuerto);
+    var sacrifs    = reales.filter(esSacrif);
+    var ventas     = reales.filter(esVenta);
     var noLoc      = reales.filter(esNoLoc);
 
-    var loteInicial      = reales.filter(esLoteInicial);
-    var nacidas          = reales.filter(esNacida);
-    // "vivo" en estas dos líneas = vivo Y localizado, para que
-    // loteInicialVivo + nacidasVivas == hatoActual exactamente.
-    var loteInicialVivo  = loteInicial.filter(enHato);
-    var nacidasVivas     = nacidas.filter(enHato);
+    var fundadoras = reales.filter(esFundadora);
+    var crias      = reales.filter(esCria);
+    var fundActivas = fundadoras.filter(enHato);
+    var criasActivas = crias.filter(enHato);
 
-    // hato_inicial es la cifra CONTRACTUAL de madres aportadas. Se lee de
-    // aportantes.hato_inicial; jamás se deriva de las filas cargadas.
+    // hato_inicial = MADRES APORTADAS al firmar. Cláusula de contrato que se
+    // lee de la tabla; jamás se deriva de las filas cargadas.
     var hatoInicial = (aportante && aportante.hato_inicial != null)
       ? Number(aportante.hato_inicial) : null;
     var meta = (aportante && aportante.meta_anual != null)
       ? Number(aportante.meta_anual) : null;
 
-    var hatoActual = hato.length;
+    var hatoActual = activos.length;
+
+    // Crecimiento sobre la base contractual. Con hato_actual = 0 da -100%,
+    // que es correcto y no un error a esconder.
+    var crecPct  = pct(hatoActual - (hatoInicial || 0), hatoInicial);
     var crecNeto = hatoInicial != null ? hatoActual - hatoInicial : null;
-    var crecPct  = hatoInicial ? pct(hatoActual - hatoInicial, hatoInicial) : null;
 
-    // Gap de conciliación: lote inicial REGISTRADO vs madres CONTRATADAS.
-    // Son cosas distintas y ambas correctas; el reporte lo muestra como
-    // nota al pie. No se ajusta ninguna cifra para cerrarlo.
-    var gapConciliacion = hatoInicial != null ? loteInicial.length - hatoInicial : null;
+    // Coherencia meta ↔ base: meta_anual debería ser hato_inicial × 2.7.
+    // Se AVISA, no se corrige: si no cuadra es un error de captura.
+    var metaEsperada = hatoInicial != null
+      ? Math.round(hatoInicial * META_MULT * 100) / 100 : null;
+    var metaCoherente = (meta == null || metaEsperada == null)
+      ? null : Math.abs(meta - metaEsperada) < 0.01;
 
-    // Estado reproductivo sobre el hato actual.
-    var prenadas = hato.filter(function (a) { return a.estado_reproductivo === 'prenada'; });
-    var paridas  = hato.filter(function (a) { return a.estado_reproductivo === 'madre'; });
-    var vacias   = hato.filter(function (a) { return a.estado_reproductivo === 'vacia'; });
-    var sinDato  = hato.filter(function (a) {
+    // Gap de conciliación: fundadoras REGISTRADAS vs madres CONTRATADAS.
+    // Ambas cifras son correctas en su contexto; no se ajusta ninguna.
+    var gap = hatoInicial != null ? fundadoras.length - hatoInicial : null;
+
+    // Estado reproductivo sobre el hato activo.
+    var prenadas = activos.filter(function (a) { return a.estado_reproductivo === 'prenada'; });
+    var paridas  = activos.filter(function (a) { return a.estado_reproductivo === 'madre'; });
+    var vacias   = activos.filter(function (a) { return a.estado_reproductivo === 'vacia'; });
+    var sinDato  = activos.filter(function (a) {
       return a.estado_reproductivo === 'sin_dato' || a.estado_reproductivo == null;
     });
-
-    // Fertilidad excluyendo sin_dato (denominador = evaluadas).
     var evaluadas = prenadas.length + paridas.length + vacias.length;
-    var fertilidad = pct(prenadas.length + paridas.length, evaluadas);
 
     // Prolificidad: crías registradas ÷ madres distintas en madre_codigo.
-    var madresDistintas = {};
-    nacidas.forEach(function (a) {
+    var madres = {};
+    crias.forEach(function (a) {
       var m = (a.madre_codigo || '').trim();
-      if (m) madresDistintas[m] = true;
+      if (m) madres[m] = true;
     });
-    var nMadresDistintas = Object.keys(madresDistintas).length;
-    var prolificidad = nMadresDistintas
-      ? Math.round((nacidas.length / nMadresDistintas) * 100) / 100 : null;
+    var nMadres = Object.keys(madres).length;
 
-    // Causas de baja agrupadas, de mayor a menor.
-    var causas = {};
-    muertos.forEach(function (a) {
-      var c = (a.causa_baja || '').trim() || 'Sin causa registrada';
-      causas[c] = (causas[c] || 0) + 1;
-    });
-    var causasOrdenadas = Object.keys(causas)
-      .map(function (c) { return { causa: c, n: causas[c] }; })
-      .sort(function (x, y) { return y.n - x.n; });
+    function agrupar(lista, campo) {
+      var acc = {};
+      lista.forEach(function (a) {
+        var v = (a[campo] || '').trim() || 'Sin registrar';
+        acc[v] = (acc[v] || 0) + 1;
+      });
+      return Object.keys(acc).map(function (k) { return { clave: k, n: acc[k] }; })
+        .sort(function (x, y) { return y.n - x.n; });
+    }
+
+    var conPeso = reales.map(pesoVigente).filter(Boolean);
 
     return {
-      // Totales de registro
+      // ── Totales de registro ──
       totalRegistradas: reales.length,
-      loteInicialRegistrado: loteInicial.length,
-      loteInicialVivo: loteInicialVivo.length,
-      nacidasRegistradas: nacidas.length,
-      nacidasVivas: nacidasVivas.length,
+      fundadorasRegistradas: fundadoras.length,
+      fundadorasActivas: fundActivas.length,
+      criasRegistradas: crias.length,
+      criasActivas: criasActivas.length,
 
-      // Crecimiento (la historia del reporte)
+      // ── Crecimiento ──
       hatoInicial: hatoInicial,
       hatoActual: hatoActual,
       crecimientoNeto: crecNeto,
       crecimientoPct: crecPct,
       meta: meta,
-      cumplimientoPct: meta ? pct(hatoActual, meta) : null,
-      gapConciliacion: gapConciliacion,
+      metaEsperada: metaEsperada,
+      metaCoherente: metaCoherente,
+      cumplimientoPct: pct(hatoActual, meta),
+      gapConciliacion: gap,
 
-      // Bajas y no localizados: SIEMPRE separados, nunca sumados.
+      // ── Salidas: cada tipo en su propia línea, NUNCA sumadas ──
       muertes: muertos.length,
       mortalidadPct: pct(muertos.length, reales.length),
-      causasBaja: causasOrdenadas,
+      causasBaja: agrupar(muertos, 'motivo_salida'),
+      sacrificios: sacrifs.length,
+      sacrificiosPct: pct(sacrifs.length, reales.length),
+      ventas: ventas.length,
       noLocalizados: noLoc.length,
       noLocalizadosDetalle: noLoc,
 
-      // Reproductivo
+      // ── Reproductivo ──
       prenadas: prenadas.length,
       paridas: paridas.length,
       vacias: vacias.length,
       sinDato: sinDato.length,
-      fertilidadPct: fertilidad,
-      prolificidad: prolificidad,
-      madresDistintas: nMadresDistintas,
+      fertilidadPct: pct(prenadas.length + paridas.length, evaluadas),
+      prolificidad: nMadres ? Math.round((crias.length / nMadres) * 100) / 100 : null,
+      madresDistintas: nMadres,
 
-      // Escenario proyectado — SIEMPRE aparte, nunca dentro del hato.
+      // ── Escenario proyectado — SIEMPRE aparte ──
       proyectados: proyectados.length,
       hatoConEscenario: hatoActual + proyectados.length,
 
-      // Calidad del dato
+      // ── Composición ──
+      porSexo: agrupar(activos, 'sexo'),
+      porRaza: agrupar(activos, 'raza'),
+      porGrupo: agrupar(activos, 'grupo'),
+
+      // ── Calidad del dato ──
       sinFechaNacimiento: reales.filter(function (a) { return !a.fecha_nacimiento; }).length,
-      sinPeso: reales.filter(function (a) { return a.peso_kg == null; }).length,
-      pesosReales: reales.filter(function (a) { return a.peso_tipo === 'real'; }).length,
-      pesosEstimados: reales.filter(function (a) { return a.peso_tipo === 'estimado'; }).length
+      sinPeso: reales.length - conPeso.length,
+      pesosReales: conPeso.filter(function (p) { return p.tipo === 'real'; }).length,
+      pesosEstimados: conPeso.filter(function (p) { return p.tipo === 'estimado'; }).length,
+      pesosSacrificio: conPeso.filter(function (p) { return p.tipo === 'sacrificio'; }).length
     };
+  }
+
+  // ── IDENTIDADES ESTRUCTURALES ───────────────────────────────────────
+  // Valen con CUALQUIER dataset, incluido el vacío. No comprueban valores
+  // puntuales (esos salen del fixture regenerable), sino que el motor sea
+  // internamente coherente. Si una falla, el motor está mal, no los datos.
+  function verificarIdentidades(rows, aportante) {
+    var k = kpis(rows, aportante);
+    var reales = (rows || []).filter(esReal);
+    var out = [];
+    function id(nombre, ok, detalle) { out.push({ id: nombre, ok: !!ok, detalle: detalle || '' }); }
+
+    id('fundadoras_activas + crias_activas = hato_actual',
+      k.fundadorasActivas + k.criasActivas === k.hatoActual,
+      k.fundadorasActivas + ' + ' + k.criasActivas + ' = ' + k.hatoActual);
+
+    id('hato_actual = count(real AND activo)',
+      k.hatoActual === reales.filter(enHato).length);
+
+    // La identidad de conservación incluye VENTAS: el CHECK de estado_salida
+    // admite 'venta', así que omitirla rompería la suma en cuanto se registre
+    // una. Se verifica con los 5 estados, no con 4.
+    id('activos + muertes + sacrificios + ventas + no_localizados = total real',
+      k.hatoActual + k.muertes + k.sacrificios + k.ventas + k.noLocalizados === k.totalRegistradas,
+      k.hatoActual + '+' + k.muertes + '+' + k.sacrificios + '+' + k.ventas + '+'
+        + k.noLocalizados + ' = ' + k.totalRegistradas);
+
+    id('fundadoras + crias = total real',
+      k.fundadorasRegistradas + k.criasRegistradas === k.totalRegistradas);
+
+    id('gap = fundadoras_registradas - hato_inicial',
+      k.hatoInicial == null
+        ? k.gapConciliacion === null
+        : k.gapConciliacion === k.fundadorasRegistradas - k.hatoInicial);
+
+    id('crecimiento = (hato_actual - hato_inicial) / hato_inicial',
+      (!k.hatoInicial)
+        ? k.crecimientoPct === null
+        : k.crecimientoPct === Math.round(((k.hatoActual - k.hatoInicial) / k.hatoInicial) * 1000) / 10);
+
+    id('cumplimiento = hato_actual / meta_anual',
+      (!k.meta)
+        ? k.cumplimientoPct === null
+        : k.cumplimientoPct === Math.round((k.hatoActual / k.meta) * 1000) / 10);
+
+    id('meta_anual = hato_inicial x 2.7',
+      k.metaCoherente === null ? true : k.metaCoherente === true,
+      'meta=' + k.meta + ' esperada=' + k.metaEsperada);
+
+    // Los sacrificios NUNCA entran en mortalidad: un cordero vendido al
+    // matadero no es una pérdida productiva.
+    id('mortalidad excluye sacrificios',
+      k.mortalidadPct === pct(k.muertes, k.totalRegistradas)
+        && (k.sacrificios === 0 || k.mortalidadPct !== pct(k.muertes + k.sacrificios, k.totalRegistradas)));
+
+    id('proyectados fuera del hato',
+      reales.length + k.proyectados === (rows || []).length
+        && k.hatoConEscenario === k.hatoActual + k.proyectados);
+
+    // Ningún porcentaje puede ser NaN ni Infinity, ni con dataset vacío.
+    var pcts = ['crecimientoPct','cumplimientoPct','mortalidadPct','sacrificiosPct','fertilidadPct'];
+    var sucios = pcts.filter(function (p) {
+      var v = k[p];
+      return v !== null && (typeof v !== 'number' || !isFinite(v));
+    });
+    id('ningun porcentaje NaN/Infinity', sucios.length === 0, sucios.join(','));
+
+    return { kpis: k, identidades: out, fallan: out.filter(function (r) { return !r.ok; }) };
   }
 
   window.APARCERIA = {
     FINCA_ID: FINCA_ID,
+    META_MULT: META_MULT,
+    FASES: FASES,
     getAportantes: getAportantes,
     getAnimales: getAnimales,
     getCargas: getCargas,
     kpis: kpis,
+    verificarIdentidades: verificarIdentidades,
+    pesoVigente: pesoVigente,
     esReal: esReal,
     esProy: esProy,
     enHato: enHato,
     esMuerto: esMuerto,
+    esSacrif: esSacrif,
+    esVenta: esVenta,
     esNoLoc: esNoLoc,
+    esFundadora: esFundadora,
+    esCria: esCria,
     pct: pct
   };
 })();

@@ -25,7 +25,7 @@
 <script src="js/roles.js"></script>
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/aparceria.js?v=1"></script>
+<script src="js/aparceria.js?v=2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);
@@ -254,7 +254,7 @@ table.rt td.num,table.rt th.num{text-align:right}
       + '<div class="crec-row"><span class="k">Madres aportadas al inicio</span>'
       +   '<span class="v">'+num(k.hatoInicial)+'</span></div>'
       + '<div class="crec-row"><span class="k">Nacidas en el proyecto (vivas)</span>'
-      +   '<span class="v">'+num(k.nacidasVivas)+'</span></div>'
+      +   '<span class="v">'+num(k.criasActivas)+'</span></div>'
       + '<div class="crec-row total"><span class="k">Hato actual</span>'
       +   '<span><span class="v">'+num(k.hatoActual)+'</span>'
       +   (k.crecimientoPct==null?'':'<span class="crec-delta">'+pctTxt(k.crecimientoPct)+' sobre lo aportado</span>')
@@ -267,17 +267,17 @@ table.rt td.num,table.rt th.num{text-align:right}
 
     // Cumplimiento de meta
     var meta = '<div class="kg">'
-      + kc('teal', num(k.hatoActual), 'Hato actual', 'vivos y localizados')
+      + kc('teal', num(k.hatoActual), 'Hato actual', 'estado_salida = activo')
       + kc('gray', k.meta==null?'—':String(k.meta).replace('.',','), 'Meta anual', 'pactada en contrato')
       + kc('orange', k.cumplimientoPct==null?'—':String(k.cumplimientoPct).replace('.',',')+'%', 'Cumplimiento', 'hato actual ÷ meta')
       + '</div>';
 
     // Composición del hato
     var comp = '<div class="kg">'
-      + kc('gray', num(k.loteInicialVivo), 'Del lote inicial', 'vivas y localizadas')
-      + kc('gray', num(k.nacidasVivas), 'Nacidas en proyecto', 'vivas y localizadas')
+      + kc('gray', num(k.fundadorasActivas), 'Fundadoras activas', 'del lote aportado')
+      + kc('gray', num(k.criasActivas), 'Nacidas en proyecto', 'activas')
       + kc('gray', num(k.prolificidad==null?'—':String(k.prolificidad).replace('.',',')), 'Prolificidad',
-            k.madresDistintas ? k.nacidasRegistradas+' crías ÷ '+k.madresDistintas+' madres' : 'sin madres identificadas')
+            k.madresDistintas ? k.criasRegistradas+' crías ÷ '+k.madresDistintas+' madres' : 'sin madres identificadas')
       + kc('gray', k.fertilidadPct==null?'—':String(k.fertilidadPct).replace('.',',')+'%', 'Fertilidad',
             'excluye sin dato')
       + '</div>';
@@ -294,15 +294,25 @@ table.rt td.num,table.rt th.num{text-align:right}
     var causas = k.causasBaja.length
       ? '<table class="rt" style="margin-top:12px"><thead><tr><th>Causa registrada</th><th class="num">Animales</th></tr></thead><tbody>'
         + k.causasBaja.map(function(c){
-            return '<tr><td>'+esc(c.causa)+'</td><td class="num">'+c.n+'</td></tr>'; }).join('')
+            return '<tr><td>'+esc(c.clave)+'</td><td class="num">'+c.n+'</td></tr>'; }).join('')
         + '</tbody></table>'
       : '';
+    // Sacrificios y ventas son SALIDAS COMERCIALES, no pérdidas: van en
+    // tarjetas propias y nunca dentro de la mortalidad. Si se sumaran, un
+    // hato que vende corderos parecería un hato que los pierde.
     var mort = '<div class="kg">'
       + kc('red', num(k.muertes), 'Bajas por muerte', 'del total registrado')
       + kc('red', k.mortalidadPct==null?'—':String(k.mortalidadPct).replace('.',',')+'%', '% Mortalidad',
             k.muertes+' ÷ '+k.totalRegistradas+' registrados')
+      + kc('gray', num(k.sacrificios), 'Sacrificios', 'salida comercial, no baja')
+      + kc('gray', num(k.ventas), 'Ventas en pie', 'salida comercial, no baja')
       + kc('gray', num(k.noLocalizados), 'No localizados', 'NO son bajas')
       + '</div>'
+      + ((k.sacrificios || k.ventas)
+          ? '<div class="crec-nota"><b>Los sacrificios y las ventas no son mortalidad.</b> Son el '
+            + 'producto del negocio y se reportan aparte; incluirlos en el % de mortalidad '
+            + 'multiplicaría la cifra y daría una lectura falsa del manejo.</div>'
+          : '')
       + causas
       + (k.noLocalizados
           ? '<div class="crec-nota"><b>Los no localizados no se cuentan como mortalidad.</b> Son animales '
@@ -334,7 +344,7 @@ table.rt td.num,table.rt th.num{text-align:right}
     if(gap != null && gap !== 0){
       notaGap = '<div class="warn"><b>Conciliación pendiente:</b> el contrato registra '
         + num(k.hatoInicial)+' madres aportadas, y el lote inicial cargado tiene '
-        + num(k.loteInicialRegistrado)+' animales ('+(gap>0?'+':'')+gap+'). '
+        + num(k.fundadorasRegistradas)+' animales ('+(gap>0?'+':'')+gap+'). '
         + (gap>0
             ? 'La diferencia corresponde a hembras jóvenes incluidas en el mismo lote, que el contrato no contó como madres adultas.'
             : 'Hay '+Math.abs(gap)+' madres contratadas que no aparecen en el registro cargado.')
@@ -406,9 +416,15 @@ table.rt td.num,table.rt th.num{text-align:right}
 
       var rows = await window.APARCERIA.getAnimales(id);
       if(!rows.length){
+        // Estado vacío explícito: NO se genera una hoja con ceros. Un reporte
+        // en cero se lee como "no hubo", que es falso — no hay datos aún.
         $('hoja').innerHTML = '<div class="empty-box">'
-          + 'Este aportante no tiene animales cargados todavía.<br>'
-          + '<span style="font-size:12px;color:var(--text4)">Corre la carga desde Aparcería → Animales.</span></div>';
+          + '<div style="font-size:15px;color:var(--text2)">Sin animales cargados para '
+          + esc(ap.nombre) + '.</div>'
+          + '<div style="font-size:12.5px;color:var(--text4);margin-top:8px;max-width:460px;margin-left:auto;margin-right:auto;line-height:1.6">'
+          + 'No se genera el reporte con datos vacíos: una hoja llena de ceros se lee como '
+          + '«no hubo nacimientos ni bajas», y eso sería falso. Carga las fundadoras desde '
+          + '<b>Aparcería → Animales</b> y vuelve.</div></div>';
         ACTUAL = null;
         return;
       }
@@ -439,7 +455,7 @@ table.rt td.num,table.rt th.num{text-align:right}
         [],
         ['CRECIMIENTO DEL HATO'],
         ['Madres aportadas al inicio', k.hatoInicial],
-        ['Nacidas en el proyecto (vivas)', k.nacidasVivas],
+        ['Nacidas en el proyecto (vivas)', k.criasActivas],
         ['Hato actual', k.hatoActual],
         ['Crecimiento %', k.crecimientoPct],
         ['Crecimiento neto (animales)', k.crecimientoNeto],
@@ -448,10 +464,10 @@ table.rt td.num,table.rt th.num{text-align:right}
         [],
         ['COMPOSICIÓN'],
         ['Total registrados (reales)', k.totalRegistradas],
-        ['Lote inicial registrado', k.loteInicialRegistrado],
-        ['Lote inicial vivo y localizado', k.loteInicialVivo],
-        ['Nacidas registradas', k.nacidasRegistradas],
-        ['Nacidas vivas y localizadas', k.nacidasVivas],
+        ['Fundadoras registradas', k.fundadorasRegistradas],
+        ['Fundadoras activas', k.fundadorasActivas],
+        ['Crias registradas', k.criasRegistradas],
+        ['Crias activas', k.criasActivas],
         ['Prolificidad (crías ÷ madres distintas)', k.prolificidad],
         ['Madres distintas identificadas', k.madresDistintas],
         [],
@@ -462,9 +478,12 @@ table.rt td.num,table.rt th.num{text-align:right}
         ['Sin dato', k.sinDato],
         ['Fertilidad %', k.fertilidadPct],
         [],
-        ['MORTALIDAD Y NO LOCALIZADOS'],
+        ['SALIDAS (cada tipo en su linea, nunca sumadas)'],
         ['Bajas por muerte', k.muertes],
-        ['% Mortalidad', k.mortalidadPct],
+        ['% Mortalidad (solo muertes)', k.mortalidadPct],
+        ['Sacrificios (salida comercial)', k.sacrificios],
+        ['% Sacrificios', k.sacrificiosPct],
+        ['Ventas en pie', k.ventas],
         ['No localizados (NO son bajas)', k.noLocalizados],
         [],
         ['ESCENARIO PROYECTADO (fuera de los KPIs)'],
@@ -480,17 +499,19 @@ table.rt td.num,table.rt th.num{text-align:right}
       ];
       if(k.causasBaja.length){
         kpiRows.push([], ['CAUSAS DE BAJA'], ['Causa','Animales']);
-        k.causasBaja.forEach(function(c){ kpiRows.push([c.causa, c.n]); });
+        k.causasBaja.forEach(function(c){ kpiRows.push([c.clave, c.n]); });
       }
 
-      var det = [['Chapeta','Origen','Raza','Sexo','Tipo','Grupo','Vivo','Localizado',
-                  'Causa baja','Fecha baja','Estado reproductivo','Fecha nacimiento',
-                  'Madre','Peso kg','Tipo peso','Fecha peso','Estado origen','Estado actualizado','Notas']];
+      var det = [['Chapeta','Origen','Raza','Sexo','Tipo','Grupo','Estado salida',
+                  'Fecha salida','Motivo salida','Peso salida','Estado reproductivo',
+                  'Fecha nacimiento','Madre','Peso vigente kg','Tipo peso','Fecha peso',
+                  'Estado origen','Estado actualizado','Notas']];
       ACTUAL.rows.forEach(function(a){
-        det.push([a.codigo, a.origen, a.raza, a.sexo, a.tipo, a.grupo,
-                  a.vivo?'SI':'NO', a.localizado?'SI':'NO', a.causa_baja, a.fecha_baja,
+        var p = window.APARCERIA.pesoVigente(a);
+        det.push([a.codigo, a.origen, a.raza, a.sexo, a.tipo, a.grupo, a.estado_salida,
+                  a.fecha_salida, a.motivo_salida, a.peso_salida,
                   a.estado_reproductivo, a.fecha_nacimiento, a.madre_codigo,
-                  a.peso_kg, a.peso_tipo, a.peso_fecha,
+                  p?p.peso_kg:null, p?p.tipo:null, p?p.fecha:null,
                   a.estado_origen, a.estado_actualizado, a.notas]);
       });
 

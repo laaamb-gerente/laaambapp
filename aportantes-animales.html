@@ -26,7 +26,7 @@
 <script src="js/roles.js"></script>
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/aparceria.js?v=1"></script>
+<script src="js/aparceria.js?v=2"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -202,9 +202,11 @@ tr.muerto{opacity:.5}
       <label for="f-estado">Estado</label>
       <select id="f-estado" onchange="aplicar()">
         <option value="">Todos</option>
-        <option value="hato">En hato (vivo y localizado)</option>
-        <option value="muerto">Bajas por muerte</option>
-        <option value="noloc">No localizados</option>
+        <option value="activo">En hato (activos)</option>
+        <option value="muerte">Bajas por muerte</option>
+        <option value="sacrificio">Sacrificios</option>
+        <option value="venta">Ventas</option>
+        <option value="no_localizado">No localizados</option>
       </select>
     </div>
     <div class="f-item">
@@ -212,6 +214,8 @@ tr.muerto{opacity:.5}
       <input id="f-buscar" type="text" placeholder="ej. 410, N119, Madres" oninput="aplicar()">
     </div>
   </div>
+
+  <div class="iso-banner" id="aviso-fases" style="display:none;background:var(--amber-bg);border-color:var(--amber);border-left-color:var(--amber)"></div>
 
   <div class="kpis" id="kpis"></div>
 
@@ -286,10 +290,18 @@ tr.muerto{opacity:.5}
   }
 
   // ── RENDER ─────────────────────────────────────────────────────
+  // El destino del animal se lee SOLO de estado_salida (0057). Un sacrificio
+  // tiene su propio badge: NO es una baja por muerte, es el producto vendido.
+  var ESTADOS = {
+    activo:        ['real',   'En hato'],
+    muerte:        ['muerto', 'Muerte'],
+    sacrificio:    ['sky',    'Sacrificio'],
+    venta:         ['sky',    'Venta'],
+    no_localizado: ['noloc',  'No localizado']
+  };
   function badgeEstado(a){
-    if(a.vivo === false) return '<span class="bdg muerto">Baja</span>';
-    if(a.localizado === false) return '<span class="bdg noloc">No localizado</span>';
-    return '<span class="bdg real">En hato</span>';
+    var e = ESTADOS[a.estado_salida] || ['gray', a.estado_salida || '—'];
+    return '<span class="bdg '+e[0]+'">'+esc(e[1])+'</span>';
   }
   function badgeRepro(a){
     var m = { prenada:['pren','Preñada'], madre:['sky','Parida'], vacia:['gray','Vacía'], sin_dato:['gray','Sin dato'] };
@@ -299,28 +311,48 @@ tr.muerto{opacity:.5}
   }
   // El tipo de peso va SIEMPRE junto al número: un estimado del modelo
   // lineal no puede presentarse como si fuera un pesaje en balanza.
+  // El peso vigente lo elige APARCERIA.pesoVigente() con la jerarquía
+  // sacrificio > real > estimado, para no duplicar esa regla aquí.
+  var PESO_TAG = {
+    real:       ['peso-real', 'REAL',  '',  'Pesaje en balanza'],
+    sacrificio: ['peso-real', 'SACR.', '',  'Peso al sacrificio'],
+    estimado:   ['peso-est',  'EST.',  '~', 'Estimado por modelo lineal — no es un pesaje']
+  };
   function celdaPeso(a){
-    if(a.peso_kg == null) return '<span style="color:var(--text4)">—</span>';
-    var n = Number(a.peso_kg).toFixed(1).replace('.', ',');
-    if(a.peso_tipo === 'real'){
-      return '<span class="peso-real" title="'+esc(a.peso_nota||'Pesaje real')+'">'+n+' kg<span class="tag">REAL</span></span>';
-    }
-    return '<span class="peso-est" title="'+esc(a.peso_nota||'Estimado por modelo lineal')+'">~'+n+' kg<span class="tag">EST.</span></span>';
+    var p = window.APARCERIA.pesoVigente(a);
+    if(!p) return '<span style="color:var(--text4)">—</span>';
+    var t = PESO_TAG[p.tipo] || PESO_TAG.estimado;
+    var n = Number(p.peso_kg).toFixed(1).replace('.', ',');
+    return '<span class="'+t[0]+'" title="'+esc(p.nota||t[3])+(p.fecha?' · '+fmtFecha(p.fecha):'')+'">'
+      + t[2] + n + ' kg<span class="tag">'+t[1]+'</span></span>';
   }
 
+  // Estados vacíos distintos según la causa: "nada cargado" (fase 0, normal)
+  // no es lo mismo que "el filtro no devolvió nada". Confundirlos hace que
+  // un filtro mal puesto parezca una base de datos vacía.
+  function vacio(mensaje, sub){
+    return '<tr><td colspan="10" class="empty-box"><div style="font-size:14px;color:var(--text2)">'
+      + mensaje + '</div>'
+      + (sub ? '<div style="font-size:12px;color:var(--text4);margin-top:6px">'+sub+'</div>' : '')
+      + '</td></tr>';
+  }
   function renderTabla(rows){
     var tb = $('tbody');
     if(!rows.length){
-      tb.innerHTML = '<tr><td colspan="10" class="empty-box">Sin animales para este filtro.<br>'
-        + '<span style="font-size:12px;color:var(--text4)">Si aún no has corrido la carga, la tabla estará vacía.</span></td></tr>';
+      tb.innerHTML = FILAS.length
+        ? vacio('Ningún animal coincide con este filtro.',
+                'Hay ' + FILAS.length + ' registros para este aportante. Ajusta o limpia los filtros.')
+        : vacio('Sin animales cargados — usa el cargador para empezar.',
+                'La carga se hace por fases: primero las fundadoras, después los '
+                + 'nacimientos y por último las salidas por sacrificio.');
       return;
     }
     var h = '';
     rows.forEach(function(a){
       var cls = [];
       if(a.origen === 'proyectado') cls.push('proy');
-      if(a.vivo === false) cls.push('muerto');
-      else if(a.localizado === false) cls.push('noloc');
+      if(a.estado_salida === 'muerte') cls.push('muerto');
+      else if(a.estado_salida === 'no_localizado') cls.push('noloc');
       h += '<tr class="'+cls.join(' ')+'">'
         + '<td class="cod">'+esc(a.codigo)+'</td>'
         + '<td>'+(a.origen==='proyectado'
@@ -329,9 +361,9 @@ tr.muerto{opacity:.5}
         + '<td>'+esc(a.raza||'—')+'</td>'
         + '<td>'+(a.sexo==='hembra'?'♀ Hembra':'♂ Macho')+'</td>'
         + '<td>'+esc(a.grupo||'—')+'</td>'
-        + '<td>'+badgeEstado(a)+(a.vivo===false&&a.causa_baja
-            ? '<div style="font-size:10px;color:var(--text3);margin-top:2px">'+esc(a.causa_baja)
-              +(a.fecha_baja?' · '+fmtFecha(a.fecha_baja):'')+'</div>' : '')+'</td>'
+        + '<td>'+badgeEstado(a)+(a.estado_salida!=='activo'&&(a.motivo_salida||a.fecha_salida)
+            ? '<div style="font-size:10px;color:var(--text3);margin-top:2px">'+esc(a.motivo_salida||'')
+              +(a.fecha_salida?(a.motivo_salida?' · ':'')+fmtFecha(a.fecha_salida):'')+'</div>' : '')+'</td>'
         + '<td>'+badgeRepro(a)+'</td>'
         + '<td>'+celdaPeso(a)+'</td>'
         + '<td>'+(a.fecha_nacimiento?fmtFecha(a.fecha_nacimiento)
@@ -346,20 +378,53 @@ tr.muerto{opacity:.5}
   function renderKpis(rows, aportante){
     var k = window.APARCERIA.kpis(rows, aportante);
     var box = function(cls,n,l){ return '<div class="kpi '+cls+'"><div class="kpi-n">'+n+'</div><div class="kpi-l">'+l+'</div></div>'; };
+    // Sacrificios en su propia tarjeta, nunca dentro de las bajas por muerte.
     $('kpis').innerHTML =
         box('teal',  k.hatoActual, 'Hato actual')
       + box('gray',  k.hatoInicial==null?'—':k.hatoInicial, 'Madres aportadas')
       + box('teal',  (k.crecimientoPct==null?'—':(k.crecimientoPct>0?'+':'')+k.crecimientoPct+'%'), 'Crecimiento')
-      + box('gray',  k.nacidasVivas, 'Nacidas en proyecto')
+      + box('gray',  k.criasActivas, 'Nacidas en proyecto')
       + box('red',   k.muertes, 'Bajas por muerte')
+      + box('gray',  k.sacrificios, 'Sacrificios')
       + box('gray',  k.noLocalizados, 'No localizados')
       + box('amber', k.proyectados, 'Escenario simulado');
+    renderAvisoFases(k);
+  }
+
+  // ── AVISO DE CARGA INCOMPLETA ──────────────────────────────────
+  // Las 3 fases son fundadoras / nacimientos / salidas. Mientras falte
+  // alguna, los indicadores NO son representativos y hay que decirlo: un
+  // hato sin la fase de salidas parece no tener mortalidad.
+  function fasesFaltantes(k){
+    var f = [];
+    if(!k.fundadorasRegistradas) f.push('fundadoras');
+    if(!k.criasRegistradas)      f.push('nacimientos');
+    if(!k.sacrificios)           f.push('salidas por sacrificio');
+    return f;
+  }
+  function renderAvisoFases(k){
+    var el = $('aviso-fases');
+    if(!el) return;
+    if(!k.totalRegistradas){ el.style.display='none'; return; }
+    var f = fasesFaltantes(k);
+    if(!f.length){ el.style.display='none'; return; }
+    el.style.display='flex';
+    el.innerHTML = '<span style="font-size:17px;flex-shrink:0">⚠️</span><div>'
+      + '<b>Carga incompleta — indicadores no representativos.</b><br>'
+      + 'Sin registros de: ' + esc(f.join(', ')) + '. '
+      + 'Los KPIs se calculan sobre lo cargado, así que las cifras de esta '
+      + 'pantalla y del reporte cambiarán cuando entren las fases restantes.'
+      + '</div>';
   }
 
   function renderCargas(){
     var el = $('cargas');
     if(!CARGAS.length){
-      el.innerHTML = '<div class="empty-box">Ninguna carga registrada todavía.</div>';
+      el.innerHTML = '<div class="empty-box"><div style="font-size:14px;color:var(--text2)">'
+        + 'Ninguna carga registrada todavía.</div>'
+        + '<div style="font-size:12px;color:var(--text4);margin-top:6px">'
+        + 'Cada fase que se cargue queda aquí con su etiqueta y su carga_id, '
+        + 'y se puede borrar por separado sin afectar a las otras.</div></div>';
       return;
     }
     var h = '';
@@ -483,9 +548,7 @@ tr.muerto{opacity:.5}
 
     var rows = FILAS.slice();
     if(origen) rows = rows.filter(function(a){ return a.origen === origen; });
-    if(estado === 'hato')   rows = rows.filter(A.enHato);
-    if(estado === 'muerto') rows = rows.filter(A.esMuerto);
-    if(estado === 'noloc')  rows = rows.filter(A.esNoLoc);
+    if(estado) rows = rows.filter(function(a){ return a.estado_salida === estado; });
     if(q) rows = rows.filter(function(a){
       return (a.codigo||'').toLowerCase().indexOf(q) >= 0
           || (a.grupo||'').toLowerCase().indexOf(q) >= 0
@@ -503,7 +566,7 @@ tr.muerto{opacity:.5}
   // ── CARGA DE DATOS ─────────────────────────────────────────────
   async function cargarAportanteSeleccionado(){
     var id = $('f-aportante').value;
-    if(!id){ FILAS=[]; CARGAS=[]; renderTabla([]); renderCargas(); return; }
+    if(!id){ FILAS=[]; CARGAS=[]; renderTabla([]); renderCargas(); $('kpis').innerHTML=''; return; }
     var res = await Promise.all([
       window.APARCERIA.getAnimales(id),
       window.APARCERIA.getCargas(id)
