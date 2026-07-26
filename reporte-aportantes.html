@@ -25,7 +25,7 @@
 <script src="js/roles.js"></script>
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/aparceria.js?v=3"></script>
+<script src="js/aparceria.js?v=4"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);
@@ -307,7 +307,17 @@ table.rt td.num,table.rt th.num{text-align:right}
       + kc('gray', num(k.sacrificios), 'Sacrificios', 'salida comercial, no baja')
       + kc('gray', num(k.ventas), 'Ventas en pie', 'salida comercial, no baja')
       + kc('gray', num(k.noLocalizados), 'No localizados', 'NO son bajas')
+      + (k.muertesSinFecha
+          ? kc('red', num(k.muertesSinFecha), 'Bajas sin fecha',
+               'quedan fuera de cualquier rango')
+          : '')
       + '</div>'
+      + (k.muertesSinFecha
+          ? '<div class="crec-nota"><b>'+k.muertesSinFecha+' de las '+k.muertes+' bajas no '
+            + 'tienen fecha registrada.</b> Se cuentan en el total y en el % de mortalidad de '
+            + 'este corte, pero cualquier vista filtrada por rango de fechas las dejaría fuera: '
+            + 'solo '+k.muertesConFecha+' son fechables. No se les inventa una fecha.</div>'
+          : '')
       + ((k.sacrificios || k.ventas)
           ? '<div class="crec-nota"><b>Los sacrificios y las ventas no son mortalidad.</b> Son el '
             + 'producto del negocio y se reportan aparte; incluirlos en el % de mortalidad '
@@ -360,7 +370,8 @@ table.rt td.num,table.rt th.num{text-align:right}
         + num(k.fundadorasRegistradas)+' animales ('+(gap>0?'+':'')+gap+'). '
         + (gap>0
             ? 'La diferencia corresponde a hembras jóvenes incluidas en el mismo lote, que el contrato no contó como madres adultas.'
-            : 'Hay '+Math.abs(gap)+' madres contratadas que no aparecen en el registro cargado.')
+            : '<b>'+Math.abs(gap)+' vientres contratados sin registro</b>: están en el contrato '
+              + 'pero no aparecen en el registro cargado.')
         + ' Ambas cifras son correctas en su contexto; la conciliación está pendiente y no se ha ajustado ningún número de este reporte.</div>';
     }
 

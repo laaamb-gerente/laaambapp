@@ -171,6 +171,44 @@ CONTRATOS.forEach(function (c) {
      c.hato_inicial + ' × 2.7 = ' + esperada + ' vs ' + c.meta_anual);
 });
 
+// ── PESO SIN FECHA (chapeta 235) ────────────────────────────────────────
+// Un pesaje de balanza sin fecha NO puede recibir la fecha de corte: seria
+// un dato falso etiquetado como 'real'. Vive en las columnas del animal con
+// fecha null y pesoVigente lo devuelve tal cual.
+console.log('\n· PESO SIN FECHA vs pesajes fechados');
+var sinFecha = { peso_kg: 35, peso_fecha: null, peso_tipo: 'real',
+                 peso_nota: 'Pesaje de balanza sin fecha registrada en origen.', pesajes: [] };
+var pv = A.pesoVigente(sinFecha);
+ok('peso sin fecha se devuelve', pv && pv.peso_kg === 35, String(pv && pv.peso_kg));
+ok('conserva tipo real', pv && pv.tipo === 'real', pv && pv.tipo);
+ok('fecha queda NULL, no inventada', pv && pv.fecha === null, String(pv && pv.fecha));
+ok('sin peso alguno → null', A.pesoVigente({ pesajes: [] }) === null);
+// Un pesaje fechado gana sobre el snapshot sin fecha.
+var conAmbos = { peso_kg: 35, peso_fecha: null, peso_tipo: 'real', pesajes: [
+  { fecha: '2026-03-02', peso_kg: 41, tipo: 'real' } ] };
+ok('pesaje fechado gana al snapshot', A.pesoVigente(conAmbos).peso_kg === 41,
+   String(A.pesoVigente(conAmbos).peso_kg));
+// Jerarquia sacrificio > real > estimado.
+var jer = { pesajes: [ { fecha: '2026-01-01', peso_kg: 20, tipo: 'estimado' },
+                       { fecha: '2026-02-01', peso_kg: 30, tipo: 'real' },
+                       { fecha: '2025-12-01', peso_kg: 38, tipo: 'sacrificio' } ] };
+ok('sacrificio > real > estimado (aunque sea mas viejo)',
+   A.pesoVigente(jer).tipo === 'sacrificio' && A.pesoVigente(jer).peso_kg === 38);
+
+// ── BAJAS SIN FECHA ─────────────────────────────────────────────────────
+// Toda vista de mortalidad con filtro de fechas debe poder declarar cuantas
+// bajas quedarian fuera del rango por no tener fecha.
+console.log('\n· BAJAS SIN FECHA (regla de mortalidad por rango)');
+var conMuertes = [].concat(
+  n(10, { tipo: 'madre_lote_inicial' }),
+  n(7,  { tipo: 'madre_lote_inicial', estado_salida: 'muerte', fecha_salida: null }),
+  n(3,  { tipo: 'madre_lote_inicial', estado_salida: 'muerte', fecha_salida: '2026-01-14' }));
+var km = A.kpis(conMuertes, { hato_inicial: 42, meta_anual: 113.4 });
+ok('muertes totales', km.muertes === 10, String(km.muertes));
+ok('muertes SIN fecha expuestas', km.muertesSinFecha === 7, String(km.muertesSinFecha));
+ok('muertes CON fecha expuestas', km.muertesConFecha === 3, String(km.muertesConFecha));
+ok('sin_fecha + con_fecha = total', km.muertesSinFecha + km.muertesConFecha === km.muertes);
+
 // ══ CAPA 2 ══════════════════════════════════════════════════════════════
 // Se activa solo con --fixture. El fixture lo genera el cargador a partir de
 // lo realmente insertado, así que los valores puntuales nunca se escriben a

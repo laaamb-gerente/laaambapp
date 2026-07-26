@@ -142,9 +142,12 @@
   function pesoVigente(a) {
     var ps = a.pesajes || [];
     if (!ps.length) {
-      // Fallback documentado al snapshot de la 0056 mientras
-      // aportantes_pesajes esté vacía. El cargador escribe en la tabla
-      // hija, así que este camino desaparece en cuanto haya datos.
+      // Las columnas peso_* del animal NO son un residuo: son el hogar del
+      // peso SIN fecha, que no cabe en aportantes_pesajes porque allí 'fecha'
+      // es NOT NULL y parte del índice único. Caso real: la chapeta 235 de
+      // MAURICIO, 35 kg de balanza sin fecha en el origen. Se devuelve con
+      // fecha null — nunca se le sustituye por la fecha de corte, que
+      // convertiría un dato incompleto en uno falso etiquetado como 'real'.
       if (a.peso_kg == null) return null;
       return { peso_kg: Number(a.peso_kg), tipo: a.peso_tipo || 'estimado',
                fecha: a.peso_fecha || null, nota: a.peso_nota || null };
@@ -255,6 +258,12 @@
       muertes: muertos.length,
       mortalidadPct: pct(muertos.length, reales.length),
       causasBaja: agrupar(muertos, 'motivo_salida'),
+      // REGLA: toda vista de mortalidad con filtro de fechas DEBE mostrar
+      // aparte este conteo. Una baja sin fecha_salida cae fuera de cualquier
+      // rango, así que un filtro diría "7 muertes en 2026" habiendo 23 — una
+      // falla silenciosa. Exponerlo obliga a que la vista lo declare.
+      muertesSinFecha: muertos.filter(function (a) { return !a.fecha_salida; }).length,
+      muertesConFecha: muertos.filter(function (a) { return !!a.fecha_salida; }).length,
       sacrificios: sacrifs.length,
       sacrificiosPct: pct(sacrifs.length, reales.length),
       ventas: ventas.length,

@@ -363,19 +363,32 @@
       // Jerarquía: PESO REAL (columna limpia) > peso embebido en texto >
       // PESO A HOY (estimado). La columna gana porque no depende de un regex
       // sobre texto libre.
+      // snapshot = peso que NO puede ir a aportantes_pesajes porque no tiene
+      // fecha, y allí 'fecha' es NOT NULL y parte del índice único.
+      var snapshot = null;
       var pr = parseFloat(String(val(f, 'pesoReal') || '').replace(',', '.'));
       var prFecha = fechaCelda(val(f, 'pesoFecha'));
       var emb = pesoEmbebido(val(f, 'estado'));
       if (!isNaN(pr) && pr > 0) {
-        pesajes.push({
-          fecha: prFecha || (opciones.fechaEstimados || PESO_ESTIMADO_FECHA),
-          peso_kg: Math.round(pr * 100) / 100, tipo: 'real',
-          nota: prFecha ? 'Pesaje en balanza'
-            : 'Pesaje en balanza — SIN FECHA en el origen, se usa la fecha de corte'
-        });
-        if (!prFecha) {
+        if (prFecha) {
+          pesajes.push({ fecha: prFecha, peso_kg: Math.round(pr * 100) / 100,
+            tipo: 'real', nota: 'Pesaje en balanza' });
+        } else {
+          // ⚠️ NUNCA se le pone la fecha de corte a un pesaje de balanza sin
+          // fecha: quedaría un dato falso con etiqueta de 'real', que es la
+          // peor combinación — en la tabla nadie lee el aviso, leen
+          // "35 kg el 25-jul-2026". Va a las columnas del animal con
+          // peso_fecha NULL, que es lo que el dato realmente es.
+          snapshot = {
+            peso_kg: Math.round(pr * 100) / 100,
+            peso_fecha: null,
+            peso_tipo: 'real',
+            peso_nota: 'Pesaje de balanza sin fecha registrada en origen.'
+          };
           avisos.push({ tipo: 'peso_real_sin_fecha', fila: nFila, codigo: codigo,
-            detalle: 'peso real ' + pr + ' kg sin FECHA DEL PESO' });
+            detalle: 'peso real ' + pr + ' kg sin FECHA DEL PESO → va a las '
+              + 'columnas del animal con peso_fecha NULL, no a aportantes_pesajes '
+              + '(no se le inventa una fecha)' });
         }
       } else if (emb) {
         pesajes.push({
@@ -423,7 +436,8 @@
         estado_origen: txt(val(f, 'estado')) || null,        // crudo, SIEMPRE
         estado_actualizado: txt(val(f, 'estadoAct')) || null,// crudo, SIEMPRE
         notas: notas,
-        pesajes: pesajes
+        pesajes: pesajes,
+        snapshot: snapshot
       });
     });
 
@@ -448,9 +462,10 @@
       excepciones: excepciones.length,
       porHato: porHato,
       sinFechaNacimiento: filas.filter(function (f) { return !f.fecha_nacimiento; }).length,
-      sinPeso: filas.filter(function (f) { return !f.pesajes.length; }).length,
+      sinPeso: filas.filter(function (f) { return !f.pesajes.length && !f.snapshot; }).length,
       pesosReales: filas.filter(function (f) {
-        return f.pesajes.some(function (p) { return p.tipo === 'real'; }); }).length
+        return f.pesajes.some(function (p) { return p.tipo === 'real'; }); }).length,
+      pesosSinFecha: filas.filter(function (f) { return !!f.snapshot; }).length
     };
   }
 
@@ -873,7 +888,13 @@
       grupo: f.grupo,
       estado_origen: f.estado_origen,
       estado_actualizado: f.estado_actualizado,
-      notas: f.notas
+      notas: f.notas,
+      // Peso sin fecha: vive en columnas del animal porque
+      // aportantes_pesajes.fecha es NOT NULL y parte del índice único.
+      peso_kg: f.snapshot ? f.snapshot.peso_kg : null,
+      peso_fecha: f.snapshot ? f.snapshot.peso_fecha : null,
+      peso_tipo: f.snapshot ? f.snapshot.peso_tipo : null,
+      peso_nota: f.snapshot ? f.snapshot.peso_nota : null
     };
     if (!esUpdate) { p.finca_id = FINCA_ID; p.carga_id = carga_id; }
     return p;

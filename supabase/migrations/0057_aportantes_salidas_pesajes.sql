@@ -167,15 +167,29 @@ CREATE POLICY "aportantes_pesajes_wr" ON public.aportantes_pesajes
 NOTIFY pgrst, 'reload schema';
 
 -- ─────────────────────────────────────────────────────────────
--- PENDIENTE DE DECISIÓN (no se aplica aquí):
--- aportantes_animales conserva peso_kg / peso_fecha / peso_tipo / peso_nota
--- de la 0056. Con aportantes_pesajes existiendo, esas 4 columnas son un
--- segundo lugar donde vive el mismo hecho — el mismo riesgo de doble verdad
--- que motivó eliminar 'vivo'. El motor de KPIs lee SOLO aportantes_pesajes
--- (con fallback documentado al snapshot mientras la tabla esté vacía), y el
--- cargador escribe SOLO en aportantes_pesajes.
--- Cuando confirmes, un 0058 de una línea las elimina:
---   ALTER TABLE aportantes_animales
---     DROP COLUMN peso_kg, DROP COLUMN peso_fecha,
---     DROP COLUMN peso_tipo, DROP COLUMN peso_nota;
+-- REPARTO DE PESOS ENTRE LAS DOS TABLAS (resuelto — NO se eliminan las
+-- columnas peso_* de aportantes_animales).
+--
+-- Se evaluó borrarlas por riesgo de doble verdad, como se hizo con 'vivo'.
+-- No aplica: aquí no describen el mismo hecho, cubren dominios distintos
+-- que este esquema separa por construcción.
+--
+--   aportantes_pesajes        → pesajes CON fecha. Historial, N por animal.
+--                               'fecha' es NOT NULL y parte del índice único
+--                               (aportante_animal_id, fecha, tipo).
+--   aportantes_animales.peso_*→ el peso SIN fecha. Estructuralmente no cabe
+--                               en la tabla hija, y la alternativa —ponerle
+--                               la fecha de corte— produciría un dato falso
+--                               etiquetado como 'real': en pantalla nadie lee
+--                               la nota, lee "35 kg el 25-jul-2026".
+--
+-- Caso real en la carga de fase 1: la chapeta 235 de MAURICIO trae 35 kg de
+-- balanza sin fecha en el origen. Va a peso_kg=35, peso_fecha=NULL,
+-- peso_tipo='real', peso_nota='Pesaje de balanza sin fecha registrada en
+-- origen.' Los otros 6 pesos reales sí traen fecha y van a la tabla hija.
+--
+-- Precedencia al mostrar (APARCERIA.pesoVigente): gana el pesaje fechado de
+-- mayor jerarquía (sacrificio > real > estimado); si no hay ninguno, se usa
+-- el snapshot sin fecha. La UI muestra SIEMPRE el tipo junto al número, y
+-- una fecha nula se imprime como tal en vez de inventarse.
 -- ─────────────────────────────────────────────────────────────

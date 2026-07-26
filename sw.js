@@ -7,10 +7,11 @@
 // v16: desambiguación de chapetas repetidas (codigo_original + sufijo).
 // v17: columna CODIGO opcional como escape hatch de desambiguación.
 // v18: soporte del esquema CARGA MADRES (ESTADO LAAAMB, PESO REAL, hdr fila 4).
+// v19: peso sin fecha a columnas del animal + bajas sin fecha visibles.
 // El bump es OBLIGATORIO aquí: las otras 22 páginas cargan './js/sidebar.js'
 // sin ?v y el SW lo sirve cache-first, así que sin cambiar CACHE_NAME no
 // verían el grupo nuevo del menú.
-const CACHE_NAME = 'laaambapp-v18';
+const CACHE_NAME = 'laaambapp-v19';
 
 // Paths relativos: resuelven contra la ubicación del SW en cada host
 // (raíz en Vercel, /laaambapp/ en GitHub Pages).

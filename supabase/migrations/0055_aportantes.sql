@@ -103,4 +103,18 @@ INSERT INTO aportantes (finca_id, nombre, meta_anual, hato_inicial, notas) VALUE
   ('a1b2c3d4-0000-0000-0000-000000000001', 'PAOLA MORENO',              64.8, 24, 'Aparcería · hato_inicial PROVISIONAL')
 ON CONFLICT DO NOTHING;
 
+-- ── 4. FECHA DE INICIO DEL CONTRATO ──────────────────────────
+-- Viene de la columna INICIO CONTRATO de la hoja de carga de fase 1.
+-- Solo se fija cuando está NULL: re-ejecutar la migración no pisa un valor
+-- corregido a mano, igual que hato_inicial y meta_anual.
+UPDATE aportantes SET fecha_inicio = '2025-06-01'
+  WHERE finca_id = 'a1b2c3d4-0000-0000-0000-000000000001'
+    AND nombre = 'JULIAN Y SALATIEL MORENO' AND fecha_inicio IS NULL;
+UPDATE aportantes SET fecha_inicio = '2025-08-31'
+  WHERE finca_id = 'a1b2c3d4-0000-0000-0000-000000000001'
+    AND nombre = 'PAOLA MORENO' AND fecha_inicio IS NULL;
+UPDATE aportantes SET fecha_inicio = '2025-10-01'
+  WHERE finca_id = 'a1b2c3d4-0000-0000-0000-000000000001'
+    AND nombre = 'MAURICIO FAJARDO' AND fecha_inicio IS NULL;
+
 NOTIFY pgrst, 'reload schema';

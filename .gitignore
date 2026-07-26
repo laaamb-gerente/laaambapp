@@ -1,2 +1,8 @@
 .DS_Store
 **/.DS_Store
+
+# Datos de aparcería: pertenecen a terceros (los aportantes) y NO se versionan.
+# Los .xlsx de carga viven en local y se procesan desde el navegador; el repo
+# nunca debe contener registros de animales de los aparceros.
+data/
+*.xlsx
