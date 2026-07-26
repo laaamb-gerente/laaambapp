@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1AA6A6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="LAAAMB">
+<link rel="apple-touch-icon" href="icons/icon-laaamb.jpg">
+<title>LAAAMBAPP · Aparcería · Reportes</title>
+<script>(function(){var t=(function(){var _t=localStorage.getItem('laaamb-theme');return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute('data-theme',t);})();</script>
+<link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/laaamb.css">
+<script src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js" crossorigin="anonymous"></script>
+<script src="js/error-handler.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="js/supabase-client.js"></script>
+<script>
+  window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+</script>
+<script src="js/auth.js"></script>
+<script src="js/roles.js"></script>
+<script src="js/sidebar.js?v=1"></script>
+<script src="js/mobile-nav.js"></script>
+<script src="js/aparceria.js?v=1"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);
+  --wine:#9C3F66;--wine-bg:rgba(156,63,102,.12);--orange:#F18F22;--orange-bg:rgba(241,143,34,.12);
+  --bg:#080f10;--bg2:#0c1517;--bg3:#101d1f;--surface:#172628;--surface2:#1d3235;
+  --border:rgba(0,175,182,.10);--border2:rgba(0,175,182,.20);--border3:rgba(0,175,182,.35);
+  --green:#2ec77a;--green-bg:rgba(46,199,122,.10);--red:#e05252;--red-bg:rgba(224,82,82,.10);
+  --amber:#e8a030;--amber-bg:rgba(232,160,48,.10);--sky:#38b0d8;--sky-bg:rgba(56,176,216,.10);
+  --text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;
+  /* Marca oficial del reporte impreso */
+  --brand-teal:#1AA6A6;--brand-orange:#F58220;
+  --r:8px;--r2:14px;--sidebar:236px;--anim:.16s cubic-bezier(.4,0,.2,1)}
+html[data-theme="light"]{--bg:#F8F9FA;--bg2:#FFFFFF;--bg3:#F3F4F6;--surface:#FFFFFF;--surface2:#F3F4F6;--border:#E5E7EB;--border2:#D1D5DB;--border3:#9CA3AF;--green:#10B981;--green-bg:rgba(16,185,129,.10);--red:#EF4444;--red-bg:rgba(239,68,68,.10);--amber:#F59E0B;--amber-bg:rgba(245,158,11,.10);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.10);--text:#1A1A2E;--text2:#6B7280;--text3:#9CA3AF;--text4:#C4C9D4}
+html[data-theme="dark"]{--bg:#0F172A;--bg2:#1E293B;--bg3:#1E293B;--surface:#1E293B;--surface2:#162032;--border:#334155;--border2:#3E4C61;--border3:#475569;--green:#10B981;--green-bg:rgba(16,185,129,.14);--red:#EF4444;--red-bg:rgba(239,68,68,.14);--amber:#F59E0B;--amber-bg:rgba(245,158,11,.14);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.14);--text:#F1F5F9;--text2:#94A3B8;--text3:#64748B;--text4:#475569}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+.app{display:flex;height:100vh;width:100vw}
+.sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0}
+.sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:4px}.sb-logo-img{height:40px;width:40px;border-radius:9px;flex-shrink:0}
+.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
+.sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
+.nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}
+.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;text-decoration:none;transition:all var(--anim);position:relative}
+.nav-link:hover{background:var(--surface);color:var(--text)}
+.nav-link.active{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
+.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}.nav-link.active .nav-ico{opacity:1}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:600;background:var(--surface2);color:var(--teal);padding:1px 7px;border-radius:10px;border:1px solid var(--border2)}
+.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border);background:var(--bg2)}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
+.user-name{font-size:12px;font-weight:600;color:var(--text)}.user-role{font-size:10px;color:var(--text3)}
+#lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);width:46px;height:46px;align-items:center;justify-content:center;cursor:pointer}
+#lham svg{width:22px;height:22px;stroke:var(--text);stroke-width:2;fill:none;stroke-linecap:round}
+#lov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990}#lov.on{display:block}
+.main{flex:1;overflow-y:auto;padding:24px;background:var(--bg)}
+/* ── CONTROLES (no se imprimen) ── */
+.ctrl{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px;padding:14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2)}
+.f-item{display:flex;flex-direction:column;gap:4px}
+.f-item label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+.f-item select,.f-item input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:8px 11px;color:var(--text);font-family:inherit;font-size:13px;min-width:160px}
+.f-item select:focus,.f-item input:focus{outline:none;border-color:var(--teal)}
+.btn{padding:9px 14px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:all var(--anim)}
+.btn:hover{border-color:var(--teal);color:var(--teal)}
+.btn.primary{background:var(--brand-teal);border-color:var(--brand-teal);color:#fff}
+.btn.primary:hover{filter:brightness(1.08);color:#fff}
+.btn.orange{background:var(--brand-orange);border-color:var(--brand-orange);color:#fff}
+.btn.orange:hover{filter:brightness(1.08);color:#fff}
+
+/* ══════════ HOJA DEL REPORTE ══════════
+   Fondo blanco fijo y colores de marca literales: la hoja se ve igual en
+   pantalla y en papel, y no cambia con el tema claro/oscuro de la app. */
+#hoja{background:#fff;color:#15201F;border-radius:var(--r2);padding:0;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);max-width:960px}
+.rep-head{background:linear-gradient(100deg,#1AA6A6 0%,#158E8E 100%);color:#fff;padding:26px 30px}
+.rep-head-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.rep-brand{font-family:'Sigmar',cursive;font-size:26px;letter-spacing:.5px;line-height:1}
+.rep-brand span{color:#F58220}
+.rep-sub{font-size:10.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;opacity:.9;margin-top:5px}
+.rep-corte{text-align:right;font-size:11.5px;line-height:1.6}
+.rep-corte b{display:block;font-size:15px;font-family:'Sigmar',cursive;letter-spacing:.3px}
+.rep-titulo{margin-top:20px;padding-top:18px;border-top:1px solid rgba(255,255,255,.28)}
+.rep-titulo .lbl{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;opacity:.85}
+.rep-titulo .nom{font-family:'Sigmar',cursive;font-size:23px;margin-top:3px;line-height:1.15}
+.rep-body{padding:26px 30px 30px}
+.rep-sec{margin-bottom:26px}
+.rep-sec-t{font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#1AA6A6;padding-bottom:7px;border-bottom:2px solid #1AA6A6;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rep-sec-t .hint{font-size:9.5px;font-weight:600;letter-spacing:.3px;text-transform:none;color:#8A9696}
+/* Historia del crecimiento: 3 líneas en orden */
+.crec{border:1px solid #E0E6E6;border-radius:10px;overflow:hidden}
+.crec-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid #EAEEEE}
+.crec-row:last-child{border-bottom:none}
+.crec-row .k{font-size:13px;color:#5F6B6C}
+.crec-row .v{font-family:'Sigmar',cursive;font-size:20px;color:#15201F;line-height:1}
+.crec-row.total{background:#E8F6F6}
+.crec-row.total .k{font-weight:700;color:#15201F;font-size:13.5px}
+.crec-row.total .v{color:#1AA6A6;font-size:25px}
+.crec-delta{font-size:12.5px;font-weight:700;color:#F58220;margin-left:9px;white-space:nowrap}
+.crec-nota{font-size:11px;color:#8A9696;margin-top:8px;line-height:1.5}
+/* Grid de KPIs */
+.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:11px}
+.kc{border:1px solid #E0E6E6;border-radius:10px;padding:13px 15px}
+.kc .n{font-family:'Sigmar',cursive;font-size:22px;color:#15201F;line-height:1.1}
+.kc .l{font-size:10px;font-weight:700;color:#8A9696;text-transform:uppercase;letter-spacing:.7px;margin-top:3px}
+.kc .s{font-size:10.5px;color:#5F6B6C;margin-top:4px}
+.kc.teal{border-color:#1AA6A6;background:#F1FAFA}.kc.teal .n{color:#1AA6A6}
+.kc.orange{border-color:#F58220;background:#FEF4EA}.kc.orange .n{color:#C4661A}
+.kc.red{border-color:#E24B4A;background:#FCEBEB}.kc.red .n{color:#C33}
+.kc.gray{background:#F7F9F9}.kc.gray .n{color:#5F6B6C}
+/* Tabla del reporte */
+table.rt{width:100%;border-collapse:collapse;font-size:12.5px}
+table.rt th{text-align:left;padding:8px 11px;background:#F1FAFA;color:#15201F;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid #D6E3E3}
+table.rt td{padding:8px 11px;border-bottom:1px solid #EAEEEE;color:#15201F}
+table.rt tr:last-child td{border-bottom:none}
+table.rt td.num,table.rt th.num{text-align:right}
+/* Escenario proyectado: rotulado, con fondo naranja tenue */
+.esc-box{border:1.5px dashed #F58220;background:#FEF7F0;border-radius:10px;padding:16px 18px}
+.esc-tag{display:inline-block;background:#F58220;color:#fff;font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:99px;margin-bottom:10px}
+.esc-warn{font-size:11px;color:#8A5A20;margin-top:10px;line-height:1.5}
+/* Notas al pie */
+.rep-foot{border-top:1px solid #E0E6E6;margin-top:26px;padding-top:16px;font-size:10.5px;color:#8A9696;line-height:1.65}
+.rep-foot b{color:#5F6B6C}
+.rep-foot .warn{color:#C4661A}
+.iso-banner{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;margin-bottom:18px;background:var(--wine-bg);border:1px solid var(--wine);border-left:4px solid var(--wine);border-radius:var(--r);font-size:12.5px;color:var(--text);line-height:1.5}
+.iso-banner b{color:var(--wine)}
+.empty-box{padding:26px;text-align:center;color:var(--text3);font-size:13px;line-height:1.6}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:11px 18px;border-radius:99px;font-size:13px;font-weight:600;z-index:10000;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
+#toast.on{opacity:1}#toast.err{background:var(--red);color:#fff}
+@media(max-width:1000px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .25s;z-index:9995}
+  .sidebar.on{transform:translateX(0)}
+  #lham{display:flex}
+  .main{padding:70px 14px 20px}
+  .rep-head,.rep-body{padding-left:18px;padding-right:18px}
+}
+/* ══════════ IMPRESIÓN / PDF ══════════
+   Solo la hoja se imprime: sidebar, controles y banner de app se ocultan. */
+@media print{
+  @page{size:A4;margin:11mm}
+  html,body{overflow:visible!important;height:auto!important;background:#fff!important}
+  .sidebar,#lham,#lov,.ctrl,.iso-banner,#toast,.no-print{display:none!important}
+  .app{display:block!important;height:auto!important;width:auto!important}
+  .main{overflow:visible!important;padding:0!important;background:#fff!important}
+  #hoja{box-shadow:none!important;border-radius:0!important;max-width:none!important}
+  .rep-head{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rep-sec,.crec,.esc-box,.kc{break-inside:avoid;page-break-inside:avoid}
+  .rep-sec-t{break-after:avoid;page-break-after:avoid}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<button id="lham" aria-label="Menú"><svg id="lico" viewBox="0 0 22 22"><line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/></svg></button>
+<div id="lov"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sb-head">
+    <a href="index.html" class="sb-logo"><img src="icons/icon.svg" alt="LAAAMB Corderos" class="sb-logo-img"><div><div class="sb-logo-text">LAAAMB</div><div class="sb-logo-sub">Corderos · App</div></div></a>
+  </div>
+  <nav class="nav-scroll" id="nav-scroll"></nav>
+  <div class="sb-foot">
+    <div style="font-size:9px;color:var(--text4);text-align:center;margin-bottom:8px;letter-spacing:.5px">LAAAMBAPP v1.0 · 2025</div>
+    <div class="user-row"><div class="avatar">JA</div><div><div class="user-name">Usuario</div><div class="user-role">—</div></div></div>
+    <button onclick="Auth.signOut()" style="width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;background:transparent;border:1px solid var(--border);border-radius:var(--r,8px);color:var(--text3);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M13 14l3-4-3-4M16 10H7M9 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h4"/></svg>Cerrar sesión</button>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="iso-banner">
+    <span style="font-size:17px;flex-shrink:0">⚖️</span>
+    <div>
+      <b>Datos de aparcería — no forman parte del inventario de La Marinilla.</b><br>
+      Los KPIs de este reporte se calculan solo sobre los animales del aportante.
+      No intervienen ni se mezclan con los indicadores del hato propio.
+    </div>
+  </div>
+
+  <div class="ctrl">
+    <div class="f-item">
+      <label for="f-aportante">Aportante</label>
+      <select id="f-aportante"><option value="">Cargando…</option></select>
+    </div>
+    <div class="f-item">
+      <label for="f-corte">Fecha de corte</label>
+      <input id="f-corte" type="date">
+    </div>
+    <button class="btn primary" id="btn-generar">Generar reporte</button>
+    <button class="btn orange" id="btn-pdf">Imprimir / PDF</button>
+    <button class="btn" id="btn-excel">Exportar Excel</button>
+  </div>
+
+  <div id="hoja"><div class="empty-box">Selecciona un aportante y genera el reporte.</div></div>
+</div>
+</div>
+<div id="toast"></div>
+
+<script>
+(function(){
+  var open=false;
+  var sb=document.getElementById('sidebar'), ov=document.getElementById('lov'), bt=document.getElementById('lham');
+  function set(v){ open=v; sb.classList.toggle('on',v); ov.classList.toggle('on',v); }
+  if(bt) bt.addEventListener('click', function(){ set(!open); });
+  if(ov) ov.addEventListener('click', function(){ set(false); });
+})();
+</script>
+
+<script>
+(function(){
+  'use strict';
+
+  var APORTANTES = [];
+  var ACTUAL = null;   // { aportante, rows, kpis, corte }
+
+  function $(id){ return document.getElementById(id); }
+  function toast(msg, err){
+    var t=$('toast'); t.textContent=msg; t.className=err?'on err':'on';
+    clearTimeout(t._tm); t._tm=setTimeout(function(){ t.className=''; }, 3200);
+  }
+  function esc(s){
+    return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+  function fallo(ctx, e){
+    var m=(e&&e.message)?e.message:String(e);
+    console.error('[Reporte aparcería] '+ctx, e);
+    toast(ctx+': '+m, true);
+    return m;
+  }
+  function fmtLargo(iso){
+    if(!iso) return '—';
+    var p=String(iso).split('-');
+    var M=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    return Number(p[2])+' de '+M[Number(p[1])-1]+' de '+p[0];
+  }
+  function num(n){ return n==null?'—':String(n); }
+  function pctTxt(p){ return p==null?'—':(p>0?'+':'')+String(p).replace('.',',')+'%'; }
+
+  // ── RENDER DE LA HOJA ──────────────────────────────────────────
+  function render(){
+    if(!ACTUAL){ return; }
+    var ap=ACTUAL.aportante, k=ACTUAL.kpis, corte=ACTUAL.corte;
+
+    // Sección crecimiento: las 3 líneas en el orden pactado.
+    var crec = '<div class="crec">'
+      + '<div class="crec-row"><span class="k">Madres aportadas al inicio</span>'
+      +   '<span class="v">'+num(k.hatoInicial)+'</span></div>'
+      + '<div class="crec-row"><span class="k">Nacidas en el proyecto (vivas)</span>'
+      +   '<span class="v">'+num(k.nacidasVivas)+'</span></div>'
+      + '<div class="crec-row total"><span class="k">Hato actual</span>'
+      +   '<span><span class="v">'+num(k.hatoActual)+'</span>'
+      +   (k.crecimientoPct==null?'':'<span class="crec-delta">'+pctTxt(k.crecimientoPct)+' sobre lo aportado</span>')
+      +   '</span></div>'
+      + '</div>'
+      + '<div class="crec-nota">Los aportantes entregaron únicamente madres. Todo animal nacido '
+      +   'desde el inicio del contrato es crecimiento generado por el manejo del proyecto.'
+      +   (k.crecimientoNeto==null?'':' Crecimiento neto: <b>'+(k.crecimientoNeto>0?'+':'')+k.crecimientoNeto+' animales</b>.')
+      + '</div>';
+
+    // Cumplimiento de meta
+    var meta = '<div class="kg">'
+      + kc('teal', num(k.hatoActual), 'Hato actual', 'vivos y localizados')
+      + kc('gray', k.meta==null?'—':String(k.meta).replace('.',','), 'Meta anual', 'pactada en contrato')
+      + kc('orange', k.cumplimientoPct==null?'—':String(k.cumplimientoPct).replace('.',',')+'%', 'Cumplimiento', 'hato actual ÷ meta')
+      + '</div>';
+
+    // Composición del hato
+    var comp = '<div class="kg">'
+      + kc('gray', num(k.loteInicialVivo), 'Del lote inicial', 'vivas y localizadas')
+      + kc('gray', num(k.nacidasVivas), 'Nacidas en proyecto', 'vivas y localizadas')
+      + kc('gray', num(k.prolificidad==null?'—':String(k.prolificidad).replace('.',',')), 'Prolificidad',
+            k.madresDistintas ? k.nacidasRegistradas+' crías ÷ '+k.madresDistintas+' madres' : 'sin madres identificadas')
+      + kc('gray', k.fertilidadPct==null?'—':String(k.fertilidadPct).replace('.',',')+'%', 'Fertilidad',
+            'excluye sin dato')
+      + '</div>';
+
+    // Reproductivo
+    var repro = '<div class="kg">'
+      + kc('teal', num(k.prenadas), 'Preñadas', 'confirmadas por ecografía')
+      + kc('gray', num(k.paridas), 'Paridas / lactando', 'ya tuvieron cría')
+      + kc('gray', num(k.vacias), 'Vacías', 'sin preñez confirmada')
+      + kc('gray', num(k.sinDato), 'Sin dato', 'no evaluadas')
+      + '</div>';
+
+    // Mortalidad y no localizados: DOS bloques distintos, nunca sumados.
+    var causas = k.causasBaja.length
+      ? '<table class="rt" style="margin-top:12px"><thead><tr><th>Causa registrada</th><th class="num">Animales</th></tr></thead><tbody>'
+        + k.causasBaja.map(function(c){
+            return '<tr><td>'+esc(c.causa)+'</td><td class="num">'+c.n+'</td></tr>'; }).join('')
+        + '</tbody></table>'
+      : '';
+    var mort = '<div class="kg">'
+      + kc('red', num(k.muertes), 'Bajas por muerte', 'del total registrado')
+      + kc('red', k.mortalidadPct==null?'—':String(k.mortalidadPct).replace('.',',')+'%', '% Mortalidad',
+            k.muertes+' ÷ '+k.totalRegistradas+' registrados')
+      + kc('gray', num(k.noLocalizados), 'No localizados', 'NO son bajas')
+      + '</div>'
+      + causas
+      + (k.noLocalizados
+          ? '<div class="crec-nota"><b>Los no localizados no se cuentan como mortalidad.</b> Son animales '
+            + 'que no se pudieron ubicar en campo durante el corte y quedan fuera del hato actual '
+            + 'hasta que se confirme su estado.'
+            + (k.noLocalizadosDetalle.length
+                ? ' Chapetas: '+k.noLocalizadosDetalle.map(function(a){return esc(a.codigo);}).join(', ')+'.'
+                : '')
+            + '</div>'
+          : '');
+
+    // Escenario proyectado — SIEMPRE aparte y rotulado.
+    var esc_sec = k.proyectados
+      ? '<div class="esc-box">'
+        + '<span class="esc-tag">⚠ Escenario · no es el hato</span>'
+        + '<div class="kg">'
+        +   kc('orange', '+'+k.proyectados, 'Animales simulados', 'no incluidos en ningún KPI anterior')
+        +   kc('orange', num(k.hatoActual + k.proyectados), 'Hato con escenario', num(k.hatoActual)+' reales + '+k.proyectados+' simulados')
+        + '</div>'
+        + '<div class="esc-warn"><b>Estas cifras son una simulación</b> y no representan animales '
+        + 'existentes. El hato del aportante a la fecha de corte es <b>'+num(k.hatoActual)+'</b>. '
+        + 'La cifra con escenario no debe presentarse como el hato real.</div>'
+        + '</div>'
+      : '';
+
+    // Notas al pie
+    var gap = k.gapConciliacion;
+    var notaGap = '';
+    if(gap != null && gap !== 0){
+      notaGap = '<div class="warn"><b>Conciliación pendiente:</b> el contrato registra '
+        + num(k.hatoInicial)+' madres aportadas, y el lote inicial cargado tiene '
+        + num(k.loteInicialRegistrado)+' animales ('+(gap>0?'+':'')+gap+'). '
+        + (gap>0
+            ? 'La diferencia corresponde a hembras jóvenes incluidas en el mismo lote, que el contrato no contó como madres adultas.'
+            : 'Hay '+Math.abs(gap)+' madres contratadas que no aparecen en el registro cargado.')
+        + ' Ambas cifras son correctas en su contexto; la conciliación está pendiente y no se ha ajustado ningún número de este reporte.</div>';
+    }
+
+    var pesoNota = (k.pesosEstimados
+      ? '<div><b>Pesos:</b> '+k.pesosReales+' de balanza y '+k.pesosEstimados
+        + ' estimados por modelo lineal (3,0 kg al nacer + 0,147 kg/día). Los estimados '
+        + 'sobreestiman adultos y están marcados como «est.» en el listado. '+k.sinPeso+' animales sin peso.</div>'
+      : '<div><b>Pesos:</b> '+k.sinPeso+' animales sin peso registrado.</div>');
+
+    var foot = '<div class="rep-foot">'
+      + '<div><b>Fecha de corte:</b> '+fmtLargo(corte)+'.</div>'
+      + '<div><b>Origen de los datos:</b> corte manual cargado en LAAAMBAPP. Los KPIs se calculan '
+      +   'sobre los '+k.totalRegistradas+' animales reales registrados para este aportante; los animales '
+      +   'de escenario quedan excluidos de todo indicador de portada.</div>'
+      + '<div><b>Sin dato reproductivo:</b> '+k.sinDato+' animales del hato actual no tienen estado '
+      +   'reproductivo evaluado. La fertilidad los excluye del denominador, por lo que no se '
+      +   'cuentan como vacíos.</div>'
+      + '<div><b>Sin fecha de nacimiento:</b> '+k.sinFechaNacimiento+' animales. Las fechas nunca se estiman.</div>'
+      + pesoNota
+      + notaGap
+      + '<div style="margin-top:10px;color:#A8B3B3">LAAAMB Corderos · Finca La Marinilla · '
+      +   'Aparcería — estos animales no forman parte del inventario de la finca.</div>'
+      + '</div>';
+
+    $('hoja').innerHTML =
+        '<div class="rep-head">'
+      +   '<div class="rep-head-top">'
+      +     '<div><div class="rep-brand">LAAAMB<span>.</span></div>'
+      +       '<div class="rep-sub">Corderos · Reporte de aparcería</div></div>'
+      +     '<div class="rep-corte">Corte<b>'+fmtLargo(corte)+'</b></div>'
+      +   '</div>'
+      +   '<div class="rep-titulo"><div class="lbl">Aportante</div>'
+      +     '<div class="nom">'+esc(ap.nombre)+'</div></div>'
+      + '</div>'
+      + '<div class="rep-body">'
+      +   sec('Crecimiento del hato', crec, 'aportaron madres; lo nacido es del proyecto')
+      +   sec('Cumplimiento de meta', meta)
+      +   sec('Composición y productividad', comp)
+      +   sec('Estado reproductivo', repro, 'sobre el hato actual')
+      +   sec('Mortalidad y no localizados', mort, 'sobre el total registrado')
+      +   (esc_sec ? sec('Escenario proyectado', esc_sec, 'fuera de los KPIs') : '')
+      +   foot
+      + '</div>';
+  }
+
+  function sec(titulo, html, hint){
+    return '<div class="rep-sec"><div class="rep-sec-t"><span>'+esc(titulo)+'</span>'
+      + (hint?'<span class="hint">'+esc(hint)+'</span>':'')+'</div>'+html+'</div>';
+  }
+  function kc(cls, n, l, s){
+    return '<div class="kc '+cls+'"><div class="n">'+n+'</div><div class="l">'+esc(l)+'</div>'
+      + (s?'<div class="s">'+esc(s)+'</div>':'')+'</div>';
+  }
+
+  // ── GENERAR ────────────────────────────────────────────────────
+  async function generar(){
+    var id = $('f-aportante').value;
+    if(!id){ toast('Selecciona un aportante', true); return; }
+    var corte = $('f-corte').value;
+    if(!corte){ toast('Indica la fecha de corte', true); return; }
+
+    $('hoja').innerHTML = '<div class="empty-box">Calculando…</div>';
+    try{
+      var ap = APORTANTES.filter(function(a){ return a.id === id; })[0];
+      if(!ap) throw new Error('Aportante no encontrado');
+
+      var rows = await window.APARCERIA.getAnimales(id);
+      if(!rows.length){
+        $('hoja').innerHTML = '<div class="empty-box">'
+          + 'Este aportante no tiene animales cargados todavía.<br>'
+          + '<span style="font-size:12px;color:var(--text4)">Corre la carga desde Aparcería → Animales.</span></div>';
+        ACTUAL = null;
+        return;
+      }
+      if(ap.hato_inicial == null){
+        toast('Aviso: este aportante no tiene hato_inicial definido — crecimiento y cumplimiento saldrán vacíos', true);
+      }
+
+      ACTUAL = { aportante: ap, rows: rows, kpis: window.APARCERIA.kpis(rows, ap), corte: corte };
+      render();
+      toast('Reporte generado');
+    }catch(e){
+      var m = fallo('Generar reporte', e);
+      $('hoja').innerHTML = '<div class="empty-box" style="color:var(--red)">'+esc(m)+'</div>';
+      ACTUAL = null;
+    }
+  }
+
+  // ── EXPORT EXCEL ───────────────────────────────────────────────
+  function exportarExcel(){
+    if(!ACTUAL){ toast('Genera el reporte primero', true); return; }
+    try{
+      if(!window.XLSX) throw new Error('SheetJS no cargó (revisa la conexión)');
+      var k=ACTUAL.kpis, ap=ACTUAL.aportante;
+      var kpiRows = [
+        ['REPORTE DE APARCERÍA — LAAAMB Corderos'],
+        ['Aportante', ap.nombre],
+        ['Fecha de corte', ACTUAL.corte],
+        [],
+        ['CRECIMIENTO DEL HATO'],
+        ['Madres aportadas al inicio', k.hatoInicial],
+        ['Nacidas en el proyecto (vivas)', k.nacidasVivas],
+        ['Hato actual', k.hatoActual],
+        ['Crecimiento %', k.crecimientoPct],
+        ['Crecimiento neto (animales)', k.crecimientoNeto],
+        ['Meta anual', k.meta],
+        ['Cumplimiento meta %', k.cumplimientoPct],
+        [],
+        ['COMPOSICIÓN'],
+        ['Total registrados (reales)', k.totalRegistradas],
+        ['Lote inicial registrado', k.loteInicialRegistrado],
+        ['Lote inicial vivo y localizado', k.loteInicialVivo],
+        ['Nacidas registradas', k.nacidasRegistradas],
+        ['Nacidas vivas y localizadas', k.nacidasVivas],
+        ['Prolificidad (crías ÷ madres distintas)', k.prolificidad],
+        ['Madres distintas identificadas', k.madresDistintas],
+        [],
+        ['REPRODUCTIVO (hato actual)'],
+        ['Preñadas', k.prenadas],
+        ['Paridas / lactando', k.paridas],
+        ['Vacías', k.vacias],
+        ['Sin dato', k.sinDato],
+        ['Fertilidad %', k.fertilidadPct],
+        [],
+        ['MORTALIDAD Y NO LOCALIZADOS'],
+        ['Bajas por muerte', k.muertes],
+        ['% Mortalidad', k.mortalidadPct],
+        ['No localizados (NO son bajas)', k.noLocalizados],
+        [],
+        ['ESCENARIO PROYECTADO (fuera de los KPIs)'],
+        ['Animales simulados', k.proyectados],
+        ['Hato con escenario', k.hatoActual + k.proyectados],
+        [],
+        ['NOTAS'],
+        ['Gap de conciliación (registrado − contratado)', k.gapConciliacion],
+        ['Sin fecha de nacimiento', k.sinFechaNacimiento],
+        ['Sin peso', k.sinPeso],
+        ['Pesos de balanza', k.pesosReales],
+        ['Pesos estimados', k.pesosEstimados]
+      ];
+      if(k.causasBaja.length){
+        kpiRows.push([], ['CAUSAS DE BAJA'], ['Causa','Animales']);
+        k.causasBaja.forEach(function(c){ kpiRows.push([c.causa, c.n]); });
+      }
+
+      var det = [['Chapeta','Origen','Raza','Sexo','Tipo','Grupo','Vivo','Localizado',
+                  'Causa baja','Fecha baja','Estado reproductivo','Fecha nacimiento',
+                  'Madre','Peso kg','Tipo peso','Fecha peso','Estado origen','Estado actualizado','Notas']];
+      ACTUAL.rows.forEach(function(a){
+        det.push([a.codigo, a.origen, a.raza, a.sexo, a.tipo, a.grupo,
+                  a.vivo?'SI':'NO', a.localizado?'SI':'NO', a.causa_baja, a.fecha_baja,
+                  a.estado_reproductivo, a.fecha_nacimiento, a.madre_codigo,
+                  a.peso_kg, a.peso_tipo, a.peso_fecha,
+                  a.estado_origen, a.estado_actualizado, a.notas]);
+      });
+
+      var wb = window.XLSX.utils.book_new();
+      window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(kpiRows), 'KPIs');
+      window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(det), 'Animales');
+      var slug = ap.nombre.replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,'');
+      window.XLSX.writeFile(wb, 'Reporte_Aparceria_'+slug+'_'+ACTUAL.corte+'.xlsx');
+      toast('Excel exportado');
+    }catch(e){ fallo('Exportar Excel', e); }
+  }
+
+  function imprimir(){
+    if(!ACTUAL){ toast('Genera el reporte primero', true); return; }
+    window.print();
+  }
+
+  // ── ARRANQUE ───────────────────────────────────────────────────
+  async function init(){
+    try{
+      APORTANTES = await window.APARCERIA.getAportantes();
+      var sel = $('f-aportante');
+      if(!APORTANTES.length){
+        sel.innerHTML = '<option value="">Sin aportantes</option>';
+        $('hoja').innerHTML = '<div class="empty-box">No hay aportantes registrados.<br>'
+          + '<span style="font-size:12px;color:var(--text4)">Ejecuta las migraciones 0055 y 0056 en Supabase.</span></div>';
+        return;
+      }
+      sel.innerHTML = APORTANTES.map(function(a){
+        return '<option value="'+esc(a.id)+'">'+esc(a.nombre)+'</option>';
+      }).join('');
+    }catch(e){
+      fallo('Cargar aportantes', e);
+      $('hoja').innerHTML = '<div class="empty-box" style="color:var(--red)">'+esc(e.message)+'</div>';
+    }
+  }
+
+  function whenReady(cb){
+    if(window.AUTH_ROL){ cb(); return; }
+    var n=0;
+    var iv=setInterval(function(){ if(window.AUTH_ROL || n>50){ clearInterval(iv); cb(); } n++; }, 100);
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    $('f-corte').value = new Date().toISOString().split('T')[0];
+    $('btn-generar').addEventListener('click', function(){ generar(); });
+    $('btn-pdf').addEventListener('click', imprimir);
+    $('btn-excel').addEventListener('click', exportarExcel);
+    whenReady(init);
+  });
+})();
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00AFB6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LAAAMB">
+<link rel="apple-touch-icon" href="icons/icon-laaamb.jpg">
+<meta name="msapplication-TileImage" content="icons/icon-laaamb.jpg">
+<title>LAAAMBAPP · Aparcería · Animales</title>
+<script>(function(){var t=(function(){var _t=localStorage.getItem('laaamb-theme');return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute('data-theme',t);})();</script>
+<link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/laaamb.css">
+<script src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js" crossorigin="anonymous"></script>
+<script src="js/error-handler.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script>
+  window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+</script>
+<script src="js/auth.js"></script>
+<script src="js/roles.js"></script>
+<script src="js/sidebar.js?v=1"></script>
+<script src="js/mobile-nav.js"></script>
+<script src="js/aparceria.js?v=1"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
+  --wine:#9C3F66;--wine-bg:rgba(156,63,102,.12);--orange:#F18F22;--orange-bg:rgba(241,143,34,.12);
+  --bg:#080f10;--bg2:#0c1517;--bg3:#101d1f;--bg4:#152224;--surface:#172628;--surface2:#1d3235;
+  --border:rgba(0,175,182,.10);--border2:rgba(0,175,182,.20);--border3:rgba(0,175,182,.35);
+  --green:#2ec77a;--green-bg:rgba(46,199,122,.10);--red:#e05252;--red-bg:rgba(224,82,82,.10);
+  --amber:#e8a030;--amber-bg:rgba(232,160,48,.10);--sky:#38b0d8;--sky-bg:rgba(56,176,216,.10);
+  --text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;
+  --r:8px;--r2:14px;--sidebar:236px;--anim:.16s cubic-bezier(.4,0,.2,1)}
+html[data-theme="light"]{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.05);--wine:#9C3F66;--wine-bg:rgba(156,63,102,.10);--orange:#F18F22;--orange-bg:rgba(241,143,34,.10);--bg:#F8F9FA;--bg2:#FFFFFF;--bg3:#F3F4F6;--bg4:#FAFAFA;--surface:#FFFFFF;--surface2:#F3F4F6;--border:#E5E7EB;--border2:#D1D5DB;--border3:#9CA3AF;--green:#10B981;--green-bg:rgba(16,185,129,.10);--red:#EF4444;--red-bg:rgba(239,68,68,.10);--amber:#F59E0B;--amber-bg:rgba(245,158,11,.10);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.10);--text:#1A1A2E;--text2:#6B7280;--text3:#9CA3AF;--text4:#C4C9D4}
+html[data-theme="dark"]{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.12);--teal-bg2:rgba(0,175,182,.06);--wine:#9C3F66;--wine-bg:rgba(156,63,102,.15);--orange:#F18F22;--orange-bg:rgba(241,143,34,.15);--bg:#0F172A;--bg2:#1E293B;--bg3:#1E293B;--bg4:#162032;--surface:#1E293B;--surface2:#162032;--border:#334155;--border2:#3E4C61;--border3:#475569;--green:#10B981;--green-bg:rgba(16,185,129,.14);--red:#EF4444;--red-bg:rgba(239,68,68,.14);--amber:#F59E0B;--amber-bg:rgba(245,158,11,.14);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.14);--text:#F1F5F9;--text2:#94A3B8;--text3:#64748B;--text4:#475569}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
+.app{display:flex;height:100vh;width:100vw}
+.sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0}
+.sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:.5}
+.sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:4px}.sb-logo-img{height:40px;width:40px;border-radius:9px;flex-shrink:0}
+.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
+.sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
+.nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}
+.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;text-decoration:none;transition:all var(--anim);position:relative}
+.nav-link:hover{background:var(--surface);color:var(--text)}
+.nav-link.active{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
+.nav-link.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--teal);border-radius:2px}
+.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}.nav-link.active .nav-ico,.nav-link:hover .nav-ico{opacity:1}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:600;background:var(--surface2);color:var(--teal);padding:1px 7px;border-radius:10px;border:1px solid var(--border2)}
+.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border);background:var(--bg2)}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
+.user-name{font-size:12px;font-weight:600;color:var(--text)}.user-role{font-size:10px;color:var(--text3)}
+#lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);width:46px;height:46px;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 16px rgba(0,0,0,.45)}
+#lham svg{width:22px;height:22px;stroke:var(--text);stroke-width:2;fill:none;stroke-linecap:round}
+#lov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990}
+#lov.on{display:block}
+.main{flex:1;overflow-y:auto;padding:24px;background:var(--bg)}
+.page-head{margin-bottom:16px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ph-eyebrow{font-size:10px;font-weight:700;color:var(--teal-d);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px}
+.ph-title{font-family:'Sigmar',cursive;font-size:30px;color:var(--text);line-height:1.1}
+.ph-date{font-size:12px;color:var(--text3);margin-top:4px}
+/* ── BANNER DE AISLAMIENTO (permanente, no descartable) ── */
+.iso-banner{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;margin-bottom:18px;background:var(--wine-bg);border:1px solid var(--wine);border-left:4px solid var(--wine);border-radius:var(--r);font-size:12.5px;color:var(--text);line-height:1.5}
+.iso-banner b{color:var(--wine)}
+.iso-ico{font-size:17px;line-height:1.2;flex-shrink:0}
+/* ── FILTROS ── */
+.filtros{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:16px;padding:14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2)}
+.f-item{display:flex;flex-direction:column;gap:4px}
+.f-item label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+.f-item select,.f-item input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:8px 11px;color:var(--text);font-family:inherit;font-size:13px;min-width:150px}
+.f-item select:focus,.f-item input:focus{outline:none;border-color:var(--teal)}
+/* ── KPI STRIP ── */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:18px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:13px 15px}
+.kpi-n{font-family:'Sigmar',cursive;font-size:23px;line-height:1.1;color:var(--text)}
+.kpi-l{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-top:3px}
+.kpi.teal .kpi-n{color:var(--teal)}.kpi.amber .kpi-n{color:var(--amber)}
+.kpi.red .kpi-n{color:var(--red)}.kpi.gray .kpi-n{color:var(--text2)}
+/* ── TABLA ── */
+.tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:860px}
+thead th{text-align:left;padding:11px 13px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--border2);white-space:nowrap;background:var(--bg3);position:sticky;top:0}
+tbody td{padding:10px 13px;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--surface)}
+.cod{font-weight:700;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+/* Proyectados: badge ámbar + fondo tenue. Nunca se confunden con reales. */
+tr.proy{background:var(--amber-bg)}
+tr.proy:hover{background:var(--amber-bg);filter:brightness(1.04)}
+/* No localizados: estilo tenue. No son bajas, pero no están en campo. */
+tr.noloc{opacity:.55}
+tr.noloc .cod{text-decoration:line-through;text-decoration-thickness:1px}
+tr.muerto{opacity:.5}
+.bdg{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;border:1px solid;white-space:nowrap}
+.bdg.proy{background:var(--amber-bg);border-color:var(--amber);color:var(--amber)}
+.bdg.real{background:var(--teal-bg);border-color:var(--teal-d);color:var(--teal-d)}
+.bdg.muerto{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.bdg.noloc{background:var(--surface2);border-color:var(--border3);color:var(--text2)}
+.bdg.pren{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+.bdg.sky{background:var(--sky-bg);border-color:var(--sky);color:var(--sky)}
+.bdg.gray{background:var(--surface2);border-color:var(--border2);color:var(--text3)}
+/* peso_tipo SIEMPRE visible: un estimado nunca puede leerse como pesaje. */
+.peso-est{color:var(--text2)}
+.peso-est .tag{font-size:9.5px;font-weight:700;color:var(--amber);margin-left:3px}
+.peso-real{color:var(--text);font-weight:600}
+.peso-real .tag{font-size:9.5px;font-weight:700;color:var(--green);margin-left:3px}
+.empty-box{padding:26px;text-align:center;color:var(--text3);font-size:13px;line-height:1.6}
+.sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin:22px 0 10px;display:flex;align-items:center;gap:8px}
+.sec-title .dot{width:8px;height:8px;border-radius:50%;background:var(--teal)}
+.btn{padding:9px 14px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:all var(--anim)}
+.btn:hover{border-color:var(--teal);color:var(--teal)}
+.btn.danger{border-color:var(--red);color:var(--red)}
+.btn.danger:hover{background:var(--red);color:#fff}
+/* ── CARGAS ── */
+.carga-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);margin-bottom:8px;flex-wrap:wrap}
+.carga-main{flex:1;min-width:180px}
+.carga-tag{font-size:13px;font-weight:700;color:var(--text)}
+.carga-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.carga-rev{font-size:11px;color:var(--amber);font-weight:600}
+.modal-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9000;align-items:center;justify-content:center;padding:16px}
+.modal-ov.on{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);width:100%;max-width:460px;max-height:90vh;overflow-y:auto;box-shadow:0 16px 48px rgba(0,0,0,.5)}
+.modal-h{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid var(--border)}
+.modal-h h3{font-family:'Sigmar',cursive;font-size:17px;color:var(--text)}
+.modal-x{background:transparent;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1}
+.modal-b{padding:20px}
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:11px 18px;border-radius:99px;font-size:13px;font-weight:600;z-index:10000;opacity:0;transition:opacity .2s;pointer-events:none;box-shadow:0 6px 24px rgba(0,0,0,.3);max-width:90vw;text-align:center}
+#toast.on{opacity:1}
+#toast.err{background:var(--red);color:#fff}
+@media(max-width:1000px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .25s;z-index:9995}
+  .sidebar.on{transform:translateX(0)}
+  #lham{display:flex}
+  .main{padding:70px 14px 20px}
+  .modal-ov{padding:0;align-items:flex-end}
+  .modal{max-width:100%;border-radius:18px 18px 0 0}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<button id="lham" aria-label="Menú"><svg id="lico" viewBox="0 0 22 22"><line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/></svg></button>
+<div id="lov"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sb-head">
+    <a href="index.html" class="sb-logo"><img src="icons/icon.svg" alt="LAAAMB Corderos" class="sb-logo-img"><div><div class="sb-logo-text">LAAAMB</div><div class="sb-logo-sub">Corderos · App</div></div></a>
+  </div>
+  <nav class="nav-scroll" id="nav-scroll"></nav>
+  <div class="sb-foot">
+    <div style="font-size:9px;color:var(--text4);text-align:center;margin-bottom:8px;letter-spacing:.5px">LAAAMBAPP v1.0 · 2025</div>
+    <div class="user-row"><div class="avatar">JA</div><div><div class="user-name">Usuario</div><div class="user-role">—</div></div></div>
+    <button onclick="Auth.signOut()" style="width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;background:transparent;border:1px solid var(--border);border-radius:var(--r,8px);color:var(--text3);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M13 14l3-4-3-4M16 10H7M9 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h4"/></svg>Cerrar sesión</button>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="page-head">
+    <div>
+      <div class="ph-eyebrow">Aparcería · animales de terceros</div>
+      <div class="ph-title">Animales Aportantes</div>
+      <div class="ph-date" id="ph-date"></div>
+    </div>
+    <a class="btn" href="reporte-aportantes.html">Ver reportes →</a>
+  </div>
+
+  <!-- Banner permanente: nunca se oculta ni se descarta. -->
+  <div class="iso-banner">
+    <span class="iso-ico">⚖️</span>
+    <div>
+      <b>Datos de aparcería — no forman parte del inventario de La Marinilla.</b><br>
+      Estos animales pertenecen a los aportantes y viven en una tabla independiente.
+      No entran en el conteo del hato, ni en carga animal por hectárea, ni en los
+      indicadores reproductivos o de mortalidad de la finca.
+    </div>
+  </div>
+
+  <div class="filtros">
+    <div class="f-item">
+      <label for="f-aportante">Aportante</label>
+      <select id="f-aportante" onchange="aplicar()"><option value="">Cargando…</option></select>
+    </div>
+    <div class="f-item">
+      <label for="f-origen">Origen</label>
+      <select id="f-origen" onchange="aplicar()">
+        <option value="">Todos</option>
+        <option value="real">Solo reales</option>
+        <option value="proyectado">Solo proyectados</option>
+      </select>
+    </div>
+    <div class="f-item">
+      <label for="f-estado">Estado</label>
+      <select id="f-estado" onchange="aplicar()">
+        <option value="">Todos</option>
+        <option value="hato">En hato (vivo y localizado)</option>
+        <option value="muerto">Bajas por muerte</option>
+        <option value="noloc">No localizados</option>
+      </select>
+    </div>
+    <div class="f-item">
+      <label for="f-buscar">Buscar chapeta / grupo</label>
+      <input id="f-buscar" type="text" placeholder="ej. 410, N119, Madres" oninput="aplicar()">
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>
+        <th>Chapeta</th><th>Origen</th><th>Raza</th><th>Sexo</th><th>Grupo</th>
+        <th>Estado</th><th>Reproductivo</th><th>Peso</th><th>Nacimiento</th><th>Madre</th>
+      </tr></thead>
+      <tbody id="tbody"><tr><td colspan="10" class="empty-box">Cargando…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="sec-title"><span class="dot" style="background:var(--wine)"></span>Cargas registradas</div>
+  <div id="cargas"><div class="empty-box">Cargando…</div></div>
+</div>
+</div>
+
+<div class="modal-ov" id="modal-ov">
+  <div class="modal">
+    <div class="modal-h"><h3 id="modal-title">Confirmar</h3><button class="modal-x" onclick="cerrarModal()">&times;</button></div>
+    <div class="modal-b" id="modal-body"></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ═══ Hamburger ═══
+(function(){
+  var open=false;
+  var sb=document.getElementById('sidebar'), ov=document.getElementById('lov'), bt=document.getElementById('lham');
+  function set(v){ open=v; sb.classList.toggle('on',v); ov.classList.toggle('on',v); }
+  if(bt) bt.addEventListener('click', function(){ set(!open); });
+  if(ov) ov.addEventListener('click', function(){ set(false); });
+})();
+</script>
+
+<script>
+(function(){
+  'use strict';
+
+  var APORTANTES = [];
+  var FILAS = [];          // filas del aportante seleccionado
+  var CARGAS = [];
+
+  function toast(msg, err){
+    var t=document.getElementById('toast');
+    t.textContent=msg; t.className=err?'on err':'on';
+    clearTimeout(t._tm); t._tm=setTimeout(function(){ t.className=''; }, 3200);
+  }
+  function esc(s){
+    return String(s==null?'':s).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+  function $(id){ return document.getElementById(id); }
+  function fmtFecha(d){
+    if(!d) return '—';
+    var p=String(d).split('T')[0].split('-');
+    if(p.length!==3) return esc(d);
+    return p[2]+'/'+p[1]+'/'+p[0];
+  }
+  function cerrarModal(){ $('modal-ov').classList.remove('on'); }
+  window.cerrarModal = cerrarModal;
+
+  // ── ERRORES: se muestran con su mensaje real, nunca se tragan ──
+  function fallo(contexto, e){
+    var msg = (e && e.message) ? e.message : String(e);
+    console.error('[Aparcería] '+contexto, e);
+    toast(contexto+': '+msg, true);
+    return msg;
+  }
+
+  // ── RENDER ─────────────────────────────────────────────────────
+  function badgeEstado(a){
+    if(a.vivo === false) return '<span class="bdg muerto">Baja</span>';
+    if(a.localizado === false) return '<span class="bdg noloc">No localizado</span>';
+    return '<span class="bdg real">En hato</span>';
+  }
+  function badgeRepro(a){
+    var m = { prenada:['pren','Preñada'], madre:['sky','Parida'], vacia:['gray','Vacía'], sin_dato:['gray','Sin dato'] };
+    var v = m[a.estado_reproductivo];
+    if(!v) return '<span style="color:var(--text4)">—</span>';
+    return '<span class="bdg '+v[0]+'">'+v[1]+'</span>';
+  }
+  // El tipo de peso va SIEMPRE junto al número: un estimado del modelo
+  // lineal no puede presentarse como si fuera un pesaje en balanza.
+  function celdaPeso(a){
+    if(a.peso_kg == null) return '<span style="color:var(--text4)">—</span>';
+    var n = Number(a.peso_kg).toFixed(1).replace('.', ',');
+    if(a.peso_tipo === 'real'){
+      return '<span class="peso-real" title="'+esc(a.peso_nota||'Pesaje real')+'">'+n+' kg<span class="tag">REAL</span></span>';
+    }
+    return '<span class="peso-est" title="'+esc(a.peso_nota||'Estimado por modelo lineal')+'">~'+n+' kg<span class="tag">EST.</span></span>';
+  }
+
+  function renderTabla(rows){
+    var tb = $('tbody');
+    if(!rows.length){
+      tb.innerHTML = '<tr><td colspan="10" class="empty-box">Sin animales para este filtro.<br>'
+        + '<span style="font-size:12px;color:var(--text4)">Si aún no has corrido la carga, la tabla estará vacía.</span></td></tr>';
+      return;
+    }
+    var h = '';
+    rows.forEach(function(a){
+      var cls = [];
+      if(a.origen === 'proyectado') cls.push('proy');
+      if(a.vivo === false) cls.push('muerto');
+      else if(a.localizado === false) cls.push('noloc');
+      h += '<tr class="'+cls.join(' ')+'">'
+        + '<td class="cod">'+esc(a.codigo)+'</td>'
+        + '<td>'+(a.origen==='proyectado'
+            ? '<span class="bdg proy">⚠ Simulado</span>'
+            : '<span class="bdg real">Real</span>')+'</td>'
+        + '<td>'+esc(a.raza||'—')+'</td>'
+        + '<td>'+(a.sexo==='hembra'?'♀ Hembra':'♂ Macho')+'</td>'
+        + '<td>'+esc(a.grupo||'—')+'</td>'
+        + '<td>'+badgeEstado(a)+(a.vivo===false&&a.causa_baja
+            ? '<div style="font-size:10px;color:var(--text3);margin-top:2px">'+esc(a.causa_baja)
+              +(a.fecha_baja?' · '+fmtFecha(a.fecha_baja):'')+'</div>' : '')+'</td>'
+        + '<td>'+badgeRepro(a)+'</td>'
+        + '<td>'+celdaPeso(a)+'</td>'
+        + '<td>'+(a.fecha_nacimiento?fmtFecha(a.fecha_nacimiento)
+            :'<span style="color:var(--text4)" title="Desconocido — nunca estimado">—</span>')+'</td>'
+        + '<td>'+(a.madre_codigo?'<span class="cod" style="font-weight:400">'+esc(a.madre_codigo)+'</span>'
+            :'<span style="color:var(--text4)">—</span>')+'</td>'
+        + '</tr>';
+    });
+    tb.innerHTML = h;
+  }
+
+  function renderKpis(rows, aportante){
+    var k = window.APARCERIA.kpis(rows, aportante);
+    var box = function(cls,n,l){ return '<div class="kpi '+cls+'"><div class="kpi-n">'+n+'</div><div class="kpi-l">'+l+'</div></div>'; };
+    $('kpis').innerHTML =
+        box('teal',  k.hatoActual, 'Hato actual')
+      + box('gray',  k.hatoInicial==null?'—':k.hatoInicial, 'Madres aportadas')
+      + box('teal',  (k.crecimientoPct==null?'—':(k.crecimientoPct>0?'+':'')+k.crecimientoPct+'%'), 'Crecimiento')
+      + box('gray',  k.nacidasVivas, 'Nacidas en proyecto')
+      + box('red',   k.muertes, 'Bajas por muerte')
+      + box('gray',  k.noLocalizados, 'No localizados')
+      + box('amber', k.proyectados, 'Escenario simulado');
+  }
+
+  function renderCargas(){
+    var el = $('cargas');
+    if(!CARGAS.length){
+      el.innerHTML = '<div class="empty-box">Ninguna carga registrada todavía.</div>';
+      return;
+    }
+    var h = '';
+    CARGAS.forEach(function(c){
+      var quien = (c.ejecutada_por && c.ejecutada_por.nombre) ? c.ejecutada_por.nombre : '—';
+      var revertida = !!c.revertida_at;
+      h += '<div class="carga-row">'
+        + '<div class="carga-main">'
+        +   '<div class="carga-tag">'+esc(c.etiqueta || 'Carga sin etiqueta')+'</div>'
+        +   '<div class="carga-meta">'+c.animales_creados+' registros · '
+        +      fmtFecha(c.ejecutada_at)+' · por '+esc(quien)+'</div>'
+        +   (revertida ? '<div class="carga-rev">↩ Revertida el '+fmtFecha(c.revertida_at)
+              +' ('+(c.animales_borrados==null?'?':c.animales_borrados)+' borrados)</div>' : '')
+        + '</div>'
+        + (revertida ? '' : '<button class="btn danger" data-carga="'+esc(c.carga_id)
+            +'" data-tag="'+esc(c.etiqueta||'')+'" data-n="'+c.animales_creados
+            +'" data-fecha="'+esc(c.ejecutada_at)+'">Borrar carga</button>')
+        + '</div>';
+    });
+    el.innerHTML = h;
+    // Borrado en DOS PASOS: este botón solo abre la confirmación.
+    Array.prototype.forEach.call(el.querySelectorAll('button[data-carga]'), function(b){
+      b.addEventListener('click', function(){
+        confirmarBorrado(b.getAttribute('data-carga'), b.getAttribute('data-tag'),
+                         b.getAttribute('data-n'), b.getAttribute('data-fecha'));
+      });
+    });
+  }
+
+  // ── BORRADO EN DOS PASOS ───────────────────────────────────────
+  // Paso 1: modal con etiqueta + conteo + fecha, y conteo REAL en vivo.
+  // Paso 2: escribir BORRAR para habilitar el botón.
+  async function confirmarBorrado(carga_id, etiqueta, n, fecha){
+    $('modal-title').textContent = 'Borrar carga';
+    $('modal-body').innerHTML = '<div class="empty-box">Contando registros…</div>';
+    $('modal-ov').classList.add('on');
+
+    var reales;
+    try{
+      var res = await window._sb.from('aportantes_animales')
+        .select('id', { count: 'exact', head: true })
+        .eq('finca_id', window.APARCERIA.FINCA_ID).eq('carga_id', carga_id);
+      if(res.error) throw new Error(res.error.message);
+      reales = res.count;
+    }catch(e){
+      $('modal-body').innerHTML = '<div style="color:var(--red);font-size:13px">No se pudo contar la carga: '
+        + esc(e.message) + '</div>';
+      fallo('Contar carga', e);
+      return;
+    }
+
+    var desajuste = (reales !== Number(n));
+    $('modal-body').innerHTML =
+        '<div style="font-size:13px;line-height:1.6;margin-bottom:14px">Se van a borrar los registros de esta carga:</div>'
+      + '<div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;font-size:13px">'
+      +   '<div><b>'+esc(etiqueta||'Carga sin etiqueta')+'</b></div>'
+      +   '<div style="color:var(--text2);margin-top:4px">Ejecutada: '+fmtFecha(fecha)+'</div>'
+      +   '<div style="color:var(--text2)">Registrados en la carga: <b>'+esc(n)+'</b></div>'
+      +   '<div style="color:'+(desajuste?'var(--red)':'var(--text2)')+'">En la tabla ahora mismo: <b>'+reales+'</b>'
+      +     (desajuste?' ⚠ no coincide':' ✅')+'</div>'
+      + '</div>'
+      + (desajuste ? '<div style="background:var(--red-bg);border:1px solid var(--red);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--red);margin-bottom:14px">'
+          + 'El conteo no cuadra. Alguien pudo borrar o agregar filas después de la carga. Revisa antes de continuar.</div>' : '')
+      + '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">No afecta ningún animal del hato de La Marinilla: '
+      +   'esta tabla no tiene relaciones hacia <code>animales</code>.</div>'
+      + '<div style="font-size:12px;color:var(--text2);margin-bottom:6px">Escribe <b>BORRAR</b> para confirmar:</div>'
+      + '<input id="del-confirm" type="text" autocomplete="off" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:9px 11px;color:var(--text);font-family:inherit;font-size:14px">'
+      + '<div style="display:flex;gap:8px;margin-top:14px">'
+      +   '<button class="btn" id="del-cancel" style="flex:1">Cancelar</button>'
+      +   '<button class="btn danger" id="del-go" style="flex:1" disabled>Borrar '+reales+'</button>'
+      + '</div>'
+      + '<div id="del-msg" style="font-size:12px;margin-top:10px"></div>';
+
+    var inp = $('del-confirm'), go = $('del-go');
+    inp.addEventListener('input', function(){ go.disabled = (inp.value.trim().toUpperCase() !== 'BORRAR'); });
+    $('del-cancel').addEventListener('click', cerrarModal);
+    go.addEventListener('click', function(){ ejecutarBorrado(carga_id, reales, go); });
+    inp.focus();
+  }
+
+  async function ejecutarBorrado(carga_id, esperados, btn){
+    btn.disabled = true; btn.textContent = 'Borrando…';
+    var msg = $('del-msg');
+    try{
+      // DELETE por carga_id + finca_id. Nunca por aportante_id: si mañana se
+      // etiqueta otro animal con ese aportante, un borrado por etiqueta se lo
+      // llevaría. Se pide .select('id') para contar lo REALMENTE borrado.
+      var del = await window._sb.from('aportantes_animales')
+        .delete()
+        .eq('finca_id', window.APARCERIA.FINCA_ID)
+        .eq('carga_id', carga_id)
+        .select('id');
+      if(del.error) throw new Error(del.error.message);
+      var borrados = (del.data||[]).length;
+
+      var upd = await window._sb.from('aportantes_cargas')
+        .update({ revertida_at: new Date().toISOString(), animales_borrados: borrados })
+        .eq('carga_id', carga_id);
+      if(upd.error) throw new Error('Se borraron '+borrados+' filas pero falló marcar la carga como revertida: '+upd.error.message);
+
+      if(borrados !== esperados){
+        msg.innerHTML = '<span style="color:var(--amber)">⚠ Se esperaban '+esperados
+          +' y se borraron '+borrados+'. Revisa el historial.</span>';
+      } else {
+        msg.innerHTML = '<span style="color:var(--green)">✅ '+borrados+' registros borrados.</span>';
+      }
+      toast(borrados+' registros borrados');
+      setTimeout(function(){ cerrarModal(); cargar(); }, 1400);
+    }catch(e){
+      btn.disabled = false; btn.textContent = 'Reintentar';
+      msg.innerHTML = '<span style="color:var(--red)">'+esc(fallo('Borrar carga', e))+'</span>';
+    }
+  }
+
+  // ── FILTRADO ───────────────────────────────────────────────────
+  function aplicar(){
+    var origen = $('f-origen').value;
+    var estado = $('f-estado').value;
+    var q = ($('f-buscar').value||'').trim().toLowerCase();
+    var A = window.APARCERIA;
+
+    var rows = FILAS.slice();
+    if(origen) rows = rows.filter(function(a){ return a.origen === origen; });
+    if(estado === 'hato')   rows = rows.filter(A.enHato);
+    if(estado === 'muerto') rows = rows.filter(A.esMuerto);
+    if(estado === 'noloc')  rows = rows.filter(A.esNoLoc);
+    if(q) rows = rows.filter(function(a){
+      return (a.codigo||'').toLowerCase().indexOf(q) >= 0
+          || (a.grupo||'').toLowerCase().indexOf(q) >= 0
+          || (a.madre_codigo||'').toLowerCase().indexOf(q) >= 0;
+    });
+
+    renderTabla(rows);
+    // Los KPIs se calculan SIEMPRE sobre el set completo del aportante,
+    // no sobre el filtro: si no, cambiar un filtro parecería cambiar el hato.
+    var ap = APORTANTES.filter(function(x){ return x.id === $('f-aportante').value; })[0] || null;
+    renderKpis(FILAS, ap);
+  }
+  window.aplicar = aplicar;
+
+  // ── CARGA DE DATOS ─────────────────────────────────────────────
+  async function cargarAportanteSeleccionado(){
+    var id = $('f-aportante').value;
+    if(!id){ FILAS=[]; CARGAS=[]; renderTabla([]); renderCargas(); return; }
+    var res = await Promise.all([
+      window.APARCERIA.getAnimales(id),
+      window.APARCERIA.getCargas(id)
+    ]);
+    FILAS = res[0]; CARGAS = res[1];
+    aplicar();
+    renderCargas();
+  }
+
+  async function cargar(){
+    try{
+      APORTANTES = await window.APARCERIA.getAportantes();
+      var sel = $('f-aportante');
+      if(!APORTANTES.length){
+        sel.innerHTML = '<option value="">Sin aportantes</option>';
+        $('tbody').innerHTML = '<tr><td colspan="10" class="empty-box">'
+          + 'No hay aportantes registrados.<br><span style="font-size:12px;color:var(--text4)">'
+          + 'Ejecuta las migraciones 0055 y 0056 en Supabase.</span></td></tr>';
+        $('kpis').innerHTML = '';
+        renderCargas();
+        return;
+      }
+      var prev = sel.value;
+      sel.innerHTML = APORTANTES.map(function(a){
+        return '<option value="'+esc(a.id)+'">'+esc(a.nombre)+'</option>';
+      }).join('');
+      if(prev) sel.value = prev;
+      sel.onchange = function(){ cargarAportanteSeleccionado().catch(function(e){ fallo('Cargar aportante', e); }); };
+      await cargarAportanteSeleccionado();
+    }catch(e){
+      fallo('Cargar módulo de aparcería', e);
+      $('tbody').innerHTML = '<tr><td colspan="10" class="empty-box" style="color:var(--red)">'
+        + esc(e.message) + '</td></tr>';
+    }
+  }
+  window.cargar = cargar;
+
+  function whenReady(cb){
+    if(window.AUTH_ROL){ cb(); return; }
+    var n=0;
+    var iv=setInterval(function(){ if(window.AUTH_ROL || n>50){ clearInterval(iv); cb(); } n++; }, 100);
+  }
+  document.addEventListener('DOMContentLoaded', function(){
+    $('ph-date').textContent = 'Corte: ' + new Date().toLocaleDateString('es-CO',
+      { day:'2-digit', month:'long', year:'numeric' });
+    whenReady(function(){ cargar(); });
+  });
+})();
+</script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>
