@@ -131,6 +131,23 @@
     return out;
   }
 
+  // ── ESTADO LAAAMB (columna ya normalizada) ──────────────────────────
+  // VACIA/GESTANTE/LACTANTE/DESCONOCIDO siguen activos; MUERTA y
+  // NO_LOCALIZADA son estados de salida. NO_LOCALIZADA no es una baja:
+  // el animal sigue vivo, solo no se ubicó en campo.
+  var ESTADO_LAAAMB = {
+    vacia:          { estado_salida: 'activo',        estado_reproductivo: 'vacia' },
+    gestante:       { estado_salida: 'activo',        estado_reproductivo: 'prenada' },
+    lactante:       { estado_salida: 'activo',        estado_reproductivo: 'madre' },
+    desconocido:    { estado_salida: 'activo',        estado_reproductivo: 'sin_dato' },
+    muerta:         { estado_salida: 'muerte',        estado_reproductivo: null },
+    no_localizada:  { estado_salida: 'no_localizado', estado_reproductivo: null }
+  };
+  function interpretarEstadoLaaamb(v) {
+    var k = sinTildes(v).replace(/[\s-]+/g, '_');
+    return ESTADO_LAAAMB[k] || null;
+  }
+
   // ── GRUPO ───────────────────────────────────────────────────────────
   // Normaliza Madre/Madres → Madres. Distingue Engorde de Engorde/sacrificio.
   // 'Muerta 07-03-26' NO es un grupo: es fecha de muerte → fecha_salida.
@@ -177,7 +194,15 @@
     raza: ['RAZA'],
     sexo: ['SEXO'],
     madre: ['MADRE'],
-    estado: ['ESTADO'],
+    estado: ['ESTADO', 'ESTADO AL REPORTE'],
+    // ESTADO LAAAMB: columna YA normalizada. Se prefiere sobre el texto libre,
+    // pero se CONTRASTA contra ESTADO ACTUALIZADO y cualquier desacuerdo se
+    // reporta: una columna normalizada por otro proceso es una conveniencia,
+    // no una fuente que se acepte sin verificar.
+    estadoLaaamb: ['ESTADO LAAAMB'],
+    fechaMuerte: ['FECHA DE MUERTE'],
+    pesoReal: ['PESO REAL (kg)', 'PESO REAL (KG)', 'PESO REAL'],
+    pesoFecha: ['FECHA DEL PESO'],
     grupo: ['GRUPO'],
     nacimiento: ['FECHA NACIMIENTO', 'FECHA DE NACIMIENTO'],
     estadoAct: ['ESTADO ACTUALIZADO'],
@@ -209,8 +234,24 @@
       throw new Error('No existe la hoja "' + nombreHoja + '". Hojas disponibles: '
         + Object.keys(workbook.Sheets).join(', '));
     }
-    var crudas = window.XLSX.utils.sheet_to_json(hoja, { defval: null, raw: false });
-    if (!crudas.length) throw new Error('La hoja "' + nombreHoja + '" no tiene filas.');
+    // El encabezado no siempre está en la fila 1: las hojas de carga traen
+    // título y subtítulo arriba. Se busca la primera fila que contenga HATO y
+    // CHAPETA en vez de asumir la 1, que daría 'Faltan columnas obligatorias'.
+    var matriz = window.XLSX.utils.sheet_to_json(hoja, { header: 1, defval: null, raw: false });
+    var filaHdr = -1;
+    for (var fh = 0; fh < Math.min(matriz.length, 20); fh++) {
+      var celdas = (matriz[fh] || []).map(function (c) { return sinTildes(c); });
+      if (celdas.indexOf('hato') >= 0 && celdas.indexOf('chapeta') >= 0) { filaHdr = fh; break; }
+    }
+    if (filaHdr < 0) {
+      throw new Error('No se encontró la fila de encabezado en "' + nombreHoja
+        + '": ninguna de las primeras 20 filas tiene HATO y CHAPETA.');
+    }
+    var crudas = window.XLSX.utils.sheet_to_json(hoja, {
+      defval: null, raw: false, range: filaHdr
+    });
+    if (!crudas.length) throw new Error('La hoja "' + nombreHoja + '" no tiene filas de datos.');
+    var offsetFila = filaHdr + 2;   // nº de fila real de la primera fila de datos
 
     var mapa = {};
     Object.keys(COLS).forEach(function (k) { mapa[k] = buscarCol(crudas[0], COLS[k]); });
@@ -225,7 +266,7 @@
     function val(f, k) { return mapa[k] ? f[mapa[k]] : null; }
 
     crudas.forEach(function (f, idx) {
-      var nFila = idx + 2;   // +2: fila 1 es el encabezado
+      var nFila = idx + offsetFila;   // nº de fila real en el Excel
       var hato = txt(val(f, 'hato'));
       var codigo = txt(val(f, 'codigo'));
 
@@ -255,14 +296,35 @@
       }
 
       var origenRaw = sinTildes(val(f, 'origen'));
-      var origen = /^proyectado/.test(origenRaw) ? 'proyectado' : 'real';
-      if (origenRaw && !/^proyectado|^real/.test(origenRaw)) {
+      // 'CONTRACTUAL' = vientres del contrato → animales reales.
+      var origen = /^proyectado|^simulad/.test(origenRaw) ? 'proyectado' : 'real';
+      if (origenRaw && !/^proyectado|^simulad|^real|^contractual/.test(origenRaw)) {
         avisos.push({ tipo: 'origen_desconocido', fila: nFila, codigo: codigo,
           detalle: 'ORIGEN "' + txt(val(f, 'origen')) + '" → se asume real' });
       }
 
       var est = interpretarEstado(val(f, 'estadoAct'), val(f, 'estado'));
       var gr = interpretarGrupo(val(f, 'grupo'));
+
+      // ESTADO LAAAMB manda cuando existe, pero se CONTRASTA contra lo que
+      // dice el texto libre. Si discrepan, gana la columna normalizada y el
+      // desacuerdo se REPORTA: aceptarla en silencio sería confiar en un
+      // proceso externo sin verificarlo.
+      var laaamb = interpretarEstadoLaaamb(val(f, 'estadoLaaamb'));
+      if (laaamb) {
+        if (est.estado_salida !== laaamb.estado_salida) {
+          avisos.push({ tipo: 'estado_laaamb_discrepa', fila: nFila, codigo: codigo,
+            detalle: 'ESTADO LAAAMB dice "' + txt(val(f, 'estadoLaaamb')) + '" ('
+              + laaamb.estado_salida + ') pero ESTADO ACTUALIZADO "'
+              + (txt(val(f, 'estadoAct')) || '(vacío)') + '" implica '
+              + est.estado_salida + ' → se usa ESTADO LAAAMB' });
+        }
+        est.estado_salida = laaamb.estado_salida;
+        est.estado_reproductivo = laaamb.estado_reproductivo;
+        if (laaamb.estado_salida !== 'activo' && !est.motivo_salida) {
+          est.motivo_salida = txt(val(f, 'estadoAct')) || txt(val(f, 'estadoLaaamb'));
+        }
+      }
 
       // GRUPO puede traer la muerte cuando ESTADO ACTUALIZADO no la trae.
       var estado_salida = est.estado_salida;
@@ -271,6 +333,9 @@
         estado_salida = 'muerte';
         motivo_salida = motivo_salida || gr.crudo;
       }
+      // FECHA DE MUERTE explícita gana sobre la extraída del texto de GRUPO.
+      var fecha_salida = fechaCelda(val(f, 'fechaMuerte')) || gr.fecha_salida || null;
+
       // Un animal muerto no tiene estado reproductivo vigente.
       var estado_reproductivo = (estado_salida === 'activo') ? est.estado_reproductivo : null;
 
@@ -295,8 +360,24 @@
       // ── PESOS ──
       // Jerarquía: peso embebido en ESTADO (real) > PESO A HOY (estimado).
       var pesajes = [];
+      // Jerarquía: PESO REAL (columna limpia) > peso embebido en texto >
+      // PESO A HOY (estimado). La columna gana porque no depende de un regex
+      // sobre texto libre.
+      var pr = parseFloat(String(val(f, 'pesoReal') || '').replace(',', '.'));
+      var prFecha = fechaCelda(val(f, 'pesoFecha'));
       var emb = pesoEmbebido(val(f, 'estado'));
-      if (emb) {
+      if (!isNaN(pr) && pr > 0) {
+        pesajes.push({
+          fecha: prFecha || (opciones.fechaEstimados || PESO_ESTIMADO_FECHA),
+          peso_kg: Math.round(pr * 100) / 100, tipo: 'real',
+          nota: prFecha ? 'Pesaje en balanza'
+            : 'Pesaje en balanza — SIN FECHA en el origen, se usa la fecha de corte'
+        });
+        if (!prFecha) {
+          avisos.push({ tipo: 'peso_real_sin_fecha', fila: nFila, codigo: codigo,
+            detalle: 'peso real ' + pr + ' kg sin FECHA DEL PESO' });
+        }
+      } else if (emb) {
         pesajes.push({
           fecha: emb.fecha || PESO_ESTIMADO_FECHA,
           peso_kg: emb.peso, tipo: 'real',
@@ -334,7 +415,7 @@
         madre_codigo: madre || null,
         fecha_nacimiento: fechaCelda(val(f, 'nacimiento')),  // nunca se estima
         estado_salida: estado_salida,
-        fecha_salida: gr.fecha_salida || null,
+        fecha_salida: fecha_salida,
         motivo_salida: motivo_salida,
         estado_reproductivo: estado_reproductivo,
         origen: origen,
@@ -848,6 +929,7 @@
     generarFixture: generarFixture,
     // expuestos para pruebas unitarias
     _interpretarEstado: interpretarEstado,
+    _interpretarEstadoLaaamb: interpretarEstadoLaaamb,
     _interpretarGrupo: interpretarGrupo,
     _pesoEmbebido: pesoEmbebido,
     _fechaCelda: fechaCelda,

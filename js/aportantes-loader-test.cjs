@@ -247,5 +247,21 @@ t('N55 con CODIGO y sin repetir queda intacto', n55.codigo, 'N55-1');
 t('N55 no cuenta como duplicado',
   ax.duplicadosIntraHato.filter(function(d){return d.chapeta==='N55';}).length, 0);
 
+
+// ── ESTADO LAAAMB (columna ya normalizada, esquema 'CARGA MADRES') ─────
+console.log('\nESTADO LAAAMB → estado_salida / estado_reproductivo');
+[['VACIA','activo','vacia'],
+ ['GESTANTE','activo','prenada'],
+ ['LACTANTE','activo','madre'],          // lactante = ya pario, NO prenada
+ ['DESCONOCIDO','activo','sin_dato'],    // no saber != estar vacia
+ ['MUERTA','muerte',null],
+ ['NO_LOCALIZADA','no_localizado',null], // vivo pero sin ubicar, NO es baja
+].forEach(function(c){
+  var r=L._interpretarEstadoLaaamb(c[0]);
+  t('"'+c[0]+'"', r? (r.estado_salida+' / '+r.estado_reproductivo) : 'null', c[1]+' / '+c[2]);
+});
+t('valor desconocido → null (no se inventa)', L._interpretarEstadoLaaamb('CUALQUIERA'), null);
+t('vacio → null', L._interpretarEstadoLaaamb(''), null);
+
 console.log(fail?'\n\u2717 '+fail+' FALLOS':'\n\u2713 parseo del cargador: todo OK');
 process.exit(fail?1:0);
