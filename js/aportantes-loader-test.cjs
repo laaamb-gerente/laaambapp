@@ -202,11 +202,17 @@ t('detectadas', a.madresHuerfanas.length, 3);
 a.madresHuerfanas.forEach(function(m){
   console.log('     '+m.hato.padEnd(10)+m.madre_codigo+' → '+m.cria);
 });
-console.log('\nFASES');
-t('fase 1 = fundadoras reales', L.filtrarPorFase(a.filasConservadas,1).length,
+// 3 fases, una por archivo. Los sacrificios NO son fase aparte: vienen
+// dentro de las crias con ESTADO LAAAMB = SACRIFICADO.
+console.log('\nFASES (1 contractuales · 2 reposicion · 3 crias)');
+t('fase 1 = vientres contractuales', L.filtrarPorFase(a.filasConservadas,1).length,
    a.filasConservadas.filter(function(f){return f.tipo==='madre_lote_inicial'&&f.origen==='real';}).length);
-t('fase 2 = crias', L.filtrarPorFase(a.filasConservadas,2).length,
+t('fase 2 = reposicion', L.filtrarPorFase(a.filasConservadas,2).length,
+   a.filasConservadas.filter(function(f){return f.origen==='reposicion';}).length);
+t('fase 3 = crias', L.filtrarPorFase(a.filasConservadas,3).length,
    a.filasConservadas.filter(function(f){return f.tipo==='cria';}).length);
+t('fase invalida lanza', (function(){ try{ L.filtrarPorFase([],9); return 'no lanzo'; }
+   catch(e){ return /Fase desconocida/.test(e.message)?'lanza':'otro error'; } })(), 'lanza');
 console.log(fail?'\n'+fail+' FALLOS':'\nDeteccion de anomalias: todo OK');
 // Sin process.exit aquí: el resumen y el código de salida van UNA sola vez al
 // final del archivo. Un exit intermedio dejaría los bloques siguientes como

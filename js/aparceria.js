@@ -66,10 +66,12 @@
 
   // Fases de carga. Mientras falte alguna, los indicadores no son
   // representativos y la UI lo advierte.
+  // Son 3 fases, una por archivo. Los sacrificios NO son una fase aparte:
+  // vienen dentro de las crías (ESTADO LAAAMB = SACRIFICADO).
   var FASES = {
-    1: { clave: 'fundadoras',  etiqueta: 'Fundadoras' },
-    2: { clave: 'nacimientos', etiqueta: 'Nacimientos' },
-    3: { clave: 'salidas',     etiqueta: 'Salidas por sacrificio' }
+    1: { clave: 'contractuales', etiqueta: 'Vientres contractuales' },
+    2: { clave: 'reposicion',    etiqueta: 'Vientres de reposición' },
+    3: { clave: 'crias',         etiqueta: 'Crías' }
   };
 
   function sb() {
@@ -113,8 +115,14 @@
   // ── PREDICADOS ──────────────────────────────────────────────────────
   // 'proyectado' son filas SIMULADAS: quedan fuera de TODO KPI de portada y
   // se subtotalizan aparte como escenario.
-  function esReal(a) { return a.origen === 'real'; }
-  function esProy(a) { return a.origen === 'proyectado'; }
+  // 'reposicion' son animales REALES que sí están en la finca y sí cuentan
+  // en el hato — pero NO los produjo el aparcero, así que salen del
+  // numerador del crecimiento.
+  function esProy(a)   { return a.origen === 'proyectado'; }
+  function esReposic(a){ return a.origen === 'reposicion'; }
+  // Contable = existe de verdad (aportado + reposición). Es el universo de
+  // todo KPI de portada.
+  function esReal(a)   { return !esProy(a); }
 
   // Un animal está en el hato solo si su estado_salida es 'activo'.
   function enHato(a)   { return esReal(a) && a.estado_salida === 'activo'; }
@@ -123,8 +131,12 @@
   function esVenta(a)  { return esReal(a) && a.estado_salida === 'venta'; }
   function esNoLoc(a)  { return esReal(a) && a.estado_salida === 'no_localizado'; }
 
-  function esFundadora(a) { return a.tipo === 'madre_lote_inicial'; }
-  function esCria(a)      { return a.tipo === 'cria'; }
+  // Fundadora = vientre APORTADO al inicio. La reposición también es
+  // tipo='madre_lote_inicial', pero se excluye a propósito: si contara como
+  // fundadora, el gap contra el contrato se inflaría con animales que el
+  // propietario entregó después.
+  function esFundadora(a) { return a.tipo === 'madre_lote_inicial' && a.origen === 'real'; }
+  function esCria(a)      { return a.tipo === 'cria' && a.origen === 'real'; }
 
   // pct devuelve null si el denominador es 0 o nulo: nunca Infinity ni NaN.
   // La UI imprime '—' ante null, así que un dataset vacío no muestra basura.
@@ -178,8 +190,17 @@
 
     var fundadoras = reales.filter(esFundadora);
     var crias      = reales.filter(esCria);
+    var reposicion = reales.filter(esReposic);
     var fundActivas = fundadoras.filter(enHato);
     var criasActivas = crias.filter(enHato);
+    var reposActiva = reposicion.filter(enHato);
+
+    // Crías con propiedad en verificación: reetiquetadas cuyo origen está en
+    // disputa entre hatos. NO se infiere propiedad ni se mueve ningún animal;
+    // solo se cuentan para marcar el indicador como provisional.
+    var criasEnVerificacion = crias.filter(function (a) {
+      return a.reetiquetado === true && a.en_verificacion === true;
+    });
 
     // hato_inicial = MADRES APORTADAS al firmar. Cláusula de contrato que se
     // lee de la tabla; jamás se deriva de las filas cargadas.
@@ -188,12 +209,15 @@
     var meta = (aportante && aportante.meta_anual != null)
       ? Number(aportante.meta_anual) : null;
 
-    var hatoActual = activos.length;
+    var hatoActual = activos.length;              // INCLUYE reposición
+    var reposicionActiva = reposActiva.length;
 
-    // Crecimiento sobre la base contractual. Con hato_actual = 0 da -100%,
-    // que es correcto y no un error a esconder.
-    var crecPct  = pct(hatoActual - (hatoInicial || 0), hatoInicial);
-    var crecNeto = hatoInicial != null ? hatoActual - hatoInicial : null;
+    // Crecimiento PRODUCTIVO: descuenta la reposición del numerador. Es lo
+    // único que el aparcero produjo. Si la reposición contara, el indicador
+    // premiaría la mortalidad (más muertes → más reposición → más "crecimiento").
+    var produccion = hatoActual - reposicionActiva;
+    var crecPct  = pct(produccion - (hatoInicial || 0), hatoInicial);
+    var crecNeto = hatoInicial != null ? produccion - hatoInicial : null;
 
     // Coherencia meta ↔ base: meta_anual debería ser hato_inicial × 2.7.
     // Se AVISA, no se corrige: si no cuadra es un error de captura.
@@ -245,7 +269,14 @@
 
       // ── Crecimiento ──
       hatoInicial: hatoInicial,
-      hatoActual: hatoActual,
+      hatoActual: hatoActual,                 // incluye reposición
+      reposicionRegistrada: reposicion.length,
+      reposicionActiva: reposicionActiva,
+      // hato_actual menos reposición: lo que el aparcero efectivamente tiene
+      // de su propia producción más lo que quedó del lote aportado.
+      produccionPropia: produccion,
+      criasEnVerificacion: criasEnVerificacion.length,
+      criasEnVerificacionDetalle: criasEnVerificacion,
       crecimientoNeto: crecNeto,
       crecimientoPct: crecPct,
       meta: meta,
@@ -307,9 +338,9 @@
     var out = [];
     function id(nombre, ok, detalle) { out.push({ id: nombre, ok: !!ok, detalle: detalle || '' }); }
 
-    id('fundadoras_activas + crias_activas = hato_actual',
-      k.fundadorasActivas + k.criasActivas === k.hatoActual,
-      k.fundadorasActivas + ' + ' + k.criasActivas + ' = ' + k.hatoActual);
+    id('fundadoras_activas + crias_activas = produccion_propia',
+      k.fundadorasActivas + k.criasActivas === k.produccionPropia,
+      k.fundadorasActivas + ' + ' + k.criasActivas + ' = ' + k.produccionPropia);
 
     id('hato_actual = count(real AND activo)',
       k.hatoActual === reales.filter(enHato).length);
@@ -322,18 +353,28 @@
       k.hatoActual + '+' + k.muertes + '+' + k.sacrificios + '+' + k.ventas + '+'
         + k.noLocalizados + ' = ' + k.totalRegistradas);
 
-    id('fundadoras + crias = total real',
-      k.fundadorasRegistradas + k.criasRegistradas === k.totalRegistradas);
+    id('fundadoras + crias + reposicion = total contable',
+      k.fundadorasRegistradas + k.criasRegistradas + k.reposicionRegistrada === k.totalRegistradas,
+      k.fundadorasRegistradas + '+' + k.criasRegistradas + '+' + k.reposicionRegistrada
+        + ' = ' + k.totalRegistradas);
+
+    // La reposición cuenta en el hato pero NO en el crecimiento.
+    id('hato_actual incluye reposicion',
+      k.hatoActual === k.fundadorasActivas + k.criasActivas + k.reposicionActiva,
+      k.fundadorasActivas + '+' + k.criasActivas + '+' + k.reposicionActiva
+        + ' = ' + k.hatoActual);
+    id('produccion_propia = hato_actual - reposicion_activa',
+      k.produccionPropia === k.hatoActual - k.reposicionActiva);
+    id('crecimiento EXCLUYE la reposicion',
+      (!k.hatoInicial) ? k.crecimientoPct === null
+        : k.crecimientoPct === Math.round(((k.produccionPropia - k.hatoInicial) / k.hatoInicial) * 1000) / 10);
 
     id('gap = fundadoras_registradas - hato_inicial',
       k.hatoInicial == null
         ? k.gapConciliacion === null
         : k.gapConciliacion === k.fundadorasRegistradas - k.hatoInicial);
 
-    id('crecimiento = (hato_actual - hato_inicial) / hato_inicial',
-      (!k.hatoInicial)
-        ? k.crecimientoPct === null
-        : k.crecimientoPct === Math.round(((k.hatoActual - k.hatoInicial) / k.hatoInicial) * 1000) / 10);
+
 
     id('cumplimiento = hato_actual / meta_anual',
       (!k.meta)
@@ -377,6 +418,9 @@
     pesoVigente: pesoVigente,
     esReal: esReal,
     esProy: esProy,
+    esReposic: esReposic,
+    esFundadora: esFundadora,
+    esCria: esCria,
     enHato: enHato,
     esMuerto: esMuerto,
     esSacrif: esSacrif,

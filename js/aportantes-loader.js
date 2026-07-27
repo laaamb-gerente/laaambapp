@@ -31,6 +31,11 @@
   var PESO_ESTIMADO_FECHA = '2026-07-25';
   var PESO_ESTIMADO_NOTA =
     'Estimado: 3,0 kg al nacer + 0,147 kg/día lineal. No es pesaje en balanza.';
+  // Techo para pesos ESTIMADOS. El modelo lineal no tiene tope: en animales
+  // de más de 18 meses produce hasta 87 kg cuando el peso real se estabiliza
+  // en 60–70. Por encima de esto no se carga, se reporta.
+  // Los pesos REALES y de SACRIFICIO no tienen techo: son mediciones.
+  var TECHO_ESTIMADO = 70;
 
   // ── NORMALIZACIÓN DE TEXTO ──────────────────────────────────────────
   function txt(v) {
@@ -141,7 +146,12 @@
     lactante:       { estado_salida: 'activo',        estado_reproductivo: 'madre' },
     desconocido:    { estado_salida: 'activo',        estado_reproductivo: 'sin_dato' },
     muerta:         { estado_salida: 'muerte',        estado_reproductivo: null },
-    no_localizada:  { estado_salida: 'no_localizado', estado_reproductivo: null }
+    no_localizada:  { estado_salida: 'no_localizado', estado_reproductivo: null },
+    // Fase 3 · crías. Un SACRIFICADO no es una muerte: es el producto del
+    // negocio y va en línea propia, jamás sumado a la mortalidad.
+    retenida_hato:  { estado_salida: 'activo',        estado_reproductivo: null, grupo: 'Retenidas para hato' },
+    en_cebo:        { estado_salida: 'activo',        estado_reproductivo: null, grupo: 'En cebo' },
+    sacrificado:    { estado_salida: 'sacrificio',    estado_reproductivo: null }
   };
   function interpretarEstadoLaaamb(v) {
     var k = sinTildes(v).replace(/[\s-]+/g, '_');
@@ -182,6 +192,18 @@
     return out;
   }
 
+  // Prefijo del codigo por hato. La fase 2 no trae columna CODIGO, así que
+  // se genera {PREFIJO}-{chapeta}, igual formato que las otras dos fases.
+  var PREFIJOS = { salatiel: 'SAL', paola: 'PAO', mauricio: 'MAU' };
+  function prefijoDeHato(hato) {
+    var h = sinTildes(hato);
+    var claves = Object.keys(PREFIJOS);
+    for (var i = 0; i < claves.length; i++) {
+      if (h.indexOf(claves[i]) >= 0) return PREFIJOS[claves[i]];
+    }
+    return null;
+  }
+
   // ── COLUMNAS ────────────────────────────────────────────────────────
   var COLS = {
     hato: ['HATO'],
@@ -203,6 +225,14 @@
     fechaMuerte: ['FECHA DE MUERTE'],
     pesoReal: ['PESO REAL (kg)', 'PESO REAL (KG)', 'PESO REAL'],
     pesoFecha: ['FECHA DEL PESO'],
+    // Fase 3 (crías)
+    chapetaOriginal: ['CHAPETA ORIGINAL'],
+    codigoOriginalCol: ['CODIGO ORIGINAL'],
+    pesoActual: ['PESO ACTUAL (kg)', 'PESO ACTUAL (KG)', 'PESO ACTUAL'],
+    pesoSacrificio: ['PESO AL SACRIFICIO (kg)', 'PESO AL SACRIFICIO (KG)', 'PESO AL SACRIFICIO'],
+    fechaSacrificio: ['FECHA SACRIFICIO', 'FECHA DE SACRIFICIO'],
+    destino: ['DESTINO'],
+    conflictoChapeta: ['CONFLICTO CHAPETA'],
     grupo: ['GRUPO'],
     nacimiento: ['FECHA NACIMIENTO', 'FECHA DE NACIMIENTO'],
     estadoAct: ['ESTADO ACTUALIZADO'],
@@ -262,7 +292,7 @@
         + '. Encabezados encontrados: ' + Object.keys(crudas[0]).join(' | '));
     }
 
-    var filas = [], excepciones = [], avisos = [];
+    var filas = [], excepciones = [], avisos = [], rechazados = [];
     function val(f, k) { return mapa[k] ? f[mapa[k]] : null; }
 
     crudas.forEach(function (f, idx) {
@@ -285,6 +315,12 @@
       // CODIGO explícito: si la hoja lo trae, ese es el codigo y NO se le
       // aplica sufijo. CHAPETA sigue siendo la marca física.
       var codigoExp = txt(val(f, 'codigoExp'));
+      // La hoja de reposición no trae CODIGO: se genera {PREFIJO}-{chapeta}
+      // para que todas las fases usen el mismo formato de clave.
+      if (!codigoExp && opciones.generarCodigo) {
+        var pref = prefijoDeHato(hato);
+        if (pref) codigoExp = pref + '-' + codigo;
+      }
 
       var sexoRaw = sinTildes(val(f, 'sexo'));
       var sexo = /^hembra/.test(sexoRaw) ? 'hembra'
@@ -296,12 +332,29 @@
       }
 
       var origenRaw = sinTildes(val(f, 'origen'));
-      // 'CONTRACTUAL' = vientres del contrato → animales reales.
-      var origen = /^proyectado|^simulad/.test(origenRaw) ? 'proyectado' : 'real';
-      if (origenRaw && !/^proyectado|^simulad|^real|^contractual/.test(origenRaw)) {
+      // 4 valores crudos → 3 del CHECK. El crudo se conserva en notas: el
+      // mapeo es una interpretación y el original debe quedar consultable.
+      //   CONTRACTUAL → real · REAL → real
+      //   PROYECTADO  → proyectado
+      //   REPOSICION  → reposicion (stock del propietario, NO es crecimiento)
+      var origen = /^proyectado|^simulad/.test(origenRaw) ? 'proyectado'
+                 : /^reposicion/.test(origenRaw)          ? 'reposicion'
+                 : 'real';
+      if (origenRaw && !/^proyectado|^simulad|^real|^contractual|^reposicion/.test(origenRaw)) {
         avisos.push({ tipo: 'origen_desconocido', fila: nFila, codigo: codigo,
           detalle: 'ORIGEN "' + txt(val(f, 'origen')) + '" → se asume real' });
       }
+
+      // ── REETIQUETADO ──
+      // El animal en el potrero SIGUE llevando el arete viejo, así que:
+      //   codigo_original  ← CHAPETA ORIGINAL (el arete físico de hoy)
+      //   chapeta_asignada ← CHAPETA (la nueva, pendiente en campo)
+      // ⚠️ La regla NO es "CHAPETA ORIGINAL no vacía": en la hoja de crías
+      // viene llena en las 136 filas. Es reetiquetado cuando DIFIERE.
+      var chapOrig = txt(val(f, 'chapetaOriginal'));
+      var reetiquetado = !!(chapOrig && chapOrig !== codigo);
+      var chapetaFisica = chapOrig || codigo;
+      var chapetaAsignada = reetiquetado ? codigo : null;
 
       var est = interpretarEstado(val(f, 'estadoAct'), val(f, 'estado'));
       var gr = interpretarGrupo(val(f, 'grupo'));
@@ -366,6 +419,41 @@
       // snapshot = peso que NO puede ir a aportantes_pesajes porque no tiene
       // fecha, y allí 'fecha' es NOT NULL y parte del índice único.
       var snapshot = null;
+      // Sacrificio: peso + fecha propios. tipo='sacrificio', que en la
+      // jerarquía gana sobre real y estimado.
+      var psac = parseFloat(String(val(f, 'pesoSacrificio') || '').replace(',', '.'));
+      var fsac = fechaCelda(val(f, 'fechaSacrificio'));
+      if (!isNaN(psac) && psac > 0) {
+        if (fsac) {
+          pesajes.push({ fecha: fsac, peso_kg: Math.round(psac * 100) / 100,
+            tipo: 'sacrificio', nota: 'Peso al sacrificio' });
+        } else {
+          snapshot = { peso_kg: Math.round(psac * 100) / 100, peso_fecha: null,
+            peso_tipo: 'real',
+            peso_nota: 'Peso al sacrificio sin fecha registrada en origen.' };
+          avisos.push({ tipo: 'peso_sacrificio_sin_fecha', fila: nFila, codigo: codigo,
+            detalle: 'peso al sacrificio ' + psac + ' kg sin FECHA SACRIFICIO' });
+        }
+      }
+
+      // PESO ACTUAL de fase 3 = estimado por modelo lineal.
+      // TECHO DE 70 kg: el modelo no tiene tope y produce hasta 87 kg en
+      // animales cuyo peso real se estabiliza en 60–70. Por encima de 70 NO
+      // se carga y se reporta. Los pesos reales y de sacrificio no tienen tope.
+      var pact = parseFloat(String(val(f, 'pesoActual') || '').replace(',', '.'));
+      if (!isNaN(pact) && pact > 0) {
+        if (pact > TECHO_ESTIMADO) {
+          rechazados.push({ fila: nFila, codigo: codigo, hato: hato, peso_kg: pact,
+            motivo: 'peso ESTIMADO de ' + pact + ' kg supera el techo de '
+              + TECHO_ESTIMADO + ' kg — el modelo lineal no tiene tope y '
+              + 'sobreestima adultos. No se carga.' });
+        } else {
+          pesajes.push({ fecha: opciones.fechaEstimados || PESO_ESTIMADO_FECHA,
+            peso_kg: Math.round(pact * 100) / 100, tipo: 'estimado',
+            nota: PESO_ESTIMADO_NOTA });
+        }
+      }
+
       var pr = parseFloat(String(val(f, 'pesoReal') || '').replace(',', '.'));
       var prFecha = fechaCelda(val(f, 'pesoFecha'));
       var emb = pesoEmbebido(val(f, 'estado'));
@@ -419,7 +507,9 @@
         fila: nFila,
         hato: hato,
         codigo: codigoExp || codigo,
-        codigo_original: codigo,
+        codigo_original: chapetaFisica,
+        chapeta_asignada: chapetaAsignada,
+        reetiquetado: reetiquetado,
         codigo_explicito: !!codigoExp,
         criadero_origen: criadero || null,
         raza: txt(val(f, 'raza')) || null,     // se guarda tal cual: text libre
@@ -442,6 +532,7 @@
     });
 
     return { filas: filas, excepciones: excepciones, avisos: avisos,
+             pesosRechazados: rechazados,
              resumen: resumirParseo(filas, excepciones) };
   }
 
@@ -587,16 +678,20 @@
   }
 
   // ── FASES ───────────────────────────────────────────────────────────
+  // 3 fases, una por archivo. Los sacrificios NO son fase aparte: vienen
+  // dentro de las crías con ESTADO LAAAMB = SACRIFICADO.
   function filtrarPorFase(filas, fase) {
     if (!fase) return filas;
-    if (fase === 1) {
+    if (fase === 1) {   // vientres contractuales
       return filas.filter(function (f) {
         return f.tipo === 'madre_lote_inicial' && f.origen === 'real';
       });
     }
-    if (fase === 2) return filas.filter(function (f) { return f.tipo === 'cria'; });
-    if (fase === 3) {
-      return filas.filter(function (f) { return f.estado_salida === 'sacrificio'; });
+    if (fase === 2) {   // vientres de reposición
+      return filas.filter(function (f) { return f.origen === 'reposicion'; });
+    }
+    if (fase === 3) {   // crías (incluye proyectadas y sacrificadas)
+      return filas.filter(function (f) { return f.tipo === 'cria'; });
     }
     throw new Error('Fase desconocida: ' + fase + ' (válidas: 1, 2, 3)');
   }
@@ -874,6 +969,9 @@
       aportante_id: aportante_id,
       codigo: f.codigo,
       codigo_original: f.codigo_original || f.codigo,
+      chapeta_asignada: f.chapeta_asignada || null,
+      reetiquetado: !!f.reetiquetado,
+      en_verificacion: !!f.en_verificacion,
       criadero_origen: f.criadero_origen,
       raza: f.raza,
       sexo: f.sexo,

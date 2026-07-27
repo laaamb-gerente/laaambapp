@@ -27,8 +27,8 @@
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="js/aparceria.js?v=4"></script>
-<script src="js/aportantes-loader.js?v=5"></script>
+<script src="js/aparceria.js?v=5"></script>
+<script src="js/aportantes-loader.js?v=6"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -100,6 +100,7 @@ tbody tr:hover{background:var(--surface)}
 tr.proy{background:var(--amber-bg)}
 tr.proy:hover{background:var(--amber-bg);filter:brightness(1.04)}
 /* No localizados: estilo tenue. No son bajas, pero no están en campo. */
+tr.ree{box-shadow:inset 3px 0 0 var(--wine)}
 tr.noloc{opacity:.55}
 tr.noloc .cod{text-decoration:line-through;text-decoration-thickness:1px}
 tr.muerto{opacity:.5}
@@ -356,15 +357,24 @@ tr.muerto{opacity:.5}
     rows.forEach(function(a){
       var cls = [];
       if(a.origen === 'proyectado') cls.push('proy');
+      if(a.reetiquetado === true) cls.push('ree');
       if(a.estado_salida === 'muerte') cls.push('muerto');
       else if(a.estado_salida === 'no_localizado') cls.push('noloc');
       // Cuando la chapeta la comparten varios animales, el codigo lleva sufijo
       // y se muestra la chapeta real debajo: el operario necesita distinguir
       // los animales, y el aportante necesita reconocer su marca.
       var codSufijado = a.codigo_original && a.codigo_original !== a.codigo;
+      // Reetiquetado: el arete que lleva puesto NO es la chapeta asignada.
+      // Se marca fuerte porque en campo se busca por el arete viejo.
+      var ree = a.reetiquetado === true;
       h += '<tr class="'+cls.join(' ')+'">'
         + '<td class="cod">'+esc(a.codigo)
-        +   (codSufijado
+        +   (ree
+              ? '<div style="font-size:9.5px;font-weight:700;color:var(--wine)" '
+                + 'title="Reetiquetado pendiente en campo: el animal lleva puesto el arete '
+                + esc(a.codigo_original)+' y se le asignó la chapeta '+esc(a.chapeta_asignada)+'">'
+                + '🏷 arete '+esc(a.codigo_original)+' → '+esc(a.chapeta_asignada)+'</div>'
+              : codSufijado
               ? '<div style="font-size:9.5px;font-weight:400;color:var(--amber)" '
                 + 'title="Chapeta compartida por varios animales — se cargó con sufijo para distinguirlos">'
                 + 'chapeta '+esc(a.codigo_original)+'</div>'
@@ -637,9 +647,9 @@ tr.muerto{opacity:.5}
       + fld('Hoja', '<input id="ld-hoja" type="text" value="'
           + esc(window.APORTANTES_LOADER.HOJA_DEFECTO) + '">')
       + fld('Fase', '<select id="ld-fase">'
-          + '<option value="1">1 · Fundadoras (madres del lote aportado)</option>'
-          + '<option value="2">2 · Nacimientos (incluye proyectados)</option>'
-          + '<option value="3">3 · Salidas por sacrificio (actualiza)</option>'
+          + '<option value="1">1 · Vientres contractuales</option>'
+          + '<option value="2">2 · Vientres de reposición</option>'
+          + '<option value="3">3 · Crías (incluye sacrificados y proyectados)</option>'
           + '</select>')
       + fld('Hato (vacío = todos)', '<input id="ld-hato" type="text" placeholder="ej. SALATIEL">')
       + fld('Etiqueta de la carga', '<input id="ld-etiqueta" type="text" '
@@ -675,9 +685,14 @@ tr.muerto{opacity:.5}
       if(!window.XLSX) throw new Error('SheetJS no cargó (revisa la conexión)');
       var buf = await file.arrayBuffer();
       var wb = window.XLSX.read(buf, { type:'array', cellDates:true });
-      _parseado = window.APORTANTES_LOADER.parsear(wb, { hoja: $('ld-hoja').value.trim() });
+      var fase = parseInt($('ld-fase').value, 10);
+      _parseado = window.APORTANTES_LOADER.parsear(wb, {
+        hoja: $('ld-hoja').value.trim(),
+        // La hoja de reposición no trae CODIGO: se genera {PREFIJO}-{chapeta}.
+        generarCodigo: (fase === 2)
+      });
       _pf = await window.APORTANTES_LOADER.preflight(_parseado, {
-        fase: parseInt($('ld-fase').value, 10),
+        fase: fase,
         hato: $('ld-hato').value.trim() || null,
         etiqueta: $('ld-etiqueta').value.trim() || null
       });
