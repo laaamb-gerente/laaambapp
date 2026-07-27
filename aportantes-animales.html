@@ -27,8 +27,8 @@
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="js/aparceria.js?v=5"></script>
-<script src="js/aportantes-loader.js?v=6"></script>
+<script src="js/aparceria.js?v=6"></script>
+<script src="js/aportantes-loader.js?v=7"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -223,6 +223,9 @@ tr.muerto{opacity:.5}
 
   <div class="iso-banner" id="aviso-fases" style="display:none;background:var(--amber-bg);border-color:var(--amber);border-left-color:var(--amber)"></div>
 
+  <!-- Pendientes de re-etiquetado: se cruza con la orden de trabajo de potrero -->
+  <div class="iso-banner" id="aviso-ree" style="display:none"></div>
+
   <div class="kpis" id="kpis"></div>
 
   <div class="tbl-wrap">
@@ -414,6 +417,61 @@ tr.muerto{opacity:.5}
       + box('gray',  k.noLocalizados, 'No localizados')
       + box('amber', k.proyectados, 'Escenario simulado');
     renderAvisoFases(k);
+    renderAvisoReetiquetado();
+  }
+
+  // ── PENDIENTES DE RE-ETIQUETADO EN CAMPO ───────────────────────
+  // El animal lleva puesto el arete VIEJO; la chapeta nueva está asignada
+  // pero aún no puesta. Hasta que alguien vaya al potrero con la orden de
+  // trabajo, buscar por la chapeta nueva en el corral no sirve de nada.
+  function pendientesReetiquetado(){
+    return FILAS.filter(function(a){
+      return a.reetiquetado === true && a.estado_salida === 'activo';
+    });
+  }
+  function renderAvisoReetiquetado(){
+    var el = $('aviso-ree'); if(!el) return;
+    var p = pendientesReetiquetado();
+    if(!p.length){ el.style.display='none'; return; }
+    el.style.display='flex';
+    el.innerHTML = '<span style="font-size:17px;flex-shrink:0">🏷</span><div style="flex:1">'
+      + '<b>' + p.length + ' animales pendientes de re-etiquetado en campo.</b><br>'
+      + 'Llevan puesto el arete viejo; la chapeta nueva está asignada pero no puesta. '
+      + 'Buscar por la chapeta nueva en el corral no los encuentra.'
+      + '<div style="margin-top:8px"><button class="btn" id="btn-ree-csv" '
+      + 'style="border-color:var(--wine);color:var(--wine)">⬇ Descargar lista para potrero</button></div>'
+      + '</div>';
+    $('btn-ree-csv').addEventListener('click', descargarReetiquetado);
+  }
+  // CSV pensado para cruzarse con la orden de trabajo de potrero: va
+  // ordenado por el arete que el animal lleva PUESTO, que es por donde se
+  // busca en el corral.
+  function descargarReetiquetado(){
+    var p = pendientesReetiquetado().slice().sort(function(x,y){
+      return String(x.codigo_original).localeCompare(String(y.codigo_original), 'es', {numeric:true});
+    });
+    var ap = APORTANTES.filter(function(x){ return x.id === $('f-aportante').value; })[0];
+    var filas = [['ARETE_PUESTO','CHAPETA_A_PONER','CODIGO','APORTANTE','SEXO','RAZA','MADRE','NACIMIENTO','HECHO']];
+    p.forEach(function(a){
+      filas.push([a.codigo_original, a.chapeta_asignada, a.codigo,
+                  (ap&&ap.nombre)||'', a.sexo, a.raza||'', a.madre_codigo||'',
+                  a.fecha_nacimiento||'', '']);
+    });
+    var csv = filas.map(function(r){
+      return r.map(function(c){
+        c = String(c==null?'':c);
+        return /[",;\n]/.test(c) ? '"'+c.replace(/"/g,'""')+'"' : c;
+      }).join(',');
+    }).join('\n');
+    var blob = new Blob(['\ufeff'+csv], {type:'text/csv;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'reetiquetado_potrero_'
+      + String((ap&&ap.nombre)||'aportante').replace(/[^A-Za-z0-9]+/g,'_') + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast(p.length + ' animales exportados para la orden de potrero');
   }
 
   // ── AVISO DE CARGA INCOMPLETA ──────────────────────────────────

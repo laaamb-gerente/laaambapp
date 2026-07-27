@@ -25,7 +25,7 @@
 <script src="js/roles.js"></script>
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/aparceria.js?v=5"></script>
+<script src="js/aparceria.js?v=6"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);
@@ -250,18 +250,48 @@ table.rt td.num,table.rt th.num{text-align:right}
     var ap=ACTUAL.aportante, k=ACTUAL.kpis, corte=ACTUAL.corte;
 
     // Sección crecimiento: las 3 líneas en el orden pactado.
-    var crec = '<div class="crec">'
+    // Crecimiento PROVISIONAL cuando hay crías con genealogía en disputa.
+    // Se mide POR MADRE, no por chapeta duplicada: contar chapetas subestima,
+    // porque una madre puede tener varias crías involucradas.
+    var provisional = k.criasEnVerificacion
+      ? '<div style="background:#FEF4EA;border:1.5px solid #F58220;border-radius:10px;'
+        + 'padding:12px 14px;margin-bottom:12px;font-size:12.5px;color:#8A5A20;line-height:1.55">'
+        + '<b>⚠ CRECIMIENTO PROVISIONAL — el indicador puede variar.</b><br>'
+        + k.criasEnVerificacion + ' crías están en verificación de propiedad: su genealogía '
+        + 'apunta a vientres contractuales de otro aportante. Están cargadas donde se '
+        + 'registran hoy, sin resolver a quién pertenecen.'
+        + (k.hatoActual
+            ? ' Si se reasignaran, el hato actual pasaría de <b>' + k.hatoActual + '</b> a <b>'
+              + (k.hatoActual - k.criasEnVerificacion) + '</b>.'
+            : '')
+        + '</div>'
+      : '';
+
+    var crec = provisional + '<div class="crec">'
       + '<div class="crec-row"><span class="k">Madres aportadas al inicio</span>'
       +   '<span class="v">'+num(k.hatoInicial)+'</span></div>'
       + '<div class="crec-row"><span class="k">Nacidas en el proyecto (vivas)</span>'
       +   '<span class="v">'+num(k.criasActivas)+'</span></div>'
-      + '<div class="crec-row total"><span class="k">Hato actual</span>'
+      + (k.reposicionActiva
+          ? '<div class="crec-row"><span class="k">Reposición del propietario '
+            + '<span style="color:#8A9696;font-size:11px">(no es crecimiento del aparcero)</span>'
+            + '</span><span class="v">' + k.reposicionActiva + '</span></div>'
+          : '')
+      + '<div class="crec-row total"><span class="k">Hato actual'
+      + (k.reposicionActiva ? ' <span style="color:#8A9696;font-size:11px;font-weight:400">'
+          + '(incluye ' + k.reposicionActiva + ' de reposición)</span>' : '')
+      + '</span>'
       +   '<span><span class="v">'+num(k.hatoActual)+'</span>'
       +   (k.crecimientoPct==null?'':'<span class="crec-delta">'+pctTxt(k.crecimientoPct)+' sobre lo aportado</span>')
       +   '</span></div>'
       + '</div>'
       + '<div class="crec-nota">Los aportantes entregaron únicamente madres. Todo animal nacido '
-      +   'desde el inicio del contrato es crecimiento generado por el manejo del proyecto.'
+      +   'desde el inicio del contrato es crecimiento generado por el manejo del proyecto. '
+      +   (k.reposicionActiva
+            ? 'La reposición entregada por el propietario para cubrir mortalidad NO se cuenta '
+              + 'como crecimiento: si contara, el indicador premiaría la mortalidad. '
+              + 'El porcentaje se calcula sobre ' + k.produccionPropia + ' animales de producción propia.'
+            : '')
       +   (k.crecimientoNeto==null?'':' Crecimiento neto: <b>'+(k.crecimientoNeto>0?'+':'')+k.crecimientoNeto+' animales</b>.')
       + '</div>';
 
@@ -407,7 +437,9 @@ table.rt td.num,table.rt th.num{text-align:right}
       +     '<div class="nom">'+esc(ap.nombre)+'</div></div>'
       + '</div>'
       + '<div class="rep-body">'
-      +   sec('Crecimiento del hato', crec, 'aportaron madres; lo nacido es del proyecto')
+      +   sec('Crecimiento del hato', crec,
+             (k.criasEnVerificacion ? 'PROVISIONAL · propiedad en verificación'
+                                    : 'aportaron madres; lo nacido es del proyecto'))
       +   sec('Cumplimiento de meta', meta)
       +   sec('Composición y productividad', comp)
       +   sec('Composición del hato', compos, 'sobre el hato actual')

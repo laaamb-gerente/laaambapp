@@ -770,6 +770,29 @@
         b.aCrear.push(f);
       });
       b.existentesTotal = (res.data || []).length;
+
+      // ── VALIDACIÓN DE NEGOCIO (la base no puede expresarla) ──
+      // Ninguna chapeta de cría puede coincidir con la de un vientre del
+      // MISMO hato. El UNIQUE es sobre 'codigo' y los codigos difieren
+      // (MAU-558 cría vs 558-2 vientre), así que Postgres lo permite — pero
+      // en el potrero serían dos animales con el mismo arete y nadie podría
+      // distinguirlos.
+      var vientresBase = {};
+      (res.data || []).forEach(function (r) {
+        if (r.tipo === 'madre_lote_inicial') {
+          vientresBase[String(r.codigo_original || r.codigo)] = r;
+        }
+      });
+      b.criaChocaVientre = b.filas.filter(function (f) {
+        if (f.tipo !== 'cria') return false;
+        // Si ya está reetiquetada, el arete se va a cambiar en campo y la
+        // colisión desaparece: se reporta como advertencia, no como choque.
+        if (f.reetiquetado) return false;
+        return !!vientresBase[String(f.codigo_original)];
+      }).map(function (f) {
+        return { codigo: f.codigo, arete: f.codigo_original, fila: f.fila,
+                 vientre: vientresBase[String(f.codigo_original)].codigo };
+      });
     }
 
     // En fase 3 lo normal es ACTUALIZAR: el macho sacrificado ya entró en la
@@ -794,6 +817,20 @@
               return a.codigo + ' → ' + a.candidatos.join('/'); }).join(', ')
           + '. Resuélvelo agregando una columna CODIGO en la hoja con el codigo '
           + 'exacto de cada fila (CHAPETA sigue siendo la marca física).' });
+    }
+    var choques = bloques.reduce(function (acc, b) {
+      return acc.concat(b.criaChocaVientre || []); }, []);
+    if (choques.length) {
+      bloqueantes.push({ tipo: 'cria_choca_con_vientre', n: choques.length,
+        detalle: choques.length + ' cría(s) llevan el mismo arete físico que un '
+          + 'vientre del mismo hato: '
+          + choques.map(function (c) {
+              return 'arete ' + c.arete + ' (cría ' + c.codigo + ' vs vientre ' + c.vientre + ')';
+            }).join(', ')
+          + '. Es un ERROR DE NEGOCIO, no de base de datos: los codigos son '
+          + 'distintos y el UNIQUE lo permite, pero en el potrero serían dos '
+          + 'animales con el mismo arete. Se resuelve reetiquetando la cría '
+          + '(columna CHAPETA distinta de CHAPETA ORIGINAL), no en el cargador.' });
     }
     if (sinResolver.length) {
       bloqueantes.push({ tipo: 'hato_sin_aportante', n: sinResolver.length,
@@ -823,6 +860,7 @@
       excepcionesParseo: parseado.excepciones,
       insertsEnFase3: insertsEnFase3,
       ambiguos: ambiguos,
+      criaChocaVientre: choques,
       sinResolver: sinResolver,
       bloqueantes: bloqueantes,
       resumenParseo: parseado.resumen
