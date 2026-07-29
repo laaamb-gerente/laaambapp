@@ -28,7 +28,7 @@
 <script src="js/mobile-nav.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="js/aparceria.js?v=6"></script>
-<script src="js/aportantes-loader.js?v=7"></script>
+<script src="js/aportantes-loader.js?v=8"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -769,6 +769,28 @@ tr.muerto{opacity:.5}
     var h = '';
     h += '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;'
        + 'color:var(--text3);margin-bottom:8px">Pre-flight · nada se ha escrito</div>';
+
+    // ── MAPEO HATO → APORTANTE, ANTES QUE NADA ──
+    // Se muestra siempre y con el uuid: cargar 302 filas bajo el aportante
+    // equivocado es peor que no cargarlas.
+    var mh = p.mapeoHato || [];
+    if(mh.length){
+      var malo = mh.some(function(m){ return !!m.error; });
+      h += '<div style="background:'+(malo?'var(--red-bg)':'var(--bg3)')+';border:1px solid '
+        + (malo?'var(--red)':'var(--border2)')+';border-radius:var(--r);padding:11px 13px;'
+        + 'font-size:12px;margin-bottom:10px">'
+        + '<div style="font-weight:700;color:'+(malo?'var(--red)':'var(--text2)')+';margin-bottom:6px">'
+        +   'Mapeo HATO → aportante'+(malo?' · ⚠ FALLA':'')+'</div>'
+        + mh.map(function(m){
+            return '<div style="font-family:ui-monospace,Menlo,monospace;font-size:11px;'
+              + 'color:'+(m.error?'var(--red)':'var(--text2)')+';margin-bottom:3px">'
+              + '<b>'+esc(m.hato)+'</b> → '+esc(m.nombre||'—')
+              + (m.id ? '<br><span style="color:var(--text4)">'+esc(m.id)+'</span>'
+                      : '<br><span style="color:var(--red)">'+esc(m.error||'sin resolver')+'</span>')
+              + '</div>';
+          }).join('')
+        + '</div>';
+    }
 
     // Resumen por aportante
     h += '<div style="background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);'

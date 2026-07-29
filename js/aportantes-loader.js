@@ -158,6 +158,18 @@
     return ESTADO_LAAAMB[k] || null;
   }
 
+  // ── CAUSA DE MUERTE ─────────────────────────────────────────────────
+  // Vocabulario CERRADO. Con texto libre se terminan teniendo tres variantes
+  // de "neumonía" como causas distintas y el agrupado de causas del reporte
+  // deja de servir. Un valor fuera de la lista NO se carga: se reporta.
+  var CAUSAS_MUERTE = ['neumonia','debilidad','mala_madre','problema_parto',
+    'anemia','adaptacion','parasitosis','hipotermia','accidente','desconocida'];
+  function normalizarCausa(v) {
+    var s = sinTildes(v).replace(/[\s-]+/g, '_');
+    if (!s) return { causa: null, valida: true };          // vacío = desconocida, no se rellena
+    return { causa: s, valida: CAUSAS_MUERTE.indexOf(s) >= 0, crudo: txt(v) };
+  }
+
   // ── GRUPO ───────────────────────────────────────────────────────────
   // Normaliza Madre/Madres → Madres. Distingue Engorde de Engorde/sacrificio.
   // 'Muerta 07-03-26' NO es un grupo: es fecha de muerte → fecha_salida.
@@ -195,6 +207,16 @@
   // Prefijo del codigo por hato. La fase 2 no trae columna CODIGO, así que
   // se genera {PREFIJO}-{chapeta}, igual formato que las otras dos fases.
   var PREFIJOS = { salatiel: 'SAL', paola: 'PAO', mauricio: 'MAU' };
+
+  // MAPA EXPLÍCITO columna HATO → aportantes.nombre.
+  // Los nombres de la tabla NO cambian: son los que se imprimen en el
+  // reporte del aparcero. El Excel usa la forma corta; aquí se traduce.
+  // Sin este mapa, la igualdad exacta falla en las 302 filas.
+  var MAPA_HATO = {
+    SALATIEL: 'JULIAN Y SALATIEL MORENO',
+    PAOLA:    'PAOLA MORENO',
+    MAURICIO: 'MAURICIO FAJARDO'
+  };
   function prefijoDeHato(hato) {
     var h = sinTildes(hato);
     var claves = Object.keys(PREFIJOS);
@@ -233,6 +255,9 @@
     fechaSacrificio: ['FECHA SACRIFICIO', 'FECHA DE SACRIFICIO'],
     destino: ['DESTINO'],
     conflictoChapeta: ['CONFLICTO CHAPETA'],
+    // OPCIONAL. Hoy no viene en ninguna hoja; la causa por animal llega
+    // después con un CSV (codigo, causa) + UPDATE. Si aparece, se usa.
+    causaMuerte: ['CAUSA MUERTE', 'CAUSA DE MUERTE'],
     grupo: ['GRUPO'],
     nacimiento: ['FECHA NACIMIENTO', 'FECHA DE NACIMIENTO'],
     estadoAct: ['ESTADO ACTUALIZADO'],
@@ -386,6 +411,19 @@
         estado_salida = 'muerte';
         motivo_salida = motivo_salida || gr.crudo;
       }
+      // CAUSA MUERTE opcional. Vacía = desconocida: se deja NULL y NO se
+      // rellena con la causa agregada del contrato, que vive en
+      // aportantes.notas y no es atribuible a un animal concreto.
+      var cm = normalizarCausa(val(f, 'causaMuerte'));
+      if (cm.causa && !cm.valida) {
+        avisos.push({ tipo: 'causa_muerte_fuera_de_vocabulario', fila: nFila, codigo: codigo,
+          detalle: 'causa "' + cm.crudo + '" no está en el vocabulario cerrado ('
+            + CAUSAS_MUERTE.join(', ') + ') → se deja NULL' });
+        cm.causa = null;
+      }
+      // La causa del vocabulario cerrado manda sobre el texto crudo.
+      if (cm.causa) motivo_salida = cm.causa;
+
       // FECHA DE MUERTE explícita gana sobre la extraída del texto de GRUPO.
       var fecha_salida = fechaCelda(val(f, 'fechaMuerte')) || gr.fecha_salida || null;
 
@@ -704,17 +742,50 @@
     var fase = opciones.fase;
     var aportantes = await window.APARCERIA.getAportantes();
 
-    // Resolver HATO → aportante por coincidencia de nombre. Se usa HATO, no
-    // el orden de las filas.
+    // Resolver HATO → aportante con el MAPA EXPLÍCITO. Se usa la columna
+    // HATO, no el orden de las filas.
+    //
+    // Deliberadamente NO se usa coincidencia parcial. Con un LIKE, 'PAOLA'
+    // resuelve hoy porque hay una sola Paola; el día que exista una segunda
+    // ('PAOLA RESTREPO') el match pasa a ser ambiguo y se cae la carga
+    // entera, o peor, resuelve al aportante equivocado. El mapa es un
+    // contrato explícito: si aparece un HATO que no está, falla ruidosamente
+    // en vez de adivinar.
     var porNombre = {};
     aportantes.forEach(function (a) { porNombre[sinTildes(a.nombre)] = a; });
+
+    // Cada resolución se registra para mostrarla en el pre-flight ANTES de
+    // escribir nada: hato del Excel → nombre en tabla → uuid.
+    var mapeoResuelto = [];
+    var vistos = {};
     function resolver(hato) {
-      var h = sinTildes(hato);
-      if (porNombre[h]) return porNombre[h];
-      // Coincidencia parcial: 'SALATIEL' dentro de 'JULIAN Y SALATIEL MORENO'
+      var clave = sinTildes(hato).toUpperCase();
+      var nombreDestino = MAPA_HATO[clave];
+      if (!nombreDestino) {
+        if (!vistos[clave]) {
+          vistos[clave] = true;
+          mapeoResuelto.push({ hato: hato, nombre: null, id: null,
+            error: 'HATO "' + hato + '" no está en MAPA_HATO ('
+              + Object.keys(MAPA_HATO).join(', ') + ')' });
+        }
+        return null;
+      }
+      // El nombre del mapa debe existir en la tabla y ser ÚNICO.
       var cand = aportantes.filter(function (a) {
-        return sinTildes(a.nombre).indexOf(h) >= 0 || h.indexOf(sinTildes(a.nombre)) >= 0;
+        return sinTildes(a.nombre) === sinTildes(nombreDestino);
       });
+      if (!vistos[clave]) {
+        vistos[clave] = true;
+        mapeoResuelto.push({
+          hato: hato, nombre: nombreDestino,
+          id: cand.length === 1 ? cand[0].id : null,
+          error: cand.length === 0
+            ? 'No existe ningún aportante llamado "' + nombreDestino + '" en la tabla'
+            : cand.length > 1
+              ? 'Hay ' + cand.length + ' aportantes llamados "' + nombreDestino + '" — ambiguo'
+              : null
+        });
+      }
       return cand.length === 1 ? cand[0] : null;
     }
 
@@ -804,6 +875,16 @@
 
     // Bloqueantes: impiden ejecutar. Advertencias: informan y dejan seguir.
     var bloqueantes = [];
+    // El mapeo HATO → aportante se muestra SIEMPRE antes de escribir, con el
+    // uuid de cada uno. Si alguno no resuelve, o resuelve a más de uno, es
+    // bloqueante: cargar 302 filas bajo el aportante equivocado es peor que
+    // no cargarlas.
+    var mapeoMalo = mapeoResuelto.filter(function (m) { return !!m.error; });
+    if (mapeoMalo.length) {
+      bloqueantes.push({ tipo: 'hato_no_resuelto', n: mapeoMalo.length,
+        detalle: 'El mapeo HATO → aportante falló: '
+          + mapeoMalo.map(function (m) { return m.error; }).join(' · ') });
+    }
     var ambiguos = bloques.reduce(function (acc, b) { return acc.concat(b.ambiguos || []); }, []);
     if (ambiguos.length) {
       // No se resuelve por adivinanza: actualizar el animal equivocado con un
@@ -850,6 +931,7 @@
         ? window.crypto.randomUUID() : null)),
       etiqueta: opciones.etiqueta || null,
       bloques: bloques,
+      mapeoHato: mapeoResuelto,
       totales: {
         candidatas: candidatas.length,
         aCrear: bloques.reduce(function (a, b) { return a + b.aCrear.length; }, 0),
@@ -1087,6 +1169,9 @@
     // expuestos para pruebas unitarias
     _interpretarEstado: interpretarEstado,
     _interpretarEstadoLaaamb: interpretarEstadoLaaamb,
+    _normalizarCausa: normalizarCausa,
+    CAUSAS_MUERTE: CAUSAS_MUERTE,
+    MAPA_HATO: MAPA_HATO,
     _interpretarGrupo: interpretarGrupo,
     _pesoEmbebido: pesoEmbebido,
     _fechaCelda: fechaCelda,

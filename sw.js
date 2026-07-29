@@ -10,10 +10,11 @@
 // v19: peso sin fecha a columnas del animal + bajas sin fecha visibles.
 // v20: 3 fases (contractuales/reposicion/crias), origen reposicion, reetiquetado.
 // v21: validacion cria-vs-vientre, lista de re-etiquetado y nota provisional.
+// v22: MAPA_HATO explicito (Excel → aportantes.nombre) visible en el pre-flight.
 // El bump es OBLIGATORIO aquí: las otras 22 páginas cargan './js/sidebar.js'
 // sin ?v y el SW lo sirve cache-first, así que sin cambiar CACHE_NAME no
 // verían el grupo nuevo del menú.
-const CACHE_NAME = 'laaambapp-v21';
+const CACHE_NAME = 'laaambapp-v22';
 
 // Paths relativos: resuelven contra la ubicación del SW en cada host
 // (raíz en Vercel, /laaambapp/ en GitHub Pages).
