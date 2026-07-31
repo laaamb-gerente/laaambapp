@@ -148,6 +148,23 @@ tr.muerto{opacity:.5}
   .modal-ov{padding:0;align-items:flex-end}
   .modal{max-width:100%;border-radius:18px 18px 0 0}
 }
+
+.modal.ficha-modal{max-width:820px;width:96%}
+.ficha-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);overflow-x:auto;margin:0 0 14px}
+.ficha-tab{padding:8px 12px;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;border:none;background:transparent;border-bottom:2px solid transparent;white-space:nowrap}
+.ficha-tab.on{color:var(--teal-d);border-bottom-color:var(--teal)}
+.ficha-pane{display:none}
+.ficha-pane.on{display:block}
+.ficha-head{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start;margin-bottom:14px}
+.ficha-avatar{width:52px;height:52px;border-radius:50%;background:var(--teal-bg,rgba(26,166,166,.12));border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.ficha-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:640px){.ficha-grid{grid-template-columns:1fr 1fr}}
+.ficha-ic{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:8px 10px}
+.ficha-ic .l{font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);margin-bottom:2px}
+.ficha-ic .v{font-size:13px;font-weight:600;color:var(--text)}
+.cod-link{color:var(--teal-d);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.cod-link:hover{color:var(--teal)}
+
 </style>
 </head>
 <body>
@@ -287,7 +304,11 @@ tr.muerto{opacity:.5}
     if(p.length!==3) return esc(d);
     return p[2]+'/'+p[1]+'/'+p[0];
   }
-  function cerrarModal(){ $('modal-ov').classList.remove('on'); }
+  function cerrarModal(){
+    $('modal-ov').classList.remove('on');
+    var mb = $('modal-ov').querySelector('.modal');
+    if(mb) mb.classList.remove('ficha-modal');
+  }
   window.cerrarModal = cerrarModal;
 
   // ── ERRORES: se muestran con su mensaje real, nunca se tragan ──
@@ -371,7 +392,7 @@ tr.muerto{opacity:.5}
       // Se marca fuerte porque en campo se busca por el arete viejo.
       var ree = a.reetiquetado === true;
       h += '<tr class="'+cls.join(' ')+'">'
-        + '<td class="cod">'+esc(a.codigo)
+        + '<td class="cod"><span class="cod-link" data-id="'+esc(a.id)+'" title="Ver ficha">'+esc(a.codigo)+'</span>'
         +   (ree
               ? '<div style="font-size:9.5px;font-weight:700;color:var(--wine)" '
                 + 'title="Reetiquetado pendiente en campo: el animal lleva puesto el arete '
@@ -401,6 +422,14 @@ tr.muerto{opacity:.5}
         + '</tr>';
     });
     tb.innerHTML = h;
+    // Clic en código → ficha
+    Array.prototype.forEach.call(tb.querySelectorAll('.cod-link'), function(el){
+      el.addEventListener('click', function(ev){
+        ev.preventDefault();
+        ev.stopPropagation();
+        verFichaAportante(el.getAttribute('data-id'));
+      });
+    });
   }
 
   function renderKpis(rows, aportante){
@@ -950,6 +979,268 @@ tr.muerto{opacity:.5}
       msg.innerHTML = err(fallo('Ejecutar carga', e));
     }
   }
+
+
+  // ═══ FICHA APORTANTE ═══════════════════════════════════════════
+  var _fichaA = null;
+  var _fichaPesajes = [];
+
+  function fichaTab(name){
+    Array.prototype.forEach.call(document.querySelectorAll('.ficha-tab'), function(b){
+      b.classList.toggle('on', b.getAttribute('data-tab') === name);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.ficha-pane'), function(p){
+      p.classList.toggle('on', p.id === 'fp-'+name);
+    });
+  }
+
+  function fichaIc(l, v){
+    return '<div class="ficha-ic"><div class="l">'+esc(l)+'</div><div class="v">'+(v==null||v===''?'—':v)+'</div></div>';
+  }
+
+  function calcEdadA(fn){
+    if(!fn) return '—';
+    var d = new Date(fn), n = new Date();
+    if(isNaN(d.getTime())) return '—';
+    var m = (n.getFullYear()-d.getFullYear())*12 + (n.getMonth()-d.getMonth());
+    if(m < 0) return '—';
+    if(m < 12) return m+' m';
+    var y = Math.floor(m/12), rm = m%12;
+    return y+'a'+(rm?(' '+rm+'m'):'');
+  }
+
+  async function verFichaAportante(id){
+    var a = FILAS.find(function(x){ return String(x.id) === String(id); });
+    if(!a){ toast('Animal no encontrado', true); return; }
+    _fichaA = a;
+    _fichaPesajes = [];
+
+    $('modal-title').textContent = a.codigo + (a.raza ? ' · '+a.raza : '');
+    $('modal-body').innerHTML = '<div class="empty-box">Cargando ficha…</div>';
+    $('modal-ov').classList.add('on');
+    var modalBox = $('modal-ov').querySelector('.modal');
+    if(modalBox) modalBox.classList.add('ficha-modal');
+
+    // Pesajes
+    try{
+      var r = await window._sb.from('aportantes_pesajes')
+        .select('fecha,peso_kg,tipo,nota')
+        .eq('aportante_animal_id', a.id)
+        .order('fecha', { ascending: false })
+        .limit(20);
+      if(r && !r.error && r.data) _fichaPesajes = r.data;
+    }catch(e){ console.warn('pesajes ficha', e); }
+
+    // Hermanos (misma madre, mismo aportante)
+    var hermanos = [];
+    if(a.madre_codigo){
+      hermanos = FILAS.filter(function(x){
+        return x.madre_codigo === a.madre_codigo && String(x.id) !== String(a.id);
+      });
+    }
+    var madre = null;
+    if(a.madre_codigo){
+      madre = FILAS.find(function(x){ return x.codigo === a.madre_codigo || x.codigo_original === a.madre_codigo; });
+    }
+
+    var peso = a.peso_kg != null ? (a.peso_kg+' kg') : '—';
+    var sexoIcon = (String(a.sexo||'').toLowerCase().indexOf('hem')>=0) ? '♀' : '♂';
+
+    var head = '<div class="ficha-head">'
+      + '<div class="ficha-avatar">'+sexoIcon+'</div>'
+      + '<div style="flex:1">'
+      +   '<div style="font-family:Sigmar,cursive;font-size:18px">'+esc(a.codigo)+'</div>'
+      +   '<div style="font-size:12px;color:var(--teal);font-weight:600;margin-top:2px">'
+      +     esc(a.raza||'—')+' · '+esc(a.tipo||'—')+' · '+esc(a.origen||'—')
+      +   '</div>'
+      +   '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'
+      +     badgeEstado(a)
+      +     (a.origen==='proyectado'?'<span class="bdg proy">Simulado</span>':'<span class="bdg real">Real</span>')
+      +     (peso!=='—'?'<span class="bdg" style="background:var(--teal-bg);color:var(--teal-d)">'+peso+'</span>':'')
+      +     '<span class="bdg" style="background:var(--bg3)">'+calcEdadA(a.fecha_nacimiento)+'</span>'
+      +   '</div>'
+      + '</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap">'
+      +   '<button class="btn btn-primary btn-sm" type="button" id="ff-pesaje">Pesaje</button>'
+      +   '<button class="btn btn-ghost btn-sm" type="button" id="ff-baja" style="color:var(--red)">Baja</button>'
+      + '</div>'
+      + '</div>';
+
+    var tabs = '<div class="ficha-tabs">'
+      + '<button type="button" class="ficha-tab on" data-tab="resumen" onclick="window.__fichaTab(\'resumen\')">Resumen</button>'
+      + '<button type="button" class="ficha-tab" data-tab="pesajes" onclick="window.__fichaTab(\'pesajes\')">Pesajes</button>'
+      + '<button type="button" class="ficha-tab" data-tab="genealogia" onclick="window.__fichaTab(\'genealogia\')">Genealogía</button>'
+      + '<button type="button" class="ficha-tab" data-tab="tratamientos" onclick="window.__fichaTab(\'tratamientos\')">Tratamientos</button>'
+      + '<button type="button" class="ficha-tab" data-tab="salida" onclick="window.__fichaTab(\'salida\')">Salida</button>'
+      + '</div>';
+
+    var paneRes = '<div class="ficha-pane on" id="fp-resumen"><div class="ficha-grid">'
+      + fichaIc('Código', esc(a.codigo))
+      + fichaIc('Chapeta orig.', esc(a.codigo_original||'—'))
+      + fichaIc('Sexo', esc(a.sexo||'—'))
+      + fichaIc('Raza', esc(a.raza||'—'))
+      + fichaIc('Tipo', esc(a.tipo||'—'))
+      + fichaIc('Origen', esc(a.origen||'—'))
+      + fichaIc('Estado', esc(a.estado_salida||'—'))
+      + fichaIc('Reproductivo', esc(a.estado_reproductivo||'—'))
+      + fichaIc('Nacimiento', a.fecha_nacimiento ? fmtFecha(a.fecha_nacimiento) : '—')
+      + fichaIc('Edad', calcEdadA(a.fecha_nacimiento))
+      + fichaIc('Peso', peso)
+      + fichaIc('Grupo', esc(a.grupo||'—'))
+      + fichaIc('Madre', esc(a.madre_codigo||'—'))
+      + fichaIc('Criadero', esc(a.criadero_origen||'—'))
+      + '</div>'
+      + (a.notas ? '<div style="margin-top:12px;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);font-size:12px">📝 '+esc(a.notas)+'</div>' : '')
+      + '</div>';
+
+    var rowsP = _fichaPesajes.length
+      ? _fichaPesajes.map(function(p){
+          return '<tr><td>'+esc(p.fecha||'—')+'</td><td style="font-weight:700;color:var(--teal)">'
+            +esc(p.peso_kg)+' kg</td><td>'+esc(p.tipo||'—')+'</td><td>'+esc(p.nota||'—')+'</td></tr>';
+        }).join('')
+      : '<tr><td colspan="4" style="color:var(--text3)">Sin pesajes registrados</td></tr>';
+    if(a.peso_kg != null && !_fichaPesajes.length){
+      rowsP = '<tr><td>'+esc(a.peso_fecha||'—')+'</td><td style="font-weight:700;color:var(--teal)">'
+        +esc(a.peso_kg)+' kg</td><td>'+esc(a.peso_tipo||'en animal')+'</td><td>'+esc(a.peso_nota||'—')+'</td></tr>';
+    }
+    var panePes = '<div class="ficha-pane" id="fp-pesajes">'
+      + '<table class="rt"><thead><tr><th>Fecha</th><th>Peso</th><th>Tipo</th><th>Nota</th></tr></thead><tbody>'
+      + rowsP + '</tbody></table>'
+      + '<div style="margin-top:10px;font-size:11px;color:var(--text3)">GDP modelo de referencia del proyecto se muestra en el reporte del aportante; aquí solo pesajes reales.</div>'
+      + '</div>';
+
+    var gen = '';
+    gen += '<div class="ficha-grid" style="margin-bottom:12px">'
+      + fichaIc('Madre', madre ? esc(madre.codigo) : esc(a.madre_codigo||'—'))
+      + fichaIc('Estado madre', madre ? esc(madre.estado_salida||'—') : '—')
+      + fichaIc('Hermanos en hato', String(hermanos.length))
+      + '</div>';
+    if(hermanos.length){
+      gen += '<table class="rt"><thead><tr><th>Código</th><th>Sexo</th><th>Raza</th><th>Estado</th><th>Nac.</th></tr></thead><tbody>'
+        + hermanos.map(function(h){
+            return '<tr><td class="cod">'+esc(h.codigo)+'</td><td>'+esc(h.sexo||'—')+'</td><td>'
+              +esc(h.raza||'—')+'</td><td>'+esc(h.estado_salida||'—')+'</td><td>'
+              +(h.fecha_nacimiento?fmtFecha(h.fecha_nacimiento):'—')+'</td></tr>';
+          }).join('')
+        + '</tbody></table>';
+    } else {
+      gen += '<div style="font-size:12px;color:var(--text3)">Sin hermanos cargados con la misma madre en este aportante.</div>';
+    }
+    var paneGen = '<div class="ficha-pane" id="fp-genealogia">'+gen+'</div>';
+
+    var paneTra = '<div class="ficha-pane" id="fp-tratamientos">'
+      + '<div style="padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);font-size:13px;line-height:1.5">'
+      + '<b>Tratamientos de aparcería</b><br>'
+      + 'Los tratamientos del hato propio viven en otra tabla (animales de LAAAMB). '
+      + 'Para aparcería habilitaremos <code>aportantes_tratamientos</code> enlazado al botiquín '
+      + '(Ivermectina, Cydectin, Baycox, Fifenicol, etc.). '
+      + 'Esta pestaña quedará lista para el historial por animal.'
+      + '</div></div>';
+
+    var paneSal = '<div class="ficha-pane" id="fp-salida"><div class="ficha-grid">'
+      + fichaIc('Estado salida', esc(a.estado_salida||'—'))
+      + fichaIc('Motivo', esc(a.motivo_salida||'—'))
+      + fichaIc('Fecha salida', a.fecha_salida ? fmtFecha(a.fecha_salida) : '—')
+      + fichaIc('Peso salida', a.peso_salida != null ? (a.peso_salida+' kg') : '—')
+      + fichaIc('Causa baja (leg.)', esc(a.causa_baja||'—'))
+      + fichaIc('Fecha baja (leg.)', a.fecha_baja ? fmtFecha(a.fecha_baja) : '—')
+      + '</div></div>';
+
+    $('modal-body').innerHTML = head + tabs + paneRes + panePes + paneGen + paneTra + paneSal;
+
+    window.__fichaTab = fichaTab;
+
+    var bp = document.getElementById('ff-pesaje');
+    var bb = document.getElementById('ff-baja');
+    if(bp) bp.onclick = function(){ abrirPesajeFicha(); };
+    if(bb) bb.onclick = function(){ abrirBajaFicha(); };
+  }
+
+  function abrirPesajeFicha(){
+    if(!_fichaA) return;
+    var kg = prompt('Peso (kg) para '+_fichaA.codigo+':');
+    if(kg==null) return;
+    kg = parseFloat(String(kg).replace(',','.'));
+    if(!kg || kg<=0){ toast('Peso inválido', true); return; }
+    var fecha = prompt('Fecha (YYYY-MM-DD):', new Date().toISOString().slice(0,10));
+    if(!fecha) return;
+    guardarPesajeFicha(kg, fecha);
+  }
+
+  async function guardarPesajeFicha(kg, fecha){
+    try{
+      var ins = await window._sb.from('aportantes_pesajes').insert({
+        aportante_animal_id: _fichaA.id,
+        fecha: fecha,
+        peso_kg: kg,
+        tipo: 'control'
+      }).select().single();
+      if(ins.error) throw ins.error;
+      await window._sb.from('aportantes_animales').update({
+        peso_kg: kg,
+        peso_fecha: fecha,
+        peso_tipo: 'control'
+      }).eq('id', _fichaA.id);
+      toast('Pesaje guardado: '+kg+' kg');
+      // refrescar fila local
+      _fichaA.peso_kg = kg; _fichaA.peso_fecha = fecha;
+      var i = FILAS.findIndex(function(x){ return x.id === _fichaA.id; });
+      if(i>=0){ FILAS[i].peso_kg = kg; FILAS[i].peso_fecha = fecha; }
+      verFichaAportante(_fichaA.id);
+      renderTabla(FILAS.filter(function(){return true;})); // re-render simple
+      // mejor: recargar filtros actuales
+      if(typeof aplicarFiltros === 'function') aplicarFiltros();
+      else if(typeof cargar === 'function'){ /* keep FILAS */ renderTabla(FILAS); }
+    }catch(e){
+      toast((e && e.message) || 'Error al guardar pesaje', true);
+    }
+  }
+
+  function abrirBajaFicha(){
+    if(!_fichaA) return;
+    if(_fichaA.estado_salida && _fichaA.estado_salida !== 'activo'){
+      toast('Este animal ya no está activo', true); return;
+    }
+    var motivo = prompt('Motivo de baja (ej. Neumonia, Parasitos, Sacrificio):');
+    if(motivo==null || !String(motivo).trim()) return;
+    var tipo = prompt('Tipo: muerte / sacrificado / venta / no_localizado', 'muerte');
+    if(!tipo) return;
+    tipo = String(tipo).trim().toLowerCase();
+    var fecha = prompt('Fecha salida (YYYY-MM-DD):', new Date().toISOString().slice(0,10));
+    if(!fecha) return;
+    guardarBajaFicha(tipo, motivo.trim(), fecha);
+  }
+
+  async function guardarBajaFicha(tipo, motivo, fecha){
+    var estado = 'muerte';
+    if(tipo.indexOf('sacr')>=0) estado = 'sacrificado';
+    else if(tipo.indexOf('venta')>=0) estado = 'venta';
+    else if(tipo.indexOf('no_loc')>=0 || tipo.indexOf('noloc')>=0) estado = 'no_localizado';
+    try{
+      var upd = await window._sb.from('aportantes_animales').update({
+        estado_salida: estado,
+        motivo_salida: motivo,
+        fecha_salida: fecha
+      }).eq('id', _fichaA.id).select().single();
+      if(upd.error) throw upd.error;
+      toast('Salida registrada: '+estado);
+      _fichaA.estado_salida = estado;
+      _fichaA.motivo_salida = motivo;
+      _fichaA.fecha_salida = fecha;
+      var i = FILAS.findIndex(function(x){ return x.id === _fichaA.id; });
+      if(i>=0){
+        FILAS[i].estado_salida = estado;
+        FILAS[i].motivo_salida = motivo;
+        FILAS[i].fecha_salida = fecha;
+      }
+      verFichaAportante(_fichaA.id);
+      if(typeof aplicarFiltros === 'function') aplicarFiltros();
+      else renderTabla(FILAS);
+    }catch(e){
+      toast((e && e.message) || 'Error al registrar baja', true);
+    }
+  }
+
 
   function whenReady(cb){
     if(window.AUTH_ROL){ cb(); return; }
