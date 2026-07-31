@@ -25,7 +25,7 @@
 <script src="js/roles.js"></script>
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/aparceria.js?v=6"></script>
+<script src="js/aparceria.js?v=7"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);
@@ -306,6 +306,7 @@ table.rt td.num,table.rt th.num{text-align:right}
     var comp = '<div class="kg">'
       + kc('gray', num(k.fundadorasActivas), 'Fundadoras activas', 'del lote aportado')
       + kc('gray', num(k.criasActivas), 'Nacidas en proyecto', 'activas')
+      + kc('teal', num(k.corderasLevante), 'Corderas en levante', 'crías hembras retenidas para crecimiento')
       + kc('gray', num(k.prolificidad==null?'—':String(k.prolificidad).replace('.',',')), 'Prolificidad',
             k.madresDistintas ? k.criasRegistradas+' crías ÷ '+k.madresDistintas+' madres' : 'sin madres identificadas')
       + kc('gray', k.fertilidadPct==null?'—':String(k.fertilidadPct).replace('.',',')+'%', 'Fertilidad',
@@ -320,50 +321,53 @@ table.rt td.num,table.rt th.num{text-align:right}
       + kc('gray', num(k.sinDato), 'Sin dato', 'no evaluadas')
       + '</div>';
 
-    // Mortalidad y no localizados: DOS bloques distintos, nunca sumados.
-    var causas = k.causasBaja.length
-      ? '<table class="rt" style="margin-top:12px"><thead><tr><th>Causa registrada</th><th class="num">Animales</th></tr></thead><tbody>'
-        + k.causasBaja.map(function(c){
-            return '<tr><td>'+esc(c.clave)+'</td><td class="num">'+c.n+'</td></tr>'; }).join('')
-        + '</tbody></table>'
-      : '';
-    // Sacrificios y ventas son SALIDAS COMERCIALES, no pérdidas: van en
-    // tarjetas propias y nunca dentro de la mortalidad. Si se sumaran, un
-    // hato que vende corderos parecería un hato que los pierde.
-    var mort = '<div class="kg">'
-      + kc('red', num(k.muertes), 'Bajas por muerte', 'del total registrado')
-      + kc('red', k.mortalidadPct==null?'—':String(k.mortalidadPct).replace('.',',')+'%', '% Mortalidad',
-            k.muertes+' ÷ '+k.totalRegistradas+' registrados')
-      + kc('gray', num(k.sacrificios), 'Sacrificios', 'salida comercial, no baja')
-      + kc('gray', num(k.ventas), 'Ventas en pie', 'salida comercial, no baja')
-      + kc('gray', num(k.noLocalizados), 'No localizados', 'NO son bajas')
-      + (k.muertesSinFecha
-          ? kc('red', num(k.muertesSinFecha), 'Bajas sin fecha',
-               'quedan fuera de cualquier rango')
-          : '')
-      + '</div>'
-      + (k.muertesSinFecha
-          ? '<div class="crec-nota"><b>'+k.muertesSinFecha+' de las '+k.muertes+' bajas no '
-            + 'tienen fecha registrada.</b> Se cuentan en el total y en el % de mortalidad de '
-            + 'este corte, pero cualquier vista filtrada por rango de fechas las dejaría fuera: '
-            + 'solo '+k.muertesConFecha+' son fechables. No se les inventa una fecha.</div>'
-          : '')
-      + ((k.sacrificios || k.ventas)
-          ? '<div class="crec-nota"><b>Los sacrificios y las ventas no son mortalidad.</b> Son el '
-            + 'producto del negocio y se reportan aparte; incluirlos en el % de mortalidad '
-            + 'multiplicaría la cifra y daría una lectura falsa del manejo.</div>'
-          : '')
-      + causas
-      + (k.noLocalizados
-          ? '<div class="crec-nota"><b>Los no localizados no se cuentan como mortalidad.</b> Son animales '
-            + 'que no se pudieron ubicar en campo durante el corte y quedan fuera del hato actual '
-            + 'hasta que se confirme su estado.'
-            + (k.noLocalizadosDetalle.length
-                ? ' Chapetas: '+k.noLocalizadosDetalle.map(function(a){
-                    return esc(a.codigo_original||a.codigo); }).join(', ')+'.'
-                : '')
-            + '</div>'
-          : '');
+    // Causas de mortalidad con %
+  var causas = '';
+  if (k.causasBaja && k.causasBaja.length) {
+    var totalMuertes = k.muertes || 1;
+    causas = '<div style="margin-top:14px">'
+      + '<div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#8A9696;margin-bottom:8px">Causas de mortalidad</div>'
+      + '<table class="rt"><thead><tr><th>Causa</th><th class="num">Animales</th><th class="num">%</th><th></th></tr></thead><tbody>'
+      + k.causasBaja.map(function(c){
+          var p = Math.round((c.n / totalMuertes) * 1000) / 10;
+          return '<tr>'
+            + '<td>'+esc(c.clave)+'</td>'
+            + '<td class="num">'+c.n+'</td>'
+            + '<td class="num">'+String(p).replace('.',',')+'%</td>'
+            + '<td style="width:34%"><div style="height:8px;background:#EAEEEE;border-radius:99px;overflow:hidden">'
+            + '<div style="height:100%;width:'+Math.max(p,1)+'%;background:#E24B4A"></div></div></td>'
+            + '</tr>';
+        }).join('')
+      + '</tbody></table></div>';
+  }
+
+  // SALIDAS — sin BAJAS SIN FECHA; con peso promedio sacrificio
+  var mort = '<div class="kg">'
+    + kc('red', num(k.muertes), 'Bajas por muerte', 'del total registrado')
+    + kc('red', k.mortalidadPct==null?'—':String(k.mortalidadPct).replace('.',',')+'%', '% Mortalidad',
+          k.muertes+' ÷ '+k.totalRegistradas+' registrados')
+    + kc('gray', num(k.sacrificios), 'Sacrificios', 'salida comercial, no baja')
+    + (k.pesoPromedioSacrificio != null
+        ? kc('teal', k.pesoPromedioSacrificio + ' kg', 'Peso promedio sacrificio',
+             'sobre ' + k.sacrificios + ' animales')
+        : '')
+    + kc('gray', num(k.ventas), 'Ventas en pie', 'salida comercial, no baja')
+    + kc('gray', num(k.noLocalizados), 'No localizados', 'NO son bajas')
+    + '</div>'
+    + ((k.sacrificios || k.ventas)
+        ? '<div class="crec-nota"><b>Los sacrificios y las ventas no son mortalidad.</b> '
+          + 'Son el producto del negocio y se reportan aparte.</div>'
+        : '')
+    + causas
+    + (k.noLocalizados
+        ? '<div class="crec-nota"><b>Los no localizados no se cuentan como mortalidad.</b> '
+          + 'Quedan fuera del hato actual hasta confirmar su estado.'
+          + (k.noLocalizadosDetalle.length
+              ? ' Chapetas: '+k.noLocalizadosDetalle.map(function(a){
+                  return esc(a.codigo_original||a.codigo); }).join(', ')+'.'
+              : '')
+          + '</div>'
+        : '');
 
     // Composición del hato activo: sexo y raza. Sobre el hato ACTUAL, no
     // sobre el total registrado — un animal muerto no compone el hato.
@@ -391,40 +395,12 @@ table.rt td.num,table.rt th.num{text-align:right}
         + '</div>'
       : '';
 
-    // Notas al pie
-    var gap = k.gapConciliacion;
-    var notaGap = '';
-    if(gap != null && gap !== 0){
-      notaGap = '<div class="warn"><b>Conciliación pendiente:</b> el contrato registra '
-        + num(k.hatoInicial)+' madres aportadas, y el lote inicial cargado tiene '
-        + num(k.fundadorasRegistradas)+' animales ('+(gap>0?'+':'')+gap+'). '
-        + (gap>0
-            ? 'La diferencia corresponde a hembras jóvenes incluidas en el mismo lote, que el contrato no contó como madres adultas.'
-            : '<b>'+Math.abs(gap)+' vientres contratados sin registro</b>: están en el contrato '
-              + 'pero no aparecen en el registro cargado.')
-        + ' Ambas cifras son correctas en su contexto; la conciliación está pendiente y no se ha ajustado ningún número de este reporte.</div>';
-    }
-
-    var pesoNota = (k.pesosEstimados
-      ? '<div><b>Pesos:</b> '+k.pesosReales+' de balanza y '+k.pesosEstimados
-        + ' estimados por modelo lineal (3,0 kg al nacer + 0,147 kg/día). Los estimados '
-        + 'sobreestiman adultos y están marcados como «est.» en el listado. '+k.sinPeso+' animales sin peso.</div>'
-      : '<div><b>Pesos:</b> '+k.sinPeso+' animales sin peso registrado.</div>');
-
-    var foot = '<div class="rep-foot">'
-      + '<div><b>Fecha de corte:</b> '+fmtLargo(corte)+'.</div>'
-      + '<div><b>Origen de los datos:</b> corte manual cargado en LAAAMBAPP. Los KPIs se calculan '
-      +   'sobre los '+k.totalRegistradas+' animales reales registrados para este aportante; los animales '
-      +   'de escenario quedan excluidos de todo indicador de portada.</div>'
-      + '<div><b>Sin dato reproductivo:</b> '+k.sinDato+' animales del hato actual no tienen estado '
-      +   'reproductivo evaluado. La fertilidad los excluye del denominador, por lo que no se '
-      +   'cuentan como vacíos.</div>'
-      + '<div><b>Sin fecha de nacimiento:</b> '+k.sinFechaNacimiento+' animales. Las fechas nunca se estiman.</div>'
-      + pesoNota
-      + notaGap
-      + '<div style="margin-top:10px;color:#A8B3B3">LAAAMB Corderos · Finca La Marinilla · '
-      +   'Aparcería — estos animales no forman parte del inventario de la finca.</div>'
-      + '</div>';
+    // Notas al pie simplificadas
+  var foot = '<div class="rep-foot">'
+    + '<div><b>Fecha de corte:</b> '+fmtLargo(corte)+'.</div>'
+    + '<div style="margin-top:10px;color:#A8B3B3">LAAAMB Corderos · Finca La Marinilla · '
+    +   'Aparcería — estos animales no forman parte del inventario de la finca.</div>'
+    + '</div>';
 
     $('hoja').innerHTML =
         '<div class="rep-head">'
