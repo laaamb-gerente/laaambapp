@@ -1,676 +1,595 @@
-<!DOCTYPE html>
-<html lang="es" data-theme="light">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1AA6A6">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="LAAAMB">
-<link rel="apple-touch-icon" href="icons/icon-laaamb.jpg">
-<title>LAAAMBAPP · Aparcería · Reportes</title>
-<script>(function(){var t=(function(){var _t=localStorage.getItem('laaamb-theme');return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute('data-theme',t);})();</script>
-<link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/laaamb.css">
-<script src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js" crossorigin="anonymous"></script>
-<script src="js/error-handler.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="js/supabase-client.js"></script>
-<script>
-  window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
-</script>
-<script src="js/auth.js"></script>
-<script src="js/roles.js"></script>
-<script src="js/sidebar.js?v=1"></script>
-<script src="js/mobile-nav.js"></script>
-<script src="js/aparceria.js?v=6"></script>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);
-  --wine:#9C3F66;--wine-bg:rgba(156,63,102,.12);--orange:#F18F22;--orange-bg:rgba(241,143,34,.12);
-  --bg:#080f10;--bg2:#0c1517;--bg3:#101d1f;--surface:#172628;--surface2:#1d3235;
-  --border:rgba(0,175,182,.10);--border2:rgba(0,175,182,.20);--border3:rgba(0,175,182,.35);
-  --green:#2ec77a;--green-bg:rgba(46,199,122,.10);--red:#e05252;--red-bg:rgba(224,82,82,.10);
-  --amber:#e8a030;--amber-bg:rgba(232,160,48,.10);--sky:#38b0d8;--sky-bg:rgba(56,176,216,.10);
-  --text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;
-  /* Marca oficial del reporte impreso */
-  --brand-teal:#1AA6A6;--brand-orange:#F58220;
-  --r:8px;--r2:14px;--sidebar:236px;--anim:.16s cubic-bezier(.4,0,.2,1)}
-html[data-theme="light"]{--bg:#F8F9FA;--bg2:#FFFFFF;--bg3:#F3F4F6;--surface:#FFFFFF;--surface2:#F3F4F6;--border:#E5E7EB;--border2:#D1D5DB;--border3:#9CA3AF;--green:#10B981;--green-bg:rgba(16,185,129,.10);--red:#EF4444;--red-bg:rgba(239,68,68,.10);--amber:#F59E0B;--amber-bg:rgba(245,158,11,.10);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.10);--text:#1A1A2E;--text2:#6B7280;--text3:#9CA3AF;--text4:#C4C9D4}
-html[data-theme="dark"]{--bg:#0F172A;--bg2:#1E293B;--bg3:#1E293B;--surface:#1E293B;--surface2:#162032;--border:#334155;--border2:#3E4C61;--border3:#475569;--green:#10B981;--green-bg:rgba(16,185,129,.14);--red:#EF4444;--red-bg:rgba(239,68,68,.14);--amber:#F59E0B;--amber-bg:rgba(245,158,11,.14);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.14);--text:#F1F5F9;--text2:#94A3B8;--text3:#64748B;--text4:#475569}
-html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
-::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}
-.app{display:flex;height:100vh;width:100vw}
-.sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0}
-.sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
-.sb-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:4px}.sb-logo-img{height:40px;width:40px;border-radius:9px;flex-shrink:0}
-.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}
-.sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
-.nav-scroll{flex:1;overflow-y:auto;padding:8px 0}
-.nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}
-.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;text-decoration:none;transition:all var(--anim);position:relative}
-.nav-link:hover{background:var(--surface);color:var(--text)}
-.nav-link.active{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
-.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}.nav-link.active .nav-ico{opacity:1}
-.nav-badge{margin-left:auto;font-size:10px;font-weight:600;background:var(--surface2);color:var(--teal);padding:1px 7px;border-radius:10px;border:1px solid var(--border2)}
-.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border);background:var(--bg2)}
-.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
-.avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
-.user-name{font-size:12px;font-weight:600;color:var(--text)}.user-role{font-size:10px;color:var(--text3)}
-#lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);width:46px;height:46px;align-items:center;justify-content:center;cursor:pointer}
-#lham svg{width:22px;height:22px;stroke:var(--text);stroke-width:2;fill:none;stroke-linecap:round}
-#lov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990}#lov.on{display:block}
-.main{flex:1;overflow-y:auto;padding:24px;background:var(--bg)}
-/* ── CONTROLES (no se imprimen) ── */
-.ctrl{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px;padding:14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2)}
-.f-item{display:flex;flex-direction:column;gap:4px}
-.f-item label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
-.f-item select,.f-item input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:8px 11px;color:var(--text);font-family:inherit;font-size:13px;min-width:160px}
-.f-item select:focus,.f-item input:focus{outline:none;border-color:var(--teal)}
-.btn{padding:9px 14px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:all var(--anim)}
-.btn:hover{border-color:var(--teal);color:var(--teal)}
-.btn.primary{background:var(--brand-teal);border-color:var(--brand-teal);color:#fff}
-.btn.primary:hover{filter:brightness(1.08);color:#fff}
-.btn.orange{background:var(--brand-orange);border-color:var(--brand-orange);color:#fff}
-.btn.orange:hover{filter:brightness(1.08);color:#fff}
-
-/* ══════════ HOJA DEL REPORTE ══════════
-   Fondo blanco fijo y colores de marca literales: la hoja se ve igual en
-   pantalla y en papel, y no cambia con el tema claro/oscuro de la app. */
-#hoja{background:#fff;color:#15201F;border-radius:var(--r2);padding:0;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);max-width:960px}
-.rep-head{background:linear-gradient(100deg,#1AA6A6 0%,#158E8E 100%);color:#fff;padding:26px 30px}
-.rep-head-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
-.rep-brand{font-family:'Sigmar',cursive;font-size:26px;letter-spacing:.5px;line-height:1}
-.rep-brand span{color:#F58220}
-.rep-sub{font-size:10.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;opacity:.9;margin-top:5px}
-.rep-corte{text-align:right;font-size:11.5px;line-height:1.6}
-.rep-corte b{display:block;font-size:15px;font-family:'Sigmar',cursive;letter-spacing:.3px}
-.rep-titulo{margin-top:20px;padding-top:18px;border-top:1px solid rgba(255,255,255,.28)}
-.rep-titulo .lbl{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;opacity:.85}
-.rep-titulo .nom{font-family:'Sigmar',cursive;font-size:23px;margin-top:3px;line-height:1.15}
-.rep-body{padding:26px 30px 30px}
-.rep-sec{margin-bottom:26px}
-.rep-sec-t{font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#1AA6A6;padding-bottom:7px;border-bottom:2px solid #1AA6A6;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
-.rep-sec-t .hint{font-size:9.5px;font-weight:600;letter-spacing:.3px;text-transform:none;color:#8A9696}
-/* Historia del crecimiento: 3 líneas en orden */
-.crec{border:1px solid #E0E6E6;border-radius:10px;overflow:hidden}
-.crec-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid #EAEEEE}
-.crec-row:last-child{border-bottom:none}
-.crec-row .k{font-size:13px;color:#5F6B6C}
-.crec-row .v{font-family:'Sigmar',cursive;font-size:20px;color:#15201F;line-height:1}
-.crec-row.total{background:#E8F6F6}
-.crec-row.total .k{font-weight:700;color:#15201F;font-size:13.5px}
-.crec-row.total .v{color:#1AA6A6;font-size:25px}
-.crec-delta{font-size:12.5px;font-weight:700;color:#F58220;margin-left:9px;white-space:nowrap}
-.crec-nota{font-size:11px;color:#8A9696;margin-top:8px;line-height:1.5}
-/* Grid de KPIs */
-.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:11px}
-.kc{border:1px solid #E0E6E6;border-radius:10px;padding:13px 15px}
-.kc .n{font-family:'Sigmar',cursive;font-size:22px;color:#15201F;line-height:1.1}
-.kc .l{font-size:10px;font-weight:700;color:#8A9696;text-transform:uppercase;letter-spacing:.7px;margin-top:3px}
-.kc .s{font-size:10.5px;color:#5F6B6C;margin-top:4px}
-.kc.teal{border-color:#1AA6A6;background:#F1FAFA}.kc.teal .n{color:#1AA6A6}
-.kc.orange{border-color:#F58220;background:#FEF4EA}.kc.orange .n{color:#C4661A}
-.kc.red{border-color:#E24B4A;background:#FCEBEB}.kc.red .n{color:#C33}
-.kc.gray{background:#F7F9F9}.kc.gray .n{color:#5F6B6C}
-/* Tabla del reporte */
-table.rt{width:100%;border-collapse:collapse;font-size:12.5px}
-table.rt th{text-align:left;padding:8px 11px;background:#F1FAFA;color:#15201F;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid #D6E3E3}
-table.rt td{padding:8px 11px;border-bottom:1px solid #EAEEEE;color:#15201F}
-table.rt tr:last-child td{border-bottom:none}
-table.rt td.num,table.rt th.num{text-align:right}
-/* Escenario proyectado: rotulado, con fondo naranja tenue */
-.esc-box{border:1.5px dashed #F58220;background:#FEF7F0;border-radius:10px;padding:16px 18px}
-.esc-tag{display:inline-block;background:#F58220;color:#fff;font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:99px;margin-bottom:10px}
-.esc-warn{font-size:11px;color:#8A5A20;margin-top:10px;line-height:1.5}
-/* Notas al pie */
-.rep-foot{border-top:1px solid #E0E6E6;margin-top:26px;padding-top:16px;font-size:10.5px;color:#8A9696;line-height:1.65}
-.rep-foot b{color:#5F6B6C}
-.rep-foot .warn{color:#C4661A}
-.iso-banner{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;margin-bottom:18px;background:var(--wine-bg);border:1px solid var(--wine);border-left:4px solid var(--wine);border-radius:var(--r);font-size:12.5px;color:var(--text);line-height:1.5}
-.iso-banner b{color:var(--wine)}
-.empty-box{padding:26px;text-align:center;color:var(--text3);font-size:13px;line-height:1.6}
-#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:11px 18px;border-radius:99px;font-size:13px;font-weight:600;z-index:10000;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}
-#toast.on{opacity:1}#toast.err{background:var(--red);color:#fff}
-@media(max-width:1000px){
-  .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .25s;z-index:9995}
-  .sidebar.on{transform:translateX(0)}
-  #lham{display:flex}
-  .main{padding:70px 14px 20px}
-  .rep-head,.rep-body{padding-left:18px;padding-right:18px}
-}
-/* ══════════ IMPRESIÓN / PDF ══════════
-   Solo la hoja se imprime: sidebar, controles y banner de app se ocultan. */
-@media print{
-  @page{size:A4;margin:11mm}
-  html,body{overflow:visible!important;height:auto!important;background:#fff!important}
-  .sidebar,#lham,#lov,.ctrl,.iso-banner,#toast,.no-print{display:none!important}
-  .app{display:block!important;height:auto!important;width:auto!important}
-  .main{overflow:visible!important;padding:0!important;background:#fff!important}
-  #hoja{box-shadow:none!important;border-radius:0!important;max-width:none!important}
-  .rep-head{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .rep-sec,.crec,.esc-box,.kc{break-inside:avoid;page-break-inside:avoid}
-  .rep-sec-t{break-after:avoid;page-break-after:avoid}
-}
-</style>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2685.6">
+  <style type="text/css">
+    body {background-color: #f6f7f9}
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; text-align: center; font: 11.0px 'Helvetica Neue'; color: #000000; color: rgba(0, 0, 0, 0.85); -webkit-text-stroke: rgba(0, 0, 0, 0.85)}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; text-align: center; font: 11.0px 'Helvetica Neue'; color: #000000; color: rgba(0, 0, 0, 0.85); -webkit-text-stroke: rgba(0, 0, 0, 0.85); min-height: 13.0px}
+    span.s1 {font-kerning: none}
+  </style>
 </head>
 <body>
-<div class="app">
-<button id="lham" aria-label="Menú"><svg id="lico" viewBox="0 0 22 22"><line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/></svg></button>
-<div id="lov"></div>
-
-<aside class="sidebar" id="sidebar">
-  <div class="sb-head">
-    <a href="index.html" class="sb-logo"><img src="icons/icon.svg" alt="LAAAMB Corderos" class="sb-logo-img"><div><div class="sb-logo-text">LAAAMB</div><div class="sb-logo-sub">Corderos · App</div></div></a>
-  </div>
-  <nav class="nav-scroll" id="nav-scroll"></nav>
-  <div class="sb-foot">
-    <div style="font-size:9px;color:var(--text4);text-align:center;margin-bottom:8px;letter-spacing:.5px">LAAAMBAPP v1.0 · 2025</div>
-    <div class="user-row"><div class="avatar">JA</div><div><div class="user-name">Usuario</div><div class="user-role">—</div></div></div>
-    <button onclick="Auth.signOut()" style="width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;background:transparent;border:1px solid var(--border);border-radius:var(--r,8px);color:var(--text3);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><path d="M13 14l3-4-3-4M16 10H7M9 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h4"/></svg>Cerrar sesión</button>
-  </div>
-</aside>
-
-<div class="main">
-  <div class="iso-banner">
-    <span style="font-size:17px;flex-shrink:0">⚖️</span>
-    <div>
-      <b>Datos de aparcería — no forman parte del inventario de La Marinilla.</b><br>
-      Los KPIs de este reporte se calculan solo sobre los animales del aportante.
-      No intervienen ni se mezclan con los indicadores del hato propio.
-    </div>
-  </div>
-
-  <div class="ctrl">
-    <div class="f-item">
-      <label for="f-aportante">Aportante</label>
-      <select id="f-aportante"><option value="">Cargando…</option></select>
-    </div>
-    <div class="f-item">
-      <label for="f-corte">Fecha de corte</label>
-      <input id="f-corte" type="date">
-    </div>
-    <button class="btn primary" id="btn-generar">Generar reporte</button>
-    <button class="btn orange" id="btn-pdf">Imprimir / PDF</button>
-    <button class="btn" id="btn-excel">Exportar Excel</button>
-  </div>
-
-  <div id="hoja"><div class="empty-box">Selecciona un aportante y genera el reporte.</div></div>
-</div>
-</div>
-<div id="toast"></div>
-
-<script>
-(function(){
-  var open=false;
-  var sb=document.getElementById('sidebar'), ov=document.getElementById('lov'), bt=document.getElementById('lham');
-  function set(v){ open=v; sb.classList.toggle('on',v); ov.classList.toggle('on',v); }
-  if(bt) bt.addEventListener('click', function(){ set(!open); });
-  if(ov) ov.addEventListener('click', function(){ set(false); });
-})();
-</script>
-
-<script>
-(function(){
-  'use strict';
-
-  var APORTANTES = [];
-  var ACTUAL = null;   // { aportante, rows, kpis, corte }
-
-  function $(id){ return document.getElementById(id); }
-  function toast(msg, err){
-    var t=$('toast'); t.textContent=msg; t.className=err?'on err':'on';
-    clearTimeout(t._tm); t._tm=setTimeout(function(){ t.className=''; }, 3200);
-  }
-  function esc(s){
-    return String(s==null?'':s).replace(/[&<>"']/g, function(c){
-      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
-    });
-  }
-  function fallo(ctx, e){
-    var m=(e&&e.message)?e.message:String(e);
-    console.error('[Reporte aparcería] '+ctx, e);
-    toast(ctx+': '+m, true);
-    return m;
-  }
-  function fmtLargo(iso){
-    if(!iso) return '—';
-    var p=String(iso).split('-');
-    var M=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-    return Number(p[2])+' de '+M[Number(p[1])-1]+' de '+p[0];
-  }
-  function num(n){ return n==null?'—':String(n); }
-  function pctTxt(p){ return p==null?'—':(p>0?'+':'')+String(p).replace('.',',')+'%'; }
-
-  // ── RENDER DE LA HOJA ──────────────────────────────────────────
-  function render(){
-    if(!ACTUAL){ return; }
-    var ap=ACTUAL.aportante, k=ACTUAL.kpis, corte=ACTUAL.corte;
-
-    // Sección crecimiento: las 3 líneas en el orden pactado.
-    // Crecimiento PROVISIONAL cuando hay crías con genealogía en disputa.
-    // Se mide POR MADRE, no por chapeta duplicada: contar chapetas subestima,
-    // porque una madre puede tener varias crías involucradas.
-    var provisional = k.criasEnVerificacion
-      ? '<div style="background:#FEF4EA;border:1.5px solid #F58220;border-radius:10px;'
-        + 'padding:12px 14px;margin-bottom:12px;font-size:12.5px;color:#8A5A20;line-height:1.55">'
-        + '<b>⚠ CRECIMIENTO PROVISIONAL — el indicador puede variar.</b><br>'
-        + k.criasEnVerificacion + ' crías están en verificación de propiedad: su genealogía '
-        + 'apunta a vientres contractuales de otro aportante. Están cargadas donde se '
-        + 'registran hoy, sin resolver a quién pertenecen.'
-        + (k.hatoActual
-            ? ' Si se reasignaran, el hato actual pasaría de <b>' + k.hatoActual + '</b> a <b>'
-              + (k.hatoActual - k.criasEnVerificacion) + '</b>.'
-            : '')
-        + '</div>'
-      : '';
-
-    var crec = provisional + '<div class="crec">'
-      + '<div class="crec-row"><span class="k">Madres aportadas al inicio</span>'
-      +   '<span class="v">'+num(k.hatoInicial)+'</span></div>'
-      + '<div class="crec-row"><span class="k">Nacidas en el proyecto (vivas)</span>'
-      +   '<span class="v">'+num(k.criasActivas)+'</span></div>'
-      + (k.reposicionActiva
-          ? '<div class="crec-row"><span class="k">Reposición del propietario '
-            + '<span style="color:#8A9696;font-size:11px">(no es crecimiento del aparcero)</span>'
-            + '</span><span class="v">' + k.reposicionActiva + '</span></div>'
-          : '')
-      + '<div class="crec-row total"><span class="k">Hato actual'
-      + (k.reposicionActiva ? ' <span style="color:#8A9696;font-size:11px;font-weight:400">'
-          + '(incluye ' + k.reposicionActiva + ' de reposición)</span>' : '')
-      + '</span>'
-      +   '<span><span class="v">'+num(k.hatoActual)+'</span>'
-      +   (k.crecimientoPct==null?'':'<span class="crec-delta">'+pctTxt(k.crecimientoPct)+' sobre lo aportado</span>')
-      +   '</span></div>'
-      + '</div>'
-      + '<div class="crec-nota">Los aportantes entregaron únicamente madres. Todo animal nacido '
-      +   'desde el inicio del contrato es crecimiento generado por el manejo del proyecto. '
-      +   (k.reposicionActiva
-            ? 'La reposición entregada por el propietario para cubrir mortalidad NO se cuenta '
-              + 'como crecimiento: si contara, el indicador premiaría la mortalidad. '
-              + 'El porcentaje se calcula sobre ' + k.produccionPropia + ' animales de producción propia.'
-            : '')
-      +   (k.crecimientoNeto==null?'':' Crecimiento neto: <b>'+(k.crecimientoNeto>0?'+':'')+k.crecimientoNeto+' animales</b>.')
-      + '</div>';
-
-    // Cumplimiento de meta
-    var meta = '<div class="kg">'
-      + kc('teal', num(k.hatoActual), 'Hato actual', 'estado_salida = activo')
-      + kc('gray', k.meta==null?'—':String(k.meta).replace('.',','), 'Meta anual', 'pactada en contrato')
-      + kc('orange', k.cumplimientoPct==null?'—':String(k.cumplimientoPct).replace('.',',')+'%', 'Cumplimiento', 'hato actual ÷ meta')
-      + '</div>';
-
-    // Composición del hato
-    var comp = '<div class="kg">'
-      + kc('gray', num(k.fundadorasActivas), 'Fundadoras activas', 'del lote aportado')
-      + kc('gray', num(k.criasActivas), 'Nacidas en proyecto', 'activas')
-      + kc('gray', num(k.prolificidad==null?'—':String(k.prolificidad).replace('.',',')), 'Prolificidad',
-            k.madresDistintas ? k.criasRegistradas+' crías ÷ '+k.madresDistintas+' madres' : 'sin madres identificadas')
-      + kc('gray', k.fertilidadPct==null?'—':String(k.fertilidadPct).replace('.',',')+'%', 'Fertilidad',
-            'excluye sin dato')
-      + '</div>';
-
-    // Reproductivo
-    var repro = '<div class="kg">'
-      + kc('teal', num(k.prenadas), 'Preñadas', 'confirmadas por ecografía')
-      + kc('gray', num(k.paridas), 'Paridas / lactando', 'ya tuvieron cría')
-      + kc('gray', num(k.vacias), 'Vacías', 'sin preñez confirmada')
-      + kc('gray', num(k.sinDato), 'Sin dato', 'no evaluadas')
-      + '</div>';
-
-    // Mortalidad y no localizados: DOS bloques distintos, nunca sumados.
-    var causas = k.causasBaja.length
-      ? '<table class="rt" style="margin-top:12px"><thead><tr><th>Causa registrada</th><th class="num">Animales</th></tr></thead><tbody>'
-        + k.causasBaja.map(function(c){
-            return '<tr><td>'+esc(c.clave)+'</td><td class="num">'+c.n+'</td></tr>'; }).join('')
-        + '</tbody></table>'
-      : '';
-    // Sacrificios y ventas son SALIDAS COMERCIALES, no pérdidas: van en
-    // tarjetas propias y nunca dentro de la mortalidad. Si se sumaran, un
-    // hato que vende corderos parecería un hato que los pierde.
-    var mort = '<div class="kg">'
-      + kc('red', num(k.muertes), 'Bajas por muerte', 'del total registrado')
-      + kc('red', k.mortalidadPct==null?'—':String(k.mortalidadPct).replace('.',',')+'%', '% Mortalidad',
-            k.muertes+' ÷ '+k.totalRegistradas+' registrados')
-      + kc('gray', num(k.sacrificios), 'Sacrificios', 'salida comercial, no baja')
-      + kc('gray', num(k.ventas), 'Ventas en pie', 'salida comercial, no baja')
-      + kc('gray', num(k.noLocalizados), 'No localizados', 'NO son bajas')
-      + (k.muertesSinFecha
-          ? kc('red', num(k.muertesSinFecha), 'Bajas sin fecha',
-               'quedan fuera de cualquier rango')
-          : '')
-      + '</div>'
-      + (k.muertesSinFecha
-          ? '<div class="crec-nota"><b>'+k.muertesSinFecha+' de las '+k.muertes+' bajas no '
-            + 'tienen fecha registrada.</b> Se cuentan en el total y en el % de mortalidad de '
-            + 'este corte, pero cualquier vista filtrada por rango de fechas las dejaría fuera: '
-            + 'solo '+k.muertesConFecha+' son fechables. No se les inventa una fecha.</div>'
-          : '')
-      + ((k.sacrificios || k.ventas)
-          ? '<div class="crec-nota"><b>Los sacrificios y las ventas no son mortalidad.</b> Son el '
-            + 'producto del negocio y se reportan aparte; incluirlos en el % de mortalidad '
-            + 'multiplicaría la cifra y daría una lectura falsa del manejo.</div>'
-          : '')
-      + causas
-      + (k.noLocalizados
-          ? '<div class="crec-nota"><b>Los no localizados no se cuentan como mortalidad.</b> Son animales '
-            + 'que no se pudieron ubicar en campo durante el corte y quedan fuera del hato actual '
-            + 'hasta que se confirme su estado.'
-            + (k.noLocalizadosDetalle.length
-                ? ' Chapetas: '+k.noLocalizadosDetalle.map(function(a){
-                    return esc(a.codigo_original||a.codigo); }).join(', ')+'.'
-                : '')
-            + '</div>'
-          : '');
-
-    // Composición del hato activo: sexo y raza. Sobre el hato ACTUAL, no
-    // sobre el total registrado — un animal muerto no compone el hato.
-    var compos = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px">'
-      + '<div><div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#8A9696;margin-bottom:7px">Por sexo</div>'
-      +   distribucion(k.porSexo, k.hatoActual, 'Sexo', MAPA_SEXO) + '</div>'
-      + '<div><div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#8A9696;margin-bottom:7px">Por raza</div>'
-      +   distribucion(k.porRaza, k.hatoActual, 'Raza') + '</div>'
-      + '</div>';
-
-    // Distribución por grupo de manejo.
-    var grupos = distribucion(k.porGrupo, k.hatoActual, 'Grupo de manejo');
-
-    // Escenario proyectado — SIEMPRE aparte y rotulado.
-    var esc_sec = k.proyectados
-      ? '<div class="esc-box">'
-        + '<span class="esc-tag">⚠ Escenario · no es el hato</span>'
-        + '<div class="kg">'
-        +   kc('orange', '+'+k.proyectados, 'Animales simulados', 'no incluidos en ningún KPI anterior')
-        +   kc('orange', num(k.hatoActual + k.proyectados), 'Hato con escenario', num(k.hatoActual)+' reales + '+k.proyectados+' simulados')
-        + '</div>'
-        + '<div class="esc-warn"><b>Estas cifras son una simulación</b> y no representan animales '
-        + 'existentes. El hato del aportante a la fecha de corte es <b>'+num(k.hatoActual)+'</b>. '
-        + 'La cifra con escenario no debe presentarse como el hato real.</div>'
-        + '</div>'
-      : '';
-
-    // Notas al pie
-    var gap = k.gapConciliacion;
-    var notaGap = '';
-    if(gap != null && gap !== 0){
-      notaGap = '<div class="warn"><b>Conciliación pendiente:</b> el contrato registra '
-        + num(k.hatoInicial)+' madres aportadas, y el lote inicial cargado tiene '
-        + num(k.fundadorasRegistradas)+' animales ('+(gap>0?'+':'')+gap+'). '
-        + (gap>0
-            ? 'La diferencia corresponde a hembras jóvenes incluidas en el mismo lote, que el contrato no contó como madres adultas.'
-            : '<b>'+Math.abs(gap)+' vientres contratados sin registro</b>: están en el contrato '
-              + 'pero no aparecen en el registro cargado.')
-        + ' Ambas cifras son correctas en su contexto; la conciliación está pendiente y no se ha ajustado ningún número de este reporte.</div>';
-    }
-
-    var pesoNota = (k.pesosEstimados
-      ? '<div><b>Pesos:</b> '+k.pesosReales+' de balanza y '+k.pesosEstimados
-        + ' estimados por modelo lineal (3,0 kg al nacer + 0,147 kg/día). Los estimados '
-        + 'sobreestiman adultos y están marcados como «est.» en el listado. '+k.sinPeso+' animales sin peso.</div>'
-      : '<div><b>Pesos:</b> '+k.sinPeso+' animales sin peso registrado.</div>');
-
-    var foot = '<div class="rep-foot">'
-      + '<div><b>Fecha de corte:</b> '+fmtLargo(corte)+'.</div>'
-      + '<div><b>Origen de los datos:</b> corte manual cargado en LAAAMBAPP. Los KPIs se calculan '
-      +   'sobre los '+k.totalRegistradas+' animales reales registrados para este aportante; los animales '
-      +   'de escenario quedan excluidos de todo indicador de portada.</div>'
-      + '<div><b>Sin dato reproductivo:</b> '+k.sinDato+' animales del hato actual no tienen estado '
-      +   'reproductivo evaluado. La fertilidad los excluye del denominador, por lo que no se '
-      +   'cuentan como vacíos.</div>'
-      + '<div><b>Sin fecha de nacimiento:</b> '+k.sinFechaNacimiento+' animales. Las fechas nunca se estiman.</div>'
-      + pesoNota
-      + notaGap
-      + '<div style="margin-top:10px;color:#A8B3B3">LAAAMB Corderos · Finca La Marinilla · '
-      +   'Aparcería — estos animales no forman parte del inventario de la finca.</div>'
-      + '</div>';
-
-    $('hoja').innerHTML =
-        '<div class="rep-head">'
-      +   '<div class="rep-head-top">'
-      +     '<div><div class="rep-brand">LAAAMB<span>.</span></div>'
-      +       '<div class="rep-sub">Corderos · Reporte de aparcería</div></div>'
-      +     '<div class="rep-corte">Corte<b>'+fmtLargo(corte)+'</b></div>'
-      +   '</div>'
-      +   '<div class="rep-titulo"><div class="lbl">Aportante</div>'
-      +     '<div class="nom">'+esc(ap.nombre)+'</div></div>'
-      + '</div>'
-      + '<div class="rep-body">'
-      +   sec('Crecimiento del hato', crec,
-             (k.criasEnVerificacion ? 'PROVISIONAL · propiedad en verificación'
-                                    : 'aportaron madres; lo nacido es del proyecto'))
-      +   sec('Cumplimiento de meta', meta)
-      +   sec('Composición y productividad', comp)
-      +   sec('Composición del hato', compos, 'sobre el hato actual')
-      +   sec('Distribución por grupo', grupos, 'sobre el hato actual')
-      +   sec('Estado reproductivo', repro, 'sobre el hato actual')
-      +   sec('Salidas: mortalidad, sacrificios y no localizados', mort, 'sobre el total registrado')
-      +   (esc_sec ? sec('Escenario proyectado', esc_sec, 'fuera de los KPIs') : '')
-      +   foot
-      + '</div>';
-  }
-
-  function sec(titulo, html, hint){
-    return '<div class="rep-sec"><div class="rep-sec-t"><span>'+esc(titulo)+'</span>'
-      + (hint?'<span class="hint">'+esc(hint)+'</span>':'')+'</div>'+html+'</div>';
-  }
-
-  // ── VISTAS TEMÁTICAS ────────────────────────────────────────────
-  // Estas secciones existen aquí y NO en reportes.html a propósito: la
-  // unidad de reportes.html es el generador, no el tema, y sus 5
-  // generadores dependen de tratamientos / partos / costos / movilizaciones,
-  // tablas que aparcería no tiene. Ver el encabezado de js/aparceria.js.
-  //
-  // Tabla de distribución con barra proporcional. `grupos` viene del motor
-  // ya ordenado de mayor a menor. Etiquetas legibles vía `mapa` opcional.
-  function distribucion(grupos, total, etiquetaCol, mapa){
-    if(!grupos || !grupos.length){
-      return '<div style="font-size:12px;color:#8A9696;padding:10px 0">Sin datos para agrupar.</div>';
-    }
-    var filas = grupos.map(function(g){
-      var p = total ? Math.round((g.n/total)*1000)/10 : 0;
-      var nombre = (mapa && mapa[g.clave]) ? mapa[g.clave] : g.clave;
-      return '<tr>'
-        + '<td>'+esc(nombre)+'</td>'
-        + '<td class="num">'+g.n+'</td>'
-        + '<td class="num">'+String(p).replace('.',',')+'%</td>'
-        + '<td style="width:34%">'
-        +   '<div style="height:8px;background:#EAEEEE;border-radius:99px;overflow:hidden">'
-        +     '<div style="height:100%;width:'+Math.max(p,1)+'%;background:#1AA6A6"></div>'
-        +   '</div>'
-        + '</td></tr>';
-    }).join('');
-    return '<table class="rt"><thead><tr>'
-      + '<th>'+esc(etiquetaCol)+'</th><th class="num">Animales</th>'
-      + '<th class="num">%</th><th></th></tr></thead><tbody>'
-      + filas + '</tbody></table>';
-  }
-
-  var MAPA_SEXO = { hembra: 'Hembras', macho: 'Machos' };
-  function kc(cls, n, l, s){
-    return '<div class="kc '+cls+'"><div class="n">'+n+'</div><div class="l">'+esc(l)+'</div>'
-      + (s?'<div class="s">'+esc(s)+'</div>':'')+'</div>';
-  }
-
-  // ── GENERAR ────────────────────────────────────────────────────
-  async function generar(){
-    var id = $('f-aportante').value;
-    if(!id){ toast('Selecciona un aportante', true); return; }
-    var corte = $('f-corte').value;
-    if(!corte){ toast('Indica la fecha de corte', true); return; }
-
-    $('hoja').innerHTML = '<div class="empty-box">Calculando…</div>';
-    try{
-      var ap = APORTANTES.filter(function(a){ return a.id === id; })[0];
-      if(!ap) throw new Error('Aportante no encontrado');
-
-      var rows = await window.APARCERIA.getAnimales(id);
-      if(!rows.length){
-        // Estado vacío explícito: NO se genera una hoja con ceros. Un reporte
-        // en cero se lee como "no hubo", que es falso — no hay datos aún.
-        $('hoja').innerHTML = '<div class="empty-box">'
-          + '<div style="font-size:15px;color:var(--text2)">Sin animales cargados para '
-          + esc(ap.nombre) + '.</div>'
-          + '<div style="font-size:12.5px;color:var(--text4);margin-top:8px;max-width:460px;margin-left:auto;margin-right:auto;line-height:1.6">'
-          + 'No se genera el reporte con datos vacíos: una hoja llena de ceros se lee como '
-          + '«no hubo nacimientos ni bajas», y eso sería falso. Carga las fundadoras desde '
-          + '<b>Aparcería → Animales</b> y vuelve.</div></div>';
-        ACTUAL = null;
-        return;
-      }
-      if(ap.hato_inicial == null){
-        toast('Aviso: este aportante no tiene hato_inicial definido — crecimiento y cumplimiento saldrán vacíos', true);
-      }
-
-      ACTUAL = { aportante: ap, rows: rows, kpis: window.APARCERIA.kpis(rows, ap), corte: corte };
-      render();
-      toast('Reporte generado');
-    }catch(e){
-      var m = fallo('Generar reporte', e);
-      $('hoja').innerHTML = '<div class="empty-box" style="color:var(--red)">'+esc(m)+'</div>';
-      ACTUAL = null;
-    }
-  }
-
-  // ── EXPORT EXCEL ───────────────────────────────────────────────
-  function exportarExcel(){
-    if(!ACTUAL){ toast('Genera el reporte primero', true); return; }
-    try{
-      if(!window.XLSX) throw new Error('SheetJS no cargó (revisa la conexión)');
-      var k=ACTUAL.kpis, ap=ACTUAL.aportante;
-      var kpiRows = [
-        ['REPORTE DE APARCERÍA — LAAAMB Corderos'],
-        ['Aportante', ap.nombre],
-        ['Fecha de corte', ACTUAL.corte],
-        [],
-        ['CRECIMIENTO DEL HATO'],
-        ['Madres aportadas al inicio', k.hatoInicial],
-        ['Nacidas en el proyecto (vivas)', k.criasActivas],
-        ['Hato actual', k.hatoActual],
-        ['Crecimiento %', k.crecimientoPct],
-        ['Crecimiento neto (animales)', k.crecimientoNeto],
-        ['Meta anual', k.meta],
-        ['Cumplimiento meta %', k.cumplimientoPct],
-        [],
-        ['COMPOSICIÓN'],
-        ['Total registrados (reales)', k.totalRegistradas],
-        ['Fundadoras registradas', k.fundadorasRegistradas],
-        ['Fundadoras activas', k.fundadorasActivas],
-        ['Crias registradas', k.criasRegistradas],
-        ['Crias activas', k.criasActivas],
-        ['Prolificidad (crías ÷ madres distintas)', k.prolificidad],
-        ['Madres distintas identificadas', k.madresDistintas],
-        [],
-        ['REPRODUCTIVO (hato actual)'],
-        ['Preñadas', k.prenadas],
-        ['Paridas / lactando', k.paridas],
-        ['Vacías', k.vacias],
-        ['Sin dato', k.sinDato],
-        ['Fertilidad %', k.fertilidadPct],
-        [],
-        ['SALIDAS (cada tipo en su linea, nunca sumadas)'],
-        ['Bajas por muerte', k.muertes],
-        ['% Mortalidad (solo muertes)', k.mortalidadPct],
-        ['Sacrificios (salida comercial)', k.sacrificios],
-        ['% Sacrificios', k.sacrificiosPct],
-        ['Ventas en pie', k.ventas],
-        ['No localizados (NO son bajas)', k.noLocalizados],
-        [],
-        ['ESCENARIO PROYECTADO (fuera de los KPIs)'],
-        ['Animales simulados', k.proyectados],
-        ['Hato con escenario', k.hatoActual + k.proyectados],
-        [],
-        ['NOTAS'],
-        ['Gap de conciliación (registrado − contratado)', k.gapConciliacion],
-        ['Sin fecha de nacimiento', k.sinFechaNacimiento],
-        ['Sin peso', k.sinPeso],
-        ['Pesos de balanza', k.pesosReales],
-        ['Pesos estimados', k.pesosEstimados]
-      ];
-      if(k.causasBaja.length){
-        kpiRows.push([], ['CAUSAS DE BAJA'], ['Causa','Animales']);
-        k.causasBaja.forEach(function(c){ kpiRows.push([c.clave, c.n]); });
-      }
-      // Distribuciones temáticas, sobre el hato ACTUAL (no el total).
-      [['COMPOSICION POR SEXO', k.porSexo, 'Sexo'],
-       ['COMPOSICION POR RAZA', k.porRaza, 'Raza'],
-       ['DISTRIBUCION POR GRUPO', k.porGrupo, 'Grupo']].forEach(function(bl){
-        if(!bl[1] || !bl[1].length) return;
-        kpiRows.push([], [bl[0]+' (hato actual)'], [bl[2],'Animales','%']);
-        bl[1].forEach(function(g){
-          kpiRows.push([ (bl[2]==='Sexo' && MAPA_SEXO[g.clave]) || g.clave, g.n,
-                         k.hatoActual ? Math.round((g.n/k.hatoActual)*1000)/10 : 0 ]);
-        });
-      });
-
-      var det = [['Chapeta','Codigo interno','Origen','Raza','Sexo','Tipo','Grupo','Estado salida',
-                  'Fecha salida','Motivo salida','Peso salida','Estado reproductivo',
-                  'Fecha nacimiento','Madre','Peso vigente kg','Tipo peso','Fecha peso',
-                  'Estado origen','Estado actualizado','Notas']];
-      ACTUAL.rows.forEach(function(a){
-        var p = window.APARCERIA.pesoVigente(a);
-        det.push([a.codigo_original||a.codigo, a.codigo, a.origen, a.raza, a.sexo, a.tipo, a.grupo, a.estado_salida,
-                  a.fecha_salida, a.motivo_salida, a.peso_salida,
-                  a.estado_reproductivo, a.fecha_nacimiento, a.madre_codigo,
-                  p?p.peso_kg:null, p?p.tipo:null, p?p.fecha:null,
-                  a.estado_origen, a.estado_actualizado, a.notas]);
-      });
-
-      var wb = window.XLSX.utils.book_new();
-      window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(kpiRows), 'KPIs');
-      window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(det), 'Animales');
-      var slug = ap.nombre.replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,'');
-      window.XLSX.writeFile(wb, 'Reporte_Aparceria_'+slug+'_'+ACTUAL.corte+'.xlsx');
-      toast('Excel exportado');
-    }catch(e){ fallo('Exportar Excel', e); }
-  }
-
-  function imprimir(){
-    if(!ACTUAL){ toast('Genera el reporte primero', true); return; }
-    window.print();
-  }
-
-  // ── ARRANQUE ───────────────────────────────────────────────────
-  async function init(){
-    try{
-      APORTANTES = await window.APARCERIA.getAportantes();
-      var sel = $('f-aportante');
-      if(!APORTANTES.length){
-        sel.innerHTML = '<option value="">Sin aportantes</option>';
-        $('hoja').innerHTML = '<div class="empty-box">No hay aportantes registrados.<br>'
-          + '<span style="font-size:12px;color:var(--text4)">Ejecuta las migraciones 0055 y 0056 en Supabase.</span></div>';
-        return;
-      }
-      sel.innerHTML = APORTANTES.map(function(a){
-        return '<option value="'+esc(a.id)+'">'+esc(a.nombre)+'</option>';
-      }).join('');
-    }catch(e){
-      fallo('Cargar aportantes', e);
-      $('hoja').innerHTML = '<div class="empty-box" style="color:var(--red)">'+esc(e.message)+'</div>';
-    }
-  }
-
-  function whenReady(cb){
-    if(window.AUTH_ROL){ cb(); return; }
-    var n=0;
-    var iv=setInterval(function(){ if(window.AUTH_ROL || n>50){ clearInterval(iv); cb(); } n++; }, 100);
-  }
-
-  document.addEventListener('DOMContentLoaded', function(){
-    $('f-corte').value = new Date().toISOString().split('T')[0];
-    $('btn-generar').addEventListener('click', function(){ generar(); });
-    $('btn-pdf').addEventListener('click', imprimir);
-    $('btn-excel').addEventListener('click', exportarExcel);
-    whenReady(init);
-  });
-})();
-</script>
-
-<script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
-}
-</script>
+<p class="p1"><span class="s1">&lt;!DOCTYPE html&gt;</span></p>
+<p class="p1"><span class="s1">&lt;html lang="es" data-theme="light"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;head&gt;</span></p>
+<p class="p1"><span class="s1">&lt;meta charset="UTF-8"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;link rel="manifest" href="manifest.json"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;meta name="theme-color" content="#1AA6A6"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;meta name="mobile-web-app-capable" content="yes"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;meta name="apple-mobile-web-app-capable" content="yes"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;meta name="apple-mobile-web-app-title" content="LAAAMB"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;link rel="apple-touch-icon" href="icons/icon-laaamb.jpg"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;title&gt;LAAAMBAPP · Aparcería · Reportes&lt;/title&gt;</span></p>
+<p class="p1"><span class="s1">&lt;script&gt;(function(){var t=(function(){var _t=localStorage.getItem('laaamb-theme');return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute('data-theme',t);})();&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;link href="https://fonts.googleapis.com/css2?family=Sigmar&amp;family=Changa:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;link rel="stylesheet" href="css/laaamb.css"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;script src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js" crossorigin="anonymous"&gt;&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;script src="js/error-handler.js"&gt;&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"&gt;&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"&gt;&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;script src="js/supabase-client.js"&gt;&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;script&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>window._sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);</span></p>
+<p class="p1"><span class="s1">&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;script src="js/auth.js"&gt;&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;script src="js/roles.js"&gt;&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;script src="js/sidebar.js?v=1"&gt;&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;script src="js/mobile-nav.js"&gt;&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;script src="js/aparceria.js?v=7"&gt;&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;style&gt;</span></p>
+<p class="p1"><span class="s1">*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}</span></p>
+<p class="p1"><span class="s1">:root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>--wine:#9C3F66;--wine-bg:rgba(156,63,102,.12);--orange:#F18F22;--orange-bg:rgba(241,143,34,.12);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>--bg:#080f10;--bg2:#0c1517;--bg3:#101d1f;--surface:#172628;--surface2:#1d3235;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>--border:rgba(0,175,182,.10);--border2:rgba(0,175,182,.20);--border3:rgba(0,175,182,.35);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>--green:#2ec77a;--green-bg:rgba(46,199,122,.10);--red:#e05252;--red-bg:rgba(224,82,82,.10);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>--amber:#e8a030;--amber-bg:rgba(232,160,48,.10);--sky:#38b0d8;--sky-bg:rgba(56,176,216,.10);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>--text:#d8edef;--text2:#7eadb2;--text3:#3d6e74;--text4:#1e3f44;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>--brand-teal:#1AA6A6;--brand-orange:#F58220;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>--r:8px;--r2:14px;--sidebar:236px;--anim:.16s cubic-bezier(.4,0,.2,1)}</span></p>
+<p class="p1"><span class="s1">html[data-theme="light"]{--bg:#F8F9FA;--bg2:#FFFFFF;--bg3:#F3F4F6;--surface:#FFFFFF;--surface2:#F3F4F6;--border:#E5E7EB;--border2:#D1D5DB;--border3:#9CA3AF;--green:#10B981;--green-bg:rgba(16,185,129,.10);--red:#EF4444;--red-bg:rgba(239,68,68,.10);--amber:#F59E0B;--amber-bg:rgba(245,158,11,.10);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.10);--text:#1A1A2E;--text2:#6B7280;--text3:#9CA3AF;--text4:#C4C9D4}</span></p>
+<p class="p1"><span class="s1">html[data-theme="dark"]{--bg:#0F172A;--bg2:#1E293B;--bg3:#1E293B;--surface:#1E293B;--surface2:#162032;--border:#334155;--border2:#3E4C61;--border3:#475569;--green:#10B981;--green-bg:rgba(16,185,129,.14);--red:#EF4444;--red-bg:rgba(239,68,68,.14);--amber:#F59E0B;--amber-bg:rgba(245,158,11,.14);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.14);--text:#F1F5F9;--text2:#94A3B8;--text3:#64748B;--text4:#475569}</span></p>
+<p class="p1"><span class="s1">html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}</span></p>
+<p class="p1"><span class="s1">::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--surface2);border-radius:2px}</span></p>
+<p class="p1"><span class="s1">.app{display:flex;height:100vh;width:100vw}</span></p>
+<p class="p1"><span class="s1">.sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0}</span></p>
+<p class="p1"><span class="s1">.sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}</span></p>
+<p class="p1"><span class="s1">.sb-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:4px}.sb-logo-img{height:40px;width:40px;border-radius:9px;flex-shrink:0}</span></p>
+<p class="p1"><span class="s1">.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}</span></p>
+<p class="p1"><span class="s1">.sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}</span></p>
+<p class="p1"><span class="s1">.nav-scroll{flex:1;overflow-y:auto;padding:8px 0}</span></p>
+<p class="p1"><span class="s1">.nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}</span></p>
+<p class="p1"><span class="s1">.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:13px;text-decoration:none;transition:all var(--anim);position:relative}</span></p>
+<p class="p1"><span class="s1">.nav-link:hover{background:var(--surface);color:var(--text)}</span></p>
+<p class="p1"><span class="s1">.nav-link.active{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}</span></p>
+<p class="p1"><span class="s1">.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}.nav-link.active .nav-ico{opacity:1}</span></p>
+<p class="p1"><span class="s1">.nav-badge{margin-left:auto;font-size:10px;font-weight:600;background:var(--surface2);color:var(--teal);padding:1px 7px;border-radius:10px;border:1px solid var(--border2)}</span></p>
+<p class="p1"><span class="s1">.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border);background:var(--bg2)}</span></p>
+<p class="p1"><span class="s1">.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}</span></p>
+<p class="p1"><span class="s1">.avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}</span></p>
+<p class="p1"><span class="s1">.user-name{font-size:12px;font-weight:600;color:var(--text)}.user-role{font-size:10px;color:var(--text3)}</span></p>
+<p class="p1"><span class="s1">#lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);width:46px;height:46px;align-items:center;justify-content:center;cursor:pointer}</span></p>
+<p class="p1"><span class="s1">#lham svg{width:22px;height:22px;stroke:var(--text);stroke-width:2;fill:none;stroke-linecap:round}</span></p>
+<p class="p1"><span class="s1">#lov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990}#lov.on{display:block}</span></p>
+<p class="p1"><span class="s1">.main{flex:1;overflow-y:auto;padding:24px;background:var(--bg)}</span></p>
+<p class="p1"><span class="s1">.ctrl{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:18px;padding:14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2)}</span></p>
+<p class="p1"><span class="s1">.f-item{display:flex;flex-direction:column;gap:4px}</span></p>
+<p class="p1"><span class="s1">.f-item label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}</span></p>
+<p class="p1"><span class="s1">.f-item select,.f-item input{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:8px 11px;color:var(--text);font-family:inherit;font-size:13px;min-width:160px}</span></p>
+<p class="p1"><span class="s1">.f-item select:focus,.f-item input:focus{outline:none;border-color:var(--teal)}</span></p>
+<p class="p1"><span class="s1">.btn{padding:9px 14px;border-radius:var(--r);border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;transition:all var(--anim)}</span></p>
+<p class="p1"><span class="s1">.btn:hover{border-color:var(--teal);color:var(--teal)}</span></p>
+<p class="p1"><span class="s1">.btn.primary{background:var(--brand-teal);border-color:var(--brand-teal);color:#fff}</span></p>
+<p class="p1"><span class="s1">.btn.primary:hover{filter:brightness(1.08);color:#fff}</span></p>
+<p class="p1"><span class="s1">.btn.orange{background:var(--brand-orange);border-color:var(--brand-orange);color:#fff}</span></p>
+<p class="p1"><span class="s1">.btn.orange:hover{filter:brightness(1.08);color:#fff}</span></p>
+<p class="p1"><span class="s1">#hoja{background:#fff;color:#15201F;border-radius:var(--r2);padding:0;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.18);max-width:960px}</span></p>
+<p class="p1"><span class="s1">.rep-head{background:linear-gradient(100deg,#1AA6A6 0%,#158E8E 100%);color:#fff;padding:26px 30px}</span></p>
+<p class="p1"><span class="s1">.rep-head-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}</span></p>
+<p class="p1"><span class="s1">.rep-brand{font-family:'Sigmar',cursive;font-size:26px;letter-spacing:.5px;line-height:1}</span></p>
+<p class="p1"><span class="s1">.rep-brand span{color:#F58220}</span></p>
+<p class="p1"><span class="s1">.rep-sub{font-size:10.5px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;opacity:.9;margin-top:5px}</span></p>
+<p class="p1"><span class="s1">.rep-corte{text-align:right;font-size:11.5px;line-height:1.6}</span></p>
+<p class="p1"><span class="s1">.rep-corte b{display:block;font-size:15px;font-family:'Sigmar',cursive;letter-spacing:.3px}</span></p>
+<p class="p1"><span class="s1">.rep-titulo{margin-top:20px;padding-top:18px;border-top:1px solid rgba(255,255,255,.28)}</span></p>
+<p class="p1"><span class="s1">.rep-titulo .lbl{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;opacity:.85}</span></p>
+<p class="p1"><span class="s1">.rep-titulo .nom{font-family:'Sigmar',cursive;font-size:23px;margin-top:3px;line-height:1.15}</span></p>
+<p class="p1"><span class="s1">.rep-body{padding:26px 30px 30px}</span></p>
+<p class="p1"><span class="s1">.rep-sec{margin-bottom:26px}</span></p>
+<p class="p1"><span class="s1">.rep-sec-t{font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#1AA6A6;padding-bottom:7px;border-bottom:2px solid #1AA6A6;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px}</span></p>
+<p class="p1"><span class="s1">.rep-sec-t .hint{font-size:9.5px;font-weight:600;letter-spacing:.3px;text-transform:none;color:#8A9696}</span></p>
+<p class="p1"><span class="s1">.crec{border:1px solid #E0E6E6;border-radius:10px;overflow:hidden}</span></p>
+<p class="p1"><span class="s1">.crec-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 16px;border-bottom:1px solid #EAEEEE}</span></p>
+<p class="p1"><span class="s1">.crec-row:last-child{border-bottom:none}</span></p>
+<p class="p1"><span class="s1">.crec-row .k{font-size:13px;color:#5F6B6C}</span></p>
+<p class="p1"><span class="s1">.crec-row .v{font-family:'Sigmar',cursive;font-size:20px;color:#15201F;line-height:1}</span></p>
+<p class="p1"><span class="s1">.crec-row.total{background:#E8F6F6}</span></p>
+<p class="p1"><span class="s1">.crec-row.total .k{font-weight:700;color:#15201F;font-size:13.5px}</span></p>
+<p class="p1"><span class="s1">.crec-row.total .v{color:#1AA6A6;font-size:25px}</span></p>
+<p class="p1"><span class="s1">.crec-delta{font-size:12.5px;font-weight:700;color:#F58220;margin-left:9px;white-space:nowrap}</span></p>
+<p class="p1"><span class="s1">.crec-nota{font-size:11px;color:#8A9696;margin-top:8px;line-height:1.5}</span></p>
+<p class="p1"><span class="s1">.kg{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:11px}</span></p>
+<p class="p1"><span class="s1">.kc{border:1px solid #E0E6E6;border-radius:10px;padding:13px 15px}</span></p>
+<p class="p1"><span class="s1">.kc .n{font-family:'Sigmar',cursive;font-size:22px;color:#15201F;line-height:1.1}</span></p>
+<p class="p1"><span class="s1">.kc .l{font-size:10px;font-weight:700;color:#8A9696;text-transform:uppercase;letter-spacing:.7px;margin-top:3px}</span></p>
+<p class="p1"><span class="s1">.kc .s{font-size:10.5px;color:#5F6B6C;margin-top:4px}</span></p>
+<p class="p1"><span class="s1">.kc.teal{border-color:#1AA6A6;background:#F1FAFA}.kc.teal .n{color:#1AA6A6}</span></p>
+<p class="p1"><span class="s1">.kc.orange{border-color:#F58220;background:#FEF4EA}.kc.orange .n{color:#C4661A}</span></p>
+<p class="p1"><span class="s1">.kc.red{border-color:#E24B4A;background:#FCEBEB}.kc.red .n{color:#C33}</span></p>
+<p class="p1"><span class="s1">.kc.green{border-color:#2ec77a;background:#EDF9F3}.kc.green .n{color:#1a9a5c}</span></p>
+<p class="p1"><span class="s1">.kc.gray{background:#F7F9F9}.kc.gray .n{color:#5F6B6C}</span></p>
+<p class="p1"><span class="s1">table.rt{width:100%;border-collapse:collapse;font-size:12.5px}</span></p>
+<p class="p1"><span class="s1">table.rt th{text-align:left;padding:8px 11px;background:#F1FAFA;color:#15201F;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid #D6E3E3}</span></p>
+<p class="p1"><span class="s1">table.rt td{padding:8px 11px;border-bottom:1px solid #EAEEEE;color:#15201F}</span></p>
+<p class="p1"><span class="s1">table.rt tr:last-child td{border-bottom:none}</span></p>
+<p class="p1"><span class="s1">table.rt td.num,table.rt th.num{text-align:right}</span></p>
+<p class="p1"><span class="s1">.esc-box{border:1.5px dashed #F58220;background:#FEF7F0;border-radius:10px;padding:16px 18px}</span></p>
+<p class="p1"><span class="s1">.esc-tag{display:inline-block;background:#F58220;color:#fff;font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:99px;margin-bottom:10px}</span></p>
+<p class="p1"><span class="s1">.esc-warn{font-size:11px;color:#8A5A20;margin-top:10px;line-height:1.5}</span></p>
+<p class="p1"><span class="s1">.rep-foot{border-top:1px solid #E0E6E6;margin-top:26px;padding-top:16px;font-size:10.5px;color:#8A9696;line-height:1.65}</span></p>
+<p class="p1"><span class="s1">.rep-foot b{color:#5F6B6C}</span></p>
+<p class="p1"><span class="s1">.iso-banner{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;margin-bottom:18px;background:var(--wine-bg);border:1px solid var(--wine);border-left:4px solid var(--wine);border-radius:var(--r);font-size:12.5px;color:var(--text);line-height:1.5}</span></p>
+<p class="p1"><span class="s1">.iso-banner b{color:var(--wine)}</span></p>
+<p class="p1"><span class="s1">.empty-box{padding:26px;text-align:center;color:var(--text3);font-size:13px;line-height:1.6}</span></p>
+<p class="p1"><span class="s1">#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:11px 18px;border-radius:99px;font-size:13px;font-weight:600;z-index:10000;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw;text-align:center}</span></p>
+<p class="p1"><span class="s1">#toast.on{opacity:1}#toast.err{background:var(--red);color:#fff}</span></p>
+<p class="p1"><span class="s1">@media(max-width:1000px){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .25s;z-index:9995}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.sidebar.on{transform:translateX(0)}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>#lham{display:flex}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.main{padding:70px 14px 20px}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.rep-head,.rep-body{padding-left:18px;padding-right:18px}</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">@media print{</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>@page{size:A4;margin:11mm}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>html,body{overflow:visible!important;height:auto!important;background:#fff!important}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.sidebar,#lham,#lov,.ctrl,.iso-banner,#toast,.no-print{display:none!important}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.app{display:block!important;height:auto!important;width:auto!important}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.main{overflow:visible!important;padding:0!important;background:#fff!important}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>#hoja{box-shadow:none!important;border-radius:0!important;max-width:none!important}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.rep-head{-webkit-print-color-adjust:exact;print-color-adjust:exact}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.rep-sec,.crec,.esc-box,.kc{break-inside:avoid;page-break-inside:avoid}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>.rep-sec-t{break-after:avoid;page-break-after:avoid}</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">&lt;/style&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/head&gt;</span></p>
+<p class="p1"><span class="s1">&lt;body&gt;</span></p>
+<p class="p1"><span class="s1">&lt;div class="app"&gt;</span></p>
+<p class="p1"><span class="s1">&lt;button id="lham" aria-label="Menú"&gt;&lt;svg id="lico" viewBox="0 0 22 22"&gt;&lt;line x1="3" y1="6" x2="19" y2="6"/&gt;&lt;line x1="3" y1="11" x2="19" y2="11"/&gt;&lt;line x1="3" y1="16" x2="19" y2="16"/&gt;&lt;/svg&gt;&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1">&lt;div id="lov"&gt;&lt;/div&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">&lt;aside class="sidebar" id="sidebar"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div class="sb-head"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;a href="index.html" class="sb-logo"&gt;&lt;img src="icons/icon.svg" alt="LAAAMB Corderos" class="sb-logo-img"&gt;&lt;div&gt;&lt;div class="sb-logo-text"&gt;LAAAMB&lt;/div&gt;&lt;div class="sb-logo-sub"&gt;Corderos · App&lt;/div&gt;&lt;/div&gt;&lt;/a&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;nav class="nav-scroll" id="nav-scroll"&gt;&lt;/nav&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div class="sb-foot"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div style="font-size:9px;color:var(--text4);text-align:center;margin-bottom:8px;letter-spacing:.5px"&gt;LAAAMBAPP v1.0 · 2025&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="user-row"&gt;&lt;div class="avatar"&gt;JA&lt;/div&gt;&lt;div&gt;&lt;div class="user-name"&gt;Usuario&lt;/div&gt;&lt;div class="user-role"&gt;—&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;button onclick="Auth.signOut()" style="width:100%;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:7px;padding:9px;background:transparent;border:1px solid var(--border);border-radius:var(--r,8px);color:var(--text3);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer"&gt;&lt;svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"&gt;&lt;path d="M13 14l3-4-3-4M16 10H7M9 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h4"/&gt;&lt;/svg&gt;Cerrar sesión&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/aside&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">&lt;div class="main"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div class="iso-banner"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;span style="font-size:17px;flex-shrink:0"&gt;⚖️&lt;/span&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;b&gt;Datos de aparcería — no forman parte del inventario de La Marinilla.&lt;/b&gt;&lt;br&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>Los KPIs de este reporte se calculan solo sobre los animales del aportante.</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>No intervienen ni se mezclan con los indicadores del hato propio.</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div class="ctrl"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="f-item"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;label for="f-aportante"&gt;Aportante&lt;/label&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;select id="f-aportante"&gt;&lt;option value=""&gt;Cargando…&lt;/option&gt;&lt;/select&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;div class="f-item"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;label for="f-corte"&gt;Fecha de corte&lt;/label&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>&lt;input id="f-corte" type="date"&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;button class="btn primary" id="btn-generar"&gt;Generar reporte&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;button class="btn orange" id="btn-pdf"&gt;Imprimir / PDF&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>&lt;button class="btn" id="btn-excel"&gt;Exportar Excel&lt;/button&gt;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;/div&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>&lt;div id="hoja"&gt;&lt;div class="empty-box"&gt;Selecciona un aportante y genera el reporte.&lt;/div&gt;&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/div&gt;</span></p>
+<p class="p1"><span class="s1">&lt;div id="toast"&gt;&lt;/div&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">&lt;script&gt;</span></p>
+<p class="p1"><span class="s1">(function(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>var open=false;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>var sb=document.getElementById('sidebar'), ov=document.getElementById('lov'), bt=document.getElementById('lham');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function set(v){ open=v; sb.classList.toggle('on',v); ov.classList.toggle('on',v); }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(bt) bt.addEventListener('click', function(){ set(!open); });</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>if(ov) ov.addEventListener('click', function(){ set(false); });</span></p>
+<p class="p1"><span class="s1">})();</span></p>
+<p class="p1"><span class="s1">&lt;/script&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">&lt;script&gt;</span></p>
+<p class="p1"><span class="s1">(function(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>'use strict';</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>var APORTANTES = [];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>var ACTUAL = null;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function $(id){ return document.getElementById(id); }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function toast(msg, err){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var t=$('toast'); t.textContent=msg; t.className=err?'on err':'on';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>clearTimeout(t._tm); t._tm=setTimeout(function(){ t.className=''; }, 3200);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function esc(s){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>return String(s==null?'':s).replace(/[&amp;&lt;&gt;"']/g, function(c){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>return ({'&amp;':'&amp;amp;','&lt;':'&amp;lt;','&gt;':'&amp;gt;','"':'&amp;quot;',"'":'&amp;#39;'})[c];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>});</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function fallo(ctx, e){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var m=(e&amp;&amp;e.message)?e.message:String(e);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>console.error('[Reporte aparcería] '+ctx, e);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>toast(ctx+': '+m, true);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>return m;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function fmtLargo(iso){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if(!iso) return '—';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var p=String(iso).split('-');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var M=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>return Number(p[2])+' de '+M[Number(p[1])-1]+' de '+p[0];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function num(n){ return n==null?'—':String(n); }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function pctTxt(p){ return p==null?'—':(p&gt;0?'+':'')+String(p).replace('.',',')+'%'; }</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function render(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if(!ACTUAL){ return; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var ap=ACTUAL.aportante, k=ACTUAL.kpis, corte=ACTUAL.corte;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var provisional = k.criasEnVerificacion</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>? '&lt;div style="background:#FEF4EA;border:1.5px solid #F58220;border-radius:10px;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ 'padding:12px 14px;margin-bottom:12px;font-size:12.5px;color:#8A5A20;line-height:1.55"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;b&gt;⚠ CRECIMIENTO PROVISIONAL — el indicador puede variar.&lt;/b&gt;&lt;br&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ k.criasEnVerificacion + ' crías están en verificación de propiedad.'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ (k.hatoActual</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>? ' Si se reasignaran, el hato actual pasaría de &lt;b&gt;' + k.hatoActual + '&lt;/b&gt; a &lt;b&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">              </span>+ (k.hatoActual - k.criasEnVerificacion) + '&lt;/b&gt;.'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>: '')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>: '';</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var crec = provisional + '&lt;div class="crec"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;div class="crec-row"&gt;&lt;span class="k"&gt;Madres aportadas al inicio&lt;/span&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>'&lt;span class="v"&gt;'+num(k.hatoInicial)+'&lt;/span&gt;&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;div class="crec-row"&gt;&lt;span class="k"&gt;Nacidas en el proyecto (vivas)&lt;/span&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>'&lt;span class="v"&gt;'+num(k.criasActivas)+'&lt;/span&gt;&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ (k.reposicionActiva</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>? '&lt;div class="crec-row"&gt;&lt;span class="k"&gt;Reposición del propietario '</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>+ '&lt;span style="color:#8A9696;font-size:11px"&gt;(no es crecimiento del aparcero)&lt;/span&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>+ '&lt;/span&gt;&lt;span class="v"&gt;' + k.reposicionActiva + '&lt;/span&gt;&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>: '')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;div class="crec-row total"&gt;&lt;span class="k"&gt;Hato actual'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ (k.reposicionActiva ? ' &lt;span style="color:#8A9696;font-size:11px;font-weight:400"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>+ '(incluye ' + k.reposicionActiva + ' de reposición)&lt;/span&gt;' : '')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;/span&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>'&lt;span&gt;&lt;span class="v"&gt;'+num(k.hatoActual)+'&lt;/span&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>(k.crecimientoPct==null?'':'&lt;span class="crec-delta"&gt;'+pctTxt(k.crecimientoPct)+' sobre lo aportado&lt;/span&gt;')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>'&lt;/span&gt;&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;div class="crec-nota"&gt;Los aportantes entregaron únicamente madres. Todo animal nacido '</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>'desde el inicio del contrato es crecimiento generado por el manejo del proyecto. '</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>(k.reposicionActiva</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>? 'La reposición entregada por el propietario para cubrir mortalidad NO se cuenta '</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">              </span>+ 'como crecimiento. El porcentaje se calcula sobre ' + k.produccionPropia + ' animales de producción propia.'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>: '')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>(k.crecimientoNeto==null?'':' Crecimiento neto: &lt;b&gt;'+(k.crecimientoNeto&gt;0?'+':'')+k.crecimientoNeto+' animales&lt;/b&gt;.')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;/div&gt;';</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var meta = '&lt;div class="kg"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('teal', num(k.hatoActual), 'Hato actual', 'estado_salida = activo')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('gray', k.meta==null?'—':String(k.meta).replace('.',','), 'Meta anual', 'pactada en contrato')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('orange', k.cumplimientoPct==null?'—':String(k.cumplimientoPct).replace('.',',')+'%', 'Cumplimiento', 'hato actual ÷ meta')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;/div&gt;';</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var comp = '&lt;div class="kg"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('gray', num(k.fundadorasActivas), 'Fundadoras activas', 'del lote aportado')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('gray', num(k.criasActivas), 'Nacidas en proyecto', 'activas')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('green', num(k.corderasLevante), 'Corderas en levante', 'crías hembras retenidas para crecimiento')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('gray', num(k.prolificidad==null?'—':String(k.prolificidad).replace('.',',')), 'Prolificidad',</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>k.madresDistintas ? k.criasRegistradas+' crías ÷ '+k.madresDistintas+' madres' : 'sin madres identificadas')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('gray', k.fertilidadPct==null?'—':String(k.fertilidadPct).replace('.',',')+'%', 'Fertilidad',</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>'excluye sin dato')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;/div&gt;';</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var repro = '&lt;div class="kg"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('teal', num(k.prenadas), 'Preñadas', 'confirmadas por ecografía')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('gray', num(k.paridas), 'Paridas / lactando', 'ya tuvieron cría')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('gray', num(k.vacias), 'Vacías', 'sin preñez confirmada')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('gray', num(k.sinDato), 'Sin dato', 'no evaluadas')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;/div&gt;';</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>// Causas de mortalidad con %</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var causas = '';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if (k.causasBaja &amp;&amp; k.causasBaja.length) {</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>var totalMuertes = k.muertes || 1;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>causas = '&lt;div style="margin-top:14px"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#8A9696;margin-bottom:8px"&gt;Causas de mortalidad&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;table class="rt"&gt;&lt;thead&gt;&lt;tr&gt;&lt;th&gt;Causa&lt;/th&gt;&lt;th class="num"&gt;Animales&lt;/th&gt;&lt;th class="num"&gt;%&lt;/th&gt;&lt;th&gt;&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ k.causasBaja.map(function(c){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>var p = Math.round((c.n / totalMuertes) * 1000) / 10;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>return '&lt;tr&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">              </span>+ '&lt;td&gt;'+esc(c.clave)+'&lt;/td&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">              </span>+ '&lt;td class="num"&gt;'+c.n+'&lt;/td&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">              </span>+ '&lt;td class="num"&gt;'+String(p).replace('.',',')+'%&lt;/td&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">              </span>+ '&lt;td style="width:34%"&gt;&lt;div style="height:8px;background:#EAEEEE;border-radius:99px;overflow:hidden"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">              </span>+ '&lt;div style="height:100%;width:'+Math.max(p,1)+'%;background:#E24B4A"&gt;&lt;/div&gt;&lt;/div&gt;&lt;/td&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">              </span>+ '&lt;/tr&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>}).join('')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>// SALIDAS — sin BAJAS SIN FECHA; con peso promedio sacrificio</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var mort = '&lt;div class="kg"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('red', num(k.muertes), 'Bajas por muerte', 'del total registrado')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('red', k.mortalidadPct==null?'—':String(k.mortalidadPct).replace('.',',')+'%', '% Mortalidad',</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>k.muertes+' ÷ '+k.totalRegistradas+' registrados')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('gray', num(k.sacrificios), 'Sacrificios', 'salida comercial, no baja')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ (k.pesoPromedioSacrificio != null</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>? kc('teal', k.pesoPromedioSacrificio + ' kg', 'Peso promedio sacrificio',</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">               </span>'sobre ' + k.sacrificios + ' animales')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>: '')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('gray', num(k.ventas), 'Ventas en pie', 'salida comercial, no baja')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ kc('gray', num(k.noLocalizados), 'No localizados', 'NO son bajas')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ ((k.sacrificios || k.ventas)</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>? '&lt;div class="crec-nota"&gt;&lt;b&gt;Los sacrificios y las ventas no son mortalidad.&lt;/b&gt; '</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>+ 'Son el producto del negocio y se reportan aparte.&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>: '')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ causas</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ (k.noLocalizados</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>? '&lt;div class="crec-nota"&gt;&lt;b&gt;Los no localizados no se cuentan como mortalidad.&lt;/b&gt; '</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>+ 'Quedan fuera del hato actual hasta confirmar su estado.'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>+ (k.noLocalizadosDetalle.length</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>? ' Chapetas: '+k.noLocalizadosDetalle.map(function(a){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                    </span>return esc(a.codigo_original||a.codigo); }).join(', ')+'.'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                </span>: '')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">            </span>+ '&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>: '');</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var compos = '&lt;div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;div&gt;&lt;div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#8A9696;margin-bottom:7px"&gt;Por sexo&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>distribucion(k.porSexo, k.hatoActual, 'Sexo', MAPA_SEXO) + '&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;div&gt;&lt;div style="font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#8A9696;margin-bottom:7px"&gt;Por raza&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>distribucion(k.porRaza, k.hatoActual, 'Raza') + '&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;/div&gt;';</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var grupos = distribucion(k.porGrupo, k.hatoActual, 'Grupo de manejo');</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var esc_sec = k.proyectados</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>? '&lt;div class="esc-box"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;span class="esc-tag"&gt;⚠ Escenario · no es el hato&lt;/span&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;div class="kg"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ <span class="Apple-converted-space">  </span>kc('orange', '+'+k.proyectados, 'Animales simulados', 'no incluidos en ningún KPI anterior')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ <span class="Apple-converted-space">  </span>kc('orange', num(k.hatoActual + k.proyectados), 'Hato con escenario', num(k.hatoActual)+' reales + '+k.proyectados+' simulados')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;div class="esc-warn"&gt;&lt;b&gt;Estas cifras son una simulación&lt;/b&gt; y no representan animales existentes. '</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ 'El hato real a la fecha de corte es &lt;b&gt;'+num(k.hatoActual)+'&lt;/b&gt;.&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>: '';</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>// Notas al pie simplificadas</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var foot = '&lt;div class="rep-foot"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;div&gt;&lt;b&gt;Fecha de corte:&lt;/b&gt; '+fmtLargo(corte)+'.&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;div style="margin-top:10px;color:#A8B3B3"&gt;LAAAMB Corderos · Finca La Marinilla · '</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>'Aparcería — estos animales no forman parte del inventario de la finca.&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;/div&gt;';</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>$('hoja').innerHTML =</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>'&lt;div class="rep-head"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>'&lt;div class="rep-head-top"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">    </span>'&lt;div&gt;&lt;div class="rep-brand"&gt;LAAAMB&lt;span&gt;.&lt;/span&gt;&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">      </span>'&lt;div class="rep-sub"&gt;Corderos · Reporte de aparcería&lt;/div&gt;&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">    </span>'&lt;div class="rep-corte"&gt;Corte&lt;b&gt;'+fmtLargo(corte)+'&lt;/b&gt;&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>'&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>'&lt;div class="rep-titulo"&gt;&lt;div class="lbl"&gt;Aportante&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">    </span>'&lt;div class="nom"&gt;'+esc(ap.nombre)+'&lt;/div&gt;&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;div class="rep-body"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>sec('Crecimiento del hato', crec,</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">             </span>(k.criasEnVerificacion ? 'PROVISIONAL · propiedad en verificación'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                                    </span>: 'aportaron madres; lo nacido es del proyecto'))</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>sec('Cumplimiento de meta', meta)</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>sec('Composición y productividad', comp)</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>sec('Composición del hato', compos, 'sobre el hato actual')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>sec('Distribución por grupo', grupos, 'sobre el hato actual')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>sec('Estado reproductivo', repro, 'sobre el hato actual')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>sec('Salidas: mortalidad, sacrificios y no localizados', mort, 'sobre el total registrado')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>(esc_sec ? sec('Escenario proyectado', esc_sec, 'fuera de los KPIs') : '')</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ <span class="Apple-converted-space">  </span>foot</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;/div&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function sec(titulo, html, hint){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>return '&lt;div class="rep-sec"&gt;&lt;div class="rep-sec-t"&gt;&lt;span&gt;'+esc(titulo)+'&lt;/span&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ (hint?'&lt;span class="hint"&gt;'+esc(hint)+'&lt;/span&gt;':'')+'&lt;/div&gt;'+html+'&lt;/div&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function distribucion(grupos, total, etiquetaCol, mapa){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if(!grupos || !grupos.length){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>return '&lt;div style="font-size:12px;color:#8A9696;padding:10px 0"&gt;Sin datos para agrupar.&lt;/div&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var filas = grupos.map(function(g){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>var p = total ? Math.round((g.n/total)*1000)/10 : 0;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>var nombre = (mapa &amp;&amp; mapa[g.clave]) ? mapa[g.clave] : g.clave;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>return '&lt;tr&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;td&gt;'+esc(nombre)+'&lt;/td&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;td class="num"&gt;'+g.n+'&lt;/td&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;td class="num"&gt;'+String(p).replace('.',',')+'%&lt;/td&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;td style="width:34%"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ <span class="Apple-converted-space">  </span>'&lt;div style="height:8px;background:#EAEEEE;border-radius:99px;overflow:hidden"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ <span class="Apple-converted-space">    </span>'&lt;div style="height:100%;width:'+Math.max(p,1)+'%;background:#1AA6A6"&gt;&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ <span class="Apple-converted-space">  </span>'&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>+ '&lt;/td&gt;&lt;/tr&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}).join('');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>return '&lt;table class="rt"&gt;&lt;thead&gt;&lt;tr&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;th&gt;'+esc(etiquetaCol)+'&lt;/th&gt;&lt;th class="num"&gt;Animales&lt;/th&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ '&lt;th class="num"&gt;%&lt;/th&gt;&lt;th&gt;&lt;/th&gt;&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ filas + '&lt;/tbody&gt;&lt;/table&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>var MAPA_SEXO = { hembra: 'Hembras', macho: 'Machos' };</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function kc(cls, n, l, s){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>return '&lt;div class="kc '+cls+'"&gt;&lt;div class="n"&gt;'+n+'&lt;/div&gt;&lt;div class="l"&gt;'+esc(l)+'&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>+ (s?'&lt;div class="s"&gt;'+esc(s)+'&lt;/div&gt;':'')+'&lt;/div&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>async function generar(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var id = $('f-aportante').value;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if(!id){ toast('Selecciona un aportante', true); return; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var corte = $('f-corte').value;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if(!corte){ toast('Indica la fecha de corte', true); return; }</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>$('hoja').innerHTML = '&lt;div class="empty-box"&gt;Calculando…&lt;/div&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>try{</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>var ap = APORTANTES.filter(function(a){ return a.id === id; })[0];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>if(!ap) throw new Error('Aportante no encontrado');</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>var rows = await window.APARCERIA.getAnimales(id);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>if(!rows.length){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>$('hoja').innerHTML = '&lt;div class="empty-box"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>+ '&lt;div style="font-size:15px;color:var(--text2)"&gt;Sin animales cargados para '</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>+ esc(ap.nombre) + '.&lt;/div&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>+ '&lt;div style="font-size:12.5px;color:var(--text4);margin-top:8px;max-width:460px;margin-left:auto;margin-right:auto;line-height:1.6"&gt;'</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>+ 'Carga los animales desde &lt;b&gt;Aparcería → Animales&lt;/b&gt; y vuelve.&lt;/div&gt;&lt;/div&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>ACTUAL = null;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>return;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>if(ap.hato_inicial == null){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>toast('Aviso: este aportante no tiene hato_inicial definido — crecimiento y cumplimiento saldrán vacíos', true);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>ACTUAL = { aportante: ap, rows: rows, kpis: window.APARCERIA.kpis(rows, ap), corte: corte };</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>render();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>toast('Reporte generado');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}catch(e){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>var m = fallo('Generar reporte', e);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>$('hoja').innerHTML = '&lt;div class="empty-box" style="color:var(--red)"&gt;'+esc(m)+'&lt;/div&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>ACTUAL = null;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function exportarExcel(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if(!ACTUAL){ toast('Genera el reporte primero', true); return; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>try{</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>if(!window.XLSX) throw new Error('SheetJS no cargó (revisa la conexión)');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>var k=ACTUAL.kpis, ap=ACTUAL.aportante;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>var kpiRows = [</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['REPORTE DE APARCERÍA — LAAAMB Corderos'],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Aportante', ap.nombre],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Fecha de corte', ACTUAL.corte],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>[],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['CRECIMIENTO DEL HATO'],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Madres aportadas al inicio', k.hatoInicial],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Nacidas en el proyecto (vivas)', k.criasActivas],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Hato actual', k.hatoActual],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Crecimiento %', k.crecimientoPct],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Crecimiento neto (animales)', k.crecimientoNeto],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Meta anual', k.meta],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Cumplimiento meta %', k.cumplimientoPct],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>[],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['COMPOSICIÓN'],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Total registrados (reales)', k.totalRegistradas],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Fundadoras activas', k.fundadorasActivas],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Crias activas', k.criasActivas],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Corderas en levante', k.corderasLevante],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Prolificidad', k.prolificidad],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>[],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['SALIDAS'],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Bajas por muerte', k.muertes],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['% Mortalidad', k.mortalidadPct],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Sacrificios', k.sacrificios],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Peso promedio sacrificio (kg)', k.pesoPromedioSacrificio],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['Ventas en pie', k.ventas],</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>['No localizados', k.noLocalizados]</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>if(k.causasBaja.length){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>kpiRows.push([], ['CAUSAS DE MORTALIDAD'], ['Causa','Animales','%']);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>k.causasBaja.forEach(function(c){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>var p = k.muertes ? Math.round((c.n/k.muertes)*1000)/10 : 0;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">          </span>kpiRows.push([c.clave, c.n, p]);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>});</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>var det = [['Chapeta','Codigo interno','Origen','Raza','Sexo','Tipo','Grupo','Estado salida',</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                  </span>'Fecha salida','Motivo salida','Peso salida','Estado reproductivo',</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                  </span>'Fecha nacimiento','Madre','Peso vigente kg','Tipo peso','Fecha peso','Notas']];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>ACTUAL.rows.forEach(function(a){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>var p = window.APARCERIA.pesoVigente(a);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>det.push([a.codigo_original||a.codigo, a.codigo, a.origen, a.raza, a.sexo, a.tipo, a.grupo, a.estado_salida,</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                  </span>a.fecha_salida, a.motivo_salida, a.peso_salida,</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                  </span>a.estado_reproductivo, a.fecha_nacimiento, a.madre_codigo,</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">                  </span>p?p.peso_kg:null, p?p.tipo:null, p?p.fecha:null, a.notas]);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>});</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>var wb = window.XLSX.utils.book_new();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(kpiRows), 'KPIs');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>window.XLSX.utils.book_append_sheet(wb, window.XLSX.utils.aoa_to_sheet(det), 'Animales');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>var slug = ap.nombre.replace(/[^A-Za-z0-9]+/g,'_').replace(/^_|_$/g,'');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>window.XLSX.writeFile(wb, 'Reporte_Aparceria_'+slug+'_'+ACTUAL.corte+'.xlsx');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>toast('Excel exportado');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}catch(e){ fallo('Exportar Excel', e); }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function imprimir(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if(!ACTUAL){ toast('Genera el reporte primero', true); return; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>window.print();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>async function init(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>try{</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>APORTANTES = await window.APARCERIA.getAportantes();</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>var sel = $('f-aportante');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>if(!APORTANTES.length){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>sel.innerHTML = '&lt;option value=""&gt;Sin aportantes&lt;/option&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>$('hoja').innerHTML = '&lt;div class="empty-box"&gt;No hay aportantes registrados.&lt;/div&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>return;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>sel.innerHTML = APORTANTES.map(function(a){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">        </span>return '&lt;option value="'+esc(a.id)+'"&gt;'+esc(a.nombre)+'&lt;/option&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>}).join('');</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}catch(e){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>fallo('Cargar aportantes', e);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">      </span>$('hoja').innerHTML = '&lt;div class="empty-box" style="color:var(--red)"&gt;'+esc(e.message)+'&lt;/div&gt;';</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>}</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>function whenReady(cb){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>if(window.AUTH_ROL){ cb(); return; }</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var n=0;</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>var iv=setInterval(function(){ if(window.AUTH_ROL || n&gt;50){ clearInterval(iv); cb(); } n++; }, 100);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>}</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>document.addEventListener('DOMContentLoaded', function(){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>$('f-corte').value = new Date().toISOString().split('T')[0];</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>$('btn-generar').addEventListener('click', function(){ generar(); });</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>$('btn-pdf').addEventListener('click', imprimir);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>$('btn-excel').addEventListener('click', exportarExcel);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">    </span>whenReady(init);</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>});</span></p>
+<p class="p1"><span class="s1">})();</span></p>
+<p class="p1"><span class="s1">&lt;/script&gt;</span></p>
+<p class="p2"><span class="s1"></span><br></p>
+<p class="p1"><span class="s1">&lt;script&gt;</span></p>
+<p class="p1"><span class="s1">if('serviceWorker' in navigator){</span></p>
+<p class="p1"><span class="s1"><span class="Apple-converted-space">  </span>window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });</span></p>
+<p class="p1"><span class="s1">}</span></p>
+<p class="p1"><span class="s1">&lt;/script&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/body&gt;</span></p>
+<p class="p1"><span class="s1">&lt;/html&gt;</span></p>
 </body>
 </html>
