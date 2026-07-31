@@ -25,7 +25,7 @@
 <script src="js/roles.js"></script>
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/aparceria.js?v=7"></script>
+<script src="js/aparceria.js?v=8"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);
@@ -243,6 +243,10 @@ table.rt td.num,table.rt th.num{text-align:right}
   }
   function num(n){ return n==null?'—':String(n); }
   function pctTxt(p){ return p==null?'—':(p>0?'+':'')+String(p).replace('.',',')+'%'; }
+  function money(n){
+    if(n==null||isNaN(n)) return '—';
+    return '$'+Math.round(n).toLocaleString('es-CO');
+  }
 
   // ── RENDER DE LA HOJA ──────────────────────────────────────────
   function render(){
@@ -402,6 +406,70 @@ table.rt td.num,table.rt th.num{text-align:right}
     +   'Aparcería — estos animales no forman parte del inventario de la finca.</div>'
     + '</div>';
 
+  
+    // ── Portada ejecutiva ──
+    var ejecutivo = '<div class="kg">'
+      + kc('teal', num(k.hatoActual), 'Hato actual', 'animales activos')
+      + kc('orange', k.crecimientoPct==null?'—':pctTxt(k.crecimientoPct), 'Crecimiento', 'sobre lo aportado')
+      + kc('red', k.mortalidadPct==null?'—':String(k.mortalidadPct).replace('.',',')+'%', 'Mortalidad', num(k.muertes)+' bajas')
+      + kc('teal', num(k.corderasLevante), 'Corderas levante', 'retenidas para crecimiento')
+      + kc('orange', k.cumplimientoPct==null?'—':String(k.cumplimientoPct).replace('.',',')+'%', 'Cumplimiento meta', '')
+      + '</div>';
+
+    // ── Comparativo por raza ──
+    var razaHtml = '';
+    if (k.porRazaDetalle && k.porRazaDetalle.length) {
+      razaHtml = '<table class="rt"><thead><tr>'
+        + '<th>Raza</th><th class="num">Activas</th><th class="num">Madres</th><th class="num">Crías</th>'
+        + '<th class="num">Muertes</th><th class="num">Mort. %</th><th class="num">GDP ref.</th></tr></thead><tbody>'
+        + k.porRazaDetalle.map(function(r){
+            return '<tr>'
+              + '<td><b>'+esc(r.raza)+'</b></td>'
+              + '<td class="num">'+r.activas+'</td>'
+              + '<td class="num">'+r.madres+'</td>'
+              + '<td class="num">'+r.crias+'</td>'
+              + '<td class="num">'+r.muertes+'</td>'
+              + '<td class="num">'+(r.mortalidadPct==null?'—':String(r.mortalidadPct).replace('.',',')+'%')+'</td>'
+              + '<td class="num">'+(r.gdpModelo==null?'—':r.gdpModelo+' g/d')+'</td>'
+              + '</tr>';
+          }).join('')
+        + '</tbody></table>'
+        + '<div class="crec-nota">GDP ref. = modelo de referencia del proyecto '
+        + '(Katahdin 120 · Katahdin×Dorper 180 · Lacaune 122 g/día). '
+        + 'No sustituye pesajes individuales de balanza.</div>';
+      var lac = k.porRazaDetalle.filter(function(r){ return r.raza === 'LACAUNE'; })[0];
+      if (lac) {
+        razaHtml += '<div class="crec-nota" style="margin-top:8px"><b>Lacaune:</b> '
+          + lac.activas + ' activas · ' + lac.muertes + ' muertes. '
+          + 'En este hato las bajas Lacaune no incluyen neumonía ni hipotermia '
+          + '(perfil sanitario distinto a Katahdin).</div>';
+      }
+    } else {
+      razaHtml = '<div style="font-size:12px;color:#8A9696">Sin desglose por raza.</div>';
+    }
+
+    // ── Valor estimado ──
+    var valorHtml = '<div class="kg">'
+      + kc('teal', money(k.valorHatoEstimado), 'Valor estimado hato', 'madres + crías')
+      + kc('gray', money(k.valorMadresEstimado), 'Madres / vientres', money(k.precioVientre)+' c/u')
+      + kc('gray', money(k.valorCriasEstimado), 'Crías (ref.)', money(k.precioKgPie)+'/kg · peso real o 28 kg ref.')
+      + '</div>'
+      + '<div class="crec-nota">Compra garantizada LAAAMB: <b>'+money(k.precioKgPie)+'/kg en pie</b>. '
+      + 'Vientre de referencia: <b>'+money(k.precioVientre)+'</b>. '
+      + 'Cifras de valorización del reporte; no son una liquidación contable.</div>';
+
+    // ── Protocolo sanitario (botiquín real) ──
+    var protoHtml = '<table class="rt"><thead><tr>'
+      + '<th>Momento</th><th>Producto (botiquín)</th><th>Uso</th></tr></thead><tbody>'
+      + '<tr><td>Ingreso / estratégico</td><td>Ivermectina o Cydectin NF</td><td>Antiparasitario</td></tr>'
+      + '<tr><td>Crías (coccidia)</td><td>Baycox 5% o Coccigan Diclazuril</td><td>Antiprotozoario</td></tr>'
+      + '<tr><td>Soporte</td><td>Ovaxel ADE + Catosal</td><td>Vitaminas / fósforo + B12</td></tr>'
+      + '<tr><td>Respiratorio (si aplica)</td><td>Fifenicol / Hemaflox</td><td>Florfenicol</td></tr>'
+      + '</tbody></table>'
+      + '<div class="crec-nota">Protocolo del proyecto con productos del botiquín de La Marinilla. '
+      + 'No implica que cada animal de aparcería tenga registro individual de dosis en este corte.</div>';
+
+
     $('hoja').innerHTML =
         '<div class="rep-head">'
       +   '<div class="rep-head-top">'
@@ -416,12 +484,16 @@ table.rt td.num,table.rt th.num{text-align:right}
       +   sec('Crecimiento del hato', crec,
              (k.criasEnVerificacion ? 'PROVISIONAL · propiedad en verificación'
                                     : 'aportaron madres; lo nacido es del proyecto'))
+      +   sec('Resumen ejecutivo', ejecutivo)
       +   sec('Cumplimiento de meta', meta)
       +   sec('Composición y productividad', comp)
+      +   sec('Desempeño por raza', razaHtml, 'dato real + GDP modelo de referencia')
+      +   sec('Valor estimado del hato', valorHtml, 'precios de referencia del proyecto')
       +   sec('Composición del hato', compos, 'sobre el hato actual')
       +   sec('Distribución por grupo', grupos, 'sobre el hato actual')
       +   sec('Estado reproductivo', repro, 'sobre el hato actual')
       +   sec('Salidas: mortalidad, sacrificios y no localizados', mort, 'sobre el total registrado')
+      +   sec('Protocolo sanitario del proyecto', protoHtml, 'productos del botiquín')
       +   (esc_sec ? sec('Escenario proyectado', esc_sec, 'fuera de los KPIs') : '')
       +   foot
       + '</div>';

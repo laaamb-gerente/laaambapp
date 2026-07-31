@@ -25,6 +25,17 @@
   // es un error de captura y el reporte lo debe avisar en vez de recalcular.
   var META_MULT = 2.7;
 
+  // Referencias de valor y GDP (declaradas en el reporte como modelo)
+  var PRECIO_VIENTRE = 1200000;   // COP por madre/vientre activa
+  var PRECIO_KG_PIE = 9000;       // COP/kg en pie — compra garantizada LAAAMB
+  var PESO_REF_CRIA_KG = 28;      // peso ref. si no hay pesaje (para valor estimado)
+  var GDP_MODELO = {
+    'KATAHDIN': 120,
+    'KATAHDIN F5': 120,
+    'KATAHDIN x DORPER': 180,
+    'LACAUNE': 122
+  };
+
   // Fases de carga. Mientras falte alguna, los indicadores no son
   // representativos y la UI lo advierte.
   // Son 3 fases, una por archivo. Los sacrificios NO son una fase aparte:
@@ -187,6 +198,49 @@
 
     var conPeso = reales.map(pesoVigente).filter(Boolean);
 
+    // ── Desglose por raza (normaliza nombre) ──
+    function razaKey(a) {
+      var r = String(a.raza || '').trim().toUpperCase();
+      if (!r) return 'SIN RAZA';
+      if (r.indexOf('LACAUNE') >= 0) return 'LACAUNE';
+      if (r.indexOf('DORPER') >= 0) return 'KATAHDIN x DORPER';
+      if (r.indexOf('KATAHDIN') >= 0) return 'KATAHDIN';
+      return r;
+    }
+    function bloqueRaza(lista) {
+      var acc = {};
+      lista.forEach(function (a) {
+        var k = razaKey(a);
+        if (!acc[k]) acc[k] = { raza: k, activas: 0, madres: 0, crias: 0, muertes: 0, sacrificios: 0 };
+        if (enHato(a)) {
+          acc[k].activas++;
+          if (a.tipo === 'cria') acc[k].crias++;
+          else acc[k].madres++;
+        }
+        if (esMuerto(a)) acc[k].muertes++;
+        if (esSacrif(a)) acc[k].sacrificios++;
+      });
+      return Object.keys(acc).map(function (k) {
+        var b = acc[k];
+        var den = b.activas + b.muertes + b.sacrificios;
+        b.mortalidadPct = den ? Math.round((b.muertes / den) * 1000) / 10 : null;
+        b.gdpModelo = GDP_MODELO[k] != null ? GDP_MODELO[k] : null;
+        return b;
+      }).sort(function (x, y) { return y.activas - x.activas; });
+    }
+    var porRazaDetalle = bloqueRaza(reales);
+
+    // Valor estimado del hato activo
+    var madresValor = (fundActivas.length + reposActiva.length) * PRECIO_VIENTRE;
+    var criasValor = criasActivas.reduce(function (s, a) {
+      var p = pesoVigente(a);
+      var kg = (p && p.peso_kg > 0) ? p.peso_kg : PESO_REF_CRIA_KG;
+      return s + (kg * PRECIO_KG_PIE);
+    }, 0);
+    var valorHatoEstimado = madresValor + criasValor;
+
+
+
     // Peso promedio de sacrificio
     var pesosSac = sacrifs.map(function (a) {
       if (a.peso_salida != null && a.peso_salida > 0) return Number(a.peso_salida);
@@ -258,7 +312,14 @@
       sinPeso: reales.length - conPeso.length,
       pesosReales: conPeso.filter(function (p) { return p.tipo === 'real'; }).length,
       pesosEstimados: conPeso.filter(function (p) { return p.tipo === 'estimado'; }).length,
-      pesosSacrificio: conPeso.filter(function (p) { return p.tipo === 'sacrificio'; }).length
+      pesosSacrificio: conPeso.filter(function (p) { return p.tipo === 'sacrificio'; }).length,
+      porRazaDetalle: porRazaDetalle,
+      valorHatoEstimado: valorHatoEstimado,
+      valorMadresEstimado: madresValor,
+      valorCriasEstimado: criasValor,
+      precioVientre: PRECIO_VIENTRE,
+      precioKgPie: PRECIO_KG_PIE,
+      gdpModelo: GDP_MODELO
     };
   }
 
@@ -348,6 +409,9 @@
     esSacrif: esSacrif,
     esVenta: esVenta,
     esNoLoc: esNoLoc,
-    pct: pct
+    pct: pct,
+    PRECIO_VIENTRE: PRECIO_VIENTRE,
+    PRECIO_KG_PIE: PRECIO_KG_PIE,
+    GDP_MODELO: GDP_MODELO
   };
 })();
