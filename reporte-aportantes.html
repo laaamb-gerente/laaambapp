@@ -25,7 +25,7 @@
 <script src="js/roles.js"></script>
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/aparceria.js?v=9"></script>
+<script src="js/aparceria.js?v=10"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);
@@ -466,14 +466,16 @@ table.rt td.num,table.rt th.num{text-align:right}
 
     // ── Protocolo sanitario (botiquín real) ──
     var protoHtml = '<table class="rt"><thead><tr>'
-      + '<th>Momento</th><th>Producto (botiquín)</th><th>Uso</th></tr></thead><tbody>'
-      + '<tr><td>Ingreso / estratégico</td><td>Ivermectina o Cydectin NF</td><td>Antiparasitario</td></tr>'
-      + '<tr><td>Crías (coccidia)</td><td>Baycox 5% o Coccigan Diclazuril</td><td>Antiprotozoario</td></tr>'
-      + '<tr><td>Soporte</td><td>Ovaxel ADE + Catosal</td><td>Vitaminas / fósforo + B12</td></tr>'
-      + '<tr><td>Respiratorio (si aplica)</td><td>Fifenicol / Hemaflox</td><td>Florfenicol</td></tr>'
+      + '<th>Línea</th><th>Enfoque</th><th>Productos (botiquín)</th></tr></thead><tbody>'
+      + '<tr><td><b>Lacaune</b></td><td>Preventivo liviano · foco parásitos</td>'
+      + '<td>Ivermectina / Cydectin NF · Baycox o Coccigan (crías) · Ovaxel ADE + Catosal</td></tr>'
+      + '<tr><td><b>Katahdin</b></td><td>Base + vigilancia respiratoria</td>'
+      + '<td>Mismo base · Fifenicol / Hemaflox si hay riesgo respiratorio</td></tr>'
       + '</tbody></table>'
-      + '<div class="crec-nota">Protocolo del proyecto con productos del botiquín de La Marinilla. '
-      + 'No implica que cada animal de aparcería tenga registro individual de dosis en este corte.</div>';
+      + '<div class="crec-nota"><b>Por qué Lacaune en la transición:</b> mayor valor de vientre ($5.2M), '
+      + 'perfil de bajas sin neumonía ni hipotermia en este corte, y protocolo sanitario más simple '
+      + '(menos presión de línea respiratoria). Productos del botiquín de La Marinilla; '
+      + 'no implica dosis individual registrada por animal de aparcería en este reporte.</div>';
 
 
     $('hoja').innerHTML =
