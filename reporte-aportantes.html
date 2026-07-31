@@ -25,7 +25,7 @@
 <script src="js/roles.js"></script>
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/aparceria.js?v=8"></script>
+<script src="js/aparceria.js?v=9"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);
@@ -439,10 +439,14 @@ table.rt td.num,table.rt th.num{text-align:right}
         + 'No sustituye pesajes individuales de balanza.</div>';
       var lac = k.porRazaDetalle.filter(function(r){ return r.raza === 'LACAUNE'; })[0];
       if (lac) {
-        razaHtml += '<div class="crec-nota" style="margin-top:8px"><b>Lacaune:</b> '
-          + lac.activas + ' activas · ' + lac.muertes + ' muertes. '
-          + 'En este hato las bajas Lacaune no incluyen neumonía ni hipotermia '
-          + '(perfil sanitario distinto a Katahdin).</div>';
+        razaHtml += '<div style="margin-top:12px;padding:12px 14px;border:1.5px solid #1AA6A6;background:#F1FAFA;border-radius:10px;font-size:12.5px;line-height:1.55;color:#15201F">'
+          + '<b style="color:#1AA6A6">Superioridad Lacaune en este hato</b><br>'
+          + lac.activas + ' activas · ' + lac.crias + ' crías · ' + lac.muertes + ' muertes'
+          + (lac.mortalidadPct!=null ? ' ('+String(lac.mortalidadPct).replace('.',',')+'%)' : '') + '.<br>'
+          + 'Perfil sanitario: las bajas Lacaune <b>no incluyen neumonía ni hipotermia</b> '
+          + '(a diferencia del patrón Katahdin). '
+          + 'Capital por vientre: <b>$5.200.000</b> vs $1.200.000 Katahdin. '
+          + 'Estrategia del proyecto: transición hacia Lacaune por mayor valor genético y mejor perfil de baja.</div>';
       }
     } else {
       razaHtml = '<div style="font-size:12px;color:#8A9696">Sin desglose por raza.</div>';
@@ -454,8 +458,10 @@ table.rt td.num,table.rt th.num{text-align:right}
       + kc('gray', money(k.valorMadresEstimado), 'Madres / vientres', money(k.precioVientre)+' c/u')
       + kc('gray', money(k.valorCriasEstimado), 'Crías (ref.)', money(k.precioKgPie)+'/kg · peso real o 28 kg ref.')
       + '</div>'
-      + '<div class="crec-nota">Compra garantizada LAAAMB: <b>'+money(k.precioKgPie)+'/kg en pie</b>. '
-      + 'Vientre de referencia: <b>'+money(k.precioVientre)+'</b>. '
+      + '<div class="crec-nota">Compra garantizada LAAAMB: <b>'+money(k.precioKgPie)+'/kg en pie</b> (todas las razas). '
+      + 'Vientre Katahdin: <b>'+money(k.precioVientre)+'</b> · '
+      + 'Vientre Lacaune: <b>'+money(k.precioVientreLacaune)+'</b>. '
+      + (k.nLacauneMadres!=null ? ('Madres Lacaune en valuación: <b>'+k.nLacauneMadres+'</b>. ') : '')
       + 'Cifras de valorización del reporte; no son una liquidación contable.</div>';
 
     // ── Protocolo sanitario (botiquín real) ──

@@ -26,9 +26,10 @@
   var META_MULT = 2.7;
 
   // Referencias de valor y GDP (declaradas en el reporte como modelo)
-  var PRECIO_VIENTRE = 1200000;   // COP por madre/vientre activa
-  var PRECIO_KG_PIE = 9000;       // COP/kg en pie — compra garantizada LAAAMB
-  var PESO_REF_CRIA_KG = 28;      // peso ref. si no hay pesaje (para valor estimado)
+  var PRECIO_VIENTRE = 1200000;          // COP Katahdin / otras
+  var PRECIO_VIENTRE_LACAUNE = 5200000;  // COP Lacaune (capital superior)
+  var PRECIO_KG_PIE = 9000;              // COP/kg en pie — compra garantizada LAAAMB
+  var PESO_REF_CRIA_KG = 28;             // peso ref. si no hay pesaje (para valor estimado)
   var GDP_MODELO = {
     'KATAHDIN': 120,
     'KATAHDIN F5': 120,
@@ -230,14 +231,27 @@
     }
     var porRazaDetalle = bloqueRaza(reales);
 
-    // Valor estimado del hato activo
-    var madresValor = (fundActivas.length + reposActiva.length) * PRECIO_VIENTRE;
+    // Valor estimado del hato activo (Lacaune capitaliza más)
+    function precioVientreDe(a) {
+      var r = String(a.raza || '').toUpperCase();
+      return r.indexOf('LACAUNE') >= 0 ? PRECIO_VIENTRE_LACAUNE : PRECIO_VIENTRE;
+    }
+    var madresActivasValor = activos.filter(function (a) {
+      return a.tipo !== 'cria';
+    });
+    var madresValor = madresActivasValor.reduce(function (s, a) {
+      return s + precioVientreDe(a);
+    }, 0);
     var criasValor = criasActivas.reduce(function (s, a) {
       var p = pesoVigente(a);
       var kg = (p && p.peso_kg > 0) ? p.peso_kg : PESO_REF_CRIA_KG;
       return s + (kg * PRECIO_KG_PIE);
     }, 0);
     var valorHatoEstimado = madresValor + criasValor;
+    var nLacauneMadres = madresActivasValor.filter(function (a) {
+      return String(a.raza || '').toUpperCase().indexOf('LACAUNE') >= 0;
+    }).length;
+    var nOtrasMadres = madresActivasValor.length - nLacauneMadres;
 
 
 
@@ -318,6 +332,9 @@
       valorMadresEstimado: madresValor,
       valorCriasEstimado: criasValor,
       precioVientre: PRECIO_VIENTRE,
+      precioVientreLacaune: PRECIO_VIENTRE_LACAUNE,
+      nLacauneMadres: nLacauneMadres,
+      nOtrasMadres: nOtrasMadres,
       precioKgPie: PRECIO_KG_PIE,
       gdpModelo: GDP_MODELO
     };
@@ -411,6 +428,7 @@
     esNoLoc: esNoLoc,
     pct: pct,
     PRECIO_VIENTRE: PRECIO_VIENTRE,
+    PRECIO_VIENTRE_LACAUNE: PRECIO_VIENTRE_LACAUNE,
     PRECIO_KG_PIE: PRECIO_KG_PIE,
     GDP_MODELO: GDP_MODELO
   };
