@@ -180,8 +180,11 @@
     });
     var evaluadas = prenadas.length + paridas.length + vacias.length;
 
+    var criasConMadre = crias.filter(function (a) {
+      return !!(a.madre_codigo || '').trim();
+    });
     var madres = {};
-    crias.forEach(function (a) {
+    criasConMadre.forEach(function (a) {
       var m = (a.madre_codigo || '').trim();
       if (m) madres[m] = true;
     });
@@ -312,7 +315,9 @@
       vacias: vacias.length,
       sinDato: sinDato.length,
       fertilidadPct: pct(prenadas.length + paridas.length, evaluadas),
-      prolificidad: nMadres ? Math.round((crias.length / nMadres) * 100) / 100 : null,
+      // Solo crías con madre_codigo: si no, el numerador infla (p.ej. cargas sin ligar)
+      // y sale "3+ crías/madre", imposible en ovino.
+      prolificidad: nMadres ? Math.round((criasConMadre.length / nMadres) * 100) / 100 : null,
       madresDistintas: nMadres,
 
       proyectados: proyectados.length,
