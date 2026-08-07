@@ -1,120 +1,120 @@
 // ── sw.js · Service Worker de LAAAMBAPP ─────────────────────
-// Cache-first para assets estáticos. NUNCA intercepta peticiones
-// a Supabase ni a /api/ (auth y datos deben ir siempre a la red).
+// HTML + JS + CSS: NETWORK-FIRST (actualizaciones automáticas).
+// Iconos/CDN: CACHE-FIRST (offline).
+// NUNCA intercepta Supabase ni /api/.
 
-// v14: módulo APARCERÍA (js/aparceria.js) + grupo nuevo en js/sidebar.js.
-// v15: cargador (js/aportantes-loader.js) + motor sobre estado_salida.
-// v16: desambiguación de chapetas repetidas (codigo_original + sufijo).
-// v17: columna CODIGO opcional como escape hatch de desambiguación.
-// v18: soporte del esquema CARGA MADRES (ESTADO LAAAMB, PESO REAL, hdr fila 4).
-// v19: peso sin fecha a columnas del animal + bajas sin fecha visibles.
-// v20: 3 fases (contractuales/reposicion/crias), origen reposicion, reetiquetado.
-// v21: validacion cria-vs-vientre, lista de re-etiquetado y nota provisional.
-// v22: MAPA_HATO explicito (Excel → aportantes.nombre) visible en el pre-flight.
-// v23: Copiloto LAAAMB en Hoy (solo Grok) + dosis sin duplicar en alertas.
-// El bump es OBLIGATORIO aquí: las otras 22 páginas cargan './js/sidebar.js'
-// sin ?v y el SW lo sirve cache-first, así que sin cambiar CACHE_NAME no
-// verían el grupo nuevo del menú.
-const CACHE_NAME = 'laaambapp-v23';
+// v24: network-first para JS/CSS + auto-update; Copiloto en Hoy visible.
+const CACHE_NAME = 'laaambapp-v24';
+const CACHE_SHELL = 'laaambapp-shell-v24';
 
-// Paths relativos: resuelven contra la ubicación del SW en cada host
-// (raíz en Vercel, /laaambapp/ en GitHub Pages).
 const STATIC_ASSETS = [
-  './js/supabase-client.js',
-  './js/sidebar.js',
-  './js/aparceria.js',
-  './js/aportantes-loader.js',
-  './js/auth.js',
-  './js/db.js',
-  './js/app-state.js',
-  './js/offline-db.js',
-  './js/clear-demo-data.js',
-  './AppData.js',
-  './farm-selector.js',
   './manifest.json',
   './icons/icon.svg',
-  './icons/icon-laaamb.jpg',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
+  './icons/icon-laaamb.jpg'
 ];
 
-// Instalar: precachear los assets estáticos
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
+    caches.open(CACHE_SHELL)
       .then((cache) => cache.addAll(STATIC_ASSETS).catch(() => {}))
       .then(() => self.skipWaiting())
   );
 });
 
-// Activar: limpiar caches viejos
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
-    ).then(() => self.clients.claim())
-     .then(() =>
-       // Notificar a las pestañas abiertas que hay nueva versión
-       self.clients.matchAll().then((clients) => {
-         clients.forEach((client) => {
-           client.postMessage({ type: 'SW_UPDATED' });
-         });
-       })
-     )
+      Promise.all(
+        keys
+          .filter((k) => k !== CACHE_NAME && k !== CACHE_SHELL)
+          .map((k) => caches.delete(k))
+      )
+    )
+      .then(() => self.clients.claim())
+      .then(() =>
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+          clients.forEach((client) => {
+            client.postMessage({ type: 'SW_UPDATED', cache: CACHE_NAME });
+          });
+        })
+      )
   );
 });
 
-// Fetch: network-first para HTML/navegación; cache-first para assets.
-// Red directa para Supabase y /api/.
+// Mensaje desde la página: forzar skipWaiting / limpiar
+self.addEventListener('message', (event) => {
+  if (!event.data) return;
+  if (event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  if (event.data.type === 'CLEAR_CACHES') {
+    event.waitUntil(
+      caches.keys().then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+    );
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // No interceptar: Supabase, /api/ ni métodos distintos de GET
   if (req.method !== 'GET' ||
       url.hostname.includes('supabase.co') ||
       url.pathname.includes('/api/')) {
-    return; // la petición va directo a la red
+    return;
   }
 
-  // ── Detectar si es una petición de documento HTML / navegación ──
+  const sameOrigin = url.origin === self.location.origin;
+  const path = url.pathname;
   const esHTML = req.mode === 'navigate' ||
     (req.headers.get('accept') || '').includes('text/html') ||
-    url.pathname.endsWith('.html') ||
-    url.pathname === '/' ||
-    url.pathname.endsWith('/');
+    path.endsWith('.html') ||
+    path === '/' ||
+    path.endsWith('/');
+  const esAppCode = sameOrigin && (
+    path.endsWith('.js') ||
+    path.endsWith('.css') ||
+    path.includes('/js/') ||
+    path.includes('/css/')
+  );
 
-  if (esHTML) {
-    // NETWORK-FIRST: siempre intentar la red; caché solo como respaldo offline.
+  // HTML + JS + CSS de la app → NETWORK FIRST (siempre código fresco)
+  if (esHTML || esAppCode) {
     event.respondWith(
-      fetch(req).then((res) => {
-        if (res && res.status === 200 && url.origin === self.location.origin) {
+      fetch(req, { cache: 'no-store' }).then((res) => {
+        if (res && res.status === 200 && sameOrigin) {
           const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy)).catch(() => {});
         }
         return res;
-      }).catch(() => {
-        // Sin red: servir la versión cacheada de esta página, o index como fallback
-        return caches.match(req, { ignoreSearch: true })
-          .then((cached) => cached || caches.match('./index.html'));
-      })
+      }).catch(() =>
+        caches.match(req, { ignoreSearch: true }).then((cached) =>
+          cached || (esHTML ? caches.match('./index.html') : undefined)
+        )
+      )
     );
     return;
   }
 
-  // ── Resto (JS, CSS, imágenes, CDN): CACHE-FIRST ──
+  // Iconos, manifest, CDN → CACHE FIRST
   event.respondWith(
     caches.match(req, { ignoreSearch: false }).then((cached) => {
-      if (cached) return cached;
+      if (cached) {
+        // Revalidar en segundo plano
+        fetch(req).then((res) => {
+          if (res && res.status === 200 && sameOrigin) {
+            caches.open(CACHE_SHELL).then((cache) => cache.put(req, res)).catch(() => {});
+          }
+        }).catch(() => {});
+        return cached;
+      }
       return fetch(req).then((res) => {
-        if (res && res.status === 200 && url.origin === self.location.origin) {
+        if (res && res.status === 200 && sameOrigin) {
           const copy = res.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(req, copy));
+          caches.open(CACHE_SHELL).then((cache) => cache.put(req, copy)).catch(() => {});
         }
         return res;
-      }).catch(() => {
-        // Sin red y sin caché: nada que servir
-        return undefined;
-      });
+      }).catch(() => undefined);
     })
   );
 });

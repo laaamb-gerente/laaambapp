@@ -203,6 +203,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
 <script src="js/db.js?v=40"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
+<script src="js/app-update.js"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
 </head>
@@ -458,10 +459,11 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
     <div class="update-card" style="background:linear-gradient(135deg,var(--teal-bg2),var(--bg2));border:1px solid var(--teal-d);border-radius:var(--r);padding:14px 16px;margin-bottom:16px">
       <div style="font-weight:700;font-size:14px;color:var(--teal);margin-bottom:4px">🔄 Versión de la aplicación</div>
       <div id="app-version-info" style="font-size:12px;color:var(--text3);margin-bottom:10px">Comprobando versión...</div>
-      <button onclick="actualizarApp()" class="btn btn-primary btn-sm">↺ Actualizar ahora</button>
-      <span style="font-size:11px;color:var(--text4);margin-left:10px">Útil si los cambios no aparecen en móvil</span>
+      <button type="button" onclick="(window.LAAAMB_actualizarApp||window.actualizarApp||function(){location.reload()})()" class="btn btn-primary btn-sm">↺ Actualizar ahora</button>
+      <span style="font-size:11px;color:var(--text4);margin-left:10px">Limpia caché + Service Worker y recarga</span>
       <div style="font-size:11px;color:var(--text4);margin-top:10px;line-height:1.5">
-        📱 En iPhone: mantén pulsado el ícono de Safari → "Recargar". En Android: menú ⋮ → "Actualizar página".
+        Tras un deploy, la app revisa sola cada 5 min y al volver a la pestaña. Si el banner no sale, pulsa aquí.<br>
+        📱 iPhone PWA: cierra la app del multitarea y vuelve a abrir. Safari: mantén pulsado ↻ → Recargar.
       </div>
     </div>
 
@@ -999,40 +1001,17 @@ function toast(msg, type='ok'){
   setTimeout(function(){ t.remove(); }, 3000);
 }
 
-// ── ACTUALIZAR APLICACIÓN (limpiar SW + caches) ──────────────────────────────
-async function actualizarApp() {
-  const btn = document.querySelector('[onclick="actualizarApp()"]');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Actualizando...'; }
-  try {
-    // 1. Desregistrar el Service Worker
-    if ('serviceWorker' in navigator) {
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      for (const reg of registrations) { await reg.unregister(); }
-    }
-    // 2. Limpiar todos los caches
-    if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map(name => caches.delete(name)));
-    }
-    // 3. NO limpiar localStorage — tiene datos de usuario.
-    toast('✅ Cache limpiado. Recargando...', 'ok');
-    setTimeout(function(){ window.location.reload(true); }, 1500);
-  } catch (e) {
-    toast('Error al actualizar: ' + e.message, 'err');
-    if (btn) { btn.disabled = false; btn.textContent = '↺ Actualizar ahora'; }
-  }
-}
-
-// ── MOSTRAR VERSIÓN / ESTADO DEL SERVICE WORKER ──────────────────────────────
+// ── ACTUALIZAR APLICACIÓN ────────────────────────────────────────────────────
+// Implementación real en js/app-update.js → window.LAAAMB_actualizarApp / actualizarApp
 async function checkAppVersion() {
   const el = document.getElementById('app-version-info');
   if (!el) return;
   try {
     const reg = await navigator.serviceWorker.getRegistration();
     if (reg && reg.active) {
-      el.textContent = 'Service Worker activo · Si no ves cambios recientes, pulsa "Actualizar ahora".';
+      el.textContent = 'SW activo (network-first JS/HTML). Si no ves cambios: "Actualizar ahora" o cierra y reabre la app.';
     } else {
-      el.textContent = 'Sin Service Worker · Los cambios se aplican de inmediato.';
+      el.textContent = 'Sin Service Worker · Los cambios se aplican al recargar.';
     }
   } catch (e) {
     el.textContent = 'Estado desconocido.';

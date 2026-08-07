@@ -42,6 +42,7 @@
 <script src="js/app-state.js"></script>
 <script src="js/copiloto-prompt-laaamb.js"></script>
 <script src="js/copiloto.js"></script>
+<script src="js/app-update.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
@@ -318,17 +319,17 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     </div>
   </div>
 
-  <!-- Copiloto movido a Hoy (hoy.html) — solo Grok -->
-  <div class="card" style="margin-top:14px">
+  <!-- Acceso rápido al Copiloto (panel completo en Hoy) -->
+  <div class="card" style="margin-top:14px;border:1px solid rgba(0,175,182,.35)">
     <div class="card-h">
       <div>
-        <div class="card-title">Copiloto LAAAMB</div>
-        <div class="card-sub">Ahora vive en la vista de campo</div>
+        <div class="card-title">Copiloto LAAAMB · IA de campo</div>
+        <div class="card-sub">En la pantalla Hoy, debajo de Alertas prioritarias</div>
       </div>
-      <a class="btn btn-primary btn-sm" href="hoy.html#copiloto-sec">Abrir en Hoy →</a>
+      <a class="btn btn-primary btn-sm" href="hoy.html#copiloto-sec">Abrir Copiloto →</a>
     </div>
     <div style="padding:4px 0 2px;font-size:12px;color:var(--text3);line-height:1.45">
-      Tratamientos por chapeta, foto de medicamentos, nacimientos y bajas — con historial real del hato. Solo Grok.
+      Tratamientos por chapeta, foto de medicamentos, nacimientos y bajas. Solo Grok. Si no ves cambios recientes: Ajustes → Datos → Actualizar ahora.
     </div>
   </div>
 </div>
@@ -930,19 +931,10 @@ document.addEventListener('appstate:ready', function(e) {
   <button onclick="closePWABanner()" aria-label="Cerrar" style="background:transparent;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1;padding:0 4px">&times;</button>
 </div>
 
-<!-- ── PWA: registro del Service Worker e instalación ──────── -->
+<!-- ── PWA: SW vía app-update.js + banner de instalación ──────── -->
 <script>
 (function(){
-  // Registrar Service Worker
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', function(){
-      navigator.serviceWorker.register('sw.js')
-        .then(function(reg){ console.log('[PWA] SW registrado', reg.scope); })
-        .catch(function(err){ console.warn('[PWA] SW error', err); });
-    });
-  }
-
-  // Banner de instalación
+  // Banner de instalación (el SW lo registra js/app-update.js)
   var deferredPrompt = null;
   window.addEventListener('beforeinstallprompt', function(e){
     e.preventDefault();
@@ -969,7 +961,6 @@ document.addEventListener('appstate:ready', function(e) {
   window.addEventListener('appinstalled', function(){
     var b = document.getElementById('pwa-banner');
     if (b) b.style.display = 'none';
-    console.log('[PWA] App instalada');
   });
 })();
 </script>
@@ -998,22 +989,6 @@ document.addEventListener('appstate:ready', function(e) {
 })();
 </script>
 
-<script>
-// Banner automático de nueva versión (mensaje del Service Worker)
-navigator.serviceWorker?.addEventListener('message', function(e){
-  if (e.data?.type === 'SW_UPDATED') {
-    if (document.getElementById('sw-update-banner')) return;
-    var banner = document.createElement('div');
-    banner.id = 'sw-update-banner';
-    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:var(--teal);color:#fff;padding:10px 16px;text-align:center;z-index:99999;font-size:13px;font-family:Changa,sans-serif;display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap';
-    banner.innerHTML =
-      '🆕 Hay una nueva versión disponible ' +
-      '<button onclick="window.location.reload(true)" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.5);color:#fff;padding:4px 12px;border-radius:4px;cursor:pointer;font-family:inherit">Actualizar</button>' +
-      '<button onclick="this.parentElement.remove()" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;font-size:16px">✕</button>' +
-      '<span style="font-size:11px;opacity:.85;width:100%">📱 iPhone: mantén pulsado Safari → Recargar · Android: menú ⋮ → Actualizar página</span>';
-    document.body.prepend(banner);
-  }
-});
-</script>
+<!-- Banner de versión: js/app-update.js -->
 </body>
 </html>
