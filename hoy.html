@@ -39,7 +39,7 @@
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
-<script src="js/app-update.js?v=32"></script>
+<script src="js/app-update.js?v=33"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -218,7 +218,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     <div style="font-size:10px;color:var(--text3);margin-top:4px">Los días de chequeo se configuran en Ajustes → Producción</div>
   </div>
 
-  <!-- Teteros / Sala Cuna hoy — listado completo del día -->
+  <!-- Teteros / Sala Cuna hoy — accionable (mL + Bebido hoy), igual que dosis -->
   <div class="sec" id="hoy-teteros-sec">
     <div class="sec-title">
       <span class="dot" style="background:var(--orange)"></span>Teteros de hoy · Sala Cuna
@@ -226,6 +226,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     </div>
     <div id="hoy-teteros-lista"><div style="font-size:13px;color:var(--text3)">Cargando teteros…</div></div>
     <a href="sala-cuna.html" style="display:inline-block;margin-top:8px;font-size:11px;font-weight:600;color:var(--teal);text-decoration:none">→ Ver Sala Cuna completa</a>
+  </div>
+
+  <!-- Pesajes pendientes (≥30 días sin peso) — accionable con input + registrar -->
+  <div class="sec" id="pesajes-pend-sec">
+    <div class="sec-title">
+      <span class="dot" style="background:var(--teal)"></span>Pesajes pendientes
+      <span id="pesajes-pend-badge" style="display:none;margin-left:auto;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--teal-bg);color:var(--teal)"></span>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin:-4px 0 10px;line-height:1.4">Regla del hato: cada animal se pesa al menos 1 vez al mes (30 días). Ingresa el kg y confirma.</div>
+    <div id="pesajes-pend-lista"><div style="font-size:13px;color:var(--text3)">Cargando pesajes…</div></div>
   </div>
 
   <!-- Medicamentos terminados hoy (informativo) — se oculta si no hay -->
@@ -248,12 +258,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
         <div class="big" id="eco-count">—</div>
         <div class="unit">hembras 28–35 días post-monta</div>
         <div class="agenda-list" id="eco-list"></div>
-      </div>
-      <div class="agenda-card">
-        <h4><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="var(--teal)" stroke-width="1.8"><path d="M3 10h14M10 3v14"/><circle cx="10" cy="10" r="8"/></svg>Pesajes pendientes</h4>
-        <div class="big" id="pes-count">—</div>
-        <div class="unit">sin pesaje hace +30 días</div>
-        <div class="agenda-list" id="pes-list"></div>
       </div>
       <div class="agenda-card">
         <h4><svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="var(--teal)" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>Rotación de lotes</h4>
@@ -378,21 +382,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       ? eco.map(function(a){var d=diffDias(hoy,new Date(a.fecha_ultima_monta+'T00:00:00'));return '<div class="agenda-row"><b>'+esc(a.codigo||a.nombre)+'</b><span>'+d+' días</span></div>';}).join('')
       : '<div class="agenda-none">Ninguna pendiente</div>';
 
-    // Pesajes: sin pesaje en >30 días (o nunca)
-    var ultimoPesaje = {};
-    pesajes.forEach(function(p){
-      if(!p.animal_id) return;
-      if(!ultimoPesaje[p.animal_id] || p.fecha > ultimoPesaje[p.animal_id]) ultimoPesaje[p.animal_id] = p.fecha;
+    // Pesajes: sección propia accionable (renderPesajesPendientes)
+    try{ window._hoyUltimoPesajeMap = {}; }catch(e){}
+    (pesajes||[]).forEach(function(p){
+      if(!p.animal_id || !p.fecha) return;
+      var m = window._hoyUltimoPesajeMap;
+      if(!m[p.animal_id] || p.fecha > m[p.animal_id].fecha){
+        m[p.animal_id] = { fecha: p.fecha, peso: p.peso != null ? p.peso : p.peso_kg };
+      }
     });
-    var pes = animales.filter(function(a){
-      var u = ultimoPesaje[a.id];
-      if(!u) return true;
-      return diffDias(hoy, new Date(u+'T00:00:00')) > 30;
-    });
-    document.getElementById('pes-count').textContent = pes.length;
-    document.getElementById('pes-list').innerHTML = pes.length
-      ? pes.slice(0,12).map(function(a){var u=ultimoPesaje[a.id];var txt=u?diffDias(hoy,new Date(u+'T00:00:00'))+' días':'sin registro';return '<div class="agenda-row"><b>'+esc(a.codigo||a.nombre)+'</b><span>'+txt+'</span></div>';}).join('')
-      : '<div class="agenda-none">Todos al día</div>';
+    try{ if(typeof renderPesajesPendientes === 'function') renderPesajesPendientes(); }catch(e){}
 
     // Rotación: lotes con días en pastoreo >= objetivo
     var rot = lotes.filter(function(l){

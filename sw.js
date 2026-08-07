@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v32: HOY sin alertas/copiloto duplicados; teteros con listado completo.
-const CACHE_NAME = 'laaambapp-v32';
-const CACHE_SHELL = 'laaambapp-shell-v32';
+// v33: auxiliar/vet pueden entrar a Bajas (muertes) con aprobación.
+const CACHE_NAME = 'laaambapp-v33';
+const CACHE_SHELL = 'laaambapp-shell-v33';
 
 const STATIC_ASSETS = [
   './manifest.json',

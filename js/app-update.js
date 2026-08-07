@@ -241,7 +241,7 @@
     var u = new URL(window.location.href);
     u.searchParams.set('_upd', String(Date.now()));
     // Cache-bust de la página
-    u.searchParams.set('_v', '32');
+    u.searchParams.set('_v', '33');
     window.location.replace(u.toString());
   }
 
@@ -299,7 +299,7 @@
       var delay = quiet ? 12000 : 1500;
 
       navigator.serviceWorker
-        .register('sw.js?v=32', { updateViaCache: 'none' })
+        .register('sw.js?v=33', { updateViaCache: 'none' })
         .then(function (reg) {
           console.log('[PWA] SW registrado', reg.scope);
           // Si ya hay waiting al cargar y no estamos en quiet → banner

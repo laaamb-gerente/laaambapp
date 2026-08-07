@@ -89,8 +89,8 @@ window.Auth = {
       ).forEach(el => el.closest('li, .nav-item, a')?.remove());
     }
 
-    // Bajas: veterinario y auxiliar solo lectura
-    // (el control granular se hace en cada página)
+    // Bajas: auxiliar/vet pueden REGISTRAR (muertes, salidas); quedan
+    // pendientes de aprobación del gerente (js/approval.js). No es solo lectura.
 
     // Guardar rol en window para uso en páginas
     window.AUTH_ROL = rol;
