@@ -39,7 +39,7 @@
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
-<script src="js/app-update.js?v=38"></script>
+<script src="js/app-update.js?v=39"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -224,7 +224,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       <span class="dot" style="background:var(--orange)"></span>Teteros de hoy · Sala Cuna
       <span id="hoy-teteros-badge" style="display:none;margin-left:auto;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(241,143,34,.14);color:var(--orange)"></span>
     </div>
-    <div style="font-size:11px;color:var(--text3);margin:-4px 0 10px;line-height:1.4">Pon los <b>mL</b> que tomó y toca <b>Bebido hoy</b>. Se registra la toma, se quita de la lista y se actualiza Sala Cuna.</div>
+    <div style="font-size:11px;color:var(--text3);margin:-4px 0 10px;line-height:1.4">Hay <b>varias tomas al día</b> por cordero (ej. 4). Verás <b>DOSIS 1/4</b>, luego al registrar aparece la siguiente como <b>2/4</b> (no es el mismo registro). Pon los <b>mL</b> y <b>Bebido hoy</b>.</div>
     <div id="hoy-teteros-lista"><div style="font-size:13px;color:var(--text3)">Cargando teteros…</div></div>
     <a href="sala-cuna.html" style="display:inline-block;margin-top:8px;font-size:11px;font-weight:600;color:var(--teal);text-decoration:none">→ Ver Sala Cuna completa</a>
   </div>
@@ -964,14 +964,22 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     var tipoTxt=t.tipo==='calostro'?'Calostro':(t.tipo==='sustituto'?'Sustituto':(t.tipo||'Toma'));
     var mlObj=t.cantidad_ml_objetivo!=null?t.cantidad_ml_objetivo:(t.ml_default!=null?t.ml_default:100);
     var crianzaId=t.corderos_crianza_id||(c&&c.id)||'';
-    var estadoLbl=t._adHoc?'Sin toma programada · registra la de ahora'
+    var dosisN=t._dosisN||0;
+    var dosisTotal=t._dosisTotal||0;
+    var pillDosis=(dosisN&&dosisTotal)
+      ?('<span style="display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(0,175,182,.14);color:var(--teal);vertical-align:middle">DOSIS '+dosisN+'/'+dosisTotal+'</span>')
+      :'';
+    var hechas=t._dosisHechas!=null?t._dosisHechas:Math.max(0,(dosisTotal||0)-(t._pendientesCria||0));
+    var estadoLbl=t._adHoc?'Sin protocolo hoy · toma extra'
       :(atrasada&&!vencida?'⚠ Atrasada (día anterior)'
         :vencida?'⚠ Ventana vencida — registrar ya'
-        :'Entregar hoy · '+_fmtHoraToma(t.fecha_hora_programada));
+        :'Programada · '+_fmtHoraToma(t.fecha_hora_programada)
+          +(dosisTotal?(' · llevas '+hechas+' de '+dosisTotal+' hoy'):''));
     var tid=t.id||('adhoc-'+crianzaId);
     var tipoEsc=_esc(t.tipo||'sustituto');
     return '<div style="border:1px solid var(--border);border-left:3px solid '+border+';border-radius:8px;padding:11px 14px;margin-bottom:8px;background:var(--bg2)" data-toma="'+tid+'">'
       +'<div style="font-size:14px;font-weight:600;color:var(--text)">🍼 '+_esc(nom)
+        +pillDosis
         +(co.codigo&&co.nombre&&co.codigo!==co.nombre?(' <span style="font-size:12px;color:var(--text2)">· '+_esc(co.nombre)+'</span>'):'')
       +'</div>'
       +'<div style="font-size:12px;color:var(--text2);margin-top:3px;line-height:1.4">'
@@ -984,9 +992,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
           +'placeholder="mL" aria-label="Mililitros bebidos" '
           +'style="width:110px;min-height:40px;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);font-family:inherit;font-size:14px">'
         +'<span style="font-size:12px;color:var(--text3);font-weight:600">mL</span>'
-        +'<button type="button" class="btn-tetero-ok" data-toma-id="'+tid+'" data-crianza="'+crianzaId+'" data-tipo="'+tipoEsc+'" data-adhoc="'+(t._adHoc?'1':'0')+'" '
+        +'<button type="button" class="btn-tetero-ok" data-toma-id="'+(t.id||'')+'" data-input-key="'+tid+'" data-crianza="'+crianzaId+'" data-tipo="'+tipoEsc+'" data-adhoc="'+(t._adHoc?'1':'0')+'" '
           +'style="min-height:40px;font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;background:var(--teal);color:#04181a;border:none;cursor:pointer;font-family:inherit">'
-          +'✓ Bebido hoy</button>'
+          +'✓ Bebido hoy'+(dosisN&&dosisTotal?(' · '+dosisN+'/'+dosisTotal):'')+'</button>'
       +'</div>'
     +'</div>';
   }
@@ -996,7 +1004,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     var cont=document.getElementById('hoy-teteros-lista');
     var badge=document.getElementById('hoy-teteros-badge');
     if(!sec||!cont) return;
-    // Forzar visible (roles no debe ocultar teteros)
     sec.style.display='';
     sec.removeAttribute('data-hide-auxiliar');
 
@@ -1006,22 +1013,30 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       return;
     }
 
-    var corderos=[], tomasHoy=[], vencidasExtra=[], errMsg='';
+    var corderos=[], tomasDia=[], errMsg='';
     try{
       var rc=await window.DB.getCorderosCrianza(true);
       if(rc&&rc.error) throw rc.error;
       corderos=(rc&&rc.data)||[];
 
-      if(window.DB.getTomasPendientes){
-        var rt=await window.DB.getTomasPendientes({
+      // Todas las del día (pendiente/cumplida/perdida) + atrasadas pendientes
+      if(window.DB.getTomasProgramadasRango){
+        var rt=await window.DB.getTomasProgramadasRango({
           desde:_startOfTodayISO(),
           hasta:_endOfTodayISO()
         });
         if(rt&&rt.error) throw rt.error;
-        tomasHoy=(rt&&rt.data)||[];
-
+        tomasDia=(rt&&rt.data)||[];
         var ra=await window.DB.getTomasPendientes({ hasta:_startOfTodayISO() });
-        if(!(ra&&ra.error)) vencidasExtra=(ra&&ra.data)||[];
+        ((ra&&ra.data)||[]).forEach(function(t){
+          if(!tomasDia.some(function(x){ return x.id===t.id; })) tomasDia.push(t);
+        });
+      } else if(window.DB.getTomasPendientes){
+        var rp=await window.DB.getTomasPendientes({
+          desde:_startOfTodayISO(),
+          hasta:_endOfTodayISO()
+        });
+        tomasDia=(rp&&rp.data)||[];
       }
     }catch(e){
       errMsg=(e&&e.message)||String(e);
@@ -1036,31 +1051,51 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       var c=ccMap[t.corderos_crianza_id];
       return c && c.estado==='activo';
     }
-    tomasHoy=tomasHoy.filter(esActivo);
-    vencidasExtra=vencidasExtra.filter(esActivo);
+    tomasDia=tomasDia.filter(esActivo);
 
-    var seen={}, rows=[];
-    vencidasExtra.concat(tomasHoy).forEach(function(t){
-      if(!t||!t.id||seen[t.id]) return;
-      seen[t.id]=1;
-      rows.push(t);
+    // Por crianza: numerar DOSIS n/N del día (orden hora)
+    var byCria={};
+    tomasDia.forEach(function(t){
+      var k=t.corderos_crianza_id;
+      if(!byCria[k]) byCria[k]=[];
+      byCria[k].push(t);
+    });
+    Object.keys(byCria).forEach(function(k){
+      byCria[k].sort(function(a,b){
+        return String(a.fecha_hora_programada||'')<String(b.fecha_hora_programada||'')?-1:1;
+      });
+      var total=byCria[k].length;
+      var hechas=byCria[k].filter(function(t){ return t.estado==='cumplida'||t.estado==='perdida'; }).length;
+      byCria[k].forEach(function(t, i){
+        t._dosisN=i+1;
+        t._dosisTotal=total;
+        t._dosisHechas=hechas;
+        t._pendientesCria=byCria[k].filter(function(x){ return !x.estado||x.estado==='pendiente'; }).length;
+      });
+    });
+
+    // Solo pendientes en la cola (cumplidas ya no se listan)
+    var rows=tomasDia.filter(function(t){
+      return !t.estado || t.estado==='pendiente';
     });
     rows.sort(function(a,b){
       return String(a.fecha_hora_programada||'')<String(b.fecha_hora_programada||'')?-1:1;
     });
 
-    // Corderos en crianza sin ninguna toma pendiente → fila ad-hoc para registrar igual
-    var conToma={};
-    rows.forEach(function(t){ conToma[t.corderos_crianza_id]=1; });
+    // Ad-hoc solo si el cordero NO tiene ninguna toma del día (ni pendiente ni hecha)
+    var criasConProtocoloHoy={};
+    tomasDia.forEach(function(t){ criasConProtocoloHoy[t.corderos_crianza_id]=1; });
     corderos.forEach(function(c){
-      if(conToma[c.id]) return;
+      if(criasConProtocoloHoy[c.id]) return;
       rows.push({
         id: null,
         _adHoc: true,
         corderos_crianza_id: c.id,
         tipo: 'sustituto',
         cantidad_ml_objetivo: 100,
-        ml_default: 100
+        ml_default: 100,
+        _dosisN: 0,
+        _dosisTotal: 0
       });
     });
 
@@ -1077,11 +1112,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     if(badge){
       badge.style.display='inline-block';
       if(nPend>0){
-        badge.textContent=nPend+(nPend===1?' pendiente':' pendientes');
+        badge.textContent=nPend+(nPend===1?' toma pendiente':' tomas pendientes');
         badge.style.background='rgba(241,143,34,.14)';
         badge.style.color='var(--orange)';
       } else if(nCrias>0){
-        badge.textContent=nCrias+' en crianza';
+        badge.textContent=nCrias+' en crianza · día al día';
         badge.style.background='rgba(16,185,129,.12)';
         badge.style.color='var(--green,#10B981)';
       } else {
@@ -1093,22 +1128,30 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 
     if(!nCrias && !rows.length){
       cont.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0;line-height:1.5">'
-        +'No hay corderos en crianza artificial. Cuando haya, aparecen aquí con cajón de mL. '
+        +'No hay corderos en crianza artificial. '
         +'<a href="sala-cuna.html" style="color:var(--teal);font-weight:600">Sala Cuna</a></div>';
       return;
     }
 
-    var ahora=Date.now();
-    cont.innerHTML=rows.map(function(t){ return _cardTeteroToma(t, ccMap, ahora); }).join('');
+    // Resumen: cuántas tomas/día genera el protocolo
+    var htmlInfo='<div style="font-size:12px;color:var(--text2);margin-bottom:10px;padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border);line-height:1.45">'
+      +'🍼 Protocolo en <a href="sala-cuna.html" style="color:var(--teal);font-weight:600">Sala Cuna</a>: '
+      +'día 0 calostro <b>5 tomas</b>; luego según edad <b>4 → 3 → 2 → 1</b> toma(s)/día. '
+      +'mL = peso × factor / nº tomas. Al marcar Bebido hoy avanza a la <b>siguiente dosis</b> del mismo día.'
+      +'</div>';
 
-    // Bind botones (evita problemas de comillas en onclick)
+    var ahora=Date.now();
+    cont.innerHTML=htmlInfo+rows.map(function(t){ return _cardTeteroToma(t, ccMap, ahora); }).join('');
+
     cont.querySelectorAll('.btn-tetero-ok').forEach(function(btn){
       btn.onclick=function(){
-        var tomaId=btn.getAttribute('data-toma-id');
+        var tomaId=btn.getAttribute('data-toma-id')||null;
+        if(tomaId==='') tomaId=null;
+        var inputKey=btn.getAttribute('data-input-key');
         var crianza=btn.getAttribute('data-crianza');
         var tipo=btn.getAttribute('data-tipo')||'sustituto';
         var adhoc=btn.getAttribute('data-adhoc')==='1';
-        registrarTeteroHoy(adhoc?null:tomaId, crianza, tipo, tomaId);
+        registrarTeteroHoy(adhoc?null:tomaId, crianza, tipo, inputKey);
       };
     });
   }
@@ -1143,21 +1186,22 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 
       if(card){
         card.style.transition='opacity .35s';
-        card.style.opacity='0.4';
-        card.innerHTML='<div style="font-size:13px;font-weight:600;color:var(--green)">✓ Bebido hoy · '+ml+' mL · registrado</div>';
+        card.style.opacity='0.45';
+        card.innerHTML='<div style="font-size:13px;font-weight:600;color:var(--green)">✓ Bebido hoy · '+ml+' mL'
+          +' · si hay más tomas del día, la siguiente sale abajo como DOSIS n/N</div>';
       }
 
-      // Refrescar contadores de alertas del sidebar si existen
       try{
         if(window.AlertasMotor && typeof window.AlertasMotor.generar==='function'){
           window.AlertasMotor.generar().catch(function(){});
         }
       }catch(e){}
 
+      // Refresco un poco más tarde para que se vea el check y luego la cola con 2/4, 3/4…
       setTimeout(function(){
         renderTeterosHoy();
         if(typeof renderAlertaLecheTetero==='function') renderAlertaLecheTetero();
-      }, 900);
+      }, 700);
     }catch(e){
       if(btn){ btn.disabled=false; btn.textContent='✓ Bebido hoy'; }
       alert('No se pudo registrar la toma: '+(e.message||e));

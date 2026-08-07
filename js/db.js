@@ -1226,6 +1226,16 @@ window.DB = {
     if (filtros.hasta) q = q.lte('fecha_hora_programada', filtros.hasta);
     return await q.order('fecha_hora_programada', { ascending: true });
   },
+  // Todas las tomas del rango (cualquier estado) — para numerar DOSIS n/N del día.
+  async getTomasProgramadasRango(filtros = {}) {
+    let q = window._sb.from('tomas_programadas')
+      .select('id, corderos_crianza_id, fecha_hora_programada, cantidad_ml_objetivo, tipo, estado, ventana_min');
+    if (filtros.corderosCrianzaId) q = q.eq('corderos_crianza_id', filtros.corderosCrianzaId);
+    if (filtros.desde) q = q.gte('fecha_hora_programada', filtros.desde);
+    if (filtros.hasta) q = q.lte('fecha_hora_programada', filtros.hasta);
+    if (filtros.estado) q = q.eq('estado', filtros.estado);
+    return await q.order('fecha_hora_programada', { ascending: true });
+  },
   // Tomas pendientes cuya ventana ya venció: (programada + ventana_min) < ahora.
   // La ventana es por fila, así que se filtra en cliente.
   async getTomasVencidas() {
