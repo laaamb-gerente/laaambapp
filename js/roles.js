@@ -14,8 +14,8 @@
   var PAGE_ACCESS = {
     gerente: '*',
     administrador: '*',
-    veterinario: ['animales', 'reproduccion', 'salud', 'lotes', 'hoy', 'reportes', 'sala-cuna', 'leche', 'queseria', 'lacteo'],
-    auxiliar: ['animales', 'hoy', 'salud', 'reproduccion', 'sala-cuna', 'leche', 'lacteo'],
+    veterinario: ['animales', 'reproduccion', 'salud', 'lotes', 'hoy', 'copiloto', 'reportes', 'sala-cuna', 'leche', 'queseria', 'lacteo', 'medicamentos'],
+    auxiliar: ['animales', 'hoy', 'copiloto', 'salud', 'reproduccion', 'sala-cuna', 'leche', 'lacteo', 'medicamentos'],
     // Socio: Dashboard, OKRs, Reportes, Leche, Quesería y Lácteo (vista integrada).
     socio: ['index', 'okr', 'reportes', 'leche', 'queseria', 'lacteo']
   };

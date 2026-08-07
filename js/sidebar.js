@@ -12,6 +12,7 @@ window.SIDEBAR = [
   { grupo: 'Inicio', items: [
     { t: 'Dashboard',              href: 'index.html',        ico: 'dashboard' },
     { t: 'Hoy',                    href: 'hoy.html',          ico: 'hoy',        badge: 'alertas' },
+    { t: 'Copiloto',               href: 'copiloto.html',     ico: 'copiloto' },
   ]},
   { grupo: 'Hato', items: [
     { t: 'Animales',               href: 'animales.html',     ico: 'animales',   badge: 'count' },
@@ -61,6 +62,7 @@ window.SIDEBAR = [
 window.SIDEBAR_ICONS = {
   dashboard:    '<svg class="nav-ico" viewBox="0 0 20 20" fill="currentColor"><rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="11" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="11" width="7" height="7" rx="1.5"/><rect x="11" y="11" width="7" height="7" rx="1.5"/></svg>',
   hoy:          '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="14" height="14" rx="2"/><line x1="3" y1="8" x2="17" y2="8"/><line x1="7" y1="2" x2="7" y2="5"/><line x1="13" y1="2" x2="13" y2="5"/></svg>',
+  copiloto:     '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="10" rx="2"/><path d="M10 13v4M7 17h6"/><path d="M7 7h6M8 10h4"/></svg>',
   animales:     '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="7" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>',
   reproduccion: '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7"/><path d="M10 6v4l3 3"/></svg>',
   salacuna:     '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 7h6v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V7z"/><path d="M8 7l.6-2.5h2.8L12 7"/><line x1="7" y1="10.5" x2="13" y2="10.5"/></svg>',
