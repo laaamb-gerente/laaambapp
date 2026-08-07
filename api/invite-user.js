@@ -109,9 +109,18 @@ export default async function handler(req, res) {
     }
 
     // ── 4. Validar el payload ──────────────────────────────────
-    const { email, nombre, rol } = req.body || {};
+    const { email, nombre, rol, aportante_id } = req.body || {};
     if (!email || !nombre || !rol) {
       return res.status(400).json({ error: 'Faltan datos: email, nombre y rol son obligatorios' });
+    }
+    const ROLES_OK = ['gerente','administrador','veterinario','auxiliar','socio','aportante'];
+    if (!ROLES_OK.includes(rol)) {
+      return res.status(400).json({ error: 'Rol no permitido: ' + rol });
+    }
+    if (rol === 'aportante' && !aportante_id) {
+      return res.status(400).json({
+        error: 'Para rol aportante debes indicar aportante_id (vincula el usuario a su hato de aparcería)'
+      });
     }
 
     // ── 5. Lógica de invitación (solo si pasó 1-4) ─────────────
@@ -129,7 +138,7 @@ export default async function handler(req, res) {
       await supabaseAdmin.auth.admin.inviteUserByEmail(
         email,
         {
-          data: { nombre, rol },
+          data: { nombre, rol, aportante_id: aportante_id || null },
           redirectTo: 'https://app.laaambcorderos.com/login.html'
         }
       );
@@ -145,6 +154,15 @@ export default async function handler(req, res) {
     // El trigger on_auth_user_created (0008) ya crea un perfil al crear el
     // usuario en Auth, así que hacemos upsert (merge sobre id) para no
     // chocar con esa fila y respetar el rol enviado.
+    const perfilBody = {
+      id: user.id,
+      nombre,
+      email,
+      rol,
+      activo: true
+    };
+    if (aportante_id) perfilBody.aportante_id = aportante_id;
+
     const perfilResp = await fetch(
       `${supabaseUrl}/rest/v1/perfiles?on_conflict=id`,
       {
@@ -155,7 +173,7 @@ export default async function handler(req, res) {
           'Authorization': `Bearer ${serviceKey}`,
           'Prefer': 'resolution=merge-duplicates,return=minimal'
         },
-        body: JSON.stringify({ id: user.id, nombre, email, rol, activo: true })
+        body: JSON.stringify(perfilBody)
       }
     );
     if (!perfilResp.ok) {

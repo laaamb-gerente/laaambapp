@@ -260,9 +260,11 @@ window.DB = {
     return await q.order('fecha', { ascending: false }).limit(200);
   },
   async savePesaje(p) {
-    // Al guardar pesaje, actualizar peso_actual en el animal
+    // Inserta el pesaje. Si queda pendiente de aprobación, NO toca peso_actual
+    // del animal (solo al aprobar el gerente se actualiza el inventario).
     const { data, error } = await window._sb.from('pesajes').insert(p).select().single();
-    if (!error && p.animal_id) {
+    const pendiente = (p.estado_aprobacion === 'pendiente');
+    if (!error && p.animal_id && !pendiente) {
       await window._sb.from('animales').update({
         peso_actual: p.peso,
         updated_at: new Date()
@@ -278,6 +280,24 @@ window.DB = {
       return { data: p, error: null, offline: true };
     }
     return { data, error };
+  },
+
+  // Aplica peso_actual al animal (llamar SOLO al aprobar un pesaje pendiente).
+  async aplicarPesoAnimal(animal_id, peso) {
+    if (!animal_id || peso == null) return { data: null, error: null };
+    return await window._sb.from('animales').update({
+      peso_actual: peso,
+      updated_at: new Date()
+    }).eq('id', animal_id).select().single();
+  },
+
+  // Marca animal muerto/vendido (llamar SOLO al aprobar una baja pendiente).
+  async aplicarEstadoBajaAnimal(animal_id, estado) {
+    if (!animal_id || !estado) return { data: null, error: null };
+    return await window._sb.from('animales').update({
+      estado: estado,
+      updated_at: new Date()
+    }).eq('id', animal_id).select().single();
   },
 
   // ── REPRODUCCIÓN ─────────────────────────────────────

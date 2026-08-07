@@ -693,21 +693,41 @@ tr.muerto{opacity:.5}
     try{
       APORTANTES = await window.APARCERIA.getAportantes();
       var sel = $('f-aportante');
+      // Rol aportante: solo su hato vinculado (window.AUTH_APORTANTE_ID)
+      var forceId = (window.AUTH_ROL === 'aportante' && window.AUTH_APORTANTE_ID)
+        ? window.AUTH_APORTANTE_ID
+        : null;
+      if(forceId){
+        APORTANTES = APORTANTES.filter(function(a){ return a.id === forceId; });
+      }
       if(!APORTANTES.length){
         sel.innerHTML = '<option value="">Sin aportantes</option>';
         $('tbody').innerHTML = '<tr><td colspan="10" class="empty-box">'
-          + 'No hay aportantes registrados.<br><span style="font-size:12px;color:var(--text4)">'
-          + 'Ejecuta las migraciones 0055 y 0056 en Supabase.</span></td></tr>';
+          + (forceId
+            ? 'Tu cuenta no tiene hato de aparcería vinculado. Pide al gerente que asigne tu aportante.'
+            : 'No hay aportantes registrados.<br><span style="font-size:12px;color:var(--text4)">'
+              + 'Ejecuta las migraciones 0055 y 0056 en Supabase.</span>')
+          + '</td></tr>';
         $('kpis').innerHTML = '';
         renderCargas();
         return;
       }
-      var prev = sel.value;
+      var prev = forceId || sel.value;
       sel.innerHTML = APORTANTES.map(function(a){
         return '<option value="'+esc(a.id)+'">'+esc(a.nombre)+'</option>';
       }).join('');
       if(prev) sel.value = prev;
-      sel.onchange = function(){ cargarAportanteSeleccionado().catch(function(e){ fallo('Cargar aportante', e); }); };
+      if(forceId){
+        sel.value = forceId;
+        sel.disabled = true;
+        sel.title = 'Solo puedes ver tu hato de aparcería';
+        // Ocultar carga masiva y acciones de escritura
+        var btnC = $('btn-cargar');
+        if(btnC) btnC.style.display = 'none';
+      } else {
+        sel.disabled = false;
+        sel.onchange = function(){ cargarAportanteSeleccionado().catch(function(e){ fallo('Cargar aportante', e); }); };
+      }
       await cargarAportanteSeleccionado();
     }catch(e){
       fallo('Cargar módulo de aparcería', e);

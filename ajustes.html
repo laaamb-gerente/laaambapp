@@ -203,7 +203,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
 <script src="js/db.js?v=40"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
-<script src="js/app-update.js?v=34"></script>
+<script src="js/app-update.js?v=35"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
 </head>
@@ -420,13 +420,18 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
           <div class="fg"><label class="fl">Nombre completo *</label><input class="fi" id="nc-nombre" placeholder="Carlos Ríos"></div>
           <div class="fg"><label class="fl">Email *</label><input class="fi" id="nc-email" type="email" placeholder="carlos@ejemplo.com"></div>
           <div class="fg"><label class="fl">Rol *</label>
-            <select class="fi" id="nc-rol">
-              <option value="gerente">Gerente</option>
+            <select class="fi" id="nc-rol" onchange="onInviteRolChange()">
+              <option value="auxiliar">Auxiliar de finca (pesos · vacunas · muertes)</option>
+              <option value="aportante">Aportante (solo lectura de su hato)</option>
               <option value="veterinario">Veterinario</option>
-              <option value="auxiliar">Auxiliar</option>
               <option value="socio">Socio</option>
               <option value="administrador">Administrador</option>
+              <option value="gerente">Gerente</option>
             </select>
+          </div>
+          <div class="fg" id="nc-aportante-wrap" style="display:none">
+            <label class="fl">Aportante vinculado * (solo rol aportante)</label>
+            <select class="fi" id="nc-aportante"><option value="">Cargando…</option></select>
           </div>
           <div class="fg" style="display:flex;align-items:flex-end;gap:8px">
             <button class="btn btn-primary btn-sm" id="nc-save-btn" style="flex:1;justify-content:center" onclick="saveColab()">Crear usuario</button>
@@ -434,6 +439,27 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
           </div>
         </div>
         <div id="nc-result" style="font-size:12px;margin-top:10px;min-height:16px"></div>
+      </div>
+    </div>
+
+    <!-- MATRIZ DE ROLES (referencia superadmin) -->
+    <div class="section-label" style="margin-top:22px">Roles y permisos</div>
+    <div class="card">
+      <div class="card-h">
+        <div>
+          <div class="card-title">Qué ve y qué puede hacer cada rol</div>
+          <div class="card-sub">Fuente de verdad en <code>js/roles.js</code>. Los auxiliares escriben, pero <b>nada afecta inventario hasta que apruebes</b> en Hoy → Pendiente de aprobación.</div>
+        </div>
+      </div>
+      <div class="card-body" style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Rol</th><th>Qué ve (menú)</th><th>Qué hace</th><th>¿Pasa por tu aprobación?</th></tr></thead>
+          <tbody id="roles-matrix-tbody"><tr><td colspan="4" class="td-muted">Cargando…</td></tr></tbody>
+        </table>
+        <p style="font-size:12px;color:var(--text3);margin-top:12px;line-height:1.5">
+          <b>Para crear un rol nuevo más adelante:</b> se define en <code>js/roles.js</code> (páginas + matriz) y, si escribe en base de datos, en políticas RLS de Supabase.
+          Esta pantalla es el mapa operativo; no inventes permisos en el aire.
+        </p>
       </div>
     </div>
 
@@ -578,8 +604,12 @@ function initTheme(){
 
 // ── EQUIPO DE TRABAJO (Supabase Auth + perfiles) ─────────────────────────────
 var EQUIPO = [];
-var ROLES = ['gerente','veterinario','auxiliar','socio','administrador'];
-function rolLabel(r){ return r ? r.charAt(0).toUpperCase()+r.slice(1) : '—'; }
+var ROLES = ['gerente','administrador','veterinario','auxiliar','aportante','socio'];
+function rolLabel(r){
+  var m = { gerente:'Gerente', administrador:'Administrador', veterinario:'Veterinario',
+    auxiliar:'Auxiliar', aportante:'Aportante', socio:'Socio' };
+  return m[r] || (r ? r.charAt(0).toUpperCase()+r.slice(1) : '—');
+}
 function escq(s){ var d=document.createElement('div'); d.textContent=(s==null?'':String(s)); return d.innerHTML; }
 function fmtConexion(u){
   if(!u) return '—';
@@ -701,30 +731,79 @@ async function confirmDeleteColab(){
   }
 }
 
-function openAddColab(){ document.getElementById('add-colab-form').style.display='block'; document.getElementById('nc-result').textContent=''; }
+function openAddColab(){
+  document.getElementById('add-colab-form').style.display='block';
+  document.getElementById('nc-result').textContent='';
+  onInviteRolChange();
+  cargarAportantesInvite();
+}
 function closeAddColab(){ document.getElementById('add-colab-form').style.display='none'; }
+
+function onInviteRolChange(){
+  var rol = document.getElementById('nc-rol').value;
+  var wrap = document.getElementById('nc-aportante-wrap');
+  if(wrap) wrap.style.display = (rol === 'aportante') ? '' : 'none';
+}
+async function cargarAportantesInvite(){
+  var sel = document.getElementById('nc-aportante');
+  if(!sel || !window._sb) return;
+  try{
+    var r = await window._sb.from('aportantes').select('id, nombre').order('nombre');
+    var rows = (r && r.data) || [];
+    sel.innerHTML = rows.length
+      ? '<option value="">Selecciona aportante…</option>' + rows.map(function(a){
+          return '<option value="'+escq(a.id)+'">'+escq(a.nombre)+'</option>';
+        }).join('')
+      : '<option value="">Sin aportantes (corre migración 0055)</option>';
+  }catch(e){
+    sel.innerHTML = '<option value="">Error cargando aportantes</option>';
+  }
+}
+function renderRolesMatrix(){
+  var tb = document.getElementById('roles-matrix-tbody');
+  if(!tb) return;
+  var matrix = (window.Roles && window.Roles.ROLE_MATRIX) || [];
+  if(!matrix.length){
+    tb.innerHTML = '<tr><td colspan="4" class="td-muted">Matriz no cargada (roles.js)</td></tr>';
+    return;
+  }
+  tb.innerHTML = matrix.map(function(m){
+    return '<tr>'
+      +'<td style="font-weight:700;white-space:nowrap">'+escq(m.label)+'<div style="font-size:10px;color:var(--text3)">'+escq(m.rol)+'</div></td>'
+      +'<td style="font-size:12px;color:var(--text2)">'+escq(m.ve)+'</td>'
+      +'<td style="font-size:12px;color:var(--text2)">'+escq(m.hace)+'</td>'
+      +'<td style="font-size:12px">'+(m.aprueba?'<span class="badge b-amber">Sí · bandeja HOY</span>':'<span class="badge b-green">No (directo)</span>')+'</td>'
+      +'</tr>';
+  }).join('');
+}
 
 async function saveColab(){
   const nombre = document.getElementById('nc-nombre').value.trim();
   const email = document.getElementById('nc-email').value.trim();
   const rol = document.getElementById('nc-rol').value;
+  const aportante_id = (document.getElementById('nc-aportante')||{}).value || '';
   const result = document.getElementById('nc-result');
   const btn = document.getElementById('nc-save-btn');
   if(!nombre){ toast('El nombre es requerido','err'); return; }
   if(!email){ toast('El email es requerido','err'); return; }
+  if(rol === 'aportante' && !aportante_id){
+    toast('Elige el aportante (hato) al que se vincula este usuario','err'); return;
+  }
   btn.disabled = true;
   result.style.color = 'var(--text2)';
   result.textContent = 'Creando usuario…';
   try{
     const { data:{ session } } = await window._sb.auth.getSession();
     if(!session){ throw new Error('Sesión expirada. Vuelve a iniciar sesión.'); }
+    const body = { nombre, email, rol };
+    if(rol === 'aportante') body.aportante_id = aportante_id;
     const resp = await fetch(apiBase()+'/api/invite-user', {
       method:'POST',
       headers:{
         'Content-Type':'application/json',
         'Authorization': 'Bearer '+session.access_token
       },
-      body: JSON.stringify({ nombre, email, rol })
+      body: JSON.stringify(body)
     });
     let data = {};
     const contentType = resp.headers.get('content-type')||'';
@@ -1402,7 +1481,8 @@ window.addEventListener('hashchange', applyAjustesHash);
   initTheme();
   // Cargar equipo desde Supabase (perfiles)
   cargarEquipo();
-  document.addEventListener('appstate:ready', cargarEquipo);
+  renderRolesMatrix();
+  document.addEventListener('appstate:ready', function(){ cargarEquipo(); renderRolesMatrix(); });
   // Integración Siigo
   if(window._sb) siigoInit(); else document.addEventListener('appstate:ready', siigoInit);
   // Configuración de producción

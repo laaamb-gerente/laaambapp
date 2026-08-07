@@ -39,7 +39,7 @@
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
-<script src="js/app-update.js?v=34"></script>
+<script src="js/app-update.js?v=35"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -645,16 +645,34 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
         }
         var res = await window.DB.aprobarRegistro(tabla, id);
         if(res.error) throw new Error(res.error.message||'Error');
-        // Efectos colaterales que SOLO ocurren al aprobar:
+        // Efectos colaterales que SOLO ocurren al aprobar (inventario / stock):
         if(tabla==='tratamientos' && extra.medicamento_id){
           await window.DB.descontarStockMedicamento(extra.medicamento_id, extra.dosis);
+        }
+        if(tabla==='pesajes' && res.data && res.data.animal_id != null){
+          var pesoOk = res.data.peso != null ? res.data.peso : res.data.peso_kg;
+          if(window.DB.aplicarPesoAnimal) await window.DB.aplicarPesoAnimal(res.data.animal_id, pesoOk);
+          if(window.AppState && window.AppState.animales){
+            var ap = window.AppState.animales.find(function(x){ return x.id===res.data.animal_id; });
+            if(ap) ap.peso_actual = pesoOk;
+          }
+        }
+        if(tabla==='bajas' && res.data && res.data.animal_id){
+          var estBaja = res.data.tipo==='muerte' ? 'muerto' : (res.data.tipo==='venta' ? 'vendido' : 'descartado');
+          if(window.DB.aplicarEstadoBajaAnimal) await window.DB.aplicarEstadoBajaAnimal(res.data.animal_id, estBaja);
+          else if(window._sb) await window._sb.from('animales').update({estado:estBaja, updated_at:new Date()}).eq('id', res.data.animal_id);
+          if(window.AppState && window.AppState.animales){
+            window.AppState.animales = window.AppState.animales.filter(function(x){ return x.id!==res.data.animal_id; });
+          }
+          if(typeof window.DB.omitirSeguimientosAnimal==='function'){
+            window.DB.omitirSeguimientosAnimal(res.data.animal_id, 'Animal dado de baja ('+estBaja+')').catch(function(){});
+          }
         }
         if(tabla==='eventos_reproductivos' && extra.hembra_id){
           if(window.DB.updateEstadoReproductivo) await window.DB.updateEstadoReproductivo(extra.hembra_id,'vacia',null,null);
           if(window.DB.marcarMontaFallida) window.DB.marcarMontaFallida(extra.hembra_id).catch(function(){});
         }
         if(tabla==='beneficios' && extra.animal_id){
-          // Al aprobar el sacrificio, el animal pasa a vendido (lo que se difirió al registrar pendiente).
           await window._sb.from('animales').update({estado:'vendido', updated_at:new Date()}).eq('id', extra.animal_id);
           if(window.AppState && window.AppState.animales){ window.AppState.animales = window.AppState.animales.filter(function(x){return x.id!==extra.animal_id;}); }
         }

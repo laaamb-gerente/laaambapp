@@ -1,45 +1,106 @@
 // ── roles.js ──────────────────────────────────────────
 // Control de acceso por rol a nivel de UI (NO sustituye RLS de Supabase).
-// Se carga en todas las páginas de la app (las que tienen auth.js),
-// justo después de auth.js. auth.js invoca window.Roles.apply(rol)
-// una vez cargado el perfil; además se auto-aplica como respaldo.
+// auth.js invoca window.Roles.apply(rol) al cargar el perfil.
 //
-// Roles: gerente, administrador, veterinario, auxiliar, socio.
+// Roles:
+//   gerente / administrador → todo + bandeja de aprobación
+//   veterinario             → campo amplio (sigue con aprobación en writes)
+//   auxiliar                → SOLO Hoy + Salud + Bajas (pesos, vacunas/trat., muertes)
+//   aportante               → SOLO lectura de su hato de aparcería
+//   socio                   → dashboards/reportes financieros (lectura)
 
 (function () {
   'use strict';
 
-  // Páginas permitidas por rol (clave = nombre de archivo sin .html).
-  // '*' = acceso total.
+  // Páginas permitidas (clave = archivo sin .html). '*' = todas.
   var PAGE_ACCESS = {
     gerente: '*',
     administrador: '*',
-    // Vet/auxiliar: campo operativo. Bajas incluido (muertes/salidas con aprobación).
-    veterinario: ['animales', 'reproduccion', 'salud', 'lotes', 'hoy', 'copiloto', 'reportes', 'sala-cuna', 'leche', 'queseria', 'lacteo', 'medicamentos', 'bajas'],
-    auxiliar: ['animales', 'hoy', 'copiloto', 'salud', 'reproduccion', 'sala-cuna', 'leche', 'lacteo', 'medicamentos', 'bajas'],
-    // Socio: Dashboard, OKRs, Reportes, Leche, Quesería y Lácteo (vista integrada).
+    veterinario: [
+      'animales', 'reproduccion', 'salud', 'lotes', 'hoy', 'copiloto',
+      'reportes', 'sala-cuna', 'medicamentos', 'bajas'
+    ],
+    // Auxiliar de finca (sin estudios): menú mínimo. Escribe solo vía aprobación.
+    auxiliar: ['hoy', 'salud', 'bajas'],
+    // Aportante (aparcería): solo su hato, solo lectura.
+    aportante: ['aportantes-animales', 'reporte-aportantes'],
     socio: ['index', 'okr', 'reportes', 'leche', 'queseria', 'lacteo']
   };
 
-  // Páginas donde el rol es SOLO LECTURA (se ocultan acciones de escritura).
+  // Páginas en solo-lectura (oculta botones de escritura).
   var READONLY_PAGES = {
     veterinario: ['reportes'],
-    auxiliar: ['reproduccion'],
-    socio: ['index', 'okr', 'reportes']
+    auxiliar: [], // escribe en hoy/salud/bajas (queda pendiente de aprobación)
+    aportante: ['aportantes-animales', 'reporte-aportantes'], // 100% lectura
+    socio: ['index', 'okr', 'reportes', 'leche', 'queseria', 'lacteo']
   };
 
-  // A dónde mandar al usuario si entra a una página no autorizada.
   var LANDING = {
     veterinario: 'hoy.html',
     auxiliar: 'hoy.html',
+    aportante: 'aportantes-animales.html',
     socio: 'index.html',
     gerente: 'index.html',
     administrador: 'index.html'
   };
 
-  // Verbos de acción (escritura) que delatan un botón mutador.
+  // Matriz legible para Ajustes (gerente).
+  // canWrite: si las escrituras van a bandeja de aprobación (true) o son directas (gerente).
+  var ROLE_MATRIX = [
+    {
+      rol: 'gerente',
+      label: 'Gerente / Superadmin',
+      ve: 'Todo el sistema',
+      hace: 'Todo. Aprueba o rechaza lo que proponen otros.',
+      aprueba: false
+    },
+    {
+      rol: 'administrador',
+      label: 'Administrador',
+      ve: 'Todo el sistema',
+      hace: 'Igual que gerente (operación y equipo).',
+      aprueba: false
+    },
+    {
+      rol: 'auxiliar',
+      label: 'Auxiliar de finca',
+      ve: 'Hoy · Salud · Bajas (menú mínimo)',
+      hace: 'Registrar peso, tratamientos/vacunas y muertes. TODO queda pendiente de tu aprobación antes de afectar inventario o stock.',
+      aprueba: true
+    },
+    {
+      rol: 'veterinario',
+      label: 'Veterinario',
+      ve: 'Hato, salud, reproducción, sala cuna, bajas…',
+      hace: 'Operación de campo. Escrituras también pasan por aprobación.',
+      aprueba: true
+    },
+    {
+      rol: 'aportante',
+      label: 'Aportante (aparcería)',
+      ve: 'Solo Aparcería → Animales y Reportes de SU aportante (ej. Julián Moreno)',
+      hace: 'Solo lectura. No puede tratamientos, muertes ni pesos del hato LAAAMB.',
+      aprueba: false
+    },
+    {
+      rol: 'socio',
+      label: 'Socio',
+      ve: 'Dashboard, OKRs, reportes, lácteos',
+      hace: 'Solo lectura de indicadores.',
+      aprueba: false
+    }
+  ];
+
+  // En HOY, secciones que el auxiliar NO debe ver (ruido).
+  var HOY_HIDE_FOR_AUXILIAR = [
+    '#hoy-teteros-sec',
+    '#seg-trat-sec',
+    '#sec-meds-terminados',
+    '#sec-retiro-cumplido',
+    '#bandeja-aprobaciones'
+  ];
+
   var WRITE_VERBS = /(open(Modal|Add)|save|guardar|registr|crear|create|nuev|añad|agreg|eliminar|delete|borrar|descart|import|confirm|aplicar|enviar|subir|update|editar|edit|toggleactivo|deactiv|activar)/i;
-  // Verbos de exportación (datos, financieros incluidos).
   var EXPORT_VERBS = /(export|exportar|downloadtemplate|descargar)/i;
 
   function _base() {
@@ -55,68 +116,106 @@
 
   function allowedPages(rol) {
     var a = PAGE_ACCESS[rol];
-    return a || '*'; // rol desconocido → no restringir (defensivo: evita lockout)
+    // Rol desconocido → sin acceso amplio (seguridad). Solo landing si se define.
+    if (a === undefined) return [];
+    return a;
   }
 
   function isReadonlyHere(rol, page) {
     var list = READONLY_PAGES[rol];
-    return !!(list && list.indexOf(page) >= 0);
+    if (!list) return false;
+    if (list.indexOf('*') >= 0) return true;
+    return list.indexOf(page) >= 0;
   }
 
-  // 1. Ocultar links del sidebar a páginas no autorizadas.
+  function pageKeyFromHref(href) {
+    if (!href) return '';
+    if (href === 'index.html' || href === './' || href === '/') return 'index';
+    return href.replace(/^.*\//, '').replace(/\.html$/i, '');
+  }
+
+  // 1. Ocultar links no autorizados + grupos vacíos del menú.
   function hideNavLinks(rol) {
     var allowed = allowedPages(rol);
     if (allowed === '*') return;
-    var links = document.querySelectorAll('.nav-link[href], a.nav-link[href], aside a[href]');
+
+    var links = document.querySelectorAll(
+      '.nav-link[href], a.nav-link[href], #nav-scroll a[href], aside a.nav-link[href]'
+    );
     links.forEach(function (a) {
       var href = a.getAttribute('href') || '';
-      var key = href.replace(/^.*\//, '').replace(/\.html$/i, '');
-      if (!key || /^https?:|^#|^javascript:/i.test(href)) return; // externos / anclas
-      // index dashboard
-      if (href === 'index.html' || href === './' || href === '/') key = 'index';
+      if (!href || /^https?:|^#|^javascript:/i.test(href)) return;
+      var key = pageKeyFromHref(href);
+      if (!key) return;
       if (allowed.indexOf(key) < 0) {
         a.style.display = 'none';
         a.setAttribute('data-role-hidden', '1');
+        a.setAttribute('aria-hidden', 'true');
       }
     });
+
+    // Ocultar títulos de grupo si todos sus links están ocultos
+    var nav = document.getElementById('nav-scroll') || document.querySelector('.nav-scroll');
+    if (!nav) return;
+    var children = Array.prototype.slice.call(nav.children);
+    var i = 0;
+    while (i < children.length) {
+      var el = children[i];
+      if (el.classList && el.classList.contains('nav-group')) {
+        var j = i + 1;
+        var anyVisible = false;
+        while (j < children.length && !(children[j].classList && children[j].classList.contains('nav-group'))) {
+          var link = children[j];
+          if (link.tagName === 'A' && link.getAttribute('data-role-hidden') !== '1') {
+            if (link.style.display !== 'none') anyVisible = true;
+          }
+          j++;
+        }
+        if (!anyVisible) {
+          el.style.display = 'none';
+          el.setAttribute('data-role-hidden', '1');
+        }
+        i = j;
+      } else {
+        i++;
+      }
+    }
   }
 
-  // 2. Forzar acceso: si la página actual no está permitida → redirigir.
   function enforceAccess(rol) {
     var allowed = allowedPages(rol);
     if (allowed === '*') return false;
     var page = currentPageKey();
-    if (allowed.indexOf(page) < 0) {
-      var dest = LANDING[rol] || 'index.html';
-      // evitar bucle si el landing tampoco está permitido
+    if (!allowed.length || allowed.indexOf(page) < 0) {
+      var dest = LANDING[rol] || 'hoy.html';
       var destKey = dest.replace(/\.html$/i, '');
-      if (allowed.indexOf(destKey) < 0 && allowed.length) dest = allowed[0] + '.html';
+      if (allowed.length && allowed.indexOf(destKey) < 0) dest = allowed[0] + '.html';
       location.replace(_base() + dest);
       return true;
     }
     return false;
   }
 
-  // 3. Inyectar CSS para ocultar elementos marcados como readonly.
   function injectReadonlyCSS() {
     if (document.getElementById('roles-readonly-css')) return;
     var st = document.createElement('style');
     st.id = 'roles-readonly-css';
     st.textContent =
       'html[data-role-readonly="1"] [data-role="readonly"]{display:none !important}' +
-      'html[data-role-readonly="1"] .role-readonly-banner{display:flex}';
+      'html[data-role-readonly="1"] .role-readonly-banner{display:flex}' +
+      'html[data-rol="auxiliar"] [data-hide-auxiliar]{display:none !important}' +
+      'html[data-rol="aportante"] [data-hide-aportante]{display:none !important}';
     document.head.appendChild(st);
   }
 
-  // 4. Marcar controles de acción como readonly (para ocultarlos).
-  //    scopeWrite = ocultar TODA acción de escritura (modo socio/solo-lectura).
-  //    Si scopeWrite=false sólo se ocultan exportaciones (caso veterinario/auxiliar).
   function tagActionControls(scopeWrite) {
     var scope = document.querySelector('.main, main, .content, body') || document.body;
     var candidates = scope.querySelectorAll('button, a.btn, label.btn, input[type="submit"]');
     candidates.forEach(function (el) {
-      if (el.closest('.sidebar, aside, nav')) return;          // no tocar navegación
+      if (el.closest('.sidebar, aside, nav')) return;
       if (el.id === 'logout' || /logout|signout|cerrar.?sesi/i.test(el.getAttribute('onclick') || '')) return;
+      // No tocar botones de la bandeja de aprobación del gerente
+      if (el.closest('#bandeja-aprobaciones, #bandeja-lista')) return;
       var oc = (el.getAttribute('onclick') || '') + ' ' + (el.className || '') + ' ' + (el.textContent || '');
       var isExport = EXPORT_VERBS.test(oc);
       var isWrite = WRITE_VERBS.test(oc) || el.type === 'submit' ||
@@ -125,11 +224,8 @@
         el.setAttribute('data-role', 'readonly');
       }
     });
-    // Nota: NO se desactivan inputs sueltos (filtros de fecha/búsqueda) para no
-    // romper la navegación de solo lectura. Sin botón de acción no hay escritura.
   }
 
-  // 5. Banner discreto de "modo solo lectura".
   function showReadonlyBanner(rol) {
     if (document.querySelector('.role-readonly-banner')) return;
     var host = document.querySelector('.main, main, .content');
@@ -139,13 +235,15 @@
     b.style.cssText = 'display:flex;align-items:center;gap:8px;margin:0 0 14px;padding:9px 14px;' +
       'background:var(--teal-bg,rgba(0,175,182,.1));border:1px solid var(--border2,#3E4C61);' +
       'border-radius:var(--r,8px);font-size:12px;color:var(--text2,#94A3B8)';
-    b.innerHTML = '🔒 Vista de solo lectura — tu rol (' +
-      (rol ? rol.charAt(0).toUpperCase() + rol.slice(1) : '') +
-      ') no puede modificar datos en esta página.';
+    var msg = rol === 'aportante'
+      ? '🔒 Solo lectura · ves únicamente el hato de aparcería vinculado a tu cuenta.'
+      : '🔒 Vista de solo lectura — tu rol (' +
+        (rol ? rol.charAt(0).toUpperCase() + rol.slice(1) : '') +
+        ') no puede modificar datos en esta página.';
+    b.innerHTML = msg;
     host.insertBefore(b, host.firstChild);
   }
 
-  // 6. Re-tag controles tras renders dinámicos (tablas que llegan de Supabase).
   var _observer = null;
   function _observe(scopeWrite) {
     if (_observer || typeof MutationObserver === 'undefined') return;
@@ -160,58 +258,98 @@
     _observer.observe(target, { childList: true, subtree: true });
   }
 
-  // API pública
+  function simplifyHoyForAuxiliar() {
+    if (currentPageKey() !== 'hoy') return;
+    HOY_HIDE_FOR_AUXILIAR.forEach(function (sel) {
+      try {
+        var el = document.querySelector(sel);
+        if (el) { el.style.display = 'none'; el.setAttribute('data-hide-auxiliar', '1'); }
+      } catch (e) {}
+    });
+    // Acciones rápidas: dejar solo pesaje, tratamiento y baja
+    try {
+      var grid = document.querySelector('.acc-grid');
+      if (grid) {
+        Array.prototype.slice.call(grid.children).forEach(function (btn) {
+          var t = (btn.textContent || '').toLowerCase();
+          var ok = /pesaje|tratamiento|baja|muerte/.test(t);
+          if (!ok) btn.style.display = 'none';
+        });
+      }
+    } catch (e) {}
+    // Banner simple de ayuda
+    if (!document.getElementById('aux-hoy-help')) {
+      var main = document.querySelector('.main, main');
+      var head = main && main.querySelector('.page-head');
+      if (head) {
+        var help = document.createElement('div');
+        help.id = 'aux-hoy-help';
+        help.style.cssText = 'margin:0 0 16px;padding:12px 14px;border-radius:10px;background:rgba(0,175,182,.10);border:1px solid rgba(0,175,182,.28);font-size:13px;color:var(--text);line-height:1.45';
+        help.innerHTML = '<b>Tu trabajo de hoy</b><br>1) Registrar <b>pesos</b> · 2) Registrar <b>vacunas / tratamientos</b> · 3) Registrar <b>muertes</b>.<br><span style="color:var(--text2);font-size:12px">Todo queda en espera de aprobación del gerente. No cambia el inventario hasta que él confirme.</span>';
+        head.insertAdjacentElement('afterend', help);
+      }
+    }
+  }
+
   window.Roles = {
     PAGE_ACCESS: PAGE_ACCESS,
+    ROLE_MATRIX: ROLE_MATRIX,
+    LANDING: LANDING,
     currentPageKey: currentPageKey,
     can: function (rol, page) {
       var a = allowedPages(rol);
       return a === '*' || a.indexOf(page) >= 0;
     },
+    requiresApproval: function (rol) {
+      return rol === 'auxiliar' || rol === 'veterinario';
+    },
     apply: function (rol) {
       if (!rol) return;
       window.AUTH_ROL = window.AUTH_ROL || rol;
-      // gerente/administrador: acceso total, nada que restringir.
+      try { document.documentElement.setAttribute('data-rol', rol); } catch (e) {}
+
       if (rol === 'gerente' || rol === 'administrador') return;
 
-      // Redirigir ANTES de pintar si la página no está permitida.
       if (enforceAccess(rol)) return;
 
       hideNavLinks(rol);
+      injectReadonlyCSS();
 
       var page = currentPageKey();
       var readonly = isReadonlyHere(rol, page);
-      injectReadonlyCSS();
 
-      if (readonly) {
+      if (rol === 'aportante' || rol === 'socio' || readonly) {
         document.documentElement.setAttribute('data-role-readonly', '1');
-        // socio = solo lectura total; otros roles = solo ocultar exportaciones.
-        var fullReadonly = rol === 'socio';
-        tagActionControls(fullReadonly);
-        _observe(fullReadonly);
-        if (rol === 'socio') {
+        var fullRo = rol === 'aportante' || rol === 'socio' || readonly;
+        tagActionControls(fullRo);
+        _observe(fullRo);
+        if (rol === 'aportante' || rol === 'socio') {
           if (document.body) showReadonlyBanner(rol);
           else document.addEventListener('DOMContentLoaded', function () { showReadonlyBanner(rol); });
         }
-      } else {
-        // Veterinario/auxiliar en páginas de escritura: ocultar SOLO exportaciones financieras.
-        if (rol === 'veterinario' || rol === 'auxiliar') {
-          document.documentElement.setAttribute('data-role-readonly', '1');
-          tagActionControls(false);
-          _observe(false);
+      } else if (rol === 'veterinario' || rol === 'auxiliar') {
+        // Escritura permitida en UI, pero Approval marca pendiente.
+        // Ocultar solo exportaciones.
+        document.documentElement.setAttribute('data-role-readonly', '1');
+        tagActionControls(false);
+        _observe(false);
+      }
+
+      if (rol === 'auxiliar') {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', simplifyHoyForAuxiliar);
+        } else {
+          simplifyHoyForAuxiliar();
         }
       }
     }
   };
 
-  // Respaldo: si auth.js ya dejó el rol en window pero no llamó apply
-  // (p.ej. orden de carga), aplicarlo al estar listo el DOM.
   function _fallback() {
     if (window.__rolesApplied) return;
     var rol = window.AUTH_ROL || (window.AUTH_PERFIL && window.AUTH_PERFIL.rol);
     if (rol) { window.__rolesApplied = true; window.Roles.apply(rol); }
   }
-  // Re-tag tras render dinámico de tablas/botones.
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', _fallback);
   }

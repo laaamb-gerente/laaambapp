@@ -1159,23 +1159,25 @@ async function saveBaja(){
         }
       }catch(err){ console.warn('[Bajas] saveBaja Supabase:',err&&err.message); }
       const _estado=_tipoSb==='muerte'?'muerto':_tipoSb==='venta'?'vendido':'descartado';
-      window.DB.saveAnimal({id:_a.id,estado:_estado}).catch(err=>console.warn('[Bajas] saveAnimal estado:',err&&err.message));
-      // Cerrar seguimientos post-tratamiento pendientes del animal (0053)
-      if(typeof window.DB.omitirSeguimientosAnimal==='function'){
-        window.DB.omitirSeguimientosAnimal(_a.id,'Animal dado de baja ('+_estado+')')
-          .catch(err=>console.warn('[Bajas] omitirSeguimientos:',err&&err.message));
+      const _pendiente = _payload.estado_aprobacion === 'pendiente';
+      // OJO: si la baja queda pendiente de aprobación del gerente, NO se saca
+      // el animal del inventario ni se cierran tratamientos hasta APROBAR.
+      if(!_pendiente){
+        window.DB.saveAnimal({id:_a.id,estado:_estado}).catch(err=>console.warn('[Bajas] saveAnimal estado:',err&&err.message));
+        if(typeof window.DB.omitirSeguimientosAnimal==='function'){
+          window.DB.omitirSeguimientosAnimal(_a.id,'Animal dado de baja ('+_estado+')')
+            .catch(err=>console.warn('[Bajas] omitirSeguimientos:',err&&err.message));
+        }
+        if(datosClinicos && datosClinicos.tratamiento_relacionado_id && typeof window.DB.updateTratamiento==='function'){
+          window.DB.updateTratamiento(datosClinicos.tratamiento_relacionado_id,{estado:'cerrado_muerte',fecha_fin:datosClinicos.fecha_real_muerte})
+            .catch(err=>console.warn('[Bajas] updateTratamiento:',err&&err.message));
+        }
+        window.AppState.animales=(window.AppState.animales||[]).filter(x=>x.id!==_a.id);
+        window.AppState._loaded=false;
       }
-      // Cerrar tratamiento relacionado (mortalidad bajo tratamiento)
-      if(datosClinicos && datosClinicos.tratamiento_relacionado_id && typeof window.DB.updateTratamiento==='function'){
-        window.DB.updateTratamiento(datosClinicos.tratamiento_relacionado_id,{estado:'cerrado_muerte',fecha_fin:datosClinicos.fecha_real_muerte})
-          .catch(err=>console.warn('[Bajas] updateTratamiento:',err&&err.message));
-      }
-      // Quitarlo del inventario activo local
-      window.AppState.animales=(window.AppState.animales||[]).filter(x=>x.id!==_a.id);
-      window.AppState._loaded=false;
 
-      // ── AUTO SALA CUNA: si la madre muere, detectar crías sin destetar ──
-      if(_tipoSb==='muerte' && _a && (_a.sexo==='hembra'||_a.sexo==='H'||_a.sexo==='F')
+      // ── AUTO SALA CUNA: solo si la baja ya está aprobada (no en pendiente) ──
+      if(!_pendiente && _tipoSb==='muerte' && _a && (_a.sexo==='hembra'||_a.sexo==='H'||_a.sexo==='F')
          && window.DB && typeof window.DB.getCriasNoDestetadas==='function'){
         try{
           const _criasRes = await window.DB.getCriasNoDestetadas(_a.id);

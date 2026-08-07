@@ -7,6 +7,11 @@
 // aprobación o se auto-aprueba
 function requiresApproval() {
   const rol = window.AUTH_ROL || '';
+  // Auxiliar y veterinario: sus registros entran a bandeja HOY del gerente.
+  // Gerente/admin se auto-aprueban. Aportante/socio no escriben en hato.
+  if (window.Roles && typeof window.Roles.requiresApproval === 'function') {
+    return window.Roles.requiresApproval(rol);
+  }
   return rol === 'auxiliar' || rol === 'veterinario';
 }
 

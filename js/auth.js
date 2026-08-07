@@ -28,11 +28,22 @@ window.Auth = {
 
     this._session = session;
 
-    // Cargar perfil del usuario
-    const { data: perfil } = await window._sb.from('perfiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
+    // Cargar perfil (con aportante vinculado si la columna existe)
+    let perfil = null;
+    {
+      let pr = await window._sb.from('perfiles')
+        .select('*, aportante:aportante_id(id, nombre)')
+        .eq('id', session.user.id)
+        .single();
+      if (pr.error) {
+        // Fallback si aún no existe perfiles.aportante_id
+        pr = await window._sb.from('perfiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+      }
+      perfil = pr.data;
+    }
 
     if (!perfil) {
       // Usuario sin perfil — redirigir a login con mensaje
@@ -42,15 +53,19 @@ window.Auth = {
     }
 
     this._perfil = perfil;
+    window.AUTH_APORTANTE_ID = perfil.aportante_id || (perfil.aportante && perfil.aportante.id) || null;
 
-    // Redirección por rol: veterinario y auxiliar arrancan en "Hoy"
-    // (su agenda de campo), no en el Dashboard gerencial.
+    // Redirección por rol al aterrizar en Dashboard
     const path = window.location.pathname;
     const enIndex = /\/index\.html$/.test(path) ||
                     path === '/' ||
                     /\/laaambapp\/?$/.test(path);
     if ((perfil.rol === 'veterinario' || perfil.rol === 'auxiliar') && enIndex) {
       window.location.href = this._base() + 'hoy.html';
+      return false;
+    }
+    if (perfil.rol === 'aportante' && enIndex) {
+      window.location.href = this._base() + 'aportantes-animales.html';
       return false;
     }
 
@@ -71,8 +86,6 @@ window.Auth = {
     // Ocultar secciones según rol
     const esGerente = rol === 'gerente';
     const esAdmin = rol === 'administrador';
-    const esVet = rol === 'veterinario';
-    const esAuxiliar = rol === 'auxiliar';
     const esSocio = rol === 'socio';
 
     // Finanzas: solo gerente, administrador, socio
@@ -89,12 +102,13 @@ window.Auth = {
       ).forEach(el => el.closest('li, .nav-item, a')?.remove());
     }
 
-    // Bajas: auxiliar/vet pueden REGISTRAR (muertes, salidas); quedan
-    // pendientes de aprobación del gerente (js/approval.js). No es solo lectura.
-
     // Guardar rol en window para uso en páginas
     window.AUTH_ROL = rol;
     window.AUTH_PERFIL = this._perfil;
+    if (this._perfil) {
+      window.AUTH_APORTANTE_ID = this._perfil.aportante_id ||
+        (this._perfil.aportante && this._perfil.aportante.id) || null;
+    }
 
     // Control de acceso por rol a nivel de UI (js/roles.js).
     // Se aplica aquí (antes de restaurar la visibilidad) para que un

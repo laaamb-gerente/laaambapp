@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v34: HOY teteros Bebido hoy + pesajes pendientes accionables.
-const CACHE_NAME = 'laaambapp-v34';
-const CACHE_SHELL = 'laaambapp-shell-v34';
+// v35: RBAC auxiliar mínimo + aportante + aprobación real de inventario.
+const CACHE_NAME = 'laaambapp-v35';
+const CACHE_SHELL = 'laaambapp-shell-v35';
 
 const STATIC_ASSETS = [
   './manifest.json',
