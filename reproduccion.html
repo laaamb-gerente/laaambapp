@@ -38,6 +38,7 @@
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
+<script src="js/copiloto-prompt-laaamb.js"></script>
 <script src="js/copiloto.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
@@ -649,10 +650,7 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
         <div class="cop-title">Copiloto LAAAMB · Reproducción</div>
         <div class="cop-sub">Celo, timing de monta, partos y registro reproductivo</div>
       </div>
-      <div class="cop-models">
-        <button class="cop-mbtn active" id="cop-claude" onclick="copSetModel('claude')">Claude</button>
-        <button class="cop-mbtn" id="cop-grok" onclick="copSetModel('grok')" disabled title="Próximamente">Grok</button>
-      </div>
+      <span class="cop-mbtn active" style="cursor:default">Solo Grok</span>
     </div>
     <div class="cop-chat" id="cop-chat">
       <div class="cop-empty" id="cop-empty">Pregúntame sobre gestaciones, próximos partos, detección de celo o timing de monta…</div>
@@ -664,16 +662,8 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
   </div>
 
   <script>
-  // ═══ Copiloto LAAAMB · Reproducción — controlador ═══
+  // ═══ Copiloto LAAAMB · Reproducción — solo Grok ═══
   (function(){
-    var COP_MODEL = 'claude';
-    window.copSetModel = function(m){
-      if(m === 'grok' && !(window.Copiloto && window.Copiloto.grokDisponible())) return;
-      COP_MODEL = m;
-      var c=document.getElementById('cop-claude'), g=document.getElementById('cop-grok');
-      if(c) c.classList.toggle('active', m==='claude');
-      if(g) g.classList.toggle('active', m==='grok');
-    };
     window.copAsk = async function(){
       var input=document.getElementById('cop-input'), chat=document.getElementById('cop-chat'), send=document.getElementById('cop-send');
       var q=input.value.trim(); if(!q || !window.Copiloto) return;
@@ -681,13 +671,15 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
       var u=document.createElement('div'); u.className='cop-bub user'; u.textContent=q; chat.appendChild(u);
       input.value=''; send.disabled=true; chat.scrollTop=chat.scrollHeight;
       var t=document.createElement('div'); t.className='cop-bub ai thinking'; t.textContent='Pensando…'; chat.appendChild(t); chat.scrollTop=chat.scrollHeight;
-      try{ var ans=await window.Copiloto.ask(q, COP_MODEL); t.classList.remove('thinking'); t.textContent=ans; }
+      try{
+        var ans=await window.Copiloto.ask(q, 'grok');
+        t.classList.remove('thinking');
+        t.textContent=(ans && ans.texto != null) ? ans.texto : String(ans);
+      }
       catch(err){ t.classList.remove('thinking'); t.style.color='var(--red)'; t.textContent=(err&&err.message)?err.message:'Error al consultar el copiloto.'; }
       finally{ send.disabled=false; chat.scrollTop=chat.scrollHeight; input.focus(); }
     };
-    function checkGrok(){ if(window.Copiloto && window.Copiloto.grokDisponible()){ var g=document.getElementById('cop-grok'); if(g){ g.disabled=false; g.removeAttribute('title'); } } }
 
-    // Enfoque especializado de REPRODUCCIÓN con contexto en vivo
     function setEnfoqueRepro(){
       if(!window.Copiloto) return;
       var st=window.AppState||{};
@@ -706,8 +698,8 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
         'Enfócate en manejo reproductivo, detección de celo, timing de monta, asistencia en partos y registro.';
       window.Copiloto.setEnfoquePagina(ctx);
     }
-    document.addEventListener('appstate:ready', function(){ checkGrok(); setEnfoqueRepro(); });
-    checkGrok(); if(window.AppState && window.AppState._loaded) setEnfoqueRepro();
+    document.addEventListener('appstate:ready', setEnfoqueRepro);
+    if(window.AppState && window.AppState._loaded) setEnfoqueRepro();
   })();
   </script>
 

@@ -1,10 +1,13 @@
 import { aplicarCors, validarToken, checkRateLimit } from './_auth.js';
 
+/**
+ * Proxy Grok (xAI) para el Copiloto LAAAMB.
+ * Soporta: chat, function calling (tools) y mensajes multimodales (imágenes).
+ * Solo Grok — sin Claude.
+ */
 export default async function handler(req, res) {
-  // CORS por allowlist (en TODAS las respuestas, incluido preflight)
   aplicarCors(req, res);
 
-  // Preflight: el navegador envía OPTIONS antes del POST cross-origin
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -13,7 +16,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Rate limiting por IP (30 req/min) antes de validar sesión
   const rl = checkRateLimit(req, 30, 60000);
   if (rl.limited) {
     res.setHeader('Retry-After', rl.retryAfter);
@@ -22,7 +24,6 @@ export default async function handler(req, res) {
     });
   }
 
-  // Exigir sesión válida antes de gastar la GROK_API_KEY
   const auth = await validarToken(req);
   if (!auth.ok) {
     return res.status(auth.status).json({ error: auth.error });
@@ -36,29 +37,44 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { messages, system } = req.body;
+    const { messages, system, tools, model, max_tokens, temperature } = req.body || {};
+
+    // Modelo con tools + visión (override con GROK_MODEL en Vercel)
+    const modelId = model || process.env.GROK_MODEL || 'grok-4.5';
+
+    const apiMessages = [];
+    if (system) {
+      apiMessages.push({ role: 'system', content: system });
+    }
+    (messages || []).forEach(function (m) {
+      apiMessages.push(m);
+    });
+
+    const body = {
+      model: modelId,
+      messages: apiMessages,
+      max_tokens: max_tokens || 2048,
+      temperature: temperature != null ? temperature : 0.3
+    };
+
+    // OpenAI-compatible tools
+    if (tools && tools.length) {
+      body.tools = tools;
+      body.tool_choice = 'auto';
+    }
 
     const response = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        Authorization: 'Bearer ' + apiKey
       },
-      body: JSON.stringify({
-        model: 'grok-3-mini',
-        messages: [
-          { role: 'system', content: system || '' },
-          ...(messages || [])
-        ],
-        max_tokens: 1024
-      })
+      body: JSON.stringify(body)
     });
 
     const data = await response.json();
-
     return res.status(response.status).json(data);
-
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({ error: error.message || String(error) });
   }
 }

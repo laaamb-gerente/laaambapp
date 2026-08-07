@@ -39,6 +39,7 @@
 <script src="js/app-state.js"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
+<script src="js/copiloto-prompt-laaamb.js"></script>
 <script src="js/copiloto.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -1492,9 +1493,10 @@ document.addEventListener('DOMContentLoaded', initEspecieTabs);
     if(btn){ btn.disabled=true; btn.textContent='Analizando…'; }
     box.innerHTML='<div style="color:var(--text3);font-style:italic"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13" style="vertical-align:middle;margin-right:4px"><rect x="4" y="3" width="12" height="10" rx="2"/><path d="M10 13v4M7 17h6"/><path d="M7 7h6M8 10h4"/></svg> El copiloto está analizando el estado del rebaño…</div>';
     try{
-      var r=await window.Copiloto.ask('¿Cuál es tu análisis del estado productivo del rebaño? Identifica los 3 mayores riesgos y las 3 mayores oportunidades de mejora basándote en los datos actuales.','claude');
-      box.innerHTML='<div style="font-size:10px;color:var(--teal);margin-bottom:10px;font-weight:600">ANÁLISIS DEL REBAÑO · LA MARINILLA</div>'
-        + String(r).split('\n').filter(function(l){return l.trim();}).map(function(l){return '<p style="margin-bottom:8px;line-height:1.7;color:var(--text2)">'+esc(l)+'</p>';}).join('');
+      var r=await window.Copiloto.ask('¿Cuál es tu análisis del estado productivo del rebaño? Identifica los 3 mayores riesgos y las 3 mayores oportunidades de mejora basándote en los datos actuales.','grok');
+      var txt=(r && r.texto != null) ? r.texto : String(r);
+      box.innerHTML='<div style="font-size:10px;color:var(--teal);margin-bottom:10px;font-weight:600">ANÁLISIS DEL REBAÑO · LA MARINILLA · GROK</div>'
+        + String(txt).split('\n').filter(function(l){return l.trim();}).map(function(l){return '<p style="margin-bottom:8px;line-height:1.7;color:var(--text2)">'+esc(l)+'</p>';}).join('');
     }catch(e){
       box.innerHTML='<div style="color:var(--red)">Error: '+esc((e&&e.message)||'No se pudo completar el análisis')+'</div>';
     }finally{

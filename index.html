@@ -40,6 +40,7 @@
 <script src="js/offline-db.js"></script>
 <script src="js/alertas-motor.js"></script>
 <script src="js/app-state.js"></script>
+<script src="js/copiloto-prompt-laaamb.js"></script>
 <script src="js/copiloto.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
@@ -317,140 +318,22 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     </div>
   </div>
 
-  <!-- ═══ Copiloto LAAAMB ═══ -->
-  <style>
-  .cop-card{margin-top:14px}
-  .cop-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-  .cop-models{display:flex;gap:6px}
-  .cop-mbtn{padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;transition:all .15s}
-  .cop-mbtn.active{background:var(--teal-bg);border-color:var(--teal);color:var(--teal)}
-  .cop-mbtn:disabled{opacity:.45;cursor:not-allowed}
-  .cop-chat{max-height:300px;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--bg2);border-radius:var(--r);margin:12px 0}
-  .cop-empty{text-align:center;color:var(--text3);font-size:12px;padding:24px 8px;line-height:1.5}
-  .cop-bub{max-width:85%;padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.5;white-space:pre-wrap;word-wrap:break-word}
-  .cop-bub.user{align-self:flex-end;background:var(--teal);color:#04181a;border-bottom-right-radius:4px}
-  .cop-bub.ai{align-self:flex-start;background:var(--surface);border:1px solid var(--border);color:var(--text);border-bottom-left-radius:4px}
-  .cop-bub.thinking{color:var(--text3);font-style:italic}
-  .cop-inrow{display:flex;gap:8px}
-  .cop-input{flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 13px;color:var(--text);font-family:inherit;font-size:13px}
-  .cop-input:focus{outline:none;border-color:var(--border2)}
-  .cop-send{background:var(--teal);color:#04181a;border:none;border-radius:10px;padding:0 16px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
-  .cop-send:disabled{opacity:.5;cursor:not-allowed}
-  </style>
-  <div class="card cop-card">
-    <div class="card-h cop-head">
+  <!-- Copiloto movido a Hoy (hoy.html) — solo Grok -->
+  <div class="card" style="margin-top:14px">
+    <div class="card-h">
       <div>
         <div class="card-title">Copiloto LAAAMB</div>
-        <div class="card-sub">Inteligencia operacional de tu finca</div>
+        <div class="card-sub">Ahora vive en la vista de campo</div>
       </div>
-      <div class="cop-models">
-        <button class="cop-mbtn active" id="cop-claude" onclick="copSetModel('claude')">Claude</button>
-        <button class="cop-mbtn" id="cop-grok" onclick="copSetModel('grok')" disabled title="Próximamente — configura tu API key de xAI">Grok</button>
-      </div>
+      <a class="btn btn-primary btn-sm" href="hoy.html#copiloto-sec">Abrir en Hoy →</a>
     </div>
-    <div class="cop-chat" id="cop-chat">
-      <div class="cop-empty" id="cop-empty">Pregúntame sobre tu finca — gestación, pesos, lotes, rentabilidad…</div>
-    </div>
-    <div class="cop-inrow">
-      <input class="cop-input" id="cop-input" placeholder="Pregúntame sobre tu finca..." onkeydown="if(event.key==='Enter')copAsk()">
-      <button class="cop-send" id="cop-send" onclick="copAsk()">Enviar</button>
+    <div style="padding:4px 0 2px;font-size:12px;color:var(--text3);line-height:1.45">
+      Tratamientos por chapeta, foto de medicamentos, nacimientos y bajas — con historial real del hato. Solo Grok.
     </div>
   </div>
 </div>
 </div>
 
-<script>
-// ═══ Copiloto LAAAMB — controlador del panel ═══
-(function(){
-  var COP_MODEL = 'claude';
-  window.copSetModel = function(m){
-    if(m === 'grok' && !(window.Copiloto && window.Copiloto.grokDisponible())) return;
-    COP_MODEL = m;
-    var c = document.getElementById('cop-claude');
-    var g = document.getElementById('cop-grok');
-    if(c) c.classList.toggle('active', m === 'claude');
-    if(g) g.classList.toggle('active', m === 'grok');
-  };
-  window.copAsk = async function(){
-    var input = document.getElementById('cop-input');
-    var chat = document.getElementById('cop-chat');
-    var send = document.getElementById('cop-send');
-    var q = input.value.trim();
-    if(!q) return;
-    if(!window.Copiloto){ return; }
-    var empty = document.getElementById('cop-empty');
-    if(empty) empty.remove();
-    var u = document.createElement('div');
-    u.className = 'cop-bub user';
-    u.textContent = q;
-    chat.appendChild(u);
-    input.value = '';
-    send.disabled = true;
-    chat.scrollTop = chat.scrollHeight;
-    var t = document.createElement('div');
-    t.className = 'cop-bub ai thinking';
-    t.textContent = 'Pensando…';
-    chat.appendChild(t);
-    chat.scrollTop = chat.scrollHeight;
-    try{
-      var ans = await window.Copiloto.ask(q, COP_MODEL);
-      t.classList.remove('thinking');
-      t.textContent = ans;
-    }catch(err){
-      t.classList.remove('thinking');
-      t.style.color = 'var(--red)';
-      t.textContent = (err && err.message) ? err.message : 'Error al consultar el copiloto.';
-    }finally{
-      send.disabled = false;
-      chat.scrollTop = chat.scrollHeight;
-      input.focus();
-    }
-  };
-  // Agregar una burbuja del copiloto (asistente) al chat
-  window.agregarMensajeCopiloto = function(texto){
-    var chat = document.getElementById('cop-chat');
-    if(!chat) return;
-    var empty = document.getElementById('cop-empty');
-    if(empty) empty.remove();
-    var b = document.createElement('div');
-    b.className = 'cop-bub ai';
-    // Sin renderizador markdown: limpiar ** de negritas
-    b.textContent = String(texto).replace(/\*\*/g, '');
-    chat.appendChild(b);
-    chat.scrollTop = chat.scrollHeight;
-  };
-
-  // Bienvenida proactiva: si AlertasMotor encontró alertas,
-  // el copiloto saluda con un resumen sin que el usuario pregunte.
-  var _bienvenidaDada = false;
-  function bienvenidaProactiva(){
-    if(_bienvenidaDada) return;
-    setTimeout(function(){
-      if(_bienvenidaDada) return;
-      if(!window.AlertasMotor || !window.AlertasMotor._alertas || !window.AlertasMotor._alertas.length) return;
-      var counts = window.AlertasMotor.getCounts();
-      if(counts.total === 0) return;
-      _bienvenidaDada = true;
-      var resumen = window.AlertasMotor._alertas
-        .slice(0, 3)
-        .map(function(a){ return '• ' + a.mensaje; })
-        .join('\n');
-      var bienvenida = 'Tengo ' + counts.total + ' alertas para La Marinilla:\n\n' + resumen + '\n\n¿Por dónde empezamos?';
-      window.agregarMensajeCopiloto(bienvenida);
-    }, 1500);
-  }
-
-  // Habilitar Grok cuando window.GROK_API_KEY esté disponible
-  function checkGrok(){
-    if(window.Copiloto && window.Copiloto.grokDisponible()){
-      var g = document.getElementById('cop-grok');
-      if(g){ g.disabled = false; g.removeAttribute('title'); }
-    }
-  }
-  document.addEventListener('appstate:ready', function(){ checkGrok(); bienvenidaProactiva(); });
-  checkGrok();
-})();
-</script>
 
 <script>
 // ═══ Hamburger ═══
