@@ -39,7 +39,7 @@
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
-<script src="js/app-update.js?v=33"></script>
+<script src="js/app-update.js?v=34"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -1041,6 +1041,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     }
 
     var ahora=Date.now();
+    // Misma UX que "Dosis de tratamiento hoy": ficha + input mL + confirmar
     html+=rows.map(function(t){
       var c=ccMap[t.corderos_crianza_id]||{};
       var co=c.cordero||{};
@@ -1048,35 +1049,32 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       var prog=new Date(t.fecha_hora_programada);
       var limite=prog.getTime()+(Number(t.ventana_min)||0)*60000;
       var vencida=limite<ahora;
-      var atrasada=prog.toISOString().slice(0,10)<_hoyISO();
+      var atrasada=false;
+      try{ atrasada=prog.toISOString().slice(0,10)<_hoyISO(); }catch(e){}
       var border=vencida||atrasada?'var(--red)':'var(--orange)';
       var tipoTxt=t.tipo==='calostro'?'Calostro':(t.tipo==='sustituto'?'Sustituto':(t.tipo||'Toma'));
       var mlObj=t.cantidad_ml_objetivo!=null?t.cantidad_ml_objetivo:0;
       var crianzaId=t.corderos_crianza_id||(c&&c.id)||'';
-      var estadoLbl=atrasada&&!vencida?'Atrasada (día anterior)'
-        :vencida?'Ventana vencida — registrar ya'
-        :'Programada · '+_fmtHoraToma(t.fecha_hora_programada);
+      var estadoLbl=atrasada&&!vencida?'⚠ Atrasada (día anterior)'
+        :vencida?'⚠ Ventana vencida — registrar ya'
+        :'Entregar hoy · '+_fmtHoraToma(t.fecha_hora_programada);
 
-      return '<div class="card" style="border:1px solid var(--border);border-left:4px solid '+border+';border-radius:10px;padding:12px 14px;margin-bottom:8px;background:var(--bg2)" data-toma="'+t.id+'">'
-        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">'
-          +'<div style="min-width:0">'
-            +'<div style="font-size:14px;font-weight:700;color:var(--text)">🍼 '+_esc(nom)
-              +(co.codigo&&co.nombre&&co.codigo!==co.nombre?(' <span style="font-weight:500;color:var(--text2)">· '+_esc(co.nombre)+'</span>'):'')
-            +'</div>'
-            +'<div style="font-size:12px;color:var(--text2);margin-top:2px">'+_esc(tipoTxt)+' · objetivo <b>'+mlObj+' mL</b> · '+_fmtHoraToma(t.fecha_hora_programada)+'</div>'
-            +'<div style="font-size:11px;font-weight:600;margin-top:4px;color:'+(vencida||atrasada?'var(--red)':'var(--text3)')+'">'
-              +(vencida||atrasada?'⏰ ':'🕑 ')+estadoLbl
-            +'</div>'
-          +'</div>'
+      return '<div style="border:1px solid var(--border);border-left:3px solid '+border+';border-radius:8px;padding:11px 14px;margin-bottom:8px;background:var(--bg2)" data-toma="'+t.id+'">'
+        +'<div style="font-size:14px;font-weight:600;color:var(--text)">🍼 '+_esc(nom)
+          +(co.codigo&&co.nombre&&co.codigo!==co.nombre?(' <span style="font-size:12px;color:var(--text2)">· '+_esc(co.nombre)+'</span>'):'')
         +'</div>'
-        +'<div style="display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap">'
-          +'<input type="number" inputmode="numeric" step="10" min="0" value="'+mlObj+'" id="toma-ml-'+t.id+'" '
-            +'aria-label="Mililitros tomados" '
-            +'style="width:96px;min-height:40px;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);font-family:inherit;font-size:14px">'
-          +'<span style="font-size:12px;color:var(--text3)">mL</span>'
+        +'<div style="font-size:12px;color:var(--text2);margin-top:3px;line-height:1.4">'
+          +_esc(tipoTxt)+' · objetivo <b>'+mlObj+' mL</b> · '+_fmtHoraToma(t.fecha_hora_programada)
+        +'</div>'
+        +'<div style="font-size:11px;color:'+border+';font-weight:600;margin-top:4px">'+estadoLbl+'</div>'
+        +'<div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">'
+          +'<input type="number" inputmode="decimal" step="10" min="0" value="'+mlObj+'" id="toma-ml-'+t.id+'" '
+            +'placeholder="mL bebidos" aria-label="Mililitros bebidos" '
+            +'style="width:110px;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font-family:inherit;font-size:12px">'
+          +'<span style="font-size:11px;color:var(--text3)">mL</span>'
           +'<button type="button" onclick="registrarTeteroHoy(\''+t.id+'\',\''+crianzaId+'\',\''+_esc(t.tipo||'sustituto')+'\')" '
-            +'style="min-height:40px;font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;background:var(--teal);color:#04181a;border:none;cursor:pointer;font-family:inherit">'
-            +'✓ Registrar toma</button>'
+            +'style="font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;background:var(--teal);color:#04181a;border:none;cursor:pointer;font-family:inherit">'
+            +'✓ Bebido hoy</button>'
         +'</div>'
       +'</div>';
     }).join('');
@@ -1099,14 +1097,243 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       if(mr&&mr.error) throw mr.error;
       var card=document.querySelector('[data-toma="'+tomaId+'"]');
       if(card){
-        card.style.opacity='0.55';
-        card.innerHTML='<div style="font-size:13px;font-weight:600;color:var(--green)">✓ Toma registrada · '+ml+' mL</div>';
+        card.style.opacity='0.35';
+        card.innerHTML='<div style="font-size:13px;color:var(--green)">✓ Bebido hoy · '+ml+' mL</div>';
       }
-      setTimeout(renderTeterosHoy, 1000);
+      setTimeout(renderTeterosHoy, 1200);
     }catch(e){ alert('No se pudo registrar la toma: '+(e.message||e)); }
   };
   document.addEventListener('appstate:ready', renderTeterosHoy);
   setTimeout(renderTeterosHoy, 900);
+
+  // ── Pesajes pendientes (≥30 días sin peso) — accionable ──
+  var _PES_PAGE = 12;
+  var _pesajesPendLimite = _PES_PAGE;
+  var _pesajesPendCache = null; // lista ordenada de pendientes
+
+  function _diasSinPeso(hoyMid, ultimaFechaISO){
+    if(!ultimaFechaISO) return 9999;
+    try{
+      return Math.floor((hoyMid - new Date(ultimaFechaISO+'T00:00:00')) / 86400000);
+    }catch(e){ return 9999; }
+  }
+
+  async function _buildUltimoPesajeMap(){
+    var map = window._hoyUltimoPesajeMap || {};
+    // Completar con más filas si la carga inicial fue corta
+    try{
+      if(window._sb){
+        var r = await window._sb.from('pesajes')
+          .select('animal_id, fecha, peso, peso_kg')
+          .eq('finca_id', FINCA_ID)
+          .order('fecha', { ascending: false })
+          .limit(3000);
+        ((r&&r.data)||[]).forEach(function(p){
+          if(!p.animal_id || !p.fecha) return;
+          if(!map[p.animal_id] || p.fecha > map[p.animal_id].fecha){
+            map[p.animal_id] = {
+              fecha: p.fecha,
+              peso: p.peso != null ? p.peso : p.peso_kg
+            };
+          }
+        });
+      }
+    }catch(e){ console.warn('[HOY] pesajes map:', e&&e.message); }
+    window._hoyUltimoPesajeMap = map;
+    return map;
+  }
+
+  async function renderPesajesPendientes(){
+    var sec = document.getElementById('pesajes-pend-sec');
+    var cont = document.getElementById('pesajes-pend-lista');
+    var badge = document.getElementById('pesajes-pend-badge');
+    if(!sec || !cont) return;
+
+    var st = window.AppState;
+    var animales = ((st && st.animales) || []).filter(function(a){
+      return a && a.estado === 'activo';
+    });
+    if(!animales.length && st && !st._loaded){
+      cont.innerHTML = '<div style="font-size:13px;color:var(--text3);padding:8px 0">Cargando hato…</div>';
+      return;
+    }
+
+    var map = await _buildUltimoPesajeMap();
+    var hoyMid = new Date(); hoyMid.setHours(0,0,0,0);
+
+    var pend = animales.map(function(a){
+      var u = map[a.id];
+      var dias = _diasSinPeso(hoyMid, u && u.fecha);
+      var pesoAnt = (u && u.peso != null) ? Number(u.peso)
+        : (a.peso_actual != null ? Number(a.peso_actual) : null);
+      // Sin pesaje registrado → pendiente; con pesaje ≥30 días → pendiente
+      var necesita = !u || dias >= 30;
+      return necesita ? {
+        id: a.id,
+        codigo: a.codigo || a.nombre || '—',
+        nombre: a.nombre || '',
+        dias: dias,
+        pesoAnt: (pesoAnt != null && !isNaN(pesoAnt)) ? pesoAnt : null,
+        ultima: (u && u.fecha) || null,
+        lote: a.lote_nombre || ''
+      } : null;
+    }).filter(Boolean);
+
+    // Más atrasados primero; empate por código
+    pend.sort(function(a,b){
+      if(b.dias !== a.dias) return b.dias - a.dias;
+      return String(a.codigo).localeCompare(String(b.codigo), 'es');
+    });
+    _pesajesPendCache = pend;
+
+    if(badge){
+      badge.style.display = 'inline-block';
+      if(pend.length){
+        badge.textContent = pend.length + (pend.length===1 ? ' animal' : ' animales');
+        badge.style.background = 'var(--teal-bg)';
+        badge.style.color = 'var(--teal)';
+      } else {
+        badge.textContent = 'Al día';
+        badge.style.background = 'rgba(16,185,129,.12)';
+        badge.style.color = 'var(--green,#10B981)';
+      }
+    }
+
+    if(!pend.length){
+      cont.innerHTML = '<div style="font-size:13px;color:var(--text3);padding:8px 0">Todos los animales activos tienen pesaje de los últimos 30 días. ✓</div>';
+      return;
+    }
+
+    if(_pesajesPendLimite > pend.length) _pesajesPendLimite = Math.max(_PES_PAGE, pend.length);
+    var show = pend.slice(0, _pesajesPendLimite);
+    var rest = pend.length - show.length;
+
+    var html = show.map(function(a){
+      var diasTxt = a.dias >= 9999 ? 'Sin pesaje registrado'
+        : (a.dias + ' día' + (a.dias===1?'':'s') + ' sin pesar');
+      var prevTxt = a.pesoAnt != null
+        ? ('Último: <b>'+a.pesoAnt+' kg</b>'+(a.ultima?(' · '+_esc(a.ultima)):'') )
+        : 'Sin peso anterior';
+      var c = a.dias >= 60 || a.dias >= 9999 ? 'var(--red)' : 'var(--orange)';
+      return '<div style="border:1px solid var(--border);border-left:3px solid '+c+';border-radius:8px;padding:11px 14px;margin-bottom:8px;background:var(--bg2)" data-peso-animal="'+a.id+'">'
+        +'<div style="font-size:14px;font-weight:600;color:var(--text)">⚖ '+_esc(a.codigo)
+          +(a.nombre && a.nombre!==a.codigo ? (' <span style="font-size:12px;color:var(--text2)">· '+_esc(a.nombre)+'</span>') : '')
+        +'</div>'
+        +'<div style="font-size:12px;color:var(--text2);margin-top:3px;line-height:1.4">'+prevTxt+'</div>'
+        +'<div style="font-size:11px;color:'+c+';font-weight:600;margin-top:4px">'+diasTxt+' · meta: 1 pesaje / mes</div>'
+        +'<div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">'
+          +'<input type="number" inputmode="decimal" step="0.1" min="0.1" placeholder="Peso (kg)" id="peso-val-'+a.id+'" '
+            +(a.pesoAnt!=null?(' value="'+a.pesoAnt+'"'):'')
+            +' aria-label="Peso en kg" '
+            +'style="width:110px;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font-family:inherit;font-size:12px">'
+          +'<span style="font-size:11px;color:var(--text3)">kg</span>'
+          +'<button type="button" onclick="registrarPesoHoy(\''+a.id+'\')" '
+            +'style="font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;background:var(--teal);color:#04181a;border:none;cursor:pointer;font-family:inherit">'
+            +'✓ Registrar peso</button>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+
+    if(rest > 0){
+      html += '<button type="button" id="pesajes-ver-mas" '
+        +'style="width:100%;margin-top:4px;padding:10px;border-radius:8px;border:1px dashed var(--border2);background:var(--bg3);color:var(--teal);font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">'
+        +'Ver más · '+rest+' restante'+(rest===1?'':'s')+'</button>';
+    } else if(pend.length > _PES_PAGE && _pesajesPendLimite > _PES_PAGE){
+      html += '<button type="button" id="pesajes-ver-menos" '
+        +'style="width:100%;margin-top:4px;padding:10px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text3);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">'
+        +'Mostrar menos</button>';
+    }
+
+    cont.innerHTML = html;
+    var btnMas = document.getElementById('pesajes-ver-mas');
+    if(btnMas){
+      btnMas.onclick = function(){
+        _pesajesPendLimite = Math.min(pend.length, _pesajesPendLimite + _PES_PAGE);
+        renderPesajesPendientes();
+      };
+    }
+    var btnMenos = document.getElementById('pesajes-ver-menos');
+    if(btnMenos){
+      btnMenos.onclick = function(){
+        _pesajesPendLimite = _PES_PAGE;
+        renderPesajesPendientes();
+      };
+    }
+  }
+  window.renderPesajesPendientes = renderPesajesPendientes;
+
+  window.registrarPesoHoy = async function(animalId){
+    var inp = document.getElementById('peso-val-'+animalId);
+    var peso = inp ? parseFloat(inp.value) : NaN;
+    if(!(peso > 0)){ alert('Ingresa un peso válido en kg'); return; }
+    if(!window.DB || !window.DB.savePesaje){ alert('Capa de datos no disponible'); return; }
+
+    var map = window._hoyUltimoPesajeMap || {};
+    var prev = map[animalId] || {};
+    var pesoAnt = prev.peso != null ? Number(prev.peso) : null;
+    var fechaAnt = prev.fecha || null;
+    // Si no hay pesaje previo, usar peso_actual del animal (sin fecha → no GDP)
+    if(pesoAnt == null && window.AppState){
+      var an = (window.AppState.animales||[]).find(function(x){ return x.id === animalId; });
+      if(an && an.peso_actual != null) pesoAnt = Number(an.peso_actual);
+    }
+    var dias = fechaAnt ? _diasSinPeso(new Date(), fechaAnt) : 0;
+    var gdp = null; // g/día
+    if(pesoAnt != null && dias > 0){
+      gdp = Math.round(((peso - pesoAnt) / dias) * 1000);
+    }
+
+    var hoyStr = _hoyISO();
+    var payload = {
+      finca_id: FINCA_ID,
+      animal_id: animalId,
+      peso: peso,
+      fecha: hoyStr,
+      tipo: 'rutina',
+      registrado_por: (window.AUTH_PERFIL && (window.AUTH_PERFIL.nombre || window.AUTH_PERFIL.email)) || 'campo'
+    };
+    if(window.Approval){
+      payload.estado_aprobacion = window.Approval.getEstadoInicial();
+      var prop = window.Approval.getPropuestoPor();
+      payload.propuesto_por = prop.propuesto_por;
+      payload.propuesto_por_rol = prop.propuesto_por_rol;
+    }
+
+    try{
+      var r = await window.DB.savePesaje(payload);
+      if(r && r.error) throw r.error;
+
+      // Actualizar memoria local
+      if(window.AppState && Array.isArray(window.AppState.animales)){
+        var a = window.AppState.animales.find(function(x){ return x.id === animalId; });
+        if(a) a.peso_actual = peso;
+      }
+      map[animalId] = { fecha: hoyStr, peso: peso };
+      window._hoyUltimoPesajeMap = map;
+
+      var card = document.querySelector('[data-peso-animal="'+animalId+'"]');
+      var gdpTxt = gdp != null ? (' · GDP '+(gdp>=0?'+':'')+gdp+' g/d') : '';
+      if(card){
+        card.style.opacity = '0.35';
+        card.innerHTML = '<div style="font-size:13px;color:var(--green)">✓ Peso registrado · '+peso+' kg'+gdpTxt+'</div>';
+      }
+      if(window.Approval && typeof window.Approval.toastAprobacion === 'function'){
+        window.Approval.toastAprobacion(
+          '✓ Pesaje '+peso+' kg'+gdpTxt,
+          '⏳ Pesaje registrado · Pendiente de aprobación del gerente.'
+        );
+      }
+      setTimeout(function(){ renderPesajesPendientes(); }, 1200);
+    }catch(e){
+      alert('No se pudo registrar el peso: '+(e.message||e));
+    }
+  };
+
+  document.addEventListener('appstate:ready', function(){
+    _pesajesPendLimite = _PES_PAGE;
+    renderPesajesPendientes();
+  });
+  setTimeout(function(){ renderPesajesPendientes(); }, 1000);
 
   // ── AVISO A — Medicamentos terminados hoy (informativo) ──
   async function renderMedsTerminados(){

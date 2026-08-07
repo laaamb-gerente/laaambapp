@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v33: auxiliar/vet pueden entrar a Bajas (muertes) con aprobación.
-const CACHE_NAME = 'laaambapp-v33';
-const CACHE_SHELL = 'laaambapp-shell-v33';
+// v34: HOY teteros Bebido hoy + pesajes pendientes accionables.
+const CACHE_NAME = 'laaambapp-v34';
+const CACHE_SHELL = 'laaambapp-shell-v34';
 
 const STATIC_ASSETS = [
   './manifest.json',
