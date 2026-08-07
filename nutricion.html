@@ -261,6 +261,20 @@ textarea.fi{resize:vertical;min-height:60px}
 
   <!-- ══ TAB 2 · INVENTARIO ══ -->
   <div id="t-inventario" class="tab-pane" style="display:none">
+    <div class="card" id="card-tetero-formula">
+      <div class="card-h">
+        <div>
+          <div class="card-title">🍼 Tetero · leche en polvo</div>
+          <div class="card-sub">Fórmula provisional (ajustable) · se descuenta al registrar Bebido hoy en HOY</div>
+        </div>
+      </div>
+      <div class="card-body" id="tetero-formula-body" style="font-size:13px;color:var(--text2);line-height:1.5">
+        <p style="margin:0 0 8px"><b>Calostro / sustituto:</b> ~150 g de polvo + ~850 ml de agua = 1 L listo para tetero.</p>
+        <p style="margin:0 0 8px">Por cada <b>100 mL</b> entregados se descuentan ~<b>15 g</b> de polvo del inventario.</p>
+        <p style="margin:0;font-size:12px;color:var(--text3)">Cuando tengas la ficha exacta del producto, la actualizamos en <code>formula_tetero</code> (migración 0063).</p>
+        <div id="tetero-stock-line" style="margin-top:12px"></div>
+      </div>
+    </div>
     <div class="card">
       <div class="card-h"><div><div class="card-title">Suplementos</div><div class="card-sub">Insumos y mezclas · stock, consumo y costo</div></div><button class="btn btn-primary btn-sm" onclick="openProducirMezcla()">⚙ Producir mezcla</button></div>
       <div class="card-body tbl-wrap" id="tbl-suplementos"><div class="empty">Cargando…</div></div>
@@ -515,7 +529,19 @@ async function loadNutricion(){
     await ensureBaseInventario();
     computeLotes(); setHeader();
     renderHoy(); renderInventario(); renderRecetas(); renderRaciones(); fillCalcSelect(); window.renderCalc();
+    renderTeteroStockLine();
   }catch(e){ console.error('[nutricion] load',e); toast('Error cargando datos','error'); }
+}
+function renderTeteroStockLine(){
+  var el=document.getElementById('tetero-stock-line'); if(!el) return;
+  var cal=INVENTARIO.find(function(i){ return /calostro/i.test(i.ingrediente||''); });
+  var sus=INVENTARIO.find(function(i){ return /sustituto/i.test(i.ingrediente||'') && /leche|polvo/i.test(i.ingrediente||''); });
+  var parts=[];
+  if(cal) parts.push('Calostro: <b>'+(+cal.stock_kg||0)+' kg</b>');
+  if(sus) parts.push('Sustituto: <b>'+(+sus.stock_kg||0)+' kg</b>');
+  el.innerHTML=parts.length
+    ? '<div style="padding:10px 12px;border-radius:8px;background:var(--teal-bg,rgba(0,175,182,.1));border:1px solid var(--border2)">Stock · '+parts.join(' · ')+' · reponer con “+ Compra” abajo</div>'
+    : '<div style="color:var(--text3);font-size:12px">Aún no hay filas de leche en polvo. Guarda / recarga o corre migración 0063.</div>';
 }
 // Ingredientes individuales (insumos que se compran) — el usuario puede agregar más.
 // Ingredientes base: insumos reales de LAAAMB
@@ -531,6 +557,9 @@ const INGREDIENTES_BASE = [
   {ingrediente:'Tierra de diatomeas',   tipo:'sal',  stock_kg:0, unidad:'kg',     kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:5},
   // Forraje
   {ingrediente:'Heno',                  tipo:'heno', stock_kg:0, unidad:'fardos', kg_por_unidad:20, costo_por_kg:0, stock_minimo_kg:100},
+  // Sala cuna / tetero (se descuenta al registrar Bebido hoy en HOY)
+  {ingrediente:'Leche en polvo calostro',  tipo:'tetero', stock_kg:0, unidad:'kg', kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:2},
+  {ingrediente:'Leche en polvo sustituto', tipo:'tetero', stock_kg:0, unidad:'kg', kg_por_unidad:1, costo_por_kg:0, stock_minimo_kg:5},
 ];
 // Mezclas (lo que se ENTREGA a los animales) — su stock se abastece produciendo.
 const MEZCLAS_BASE = [

@@ -1256,7 +1256,8 @@ window.DB = {
 
   // Toma realizada. Online → insert; offline → cola IndexedDB (patrón existente).
   // datos = { corderos_crianza_id, tipo, cantidad_ml, temperatura_ok?,
-  //           responsable?, observacion? }
+  //           responsable?, observacion?, finca_id? }
+  // Tras insert: descuenta leche en polvo del inventario_nutricion según formula_tetero.
   async createTomaRealizada(datos) {
     const payload = { ...datos, sincronizado: true };
     const res = await window._sb.from('tomas_realizadas')
@@ -1269,7 +1270,171 @@ window.DB = {
       });
       return { data: { ...datos, sincronizado: false }, error: null, offline: true };
     }
+    // Descontar polvo (best-effort; no tumba el registro de la toma)
+    if (!res.error && res.data) {
+      try {
+        await this.descontarPolvoTetero({
+          finca_id: datos.finca_id || 'a1b2c3d4-0000-0000-0000-000000000001',
+          tipo: datos.tipo || 'sustituto',
+          cantidad_ml: Number(datos.cantidad_ml) || 0,
+          toma_realizada_id: res.data.id,
+          corderos_crianza_id: datos.corderos_crianza_id
+        });
+      } catch (e) {
+        console.warn('[DB] descontarPolvoTetero:', e && e.message);
+      }
+    }
     return res;
+  },
+
+  /**
+   * Fórmula: g_polvo = ml * (g_polvo_por_litro / 1000).
+   * Default provisional 150 g/L si no hay fila en formula_tetero.
+   */
+  async getFormulaTetero(finca_id, tipo) {
+    const t = (tipo === 'calostro') ? 'calostro' : 'sustituto';
+    try {
+      const r = await window._sb.from('formula_tetero')
+        .select('*')
+        .eq('finca_id', finca_id)
+        .eq('tipo', t)
+        .maybeSingle();
+      if (r && r.data) return r.data;
+    } catch (e) { /* tabla aún no migrada */ }
+    return {
+      tipo: t,
+      ingrediente: t === 'calostro' ? 'Leche en polvo calostro' : 'Leche en polvo sustituto',
+      g_polvo_por_litro: 150,
+      ml_agua_por_litro: 850,
+      notas: 'PROVISIONAL (sin fila en formula_tetero)'
+    };
+  },
+
+  async descontarPolvoTetero({ finca_id, tipo, cantidad_ml, toma_realizada_id, corderos_crianza_id }) {
+    const ml = Number(cantidad_ml) || 0;
+    if (ml <= 0) return { data: null, error: null };
+    const form = await this.getFormulaTetero(finca_id, tipo);
+    const gPorL = Number(form.g_polvo_por_litro) || 150;
+    const gPolvo = Math.round(ml * (gPorL / 1000) * 1000) / 1000; // gramos
+    const kg = gPolvo / 1000;
+
+    // Buscar insumo por nombre
+    const inv = await window._sb.from('inventario_nutricion')
+      .select('id, ingrediente, stock_kg')
+      .eq('finca_id', finca_id)
+      .ilike('ingrediente', form.ingrediente)
+      .limit(1)
+      .maybeSingle();
+
+    let invRow = inv && inv.data;
+    // Crear si no existe (migración no corrida o nombre distinto)
+    if (!invRow) {
+      const ins = await window._sb.from('inventario_nutricion').insert({
+        finca_id: finca_id,
+        ingrediente: form.ingrediente,
+        tipo: 'tetero',
+        stock_kg: 0,
+        unidad: 'kg',
+        kg_por_unidad: 1,
+        costo_por_kg: 0,
+        stock_minimo_kg: tipo === 'calostro' ? 2 : 5
+      }).select().single();
+      invRow = ins && ins.data;
+    }
+    if (invRow && invRow.id) {
+      await this.updateInventarioStock(invRow.id, -kg);
+    }
+
+    try {
+      await window._sb.from('consumo_tetero_insumo').insert({
+        finca_id: finca_id,
+        toma_realizada_id: toma_realizada_id || null,
+        corderos_crianza_id: corderos_crianza_id || null,
+        tipo: form.tipo || tipo,
+        cantidad_ml: ml,
+        g_polvo: gPolvo,
+        inventario_id: invRow ? invRow.id : null,
+        ingrediente: form.ingrediente
+      });
+    } catch (e) { /* tabla puede no existir */ }
+
+    return { data: { g_polvo: gPolvo, kg: kg, ingrediente: form.ingrediente }, error: null };
+  },
+
+  /**
+   * Proyección de agotamiento de leche en polvo (calostro + sustituto).
+   * Retorna alertas si quedan < 8 días de stock al ritmo de corderos en crianza.
+   */
+  async getAlertaLecheTetero(finca_id) {
+    const FINCA = finca_id || 'a1b2c3d4-0000-0000-0000-000000000001';
+    const alertas = [];
+    let nCrias = 0;
+    try {
+      const cc = await this.getCorderosCrianza(true);
+      nCrias = ((cc && cc.data) || []).length;
+    } catch (e) { nCrias = 0; }
+    if (nCrias <= 0) return { data: [], nCrias: 0, error: null };
+
+    // Estimar ml/día: promedio de tomas realizadas últimos 7d, o default 400 ml/cordero
+    let mlDiaTotal = 0;
+    try {
+      const desde = new Date(Date.now() - 7 * 86400000).toISOString();
+      const tr = await window._sb.from('tomas_realizadas')
+        .select('cantidad_ml, tipo, fecha_hora')
+        .gte('fecha_hora', desde)
+        .limit(500);
+      const rows = (tr && tr.data) || [];
+      if (rows.length) {
+        const sum = rows.reduce((s, r) => s + (Number(r.cantidad_ml) || 0), 0);
+        const diasObs = Math.max(1, Math.min(7, Math.ceil(rows.length / Math.max(1, nCrias * 3))));
+        mlDiaTotal = sum / Math.max(1, Math.min(7, diasObs));
+        // Si el promedio es irrealmente bajo, usa default
+        if (mlDiaTotal < nCrias * 50) mlDiaTotal = nCrias * 400;
+      } else {
+        mlDiaTotal = nCrias * 400; // 4 tomas × 100 ml aprox.
+      }
+    } catch (e) {
+      mlDiaTotal = nCrias * 400;
+    }
+
+    // Reparto: ~30% calostro / 70% sustituto si hay mix; si solo hay calostro stage unknown, use 20/80
+    const fracciones = [
+      { tipo: 'calostro', fraccion: 0.25 },
+      { tipo: 'sustituto', fraccion: 0.75 }
+    ];
+
+    for (const fr of fracciones) {
+      const form = await this.getFormulaTetero(FINCA, fr.tipo);
+      const mlDia = mlDiaTotal * fr.fraccion;
+      const gDia = mlDia * ((Number(form.g_polvo_por_litro) || 150) / 1000);
+      const inv = await window._sb.from('inventario_nutricion')
+        .select('id, ingrediente, stock_kg, stock_minimo_kg')
+        .eq('finca_id', FINCA)
+        .ilike('ingrediente', form.ingrediente)
+        .limit(1)
+        .maybeSingle();
+      const stockKg = (inv && inv.data && parseFloat(inv.data.stock_kg)) || 0;
+      const stockG = stockKg * 1000;
+      const dias = gDia > 0 ? Math.floor(stockG / gDia) : 999;
+      const critico = dias < 8 || stockKg <= 0;
+      if (critico) {
+        alertas.push({
+          tipo: fr.tipo,
+          ingrediente: form.ingrediente,
+          stock_kg: Math.round(stockKg * 1000) / 1000,
+          g_dia: Math.round(gDia * 10) / 10,
+          ml_dia: Math.round(mlDia),
+          dias_restantes: stockKg <= 0 ? 0 : dias,
+          n_corderos: nCrias,
+          g_polvo_por_litro: form.g_polvo_por_litro,
+          urgente: true,
+          mensaje: stockKg <= 0
+            ? `URGENTE: ${form.ingrediente} SIN STOCK (${nCrias} corderos en tetero)`
+            : `URGENTE: ${form.ingrediente} se agota en ~${dias} día(s) (${nCrias} corderos · ~${Math.round(gDia)} g/día)`
+        });
+      }
+    }
+    return { data: alertas, nCrias: nCrias, mlDiaTotal: Math.round(mlDiaTotal), error: null };
   },
   async getTomasRealizadas(corderosCrianzaId) {
     return await window._sb.from('tomas_realizadas')

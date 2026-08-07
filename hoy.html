@@ -39,7 +39,7 @@
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
-<script src="js/app-update.js?v=37"></script>
+<script src="js/app-update.js?v=38"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -227,6 +227,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     <div style="font-size:11px;color:var(--text3);margin:-4px 0 10px;line-height:1.4">Pon los <b>mL</b> que tomó y toca <b>Bebido hoy</b>. Se registra la toma, se quita de la lista y se actualiza Sala Cuna.</div>
     <div id="hoy-teteros-lista"><div style="font-size:13px;color:var(--text3)">Cargando teteros…</div></div>
     <a href="sala-cuna.html" style="display:inline-block;margin-top:8px;font-size:11px;font-weight:600;color:var(--teal);text-decoration:none">→ Ver Sala Cuna completa</a>
+  </div>
+
+  <!-- Alerta stock leche tetero (calostro / sustituto) -->
+  <div class="sec" id="alerta-leche-tetero-sec" style="display:none">
+    <div id="alerta-leche-tetero-box"></div>
   </div>
 
   <!-- Búsqueda post-auditoría: animales no vistos en el censo -->
@@ -1122,6 +1127,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 
     try{
       var real=await window.DB.createTomaRealizada({
+        finca_id: FINCA_ID,
         corderos_crianza_id:crianzaId,
         tipo:tipo||'sustituto',
         cantidad_ml:ml,
@@ -1148,7 +1154,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
         }
       }catch(e){}
 
-      setTimeout(renderTeterosHoy, 900);
+      setTimeout(function(){
+        renderTeterosHoy();
+        if(typeof renderAlertaLecheTetero==='function') renderAlertaLecheTetero();
+      }, 900);
     }catch(e){
       if(btn){ btn.disabled=false; btn.textContent='✓ Bebido hoy'; }
       alert('No se pudo registrar la toma: '+(e.message||e));
@@ -1156,6 +1165,39 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
   };
   document.addEventListener('appstate:ready', renderTeterosHoy);
   setTimeout(renderTeterosHoy, 900);
+
+  // ── Alerta URGENTE leche en polvo tetero (< 8 días de stock) ──
+  async function renderAlertaLecheTetero(){
+    var sec=document.getElementById('alerta-leche-tetero-sec');
+    var box=document.getElementById('alerta-leche-tetero-box');
+    if(!sec||!box) return;
+    if(!(window.DB&&window.DB.getAlertaLecheTetero)){ sec.style.display='none'; return; }
+    try{
+      var r=await window.DB.getAlertaLecheTetero(FINCA_ID);
+      var alertas=(r&&r.data)||[];
+      if(!alertas.length){ sec.style.display='none'; box.innerHTML=''; return; }
+      sec.style.display='';
+      box.innerHTML=alertas.map(function(a){
+        var dias=a.dias_restantes!=null?a.dias_restantes:0;
+        return '<div style="border:2px solid var(--red);border-radius:12px;padding:14px 16px;margin-bottom:8px;background:rgba(239,68,68,.08)">'
+          +'<div style="font-size:14px;font-weight:800;color:var(--red);letter-spacing:.2px">🚨 URGENTE: LECHE '
+          +(a.tipo==='calostro'?'CALOSTRO':'SUSTITUTO')
+          +(dias<=0?' SIN STOCK':' SE AGOTA EN '+dias+' DÍA'+(dias===1?'':'S'))
+          +'</div>'
+          +'<div style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.45">'
+          +_esc(a.ingrediente)+' · stock <b>'+a.stock_kg+' kg</b>'
+          +' · ~'+a.g_dia+' g/día con <b>'+a.n_corderos+'</b> cordero'+(a.n_corderos===1?'':'s')+' en tetero'
+          +' · fórmula ~'+a.g_polvo_por_litro+' g polvo / L'
+          +'</div>'
+          +'<a href="nutricion.html" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:700;color:var(--teal);text-decoration:none">→ Comprar / reponer en Nutrición</a>'
+          +'</div>';
+      }).join('');
+    }catch(e){
+      sec.style.display='none';
+    }
+  }
+  document.addEventListener('appstate:ready', renderAlertaLecheTetero);
+  setTimeout(renderAlertaLecheTetero, 1000);
 
   // ── Pesajes pendientes (≥30 días sin peso) — accionable ──
   var _PES_PAGE = 12;

@@ -207,14 +207,62 @@ export default async function handler(req, res) {
       asistencia.faltan = (emps || []).filter(e => !marcadosSet.has(e.id)).map(e => e.nombre);
     } catch (e) { }
 
+    // 7. Leche en polvo tetero (calostro/sustituto) — proyección 8 días
+    let lecheTetero = [];
+    try {
+      const crias = await sbGet(
+        `corderos_crianza?estado=eq.activo&select=id`
+      );
+      const nCrias = (crias || []).length;
+      if (nCrias > 0) {
+        const inv = await sbGet(
+          `inventario_nutricion?finca_id=eq.${FINCA_ID}&select=ingrediente,stock_kg,stock_minimo_kg`
+        );
+        let formulas = [];
+        try {
+          formulas = await sbGet(
+            `formula_tetero?finca_id=eq.${FINCA_ID}&select=tipo,ingrediente,g_polvo_por_litro`
+          );
+        } catch (e) { formulas = []; }
+        const formByTipo = {};
+        (formulas || []).forEach(f => { formByTipo[f.tipo] = f; });
+        const mlDiaTotal = nCrias * 400; // estimación base
+        [
+          { tipo: 'calostro', fraccion: 0.25, defIng: 'Leche en polvo calostro', defG: 150 },
+          { tipo: 'sustituto', fraccion: 0.75, defIng: 'Leche en polvo sustituto', defG: 150 }
+        ].forEach(fr => {
+          const form = formByTipo[fr.tipo] || {};
+          const ing = form.ingrediente || fr.defIng;
+          const gPorL = Number(form.g_polvo_por_litro) || fr.defG;
+          const row = (inv || []).find(i =>
+            String(i.ingrediente || '').toLowerCase() === String(ing).toLowerCase()
+          );
+          const stockKg = row ? (parseFloat(row.stock_kg) || 0) : 0;
+          const gDia = mlDiaTotal * fr.fraccion * (gPorL / 1000);
+          const dias = gDia > 0 ? Math.floor((stockKg * 1000) / gDia) : 999;
+          if (stockKg <= 0 || dias < 8) {
+            lecheTetero.push({
+              ingrediente: ing,
+              tipo: fr.tipo,
+              stock_kg: stockKg,
+              dias: stockKg <= 0 ? 0 : dias,
+              nCrias,
+              gDia: Math.round(gDia)
+            });
+          }
+        });
+      }
+    } catch (e) { }
+
     resumen.seguimientos = seguimientos.length;
     resumen.dosis = dosis.length;
     resumen.retiros = retiros.length;
     resumen.tomas = tomas.length;
     resumen.medicamentos = medsAlerta.length;
     resumen.asistencia_faltan = asistencia.faltan.length;
+    resumen.leche_tetero = lecheTetero.length;
     const total = seguimientos.length + dosis.length + retiros.length + tomas.length
-      + medsAlerta.length + (asistencia.empleados > 0 ? 1 : 0);
+      + medsAlerta.length + lecheTetero.length + (asistencia.empleados > 0 ? 1 : 0);
 
     if (total === 0) {
       return res.status(200).json({ ok: true, enviado: false, motivo: 'Sin alertas hoy', resumen });
@@ -246,6 +294,10 @@ export default async function handler(req, res) {
         `programada ${String(t.fecha_hora_programada).replace('T', ' ').slice(0, 16)}`)))}
     ${seccion('💊 Medicamentos por vencer o agotarse', medsAlerta.map(m =>
       fila('💊', `${m.nombre} · stock ${m.stock} ${m.unidad}`, m.razones.join(' · '))))}
+    ${seccion('🚨 Leche tetero / calostro — se agota en ≤8 días', lecheTetero.map(l =>
+      fila('🍼',
+        `URGENTE: ${l.ingrediente} · ${l.dias <= 0 ? 'SIN STOCK' : 'se agota en ~' + l.dias + ' día(s)'}`,
+        `${l.nCrias} corderos en crianza · ~${l.gDia} g polvo/día · stock ${l.stock_kg} kg · reponer en Nutrición`)))}
     ${asistencia.empleados > 0 ? `
     <h2 style="font-family:Arial,sans-serif;font-size:15px;color:#9C3F66;margin:22px 0 8px;border-left:4px solid #F18F22;padding-left:10px">📋 Registro de asistencia de hoy</h2>
     <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e5eeef;border-radius:8px">
@@ -279,7 +331,7 @@ export default async function handler(req, res) {
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         from, to,
-        subject: `🐑 LAAAMB · ${resumen.seguimientos} seguim. · ${resumen.dosis} dosis · ${resumen.retiros} retiros · ${resumen.tomas} teteros · ${resumen.medicamentos} medic.`,
+        subject: `🐑 LAAAMB · ${resumen.seguimientos} seguim. · ${resumen.dosis} dosis · ${resumen.tomas} teteros · ${resumen.leche_tetero || 0} leche · ${resumen.medicamentos} medic.`,
         html
       })
     });
