@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v30: fix menú hamburguesa en Copiloto (sidebar CSS + logo 40px).
-const CACHE_NAME = 'laaambapp-v30';
-const CACHE_SHELL = 'laaambapp-shell-v30';
+// v31: action sheet adjuntar en Copiloto (UI clara, bottom sheet).
+const CACHE_NAME = 'laaambapp-v31';
+const CACHE_SHELL = 'laaambapp-shell-v31';
 
 const STATIC_ASSETS = [
   './manifest.json',
