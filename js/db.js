@@ -1801,11 +1801,40 @@ window.DB = {
   async getDosisPendientesHoy(fincaId) {
     var hoy = new Date().toISOString().slice(0, 10);
     var q = window._sb.from('dosis_programadas')
-      .select('*, animales(codigo, nombre)')
+      .select('*, animales(codigo, nombre, peso_actual)')
       .eq('estado', 'pendiente')
       .lte('fecha_programada', hoy);
     if (fincaId) q = q.eq('finca_id', fincaId);
-    return await q.order('fecha_programada', { ascending: true });
+    const res = await q.order('fecha_programada', { ascending: true });
+    if (res.error || !res.data || !res.data.length) return res;
+
+    // Enriquecer con nombre de medicamento y dosis sugerida (tratamiento_id es text, sin FK).
+    const ids = [...new Set(res.data.map(d => d.tratamiento_id).filter(Boolean))];
+    const medByTrat = {};
+    try {
+      // Intentamos cast uuid: solo filas con id uuid válido en tratamientos
+      const { data: trts } = await window._sb
+        .from('tratamientos')
+        .select('id, medicamento_id, dosis_aplicada, medicamentos(nombre, dosis_sugerida, dosis_estandar, principio_activo, unidad, dias_retiro)')
+        .in('id', ids);
+      (trts || []).forEach(t => {
+        const m = t.medicamentos || {};
+        medByTrat[t.id] = {
+          medicamento_nombre: m.nombre || null,
+          dosis_sugerida: m.dosis_sugerida || m.dosis_estandar || t.dosis_aplicada || null,
+          principio_activo: m.principio_activo || null,
+          unidad_med: m.unidad || null,
+          dias_retiro: m.dias_retiro != null ? m.dias_retiro : null
+        };
+      });
+    } catch (e) { /* best-effort */ }
+
+    // Si no hubo match por id (ids locales AppData), intentar por columna texto en tratamientos si existe
+    res.data = res.data.map(d => {
+      const extra = medByTrat[d.tratamiento_id] || {};
+      return Object.assign({}, d, extra);
+    });
+    return res;
   },
   async registrarDosis(dosisId, datos) {
     datos = datos || {};
