@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v31: action sheet adjuntar en Copiloto (UI clara, bottom sheet).
-const CACHE_NAME = 'laaambapp-v31';
-const CACHE_SHELL = 'laaambapp-shell-v31';
+// v32: HOY sin alertas/copiloto duplicados; teteros con listado completo.
+const CACHE_NAME = 'laaambapp-v32';
+const CACHE_SHELL = 'laaambapp-shell-v32';
 
 const STATIC_ASSETS = [
   './manifest.json',
