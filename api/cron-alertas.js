@@ -228,17 +228,18 @@ export default async function handler(req, res) {
         (formulas || []).forEach(f => { formByTipo[f.tipo] = f; });
         const mlDiaTotal = nCrias * 400; // estimación base
         [
-          { tipo: 'calostro', fraccion: 0.25, defIng: 'Leche en polvo calostro', defG: 150 },
-          { tipo: 'sustituto', fraccion: 0.75, defIng: 'Leche en polvo sustituto', defG: 150 }
+          { tipo: 'calostro', fraccion: 0.25, defIng: 'Leche en polvo calostro', defG: 130 },
+          { tipo: 'sustituto', fraccion: 0.75, defIng: 'Leche en polvo sustituto', defG: 130 }
         ].forEach(fr => {
           const form = formByTipo[fr.tipo] || {};
           const ing = form.ingrediente || fr.defIng;
           const gPorL = Number(form.g_polvo_por_litro) || fr.defG;
+          const mlAgua = Number(form.ml_agua_por_litro) || 1000;
           const row = (inv || []).find(i =>
             String(i.ingrediente || '').toLowerCase() === String(ing).toLowerCase()
           );
           const stockKg = row ? (parseFloat(row.stock_kg) || 0) : 0;
-          const gDia = mlDiaTotal * fr.fraccion * (gPorL / 1000);
+          const gDia = mlDiaTotal * fr.fraccion * (gPorL / mlAgua);
           const dias = gDia > 0 ? Math.floor((stockKg * 1000) / gDia) : 999;
           if (stockKg <= 0 || dias < 8) {
             lecheTetero.push({

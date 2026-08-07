@@ -1304,9 +1304,9 @@ window.DB = {
     return {
       tipo: t,
       ingrediente: t === 'calostro' ? 'Leche en polvo calostro' : 'Leche en polvo sustituto',
-      g_polvo_por_litro: 150,
-      ml_agua_por_litro: 850,
-      notas: 'PROVISIONAL (sin fila en formula_tetero)'
+      g_polvo_por_litro: 130,
+      ml_agua_por_litro: 1000,
+      notas: '130 g polvo por cada 1 L de agua (Juan)'
     };
   },
 
@@ -1314,8 +1314,10 @@ window.DB = {
     const ml = Number(cantidad_ml) || 0;
     if (ml <= 0) return { data: null, error: null };
     const form = await this.getFormulaTetero(finca_id, tipo);
-    const gPorL = Number(form.g_polvo_por_litro) || 150;
-    const gPolvo = Math.round(ml * (gPorL / 1000) * 1000) / 1000; // gramos
+    // 130 g polvo por 1000 ml de agua → ~0.13 g polvo por ml de tetero entregado
+    const gPorL = Number(form.g_polvo_por_litro) || 130;
+    const mlAguaBase = Number(form.ml_agua_por_litro) || 1000;
+    const gPolvo = Math.round(ml * (gPorL / mlAguaBase) * 1000) / 1000; // gramos
     const kg = gPolvo / 1000;
 
     // Buscar insumo por nombre
@@ -1406,7 +1408,9 @@ window.DB = {
     for (const fr of fracciones) {
       const form = await this.getFormulaTetero(FINCA, fr.tipo);
       const mlDia = mlDiaTotal * fr.fraccion;
-      const gDia = mlDia * ((Number(form.g_polvo_por_litro) || 150) / 1000);
+      const gPorL = Number(form.g_polvo_por_litro) || 130;
+      const mlAgua = Number(form.ml_agua_por_litro) || 1000;
+      const gDia = mlDia * (gPorL / mlAgua);
       const inv = await window._sb.from('inventario_nutricion')
         .select('id, ingrediente, stock_kg, stock_minimo_kg')
         .eq('finca_id', FINCA)

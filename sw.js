@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v38: leche calostro/sustituto tetero + descuento y alerta 8 días.
-const CACHE_NAME = 'laaambapp-v38';
-const CACHE_SHELL = 'laaambapp-shell-v38';
+// v39: leche calostro/sustituto tetero + descuento y alerta 8 días.
+const CACHE_NAME = 'laaambapp-v39';
+const CACHE_SHELL = 'laaambapp-shell-v39';
 
 const STATIC_ASSETS = [
   './manifest.json',
