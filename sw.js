@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v29: banner no reaparece al actualizar; SW_UPDATED solo si había cache vieja.
-const CACHE_NAME = 'laaambapp-v29';
-const CACHE_SHELL = 'laaambapp-shell-v29';
+// v30: fix menú hamburguesa en Copiloto (sidebar CSS + logo 40px).
+const CACHE_NAME = 'laaambapp-v30';
+const CACHE_SHELL = 'laaambapp-shell-v30';
 
 const STATIC_ASSETS = [
   './manifest.json',
