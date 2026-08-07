@@ -75,16 +75,19 @@ WHERE NOT EXISTS (
     AND lower(ingrediente) = lower('Leche en polvo sustituto')
 );
 
--- Fórmulas provisionales (ajustar cuando Juan dé la exacta)
--- 150 g polvo + ~850 ml agua → 1 L listo para tetero
+-- Fórmula Juan: 130 g polvo por cada 1 L de agua
 INSERT INTO public.formula_tetero (finca_id, tipo, ingrediente, g_polvo_por_litro, ml_agua_por_litro, notas)
 VALUES
   ('a1b2c3d4-0000-0000-0000-000000000001', 'calostro',
-   'Leche en polvo calostro', 150, 850,
-   'PROVISIONAL: 150 g polvo / L. Ajustar con ficha del producto.'),
+   'Leche en polvo calostro', 130, 1000,
+   '130 g polvo por cada 1 L de agua (definido por Juan).'),
   ('a1b2c3d4-0000-0000-0000-000000000001', 'sustituto',
-   'Leche en polvo sustituto', 150, 850,
-   'PROVISIONAL: 150 g polvo / L. Ajustar con ficha del producto.')
-ON CONFLICT (finca_id, tipo) DO NOTHING;
+   'Leche en polvo sustituto', 130, 1000,
+   '130 g polvo por cada 1 L de agua (definido por Juan).')
+ON CONFLICT (finca_id, tipo) DO UPDATE SET
+  g_polvo_por_litro = EXCLUDED.g_polvo_por_litro,
+  ml_agua_por_litro = EXCLUDED.ml_agua_por_litro,
+  notas = EXCLUDED.notas,
+  updated_at = now();
 
 commit;
