@@ -271,8 +271,10 @@ textarea.fi{resize:vertical;min-height:68px}
     -webkit-overflow-scrolling:touch;
   }
   #sidebar .nav-scroll{
-    overflow-y:visible !important;
-    flex-shrink:0;
+    overflow-y:auto !important;
+    flex:1 1 auto !important;
+    min-height:0 !important;
+    -webkit-overflow-scrolling:touch;
   }
   #sidebar .sb-foot{
     flex-shrink:0;

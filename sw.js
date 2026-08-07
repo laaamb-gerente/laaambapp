@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v25: página copiloto.html en menú Inicio (bajo Hoy).
-const CACHE_NAME = 'laaambapp-v25';
-const CACHE_SHELL = 'laaambapp-shell-v25';
+// v26: scroll menú lateral + rangos KPI + fix nombres meds.
+const CACHE_NAME = 'laaambapp-v26';
+const CACHE_SHELL = 'laaambapp-shell-v26';
 
 const STATIC_ASSETS = [
   './manifest.json',

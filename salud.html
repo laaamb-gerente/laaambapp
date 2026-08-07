@@ -33,6 +33,7 @@
 <script src="js/roles.js"></script>
 <script src="js/approval.js?v=41"></script>
 <script src="js/sidebar.js"></script>
+<script src="js/periodo-kpi.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/db.js?v=41"></script>
 <script src="js/colabs.js"></script>
@@ -309,8 +310,10 @@ textarea.fi{resize:vertical;min-height:68px}
     -webkit-overflow-scrolling:touch;
   }
   #sidebar .nav-scroll{
-    overflow-y:visible !important;
-    flex-shrink:0;
+    overflow-y:auto !important;
+    flex:1 1 auto !important;
+    min-height:0 !important;
+    -webkit-overflow-scrolling:touch;
   }
   #sidebar .sb-foot{
     flex-shrink:0;
@@ -467,15 +470,19 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
 
     <!-- ══ RESUMEN ══ -->
     <div id="t-resumen" class="tab-pane">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text3);margin-bottom:8px">Estado actual (foto de hoy · sin rango)</div>
+      <div class="g4" style="margin-bottom:16px">
+        <div class="kpi c-wine"><div class="kpi-label">Tratamientos activos</div><div class="kpi-val" id="kpi-salud-activos">—</div><div class="kpi-delta neu" id="kpi-salud-activos-det">En curso / retiro</div></div>
+        <div class="kpi c-amber"><div class="kpi-label">En retiro sanitario</div><div class="kpi-val" id="kpi-salud-retiro">—</div><div class="kpi-delta warn">No aptos sacrificio</div></div>
+        <div class="kpi c-red"><div class="kpi-label">Meds. por vencer (14d)</div><div class="kpi-val" id="kpi-salud-venc">—</div><div class="kpi-delta down">Inventario</div></div>
+        <div class="kpi c-teal"><div class="kpi-label">Medicamentos stock</div><div class="kpi-val" id="kpi-salud-stock">—</div><div class="kpi-delta neu">Ítems activos</div></div>
+      </div>
+      <div id="salud-periodo-mount"></div>
       <div class="g4">
-        <div class="kpi c-wine"><div class="kpi-label">Tratamientos activos</div><div class="kpi-val">5</div><div class="kpi-delta neu">3 indiv. · 2 grupales</div></div>
-        <div class="kpi c-amber"><div class="kpi-label">En retiro sanitario</div><div class="kpi-val">196</div><div class="kpi-delta warn">No aptos sacrificio</div></div>
-        <div class="kpi c-red"><div class="kpi-label">Meds. por vencer</div><div class="kpi-val">3</div><div class="kpi-delta down">En los próximos 14d</div></div>
-        <div class="kpi c-teal"><div class="kpi-label">Medicamentos stock</div><div class="kpi-val">28</div><div class="kpi-delta up">Inventario activo</div></div>
-        <div class="kpi c-green"><div class="kpi-label">Tratamientos mes</div><div class="kpi-val" id="kpi-trat-mes">--</div><div class="kpi-delta neu" id="kpi-trat-det"></div></div>
-        <div class="kpi c-sky"><div class="kpi-label">Gasto sanidad MTD</div><div class="kpi-val" id="kpi-gasto-salud">--</div><div class="kpi-delta neu">COP este mes</div></div>
-        <div class="kpi c-orange"><div class="kpi-label">Próx. desparasitación</div><div class="kpi-val" id="kpi-prox-despar">--</div><div class="kpi-delta warn" id="kpi-prox-despar-det"></div></div>
-        <div class="kpi c-green"><div class="kpi-label">Vacunaciones al día</div><div class="kpi-val">94<span class="kpi-unit">%</span></div><div class="kpi-delta up">▲ 3% vs mes ant.</div></div>
+        <div class="kpi c-green"><div class="kpi-label">Tratamientos del período</div><div class="kpi-val" id="kpi-trat-mes">—</div><div class="kpi-delta neu" id="kpi-trat-det">Según rango elegido</div></div>
+        <div class="kpi c-sky"><div class="kpi-label">Gasto sanidad del período</div><div class="kpi-val" id="kpi-gasto-salud">—</div><div class="kpi-delta neu" id="kpi-gasto-salud-det">COP en el rango</div></div>
+        <div class="kpi c-orange"><div class="kpi-label">Próx. desparasitación</div><div class="kpi-val" id="kpi-prox-despar">—</div><div class="kpi-delta warn" id="kpi-prox-despar-det">Estado actual</div></div>
+        <div class="kpi c-wine"><div class="kpi-label">Animales tratados (período)</div><div class="kpi-val" id="kpi-salud-anim-trat">—</div><div class="kpi-delta neu" id="kpi-salud-anim-trat-det">Únicos en el rango</div></div>
       </div>
 
       <div class="g2">
@@ -2440,12 +2447,10 @@ async function loadFromSupabase(){
       });
     });
 
-    // ── KPIs de resumen (orden real: 0 activos · 1 en retiro · 3 medicamentos stock) ──
-    const kpiEls=document.querySelectorAll('.kpi-val');
-    const activos=TRATAMIENTOS.filter(t=>t.estado==='En retiro'||t.estado==='En curso').length;
-    if(kpiEls[0]) kpiEls[0].textContent=activos;
-    if(kpiEls[1]) kpiEls[1].textContent=RETIRO_ACTIVOS.length;
-    if(kpiEls[3]) kpiEls[3].textContent=MEDICAMENTOS.length;
+    // ── KPIs estado actual + período ──
+    window._SALUD_TRATS_RAW = trats;
+    window._SALUD_MEDS_RAW = meds;
+    if(typeof window._actualizarKpisSalud === 'function') window._actualizarKpisSalud();
 
     renderActivos(); renderHistorial(); renderRetiro();
     if(document.getElementById('meds-list')) renderMeds(MEDICAMENTOS);
@@ -2455,6 +2460,82 @@ async function loadFromSupabase(){
   }
 }
 document.addEventListener('appstate:ready', loadFromSupabase);
+
+// KPIs de Salud con rango de fechas explícito
+window._actualizarKpisSalud = function(){
+  var trats = window._SALUD_TRATS_RAW || [];
+  var meds = window._SALUD_MEDS_RAW || MEDICAMENTOS || [];
+  var hoy = new Date();
+  var en14 = new Date(hoy.getTime() + 14*86400000);
+
+  var activos = (typeof RETIRO_ACTIVOS!=='undefined' && RETIRO_ACTIVOS.length)
+    ? TRATAMIENTOS.filter(function(t){ return t.estado==='En retiro'||t.estado==='En curso'; }).length
+    : trats.filter(function(t){
+        var fin = t.fecha_fin_retiro ? new Date(t.fecha_fin_retiro) : null;
+        return fin && fin >= hoy;
+      }).length;
+
+  var setTxt = function(id, v){ var el=document.getElementById(id); if(el) el.textContent = (v==null?'—':v); };
+  setTxt('kpi-salud-activos', activos);
+  setTxt('kpi-salud-retiro', (typeof RETIRO_ACTIVOS!=='undefined') ? RETIRO_ACTIVOS.length : '—');
+  setTxt('kpi-salud-stock', meds.length || MEDICAMENTOS.length || 0);
+
+  // Meds por vencer en 14 días
+  var venc = 0;
+  meds.forEach(function(m){
+    var fv = m.fecha_vencimiento || m.venc;
+    if(!fv || fv==='2099-01-01') return;
+    var d = new Date(fv);
+    if(!isNaN(d) && d>=hoy && d<=en14) venc++;
+  });
+  setTxt('kpi-salud-venc', venc);
+
+  // Período
+  var rango = (window.PeriodoKPI && PeriodoKPI.getRange) ? PeriodoKPI.getRange() : null;
+  var inR = function(f){
+    if(!rango) return true;
+    return PeriodoKPI.inRange(f);
+  };
+  var enPeriodo = trats.filter(function(t){ return inR(t.fecha_inicio || t.created_at); });
+  setTxt('kpi-trat-mes', enPeriodo.length);
+  var det = document.getElementById('kpi-trat-det');
+  if(det) det.textContent = rango ? rango.label : 'Período';
+
+  var unicos = {};
+  enPeriodo.forEach(function(t){
+    var k = t.animal_id || (t.animales && (t.animales.codigo||t.animales.nombre)) || t.id;
+    unicos[k] = 1;
+  });
+  setTxt('kpi-salud-anim-trat', Object.keys(unicos).length);
+
+  // Gasto: suma precio_unitario * 1 si hay; si no, —
+  var gasto = 0, conCosto = 0;
+  enPeriodo.forEach(function(t){
+    var mid = t.medicamento_id;
+    var m = meds.find(function(x){ return x.id===mid; });
+    var p = m && (parseFloat(m.precio_unitario)||0);
+    if(p>0){ gasto += p; conCosto++; }
+  });
+  var gEl = document.getElementById('kpi-gasto-salud');
+  if(gEl) gEl.textContent = conCosto ? ('$'+Math.round(gasto).toLocaleString('es-CO')) : '—';
+  var gd = document.getElementById('kpi-gasto-salud-det');
+  if(gd) gd.textContent = conCosto ? (rango?rango.label:'Período') : 'Sin precios en inventario';
+};
+
+(function initSaludPeriodo(){
+  function boot(){
+    if(!window.PeriodoKPI) return;
+    PeriodoKPI.init({
+      rootId: 'salud-periodo',
+      mountId: 'salud-periodo-mount',
+      storageKey: 'salud',
+      onChange: function(){ if(window._actualizarKpisSalud) window._actualizarKpisSalud(); }
+    });
+    if(window._actualizarKpisSalud) window._actualizarKpisSalud();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
 
 // Preselección de animal al llegar desde la ficha (animales.html):
 //   salud.html?nuevo=1&animal=<uuid|id>&codigo=<codigo>

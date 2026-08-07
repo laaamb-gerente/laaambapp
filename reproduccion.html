@@ -33,6 +33,7 @@
 <script src="js/roles.js"></script>
 <script src="js/approval.js?v=40"></script>
 <script src="js/sidebar.js"></script>
+<script src="js/periodo-kpi.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/db.js?v=40"></script>
 <script src="js/colabs.js"></script>
@@ -286,8 +287,10 @@ textarea.fi{resize:vertical;min-height:68px}
     -webkit-overflow-scrolling:touch;
   }
   #sidebar .nav-scroll{
-    overflow-y:visible !important;
-    flex-shrink:0;
+    overflow-y:auto !important;
+    flex:1 1 auto !important;
+    min-height:0 !important;
+    -webkit-overflow-scrolling:touch;
   }
   #sidebar .sb-foot{
     flex-shrink:0;
@@ -452,14 +455,15 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
     <!-- ══ RESUMEN ══ -->
     <div id="t-resumen" class="tab-pane">
       <div class="g4">
-        <div class="kpi c-sky"><div class="kpi-label">Gestantes activas</div><div class="kpi-val">--</div><div class="kpi-delta neu">Confirmadas por ecografía</div></div>
-        <div class="kpi c-green"><div class="kpi-label">Partos este mes</div><div class="kpi-val">--</div><div class="kpi-delta neu">Eventos registrados este mes</div></div>
-        <div class="kpi c-teal"><div class="kpi-label">Crías / parto</div><div class="kpi-val">--</div><div class="kpi-delta neu">Promedio sobre partos reales</div></div>
-        <div class="kpi c-amber"><div class="kpi-label">Fertilidad</div><div class="kpi-val">--</div><div class="kpi-delta warn">Meta: 90%</div></div>
-        <div class="kpi c-orange"><div class="kpi-label">Intervalo partos</div><div class="kpi-val">--</div><div class="kpi-delta neu">Meta: &lt;7m</div></div>
-        <div class="kpi c-wine"><div class="kpi-label">Vacías 2+ ciclos</div><div class="kpi-val">--</div><div class="kpi-delta down">Requieren atención</div></div>
-        <div class="kpi c-green"><div class="kpi-label">Partos próx. 7 días</div><div class="kpi-val">--</div><div class="kpi-delta neu">Preparar asistencia</div></div>
-        <div class="kpi c-teal"><div class="kpi-label">Montas este mes</div><div class="kpi-val">--</div><div class="kpi-delta neu">Registradas este mes</div></div>
+        <div id="repro-periodo-mount" style="grid-column:1/-1"></div>
+        <div class="kpi c-sky"><div class="kpi-label">Gestantes activas</div><div class="kpi-val" id="kpi-repro-gest">—</div><div class="kpi-delta neu">Estado actual (foto hoy)</div></div>
+        <div class="kpi c-green"><div class="kpi-label">Partos del período</div><div class="kpi-val" id="kpi-repro-partos">—</div><div class="kpi-delta neu" id="kpi-repro-partos-det">Según rango</div></div>
+        <div class="kpi c-teal"><div class="kpi-label">Crías / parto</div><div class="kpi-val" id="kpi-repro-crias">—</div><div class="kpi-delta neu">Promedio en el período</div></div>
+        <div class="kpi c-amber"><div class="kpi-label">Fertilidad</div><div class="kpi-val" id="kpi-repro-fert">—</div><div class="kpi-delta warn">Meta: 90% · período</div></div>
+        <div class="kpi c-orange"><div class="kpi-label">Intervalo partos</div><div class="kpi-val" id="kpi-repro-int">—</div><div class="kpi-delta neu">Meta: &lt;7m · histórico</div></div>
+        <div class="kpi c-wine"><div class="kpi-label">Vacías 2+ ciclos</div><div class="kpi-val" id="kpi-repro-vacias">—</div><div class="kpi-delta down">Estado actual</div></div>
+        <div class="kpi c-green"><div class="kpi-label">Partos próx. 7 días</div><div class="kpi-val" id="kpi-repro-prox">—</div><div class="kpi-delta neu">Estado actual</div></div>
+        <div class="kpi c-teal"><div class="kpi-label">Montas del período</div><div class="kpi-val" id="kpi-repro-montas">—</div><div class="kpi-delta neu" id="kpi-repro-montas-det">Según rango</div></div>
       </div>
 
       <!-- Alertas reproductivas -->
@@ -2251,19 +2255,101 @@ function loadReproFromAppData(){
     });
   }
 
-  // Actualizar KPIs resumen (modo localStorage; cada valor en su tarjeta correcta).
-  // Solo se llenan los KPIs que AppData puede calcular con certeza; el resto queda '--'.
-  const _hoyAD = new Date();
-  const _enMesAD = (f)=>{ const x=new Date(f); return x.getMonth()===_hoyAD.getMonth() && x.getFullYear()===_hoyAD.getFullYear(); };
+  // KPIs locales (AppData) — reutiliza IDs del resumen
   const gestantes=d.animales.filter(a=>a.activo&&a.estado==='Gestante').length;
-  const kpis=document.querySelectorAll('.kpi-val');
-  if(kpis[0]) kpis[0].textContent=gestantes;                                              // Gestantes activas
-  if(kpis[1]) kpis[1].textContent=(d.partos||[]).filter(p=>p.fecha&&_enMesAD(p.fecha)).length; // Partos este mes
-  if(kpis[5]) kpis[5].textContent=d.animales.filter(a=>a.activo&&a.estado==='Vacía').length;    // Vacías
-  if(kpis[7]) kpis[7].textContent=(d.montas||[]).filter(m=>m.fecha&&_enMesAD(m.fecha)).length;  // Montas este mes
+  var setR=function(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; };
+  setR('kpi-repro-gest', gestantes);
+  setR('kpi-repro-vacias', d.animales.filter(a=>a.activo&&a.estado==='Vacía').length);
+  if(window.PeriodoKPI){
+    setR('kpi-repro-partos', (d.partos||[]).filter(p=>PeriodoKPI.inRange(p.fecha)).length);
+    setR('kpi-repro-montas', (d.montas||[]).filter(m=>PeriodoKPI.inRange(m.fecha)).length);
+    var lab=PeriodoKPI.getRange().label;
+    var d1=document.getElementById('kpi-repro-partos-det'); if(d1) d1.textContent=lab;
+    var d2=document.getElementById('kpi-repro-montas-det'); if(d2) d2.textContent=lab;
+  }
 
   renderPartos(PARTOS); renderMontas(MONTAS);
 }
+
+// KPIs Reproducción con rango
+window._actualizarKpisRepro = function(){
+  var ctx = window._REPRO_CTX; if(!ctx) return;
+  var hoy = ctx.hoy || new Date();
+  var gestantes = ctx.gestantes || [];
+  var partosEv = ctx.partosEv || [];
+  var montasEv = ctx.montasEv || [];
+  var eventos = ctx.eventos || [];
+  var inR = function(f){ return window.PeriodoKPI ? PeriodoKPI.inRange(f) : true; };
+  var rango = window.PeriodoKPI ? PeriodoKPI.getRange() : null;
+
+  var partosP = partosEv.filter(function(e){ return inR(e.fecha); });
+  var montasP = montasEv.filter(function(e){ return inR(e.fecha); });
+  var ecoAll = eventos.filter(function(e){ return e.tipo==='ecografia' && inR(e.fecha); });
+
+  var partosConCrias = partosP.filter(function(e){ return e.crias_vivas!=null; });
+  var criasParto = partosConCrias.length
+    ? (partosConCrias.reduce(function(s,e){ return s+(Number(e.crias_vivas)||0); },0)/partosConCrias.length)
+    : null;
+
+  var ecoConResultado = ecoAll.filter(function(e){ return e.resultado==='gestante'||e.resultado==='vacia'; });
+  var fertilidad = ecoConResultado.length
+    ? Math.round(ecoAll.filter(function(e){ return e.resultado==='gestante'; }).length/ecoConResultado.length*100)
+    : null;
+
+  var partosPorHembra = {};
+  partosEv.forEach(function(e){ var k=e.hembra_id; if(!k||!e.fecha) return; (partosPorHembra[k]=partosPorHembra[k]||[]).push(new Date(e.fecha)); });
+  var intervalos = [];
+  Object.keys(partosPorHembra).forEach(function(k){
+    var fechas = partosPorHembra[k];
+    if(fechas.length<2) return;
+    fechas.sort(function(a,b){ return a-b; });
+    for(var i=1;i<fechas.length;i++){ intervalos.push((fechas[i]-fechas[i-1])/86400000); }
+  });
+  var intervaloMeses = intervalos.length ? (intervalos.reduce(function(s,d){return s+d;},0)/intervalos.length/30.44) : null;
+
+  var vaciasPorHembra = {};
+  eventos.filter(function(e){ return e.tipo==='ecografia' && e.resultado==='vacia'; }).forEach(function(e){
+    var k=e.hembra_id; if(!k) return; (vaciasPorHembra[k]=vaciasPorHembra[k]||[]).push(e);
+  });
+  var vaciasCount = Object.keys(vaciasPorHembra).filter(function(k){ return vaciasPorHembra[k].length>=2; }).length;
+
+  var partosProx7 = gestantes.filter(function(g){
+    if(!g.fecha_parto_esperado) return false;
+    var dias = Math.round((new Date(g.fecha_parto_esperado) - hoy)/86400000);
+    return dias>=0 && dias<=7;
+  }).length;
+
+  var set = function(id, htmlOrText, isHtml){
+    var el=document.getElementById(id); if(!el) return;
+    if(isHtml) el.innerHTML = htmlOrText; else el.textContent = htmlOrText;
+  };
+  set('kpi-repro-gest', gestantes.length);
+  set('kpi-repro-partos', partosP.length);
+  set('kpi-repro-crias', criasParto!=null ? criasParto.toFixed(2) : '—');
+  set('kpi-repro-fert', fertilidad!=null ? (fertilidad+'<span class="kpi-unit">%</span>') : '—', true);
+  set('kpi-repro-int', intervaloMeses!=null ? (intervaloMeses.toFixed(1)+'<span class="kpi-unit">m</span>') : '—', true);
+  set('kpi-repro-vacias', vaciasCount);
+  set('kpi-repro-prox', partosProx7);
+  set('kpi-repro-montas', montasP.length);
+  var lab = rango ? rango.label : 'Período';
+  var d1=document.getElementById('kpi-repro-partos-det'); if(d1) d1.textContent=lab;
+  var d2=document.getElementById('kpi-repro-montas-det'); if(d2) d2.textContent=lab;
+};
+
+(function initReproPeriodo(){
+  function boot(){
+    if(!window.PeriodoKPI) return;
+    PeriodoKPI.init({
+      rootId: 'repro-periodo',
+      mountId: 'repro-periodo-mount',
+      storageKey: 'repro',
+      onChange: function(){ if(window._actualizarKpisRepro) window._actualizarKpisRepro(); }
+    });
+    if(window._actualizarKpisRepro) window._actualizarKpisRepro();
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();
 
 // ═══ ECO MASIVA ═══
 function previewEcoMasiva(input){
@@ -2427,59 +2513,18 @@ function loadReproFromSupabase(){
     });
   });
 
-  // ── KPIs reales — TODO calculado sobre datos de Supabase. Sin datos → '--' o 0. ──
-  const enMes = (f)=>{ const d=new Date(f); return d.getMonth()===hoy.getMonth() && d.getFullYear()===hoy.getFullYear(); };
+  // ── KPIs: estado actual + período seleccionable ──
+  window._REPRO_CTX = { eventos: eventos||[], partosEv: partosEv, montasEv: montasEv, gestantes: gestantes, hoy: hoy };
+  if(typeof window._actualizarKpisRepro === 'function') window._actualizarKpisRepro();
+  // Alias locales usados más abajo en esta función
   const ecoAll = (eventos||[]).filter(e=>e.tipo==='ecografia');
-  const partosMes = partosEv.filter(e=>enMes(e.fecha)).length;
-  const montasMes = montasEv.filter(e=>enMes(e.fecha)).length;
-
-  // Crías por parto: promedio de crias_vivas sobre partos reales
-  const partosConCrias = partosEv.filter(e=>e.crias_vivas!=null);
-  const criasParto = partosConCrias.length
-    ? (partosConCrias.reduce((s,e)=>s+(Number(e.crias_vivas)||0),0)/partosConCrias.length)
-    : null;
-
-  // Fertilidad: ecografías gestantes / ecografías con resultado (gestante|vacia)
-  const ecoConResultado = ecoAll.filter(e=>e.resultado==='gestante'||e.resultado==='vacia');
-  const fertilidad = ecoConResultado.length
-    ? Math.round(ecoAll.filter(e=>e.resultado==='gestante').length/ecoConResultado.length*100)
-    : null;
-
-  // Intervalo entre partos: promedio (meses) entre partos consecutivos de la misma hembra
-  const partosPorHembra = {};
-  partosEv.forEach(e=>{ const k=e.hembra_id; if(!k||!e.fecha) return; (partosPorHembra[k]=partosPorHembra[k]||[]).push(new Date(e.fecha)); });
-  const intervalos = [];
-  Object.values(partosPorHembra).forEach(fechas=>{
-    if(fechas.length<2) return;
-    fechas.sort((a,b)=>a-b);
-    for(let i=1;i<fechas.length;i++){ intervalos.push((fechas[i]-fechas[i-1])/86400000); }
-  });
-  const intervaloMeses = intervalos.length
-    ? (intervalos.reduce((s,d)=>s+d,0)/intervalos.length/30.44)
-    : null;
-
-  // Vacías 2+ ciclos: hembras con ≥2 ecografías 'vacia'
   const vaciasPorHembra = {};
   ecoAll.filter(e=>e.resultado==='vacia').forEach(e=>{ const k=e.hembra_id; if(!k) return; (vaciasPorHembra[k]=vaciasPorHembra[k]||[]).push(e); });
   const vaciasIds = Object.keys(vaciasPorHembra).filter(k=>vaciasPorHembra[k].length>=2);
   const vaciasCount = vaciasIds.length;
-
-  // Partos próximos 7 días: gestantes con fecha_parto_esperado dentro de 0–7 días
-  const partosProx7 = gestantes.filter(g=>{
-    if(!g.fecha_parto_esperado) return false;
-    const dias = Math.round((new Date(g.fecha_parto_esperado) - hoy)/86400000);
-    return dias>=0 && dias<=7;
-  }).length;
-
-  const kpis = document.querySelectorAll('.kpi-val');
-  if(kpis[0]) kpis[0].textContent = gestantes.length;
-  if(kpis[1]) kpis[1].textContent = partosMes;
-  if(kpis[2]) kpis[2].textContent = criasParto!=null ? criasParto.toFixed(2) : '--';
-  if(kpis[3]) kpis[3].innerHTML   = fertilidad!=null ? (fertilidad+'<span class="kpi-unit">%</span>') : '--';
-  if(kpis[4]) kpis[4].innerHTML   = intervaloMeses!=null ? (intervaloMeses.toFixed(1)+'<span class="kpi-unit">m</span>') : '--';
-  if(kpis[5]) kpis[5].textContent = vaciasCount;
-  if(kpis[6]) kpis[6].textContent = partosProx7;
-  if(kpis[7]) kpis[7].textContent = montasMes;
+  const partosMes = (window.PeriodoKPI && PeriodoKPI.inRange)
+    ? partosEv.filter(e=>PeriodoKPI.inRange(e.fecha)).length
+    : partosEv.length;
 
   // ── Subtítulo del header desde datos reales ──
   const subEl = document.getElementById('repro-sub');

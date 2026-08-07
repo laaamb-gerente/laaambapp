@@ -87,6 +87,49 @@ window.SIDEBAR_ICONS = {
   ajustes:      '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.9 4.9l1.4 1.4M13.7 13.7l1.4 1.4M4.9 15.1l1.4-1.4M13.7 6.3l1.4-1.4"/></svg>',
 };
 
+// CSS global: el menú lateral SIEMPRE se puede hacer scroll (móvil y desktop).
+// Algunas páginas sobreescribían .nav-scroll con overflow:visible y se trababa.
+(function injectSidebarScrollFix(){
+  if (document.getElementById('laaamb-sidebar-scroll-fix')) return;
+  var s = document.createElement('style');
+  s.id = 'laaamb-sidebar-scroll-fix';
+  s.textContent = [
+    '.sidebar, #sidebar {',
+    '  display: flex !important;',
+    '  flex-direction: column !important;',
+    '  height: 100% !important;',
+    '  max-height: 100vh !important;',
+    '  max-height: 100dvh !important;',
+    '  overflow: hidden !important;',
+    '}',
+    '.sidebar .sb-head, #sidebar .sb-head,',
+    '.sidebar .sb-foot, #sidebar .sb-foot { flex-shrink: 0 !important; }',
+    '.sidebar .nav-scroll, #sidebar .nav-scroll {',
+    '  flex: 1 1 auto !important;',
+    '  min-height: 0 !important;',
+    '  overflow-y: auto !important;',
+    '  overflow-x: hidden !important;',
+    '  -webkit-overflow-scrolling: touch !important;',
+    '  overscroll-behavior: contain;',
+    '  touch-action: pan-y;',
+    '}',
+    '@media (max-width: 768px) {',
+    '  .sidebar, #sidebar {',
+    '    height: 100vh !important;',
+    '    height: 100dvh !important;',
+    '    max-height: 100vh !important;',
+    '    max-height: 100dvh !important;',
+    '    overflow: hidden !important;',
+    '  }',
+    '  .sidebar .nav-scroll, #sidebar .nav-scroll {',
+    '    overflow-y: auto !important;',
+    '    flex-shrink: 1 !important;',
+    '  }',
+    '}'
+  ].join('\n');
+  (document.head || document.documentElement).appendChild(s);
+})();
+
 function renderSidebar(){
   var el = document.getElementById('nav-scroll');
   if(!el) return;
