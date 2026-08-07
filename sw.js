@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v26: scroll menú lateral + rangos KPI + fix nombres meds.
-const CACHE_NAME = 'laaambapp-v26';
-const CACHE_SHELL = 'laaambapp-shell-v26';
+// v27: banner Actualizar se cierra al actualizar; galería en Copiloto.
+const CACHE_NAME = 'laaambapp-v27';
+const CACHE_SHELL = 'laaambapp-shell-v27';
 
 const STATIC_ASSETS = [
   './manifest.json',

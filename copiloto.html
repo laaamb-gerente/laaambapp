@@ -78,7 +78,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .cop-thumb img{width:100%;height:100%;object-fit:cover}
 .cop-thumb button{position:absolute;top:2px;right:2px;width:18px;height:18px;border:none;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;font-size:11px;line-height:18px;cursor:pointer;padding:0}
 .cop-inrow{display:flex;gap:8px;align-items:center}
-.cop-cam{flex:0 0 44px;height:44px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.cop-cam{flex:0 0 44px;height:44px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.cop-cam-row{display:flex;gap:6px;flex-shrink:0}
 .cop-input{flex:1;min-width:0;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 13px;color:var(--text);font-family:inherit;font-size:14px}
 .cop-input:focus{outline:none;border-color:var(--border2)}
 .cop-send{background:var(--teal);color:#04181a;border:none;border-radius:10px;padding:0 16px;height:44px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
@@ -142,8 +143,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     <div id="cop-prop" style="display:none"></div>
     <div class="cop-thumbs" id="cop-thumbs"></div>
     <div class="cop-inrow">
-      <button type="button" class="cop-cam" id="cop-cam" title="Adjuntar foto" aria-label="Adjuntar foto">📷</button>
-      <input type="file" id="cop-file" accept="image/*" capture="environment" multiple style="display:none">
+      <div class="cop-cam-row">
+        <button type="button" class="cop-cam" id="cop-gallery" title="Galería / biblioteca" aria-label="Subir de la galería">🖼️</button>
+        <button type="button" class="cop-cam" id="cop-cam" title="Tomar foto" aria-label="Tomar foto">📷</button>
+      </div>
+      <!-- Galería: sin capture → abre biblioteca del celular -->
+      <input type="file" id="cop-file-gallery" accept="image/*" multiple style="display:none">
+      <!-- Cámara: capture fuerza la cámara trasera cuando el SO lo permite -->
+      <input type="file" id="cop-file-cam" accept="image/*" capture="environment" style="display:none">
       <input class="cop-input" id="cop-input" placeholder="Ej. chapeta 377 FAMACHA 4…" enterkeyhint="send" onkeydown="if(event.key==='Enter'){event.preventDefault();copAsk();}">
       <button type="button" class="cop-send" id="cop-send" onclick="copAsk()">Enviar</button>
     </div>
@@ -303,7 +310,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       input.setSelectionRange(input.value.length, input.value.length);
     } else if(modo === 'med'){
       input.value = 'Lee la foto del medicamento y propón el alta en inventario (nombre, presentación, lote, fecha).';
-      $('cop-file') && $('cop-file').click();
+      // Abrir galería por defecto (también se puede usar 📷 cámara)
+      $('cop-file-gallery') && $('cop-file-gallery').click();
     } else if(modo === 'nac'){
       input.value = 'Registrar nacimiento: madre chapeta , cría chapeta , sexo hembra/macho, peso kg.';
       input.focus();
@@ -353,21 +361,30 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     }
   };
 
+  async function addFilesFromInput(inputEl){
+    if(!inputEl) return;
+    var files = Array.prototype.slice.call(inputEl.files || []);
+    inputEl.value = '';
+    for(var i=0; i<files.length && pendingImages.length < 4; i++){
+      try{
+        var url = await fileToDataUrl(files[i]);
+        pendingImages.push(url);
+      }catch(e){ console.warn('[Copiloto] imagen:', e); }
+    }
+    renderThumbs();
+  }
+
   var cam = $('cop-cam');
-  var file = $('cop-file');
-  if(cam && file){
-    cam.onclick = function(){ file.click(); };
-    file.onchange = async function(){
-      var files = Array.prototype.slice.call(file.files || []);
-      file.value = '';
-      for(var i=0; i<files.length && pendingImages.length < 4; i++){
-        try{
-          var url = await fileToDataUrl(files[i]);
-          pendingImages.push(url);
-        }catch(e){ console.warn('[Copiloto] imagen:', e); }
-      }
-      renderThumbs();
-    };
+  var gal = $('cop-gallery');
+  var fileCam = $('cop-file-cam');
+  var fileGal = $('cop-file-gallery');
+  if(cam && fileCam){
+    cam.onclick = function(){ fileCam.click(); };
+    fileCam.onchange = function(){ addFilesFromInput(fileCam); };
+  }
+  if(gal && fileGal){
+    gal.onclick = function(){ fileGal.click(); };
+    fileGal.onchange = function(){ addFilesFromInput(fileGal); };
   }
 
   if(window.Copiloto){
