@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v28: banner no reaparece al actualizar; un solo botón adjuntar en Copiloto.
-const CACHE_NAME = 'laaambapp-v28';
-const CACHE_SHELL = 'laaambapp-shell-v28';
+// v29: banner no reaparece al actualizar; SW_UPDATED solo si había cache vieja.
+const CACHE_NAME = 'laaambapp-v29';
+const CACHE_SHELL = 'laaambapp-shell-v29';
 
 const STATIC_ASSETS = [
   './manifest.json',
@@ -23,21 +23,26 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => k !== CACHE_NAME && k !== CACHE_SHELL)
-          .map((k) => caches.delete(k))
+    caches.keys().then((keys) => {
+      const oldKeys = keys.filter((k) => k !== CACHE_NAME && k !== CACHE_SHELL);
+      const hadOld = oldKeys.length > 0;
+      return Promise.all(oldKeys.map((k) => caches.delete(k))).then(() => hadOld);
+    })
+      .then((hadOld) =>
+        self.clients.claim().then(() => hadOld)
       )
-    )
-      .then(() => self.clients.claim())
-      .then(() =>
-        self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-          clients.forEach((client) => {
-            client.postMessage({ type: 'SW_UPDATED', cache: CACHE_NAME });
+      .then((hadOld) => {
+        // Solo avisar a las pestañas si reemplazamos una cache anterior
+        // (evita re-mostrar "Nueva versión" tras Actualizar ya / 1ª visita)
+        if (!hadOld) return;
+        return self.clients
+          .matchAll({ type: 'window', includeUncontrolled: true })
+          .then((clients) => {
+            clients.forEach((client) => {
+              client.postMessage({ type: 'SW_UPDATED', cache: CACHE_NAME });
+            });
           });
-        })
-      )
+      })
   );
 });
 
@@ -100,7 +105,6 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(req, { ignoreSearch: false }).then((cached) => {
       if (cached) {
-        // Revalidar en segundo plano
         fetch(req).then((res) => {
           if (res && res.status === 200 && sameOrigin) {
             caches.open(CACHE_SHELL).then((cache) => cache.put(req, res)).catch(() => {});
