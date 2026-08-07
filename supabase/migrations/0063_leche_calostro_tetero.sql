@@ -41,10 +41,7 @@ CREATE TABLE IF NOT EXISTS public.consumo_tetero_insumo (
 
 ALTER TABLE public.consumo_tetero_insumo ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS consumo_tetero_all ON public.consumo_tetero_insumo;
-  FOR ALL TO authenticated USING (true) WITH CHECK (true);
-
--- Fix typo if policy name wrong - recreate properly
-DROP POLICY IF EXISTS consumo_tetero_all ON public.consumo_tetero_insumo;
+DROP POLICY IF EXISTS consumo_tetero_insumo_all ON public.consumo_tetero_insumo;
 CREATE POLICY consumo_tetero_insumo_all ON public.consumo_tetero_insumo
   FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
