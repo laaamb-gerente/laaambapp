@@ -1321,24 +1321,29 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       var r = await window.DB.savePesaje(payload);
       if(r && r.error) throw r.error;
 
-      // Actualizar memoria local
-      if(window.AppState && Array.isArray(window.AppState.animales)){
-        var a = window.AppState.animales.find(function(x){ return x.id === animalId; });
-        if(a) a.peso_actual = peso;
+      // Solo actualizar inventario en memoria si ya quedó aprobado (gerente).
+      var quedoPendiente = payload.estado_aprobacion === 'pendiente';
+      if(!quedoPendiente){
+        if(window.AppState && Array.isArray(window.AppState.animales)){
+          var a = window.AppState.animales.find(function(x){ return x.id === animalId; });
+          if(a) a.peso_actual = peso;
+        }
+        map[animalId] = { fecha: hoyStr, peso: peso };
+        window._hoyUltimoPesajeMap = map;
       }
-      map[animalId] = { fecha: hoyStr, peso: peso };
-      window._hoyUltimoPesajeMap = map;
 
       var card = document.querySelector('[data-peso-animal="'+animalId+'"]');
       var gdpTxt = gdp != null ? (' · GDP '+(gdp>=0?'+':'')+gdp+' g/d') : '';
       if(card){
         card.style.opacity = '0.35';
-        card.innerHTML = '<div style="font-size:13px;color:var(--green)">✓ Peso registrado · '+peso+' kg'+gdpTxt+'</div>';
+        card.innerHTML = quedoPendiente
+          ? '<div style="font-size:13px;color:var(--amber,#F59E0B)">⏳ Enviado a aprobación · '+peso+' kg'+gdpTxt+'</div>'
+          : '<div style="font-size:13px;color:var(--green)">✓ Peso registrado · '+peso+' kg'+gdpTxt+'</div>';
       }
       if(window.Approval && typeof window.Approval.toastAprobacion === 'function'){
         window.Approval.toastAprobacion(
           '✓ Pesaje '+peso+' kg'+gdpTxt,
-          '⏳ Pesaje registrado · Pendiente de aprobación del gerente.'
+          '⏳ Pesaje registrado · Pendiente de aprobación del gerente. No cambia el inventario hasta que apruebes.'
         );
       }
       setTimeout(function(){ renderPesajesPendientes(); }, 1200);
