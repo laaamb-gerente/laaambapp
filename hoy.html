@@ -39,7 +39,7 @@
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
-<script src="js/app-update.js?v=36"></script>
+<script src="js/app-update.js?v=37"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -218,12 +218,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     <div style="font-size:10px;color:var(--text3);margin-top:4px">Los días de chequeo se configuran en Ajustes → Producción</div>
   </div>
 
-  <!-- Teteros / Sala Cuna hoy — accionable (mL + Bebido hoy), igual que dosis -->
+  <!-- Teteros de hoy: listado accionable = cajón mL + Bebido hoy (como dosis) -->
   <div class="sec" id="hoy-teteros-sec">
     <div class="sec-title">
       <span class="dot" style="background:var(--orange)"></span>Teteros de hoy · Sala Cuna
       <span id="hoy-teteros-badge" style="display:none;margin-left:auto;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(241,143,34,.14);color:var(--orange)"></span>
     </div>
+    <div style="font-size:11px;color:var(--text3);margin:-4px 0 10px;line-height:1.4">Pon los <b>mL</b> que tomó y toca <b>Bebido hoy</b>. Se registra la toma, se quita de la lista y se actualiza Sala Cuna.</div>
     <div id="hoy-teteros-lista"><div style="font-size:13px;color:var(--text3)">Cargando teteros…</div></div>
     <a href="sala-cuna.html" style="display:inline-block;margin-top:8px;font-size:11px;font-weight:600;color:var(--teal);text-decoration:none">→ Ver Sala Cuna completa</a>
   </div>
@@ -945,14 +946,56 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     }catch(e){ return '—'; }
   }
 
+  function _cardTeteroToma(t, ccMap, ahora){
+    var c=ccMap[t.corderos_crianza_id]||{};
+    var co=c.cordero||{};
+    var nom=co.codigo||co.nombre||'Cordero';
+    var prog=t.fecha_hora_programada?new Date(t.fecha_hora_programada):null;
+    var limite=prog?(prog.getTime()+(Number(t.ventana_min)||0)*60000):0;
+    var vencida=prog?limite<ahora:false;
+    var atrasada=false;
+    try{ if(prog) atrasada=prog.toISOString().slice(0,10)<_hoyISO(); }catch(e){}
+    var border=vencida||atrasada?'var(--red)':'var(--orange)';
+    var tipoTxt=t.tipo==='calostro'?'Calostro':(t.tipo==='sustituto'?'Sustituto':(t.tipo||'Toma'));
+    var mlObj=t.cantidad_ml_objetivo!=null?t.cantidad_ml_objetivo:(t.ml_default!=null?t.ml_default:100);
+    var crianzaId=t.corderos_crianza_id||(c&&c.id)||'';
+    var estadoLbl=t._adHoc?'Sin toma programada · registra la de ahora'
+      :(atrasada&&!vencida?'⚠ Atrasada (día anterior)'
+        :vencida?'⚠ Ventana vencida — registrar ya'
+        :'Entregar hoy · '+_fmtHoraToma(t.fecha_hora_programada));
+    var tid=t.id||('adhoc-'+crianzaId);
+    var tipoEsc=_esc(t.tipo||'sustituto');
+    return '<div style="border:1px solid var(--border);border-left:3px solid '+border+';border-radius:8px;padding:11px 14px;margin-bottom:8px;background:var(--bg2)" data-toma="'+tid+'">'
+      +'<div style="font-size:14px;font-weight:600;color:var(--text)">🍼 '+_esc(nom)
+        +(co.codigo&&co.nombre&&co.codigo!==co.nombre?(' <span style="font-size:12px;color:var(--text2)">· '+_esc(co.nombre)+'</span>'):'')
+      +'</div>'
+      +'<div style="font-size:12px;color:var(--text2);margin-top:3px;line-height:1.4">'
+        +_esc(tipoTxt)+(mlObj?(' · objetivo <b>'+mlObj+' mL</b>'):'')
+        +(prog&&!t._adHoc?(' · '+_fmtHoraToma(t.fecha_hora_programada)):'')
+      +'</div>'
+      +'<div style="font-size:11px;color:'+border+';font-weight:600;margin-top:4px">'+estadoLbl+'</div>'
+      +'<div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">'
+        +'<input type="number" inputmode="decimal" step="10" min="0" value="'+mlObj+'" id="toma-ml-'+tid+'" '
+          +'placeholder="mL" aria-label="Mililitros bebidos" '
+          +'style="width:110px;min-height:40px;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;background:var(--surface);color:var(--text);font-family:inherit;font-size:14px">'
+        +'<span style="font-size:12px;color:var(--text3);font-weight:600">mL</span>'
+        +'<button type="button" class="btn-tetero-ok" data-toma-id="'+tid+'" data-crianza="'+crianzaId+'" data-tipo="'+tipoEsc+'" data-adhoc="'+(t._adHoc?'1':'0')+'" '
+          +'style="min-height:40px;font-size:13px;font-weight:700;padding:8px 14px;border-radius:8px;background:var(--teal);color:#04181a;border:none;cursor:pointer;font-family:inherit">'
+          +'✓ Bebido hoy</button>'
+      +'</div>'
+    +'</div>';
+  }
+
   async function renderTeterosHoy(){
     var sec=document.getElementById('hoy-teteros-sec');
     var cont=document.getElementById('hoy-teteros-lista');
     var badge=document.getElementById('hoy-teteros-badge');
     if(!sec||!cont) return;
+    // Forzar visible (roles no debe ocultar teteros)
     sec.style.display='';
+    sec.removeAttribute('data-hide-auxiliar');
 
-    if(!(window.DB && window.DB.getTomasPendientes && window.DB.getCorderosCrianza)){
+    if(!(window.DB && window.DB.getCorderosCrianza)){
       cont.innerHTML='<div style="font-size:13px;color:var(--text3);padding:10px 0">Capa de datos no lista. Abre <a href="sala-cuna.html" style="color:var(--teal)">Sala Cuna</a>.</div>';
       if(badge) badge.style.display='none';
       return;
@@ -964,45 +1007,34 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       if(rc&&rc.error) throw rc.error;
       corderos=(rc&&rc.data)||[];
 
-      var rt=await window.DB.getTomasPendientes({
-        desde:_startOfTodayISO(),
-        hasta:_endOfTodayISO()
-      });
-      if(rt&&rt.error) throw rt.error;
-      tomasHoy=(rt&&rt.data)||[];
-
-      // Pendientes de días anteriores aún no registradas (atrasadas)
-      var ra=await window.DB.getTomasPendientes({
-        hasta:_startOfTodayISO()
-      });
-      if(!(ra&&ra.error)){
-        vencidasExtra=((ra&&ra.data)||[]).filter(function(t){
-          // solo las de corderos activos
-          return true;
+      if(window.DB.getTomasPendientes){
+        var rt=await window.DB.getTomasPendientes({
+          desde:_startOfTodayISO(),
+          hasta:_endOfTodayISO()
         });
+        if(rt&&rt.error) throw rt.error;
+        tomasHoy=(rt&&rt.data)||[];
+
+        var ra=await window.DB.getTomasPendientes({ hasta:_startOfTodayISO() });
+        if(!(ra&&ra.error)) vencidasExtra=(ra&&ra.data)||[];
       }
     }catch(e){
       errMsg=(e&&e.message)||String(e);
       console.warn('[HOY] teteros:', errMsg);
     }
 
-    // Mapa crianza_id → cordero
     var ccMap={};
     corderos.forEach(function(c){ ccMap[c.id]=c; });
 
-    // Solo tomas de corderos activos en crianza
     function esActivo(t){
+      if(!corderos.length) return true;
       var c=ccMap[t.corderos_crianza_id];
       return c && c.estado==='activo';
     }
-    // Si no hay mapa (query falló en crianza), no filtrar por activo
-    var filtrar=corderos.length>0;
-    tomasHoy=filtrar?tomasHoy.filter(esActivo):tomasHoy;
-    vencidasExtra=filtrar?vencidasExtra.filter(esActivo):vencidasExtra;
+    tomasHoy=tomasHoy.filter(esActivo);
+    vencidasExtra=vencidasExtra.filter(esActivo);
 
-    // Unir atrasadas + hoy (sin duplicar id)
-    var seen={};
-    var rows=[];
+    var seen={}, rows=[];
     vencidasExtra.concat(tomasHoy).forEach(function(t){
       if(!t||!t.id||seen[t.id]) return;
       seen[t.id]=1;
@@ -1010,6 +1042,21 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     });
     rows.sort(function(a,b){
       return String(a.fecha_hora_programada||'')<String(b.fecha_hora_programada||'')?-1:1;
+    });
+
+    // Corderos en crianza sin ninguna toma pendiente → fila ad-hoc para registrar igual
+    var conToma={};
+    rows.forEach(function(t){ conToma[t.corderos_crianza_id]=1; });
+    corderos.forEach(function(c){
+      if(conToma[c.id]) return;
+      rows.push({
+        id: null,
+        _adHoc: true,
+        corderos_crianza_id: c.id,
+        tipo: 'sustituto',
+        cantidad_ml_objetivo: 100,
+        ml_default: 100
+      });
     });
 
     if(errMsg && !rows.length && !corderos.length){
@@ -1020,119 +1067,92 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       return;
     }
 
-    var nPend=rows.length;
+    var nPend=rows.filter(function(r){ return !r._adHoc; }).length;
     var nCrias=corderos.length;
     if(badge){
+      badge.style.display='inline-block';
       if(nPend>0){
-        badge.style.display='inline-block';
         badge.textContent=nPend+(nPend===1?' pendiente':' pendientes');
-      } else {
-        badge.style.display='inline-block';
-        badge.textContent=nCrias?(nCrias+' en crianza · al día'):'Sin pendientes';
+        badge.style.background='rgba(241,143,34,.14)';
+        badge.style.color='var(--orange)';
+      } else if(nCrias>0){
+        badge.textContent=nCrias+' en crianza';
         badge.style.background='rgba(16,185,129,.12)';
         badge.style.color='var(--green,#10B981)';
-      }
-    }
-
-    var html='';
-
-    // Resumen de corderos en crianza artificial
-    if(nCrias){
-      html+='<div style="font-size:12px;color:var(--text2);margin-bottom:10px;padding:8px 12px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)">'
-        +'🍼 <b style="color:var(--text)">'+nCrias+'</b> cordero'+(nCrias===1?'':'s')+' en crianza artificial'
-        +(nPend?(' · <b style="color:var(--orange)">'+nPend+'</b> toma'+(nPend===1?'':'s')+' por registrar'):' · sin tomas pendientes hoy')
-        +'</div>';
-    }
-
-    if(!rows.length){
-      if(!nCrias){
-        html+='<div style="font-size:13px;color:var(--text3);padding:8px 0;line-height:1.5">'
-          +'No hay corderos en crianza artificial ahora. Cuando haya huérfanos o pie artificial, las tomas del día aparecen aquí. '
-          +'<a href="sala-cuna.html" style="color:var(--teal);font-weight:600">Ir a Sala Cuna</a></div>';
       } else {
-        html+='<div style="font-size:13px;color:var(--text3);padding:8px 0;line-height:1.5">'
-          +'Sin tomas pendientes para hoy. Si falta el protocolo del día, genéralo en Sala Cuna. '
-          +'<a href="sala-cuna.html" style="color:var(--teal);font-weight:600">Abrir Sala Cuna</a></div>';
-        // Listar corderos activos para contexto
-        html+='<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">';
-        corderos.forEach(function(c){
-          var co=c.cordero||{};
-          var nom=co.codigo||co.nombre||'Cordero';
-          html+='<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:8px">'
-            +'<span style="font-size:16px">🐑</span>'
-            +'<div style="min-width:0;flex:1">'
-            +'<div style="font-size:13px;font-weight:700;color:var(--text)">'+_esc(nom)+'</div>'
-            +'<div style="font-size:11px;color:var(--text3)">Desde '+(c.fecha_inicio?_esc(c.fecha_inicio):'—')+(c.motivo?(' · '+_esc(c.motivo)):'')+'</div>'
-            +'</div></div>';
-        });
-        html+='</div>';
+        badge.textContent='Sin teteros';
+        badge.style.background='var(--bg3)';
+        badge.style.color='var(--text3)';
       }
-      cont.innerHTML=html;
+    }
+
+    if(!nCrias && !rows.length){
+      cont.innerHTML='<div style="font-size:13px;color:var(--text3);padding:8px 0;line-height:1.5">'
+        +'No hay corderos en crianza artificial. Cuando haya, aparecen aquí con cajón de mL. '
+        +'<a href="sala-cuna.html" style="color:var(--teal);font-weight:600">Sala Cuna</a></div>';
       return;
     }
 
     var ahora=Date.now();
-    // Misma UX que "Dosis de tratamiento hoy": ficha + input mL + confirmar
-    html+=rows.map(function(t){
-      var c=ccMap[t.corderos_crianza_id]||{};
-      var co=c.cordero||{};
-      var nom=co.codigo||co.nombre||'Cordero';
-      var prog=new Date(t.fecha_hora_programada);
-      var limite=prog.getTime()+(Number(t.ventana_min)||0)*60000;
-      var vencida=limite<ahora;
-      var atrasada=false;
-      try{ atrasada=prog.toISOString().slice(0,10)<_hoyISO(); }catch(e){}
-      var border=vencida||atrasada?'var(--red)':'var(--orange)';
-      var tipoTxt=t.tipo==='calostro'?'Calostro':(t.tipo==='sustituto'?'Sustituto':(t.tipo||'Toma'));
-      var mlObj=t.cantidad_ml_objetivo!=null?t.cantidad_ml_objetivo:0;
-      var crianzaId=t.corderos_crianza_id||(c&&c.id)||'';
-      var estadoLbl=atrasada&&!vencida?'⚠ Atrasada (día anterior)'
-        :vencida?'⚠ Ventana vencida — registrar ya'
-        :'Entregar hoy · '+_fmtHoraToma(t.fecha_hora_programada);
+    cont.innerHTML=rows.map(function(t){ return _cardTeteroToma(t, ccMap, ahora); }).join('');
 
-      return '<div style="border:1px solid var(--border);border-left:3px solid '+border+';border-radius:8px;padding:11px 14px;margin-bottom:8px;background:var(--bg2)" data-toma="'+t.id+'">'
-        +'<div style="font-size:14px;font-weight:600;color:var(--text)">🍼 '+_esc(nom)
-          +(co.codigo&&co.nombre&&co.codigo!==co.nombre?(' <span style="font-size:12px;color:var(--text2)">· '+_esc(co.nombre)+'</span>'):'')
-        +'</div>'
-        +'<div style="font-size:12px;color:var(--text2);margin-top:3px;line-height:1.4">'
-          +_esc(tipoTxt)+' · objetivo <b>'+mlObj+' mL</b> · '+_fmtHoraToma(t.fecha_hora_programada)
-        +'</div>'
-        +'<div style="font-size:11px;color:'+border+';font-weight:600;margin-top:4px">'+estadoLbl+'</div>'
-        +'<div style="display:flex;gap:6px;margin-top:8px;align-items:center;flex-wrap:wrap">'
-          +'<input type="number" inputmode="decimal" step="10" min="0" value="'+mlObj+'" id="toma-ml-'+t.id+'" '
-            +'placeholder="mL bebidos" aria-label="Mililitros bebidos" '
-            +'style="width:110px;padding:6px 10px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font-family:inherit;font-size:12px">'
-          +'<span style="font-size:11px;color:var(--text3)">mL</span>'
-          +'<button type="button" onclick="registrarTeteroHoy(\''+t.id+'\',\''+crianzaId+'\',\''+_esc(t.tipo||'sustituto')+'\')" '
-            +'style="font-size:12px;font-weight:600;padding:6px 14px;border-radius:6px;background:var(--teal);color:#04181a;border:none;cursor:pointer;font-family:inherit">'
-            +'✓ Bebido hoy</button>'
-        +'</div>'
-      +'</div>';
-    }).join('');
-
-    cont.innerHTML=html;
+    // Bind botones (evita problemas de comillas en onclick)
+    cont.querySelectorAll('.btn-tetero-ok').forEach(function(btn){
+      btn.onclick=function(){
+        var tomaId=btn.getAttribute('data-toma-id');
+        var crianza=btn.getAttribute('data-crianza');
+        var tipo=btn.getAttribute('data-tipo')||'sustituto';
+        var adhoc=btn.getAttribute('data-adhoc')==='1';
+        registrarTeteroHoy(adhoc?null:tomaId, crianza, tipo, tomaId);
+      };
+    });
   }
 
-  window.registrarTeteroHoy=async function(tomaId, crianzaId, tipo){
-    var inp=document.getElementById('toma-ml-'+tomaId);
+  window.registrarTeteroHoy=async function(tomaId, crianzaId, tipo, inputKey){
+    var key=inputKey||tomaId||('adhoc-'+crianzaId);
+    var inp=document.getElementById('toma-ml-'+key);
     var ml=inp?parseFloat(inp.value):0;
     if(!ml||ml<=0){ alert('Ingresa los mL que tomó el cordero'); return; }
     if(!window.DB||!window.DB.createTomaRealizada){ alert('Capa de datos no disponible'); return; }
+    if(!crianzaId){ alert('Falta el id de crianza del cordero'); return; }
+
+    var card=document.querySelector('[data-toma="'+key+'"]');
+    var btn=card&&card.querySelector('.btn-tetero-ok');
+    if(btn){ btn.disabled=true; btn.textContent='Guardando…'; }
+
     try{
       var real=await window.DB.createTomaRealizada({
-        corderos_crianza_id:crianzaId, tipo:tipo, cantidad_ml:ml,
+        corderos_crianza_id:crianzaId,
+        tipo:tipo||'sustituto',
+        cantidad_ml:ml,
         responsable:(window.AUTH_PERFIL&&window.AUTH_PERFIL.id)||null
       });
       if(real&&real.error) throw real.error;
-      var mr=await window.DB.marcarTomaEstado(tomaId,'cumplida',(real&&real.data&&real.data.id)||null);
-      if(mr&&mr.error) throw mr.error;
-      var card=document.querySelector('[data-toma="'+tomaId+'"]');
-      if(card){
-        card.style.opacity='0.35';
-        card.innerHTML='<div style="font-size:13px;color:var(--green)">✓ Bebido hoy · '+ml+' mL</div>';
+
+      // Si había toma programada, marcarla cumplida (quita de pendientes / alertas)
+      if(tomaId && window.DB.marcarTomaEstado){
+        var mr=await window.DB.marcarTomaEstado(tomaId,'cumplida',(real&&real.data&&real.data.id)||null);
+        if(mr&&mr.error) throw mr.error;
       }
-      setTimeout(renderTeterosHoy, 1200);
-    }catch(e){ alert('No se pudo registrar la toma: '+(e.message||e)); }
+
+      if(card){
+        card.style.transition='opacity .35s';
+        card.style.opacity='0.4';
+        card.innerHTML='<div style="font-size:13px;font-weight:600;color:var(--green)">✓ Bebido hoy · '+ml+' mL · registrado</div>';
+      }
+
+      // Refrescar contadores de alertas del sidebar si existen
+      try{
+        if(window.AlertasMotor && typeof window.AlertasMotor.generar==='function'){
+          window.AlertasMotor.generar().catch(function(){});
+        }
+      }catch(e){}
+
+      setTimeout(renderTeterosHoy, 900);
+    }catch(e){
+      if(btn){ btn.disabled=false; btn.textContent='✓ Bebido hoy'; }
+      alert('No se pudo registrar la toma: '+(e.message||e));
+    }
   };
   document.addEventListener('appstate:ready', renderTeterosHoy);
   setTimeout(renderTeterosHoy, 900);

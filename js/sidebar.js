@@ -12,11 +12,11 @@ window.SIDEBAR = [
   { grupo: 'Inicio', items: [
     { t: 'Dashboard',              href: 'index.html',        ico: 'dashboard' },
     { t: 'Hoy',                    href: 'hoy.html',          ico: 'hoy',        badge: 'alertas' },
+    { t: 'Auditoría de hato',      href: 'auditoria.html',    ico: 'auditoria' },
     { t: 'Copiloto',               href: 'copiloto.html',     ico: 'copiloto' },
   ]},
   { grupo: 'Hato', items: [
     { t: 'Animales',               href: 'animales.html',     ico: 'animales',   badge: 'count' },
-    { t: 'Auditoría de hato',      href: 'auditoria.html',    ico: 'auditoria' },
     { t: 'Reproducción',           href: 'reproduccion.html', ico: 'reproduccion' },
     { t: 'Sala Cuna',              href: 'sala-cuna.html',    ico: 'salacuna' },
     { t: 'Salud & Tratamientos',   href: 'salud.html',        ico: 'salud' },

@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v36: auditoría mensual de hato (censo multi-día + HOY búsquedas).
-const CACHE_NAME = 'laaambapp-v36';
-const CACHE_SHELL = 'laaambapp-shell-v36';
+// v37: teteros HOY accionables (mL+Bebido hoy); auditoría en Inicio.
+const CACHE_NAME = 'laaambapp-v37';
+const CACHE_SHELL = 'laaambapp-shell-v37';
 
 const STATIC_ASSETS = [
   './manifest.json',

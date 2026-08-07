@@ -93,8 +93,8 @@
   ];
 
   // En HOY, secciones que el auxiliar NO debe ver (ruido).
+  // Teteros SÍ se muestran: es trabajo de campo (mL + Bebido hoy).
   var HOY_HIDE_FOR_AUXILIAR = [
-    '#hoy-teteros-sec',
     '#seg-trat-sec',
     '#sec-meds-terminados',
     '#sec-retiro-cumplido',
