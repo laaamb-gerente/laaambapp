@@ -78,8 +78,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .cop-thumb img{width:100%;height:100%;object-fit:cover}
 .cop-thumb button{position:absolute;top:2px;right:2px;width:18px;height:18px;border:none;border-radius:50%;background:rgba(0,0,0,.65);color:#fff;font-size:11px;line-height:18px;cursor:pointer;padding:0}
 .cop-inrow{display:flex;gap:8px;align-items:center}
-.cop-cam{flex:0 0 44px;height:44px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
-.cop-cam-row{display:flex;gap:6px;flex-shrink:0}
+.cop-attach{flex:0 0 44px;height:44px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;font-family:inherit;line-height:1}
+.cop-sheet{display:none;position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.45);align-items:flex-end;justify-content:center;padding:16px}
+.cop-sheet.on{display:flex}
+.cop-sheet-box{width:100%;max-width:420px;background:var(--bg2);border:1px solid var(--border2);border-radius:14px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.cop-sheet-title{padding:14px 16px 8px;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px}
+.cop-sheet-btn{display:block;width:100%;text-align:left;padding:14px 16px;border:none;border-top:1px solid var(--border);background:transparent;color:var(--text);font-family:inherit;font-size:15px;font-weight:600;cursor:pointer}
+.cop-sheet-btn:active{background:var(--teal-bg)}
+.cop-sheet-btn.cancel{color:var(--text3);font-weight:500}
 .cop-input{flex:1;min-width:0;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px 13px;color:var(--text);font-family:inherit;font-size:14px}
 .cop-input:focus{outline:none;border-color:var(--border2)}
 .cop-send{background:var(--teal);color:#04181a;border:none;border-radius:10px;padding:0 16px;height:44px;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer}
@@ -143,16 +149,23 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     <div id="cop-prop" style="display:none"></div>
     <div class="cop-thumbs" id="cop-thumbs"></div>
     <div class="cop-inrow">
-      <div class="cop-cam-row">
-        <button type="button" class="cop-cam" id="cop-gallery" title="Galería / biblioteca" aria-label="Subir de la galería">🖼️</button>
-        <button type="button" class="cop-cam" id="cop-cam" title="Tomar foto" aria-label="Tomar foto">📷</button>
-      </div>
-      <!-- Galería: sin capture → abre biblioteca del celular -->
+      <button type="button" class="cop-attach" id="cop-attach" title="Adjuntar imagen" aria-label="Adjuntar imagen">+</button>
+      <!-- Galería: sin capture → biblioteca del celular -->
       <input type="file" id="cop-file-gallery" accept="image/*" multiple style="display:none">
-      <!-- Cámara: capture fuerza la cámara trasera cuando el SO lo permite -->
+      <!-- Cámara cuando el SO lo permite -->
       <input type="file" id="cop-file-cam" accept="image/*" capture="environment" style="display:none">
       <input class="cop-input" id="cop-input" placeholder="Ej. chapeta 377 FAMACHA 4…" enterkeyhint="send" onkeydown="if(event.key==='Enter'){event.preventDefault();copAsk();}">
       <button type="button" class="cop-send" id="cop-send" onclick="copAsk()">Enviar</button>
+    </div>
+  </div>
+
+  <!-- Hoja de opciones: foto o galería -->
+  <div class="cop-sheet" id="cop-sheet" aria-hidden="true">
+    <div class="cop-sheet-box">
+      <div class="cop-sheet-title">Adjuntar imagen</div>
+      <button type="button" class="cop-sheet-btn" id="cop-opt-cam">Tomar foto</button>
+      <button type="button" class="cop-sheet-btn" id="cop-opt-gal">Elegir de la galería</button>
+      <button type="button" class="cop-sheet-btn cancel" id="cop-opt-cancel">Cancelar</button>
     </div>
   </div>
 
@@ -310,8 +323,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       input.setSelectionRange(input.value.length, input.value.length);
     } else if(modo === 'med'){
       input.value = 'Lee la foto del medicamento y propón el alta en inventario (nombre, presentación, lote, fecha).';
-      // Abrir galería por defecto (también se puede usar 📷 cámara)
-      $('cop-file-gallery') && $('cop-file-gallery').click();
+      openAttachSheet();
     } else if(modo === 'nac'){
       input.value = 'Registrar nacimiento: madre chapeta , cría chapeta , sexo hembra/macho, peso kg.';
       input.focus();
@@ -374,18 +386,40 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     renderThumbs();
   }
 
-  var cam = $('cop-cam');
-  var gal = $('cop-gallery');
+  var sheet = $('cop-sheet');
   var fileCam = $('cop-file-cam');
   var fileGal = $('cop-file-gallery');
-  if(cam && fileCam){
-    cam.onclick = function(){ fileCam.click(); };
+  function openAttachSheet(){
+    if(!sheet) return;
+    sheet.classList.add('on');
+    sheet.setAttribute('aria-hidden', 'false');
+  }
+  function closeAttachSheet(){
+    if(!sheet) return;
+    sheet.classList.remove('on');
+    sheet.setAttribute('aria-hidden', 'true');
+  }
+  window.openAttachSheet = openAttachSheet;
+
+  var attachBtn = $('cop-attach');
+  if(attachBtn) attachBtn.onclick = openAttachSheet;
+  if(sheet){
+    sheet.addEventListener('click', function(e){
+      if(e.target === sheet) closeAttachSheet();
+    });
+  }
+  var optCam = $('cop-opt-cam');
+  var optGal = $('cop-opt-gal');
+  var optCancel = $('cop-opt-cancel');
+  if(optCam && fileCam){
+    optCam.onclick = function(){ closeAttachSheet(); fileCam.click(); };
     fileCam.onchange = function(){ addFilesFromInput(fileCam); };
   }
-  if(gal && fileGal){
-    gal.onclick = function(){ fileGal.click(); };
+  if(optGal && fileGal){
+    optGal.onclick = function(){ closeAttachSheet(); fileGal.click(); };
     fileGal.onchange = function(){ addFilesFromInput(fileGal); };
   }
+  if(optCancel) optCancel.onclick = closeAttachSheet;
 
   if(window.Copiloto){
     window.Copiloto.setEnfoquePagina(

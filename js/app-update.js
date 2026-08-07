@@ -1,41 +1,57 @@
 // ── app-update.js ─────────────────────────────────────────
 // Actualización automática de LAAAMBAPP (Service Worker).
-// - Revisa versión al cargar, al volver a la pestaña y cada 5 min
-// - Banner "Nueva versión" → Actualizar ya limpia caché, recarga y NO reaparece al volver
-// - window.LAAAMB_actualizarApp() para Ajustes → Datos → Actualizar ahora
+// "Actualizar ya" limpia caché, recarga y NO re-muestra el banner al volver.
 
 (function () {
   var CHECK_MS = 5 * 60 * 1000;
   var bannerShown = false;
+  var reloading = false; // bloquea cualquier re-show mientras se actualiza
   var DISMISS_KEY = 'laaamb_upd_dismissed_at';
   var RELOAD_KEY = 'laaamb_upd_reloading';
+  var QUIET_MS = 15 * 60 * 1000; // 15 min sin molestar tras actualizar
 
   function now() { return Date.now(); }
 
-  // Tras "Actualizar ya", no molestar de nuevo por unos minutos
-  function wasJustUpdated() {
+  function markUpdated() {
+    try {
+      sessionStorage.setItem(DISMISS_KEY, String(now()));
+      sessionStorage.setItem(RELOAD_KEY, '1');
+    } catch (e) {}
+  }
+
+  function clearReloadFlag() {
+    try { sessionStorage.removeItem(RELOAD_KEY); } catch (e) {}
+  }
+
+  function inQuietPeriod() {
     try {
       var t = parseInt(sessionStorage.getItem(DISMISS_KEY) || '0', 10);
-      if (t && now() - t < 10 * 60 * 1000) return true;
-      // Flag de recarga en curso (esta misma navegación)
+      if (t && now() - t < QUIET_MS) return true;
+    } catch (e) {}
+    return false;
+  }
+
+  // Al cargar: si venimos de un update, silenciar banner y limpiar URL
+  function consumeUpdateFlags() {
+    var quiet = false;
+    try {
       if (sessionStorage.getItem(RELOAD_KEY) === '1') {
-        sessionStorage.removeItem(RELOAD_KEY);
         sessionStorage.setItem(DISMISS_KEY, String(now()));
-        return true;
+        clearReloadFlag();
+        quiet = true;
       }
-      // Si llegamos con ?_upd=… también contamos como actualización hecha
+      if (inQuietPeriod()) quiet = true;
       var u = new URL(window.location.href);
       if (u.searchParams.has('_upd')) {
         sessionStorage.setItem(DISMISS_KEY, String(now()));
-        // limpiar el query de la barra sin recargar
+        quiet = true;
         u.searchParams.delete('_upd');
         try {
           window.history.replaceState({}, '', u.pathname + u.search + u.hash);
         } catch (e) {}
-        return true;
       }
     } catch (e) {}
-    return false;
+    return quiet;
   }
 
   function dismissBannerDom() {
@@ -45,9 +61,12 @@
   }
 
   function showBanner(reason) {
-    if (wasJustUpdated()) return;
+    // Nunca mostrar si estamos recargando o acabamos de actualizar
+    if (reloading) return;
+    if (inQuietPeriod()) return;
     if (bannerShown) return;
     if (document.getElementById('sw-update-banner')) return;
+
     bannerShown = true;
     var banner = document.createElement('div');
     banner.id = 'sw-update-banner';
@@ -66,33 +85,40 @@
       '<button type="button" id="sw-upd-x" style="background:none;border:none;color:#04181a;' +
       'cursor:pointer;font-size:18px;opacity:.6" aria-label="Cerrar">✕</button>';
     document.body.prepend(banner);
+
     var btn = document.getElementById('sw-upd-btn');
     var x = document.getElementById('sw-upd-x');
     if (btn) {
-      btn.onclick = function () {
+      btn.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
         btn.disabled = true;
         btn.textContent = 'Actualizando…';
+        // Quitar banner YA (antes de async)
+        reloading = true;
+        markUpdated();
+        dismissBannerDom();
         hardReload();
-      };
+      });
     }
     if (x) {
-      x.onclick = function () {
+      x.addEventListener('click', function (ev) {
+        ev.preventDefault();
         try { sessionStorage.setItem(DISMISS_KEY, String(now())); } catch (e) {}
         dismissBannerDom();
-      };
+      });
     }
   }
 
   async function hardReload() {
-    // Marcar ANTES de recargar para que al volver no se re-muestre el banner
-    try {
-      sessionStorage.setItem(RELOAD_KEY, '1');
-      sessionStorage.setItem(DISMISS_KEY, String(now()));
-    } catch (e) {}
+    reloading = true;
+    markUpdated();
     dismissBannerDom();
 
     try {
       if ('serviceWorker' in navigator) {
+        // Evitar que controllerchange vuelva a pintar el banner
+        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange);
         var regs = await navigator.serviceWorker.getRegistrations();
         for (var i = 0; i < regs.length; i++) {
           try {
@@ -112,6 +138,7 @@
 
     var u = new URL(window.location.href);
     u.searchParams.set('_upd', String(Date.now()));
+    // replace: no dejar banner en el historial
     window.location.replace(u.toString());
   }
 
@@ -119,13 +146,13 @@
   window.actualizarApp = hardReload;
 
   async function checkForUpdates() {
+    if (reloading || inQuietPeriod()) return;
     if (!('serviceWorker' in navigator)) return;
-    if (wasJustUpdated()) return;
     try {
       var reg = await navigator.serviceWorker.getRegistration();
       if (!reg) return;
       await reg.update();
-      if (reg.waiting) {
+      if (reg.waiting && !reloading && !inQuietPeriod()) {
         reg.waiting.postMessage({ type: 'SKIP_WAITING' });
         showBanner('descargada');
       }
@@ -135,31 +162,36 @@
   }
 
   function onControllerChange() {
-    if (wasJustUpdated()) return;
-    // Solo avisar; el usuario confirma con "Actualizar ya"
+    if (reloading || inQuietPeriod()) return;
     showBanner('activada');
   }
 
   function registerSW() {
     if (!('serviceWorker' in navigator)) return;
 
-    // Si esta carga viene de un "Actualizar ya", limpia flag y no muestres banner
-    wasJustUpdated();
+    var quiet = consumeUpdateFlags();
+    if (quiet) {
+      dismissBannerDom();
+      reloading = false;
+    }
 
     navigator.serviceWorker.addEventListener('message', function (e) {
       if (e.data && e.data.type === 'SW_UPDATED') {
-        if (wasJustUpdated()) return;
+        if (reloading || inQuietPeriod()) return;
         showBanner('v' + (e.data.cache || ''));
       }
     });
     navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
 
     window.addEventListener('load', function () {
+      // Si acabamos de actualizar, no abrir checks agresivos de inmediato
+      var delay = quiet ? 8000 : 1200;
+
       navigator.serviceWorker
         .register('sw.js', { updateViaCache: 'none' })
         .then(function (reg) {
           console.log('[PWA] SW registrado', reg.scope);
-          if (reg.waiting && !wasJustUpdated()) {
+          if (reg.waiting && !quiet && !inQuietPeriod()) {
             reg.waiting.postMessage({ type: 'SKIP_WAITING' });
             showBanner('pendiente');
           }
@@ -167,13 +199,13 @@
             var nw = reg.installing;
             if (!nw) return;
             nw.addEventListener('statechange', function () {
-              if (nw.state === 'installed' && navigator.serviceWorker.controller && !wasJustUpdated()) {
+              if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                if (reloading || inQuietPeriod()) return;
                 showBanner('nueva');
               }
             });
           });
-          // Pequeño delay: no competir con el reload recién hecho
-          setTimeout(checkForUpdates, 1500);
+          setTimeout(checkForUpdates, delay);
         })
         .catch(function (err) {
           console.warn('[PWA] SW error', err);
@@ -183,9 +215,7 @@
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'visible') checkForUpdates();
     });
-    window.addEventListener('focus', function () {
-      checkForUpdates();
-    });
+    window.addEventListener('focus', checkForUpdates);
     setInterval(checkForUpdates, CHECK_MS);
   }
 

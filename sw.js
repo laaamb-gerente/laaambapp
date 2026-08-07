@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v27: banner Actualizar se cierra al actualizar; galería en Copiloto.
-const CACHE_NAME = 'laaambapp-v27';
-const CACHE_SHELL = 'laaambapp-shell-v27';
+// v28: banner no reaparece al actualizar; un solo botón adjuntar en Copiloto.
+const CACHE_NAME = 'laaambapp-v28';
+const CACHE_SHELL = 'laaambapp-shell-v28';
 
 const STATIC_ASSETS = [
   './manifest.json',
