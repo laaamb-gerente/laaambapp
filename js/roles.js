@@ -18,9 +18,10 @@
     administrador: '*',
     veterinario: [
       'animales', 'reproduccion', 'salud', 'lotes', 'hoy', 'copiloto',
-      'reportes', 'sala-cuna', 'medicamentos', 'bajas'
+      'reportes', 'sala-cuna', 'medicamentos', 'bajas', 'auditoria'
     ],
     // Auxiliar de finca (sin estudios): menú mínimo. Escribe solo vía aprobación.
+    // También puede resolver búsquedas post-auditoría en Hoy.
     auxiliar: ['hoy', 'salud', 'bajas'],
     // Aportante (aparcería): solo su hato, solo lectura.
     aportante: ['aportantes-animales', 'reporte-aportantes'],
@@ -71,8 +72,8 @@
     {
       rol: 'veterinario',
       label: 'Veterinario',
-      ve: 'Hato, salud, reproducción, sala cuna, bajas…',
-      hace: 'Operación de campo. Escrituras también pasan por aprobación.',
+      ve: 'Hato, salud, reproducción, sala cuna, bajas, auditoría…',
+      hace: 'Operación de campo + auditoría mensual en corral (pesos/CC/FAMACHA/tratamientos al momento). Bajas de cabezas siguen con tu aprobación.',
       aprueba: true
     },
     {

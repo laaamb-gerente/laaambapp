@@ -39,7 +39,7 @@
 <script src="js/app-state.js"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
-<script src="js/app-update.js?v=35"></script>
+<script src="js/app-update.js?v=36"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -226,6 +226,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     </div>
     <div id="hoy-teteros-lista"><div style="font-size:13px;color:var(--text3)">Cargando teteros…</div></div>
     <a href="sala-cuna.html" style="display:inline-block;margin-top:8px;font-size:11px;font-weight:600;color:var(--teal);text-decoration:none">→ Ver Sala Cuna completa</a>
+  </div>
+
+  <!-- Búsqueda post-auditoría: animales no vistos en el censo -->
+  <div class="sec" id="aud-busca-sec" style="display:none">
+    <div class="sec-title">
+      <span class="dot" style="background:var(--red)"></span>Buscar animales · post-auditoría
+      <span id="aud-busca-badge" style="display:none;margin-left:auto;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:rgba(239,68,68,.12);color:var(--red)"></span>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin:-4px 0 10px;line-height:1.4">Uno a uno: ¿existe? Si no → evidencia y baja <b>perdido</b> a tu aprobación (no sale del inventario hasta que apruebes).</div>
+    <div id="aud-busca-lista"></div>
   </div>
 
   <!-- Pesajes pendientes (≥30 días sin peso) — accionable con input + registrar -->
@@ -658,7 +668,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
           }
         }
         if(tabla==='bajas' && res.data && res.data.animal_id){
-          var estBaja = res.data.tipo==='muerte' ? 'muerto' : (res.data.tipo==='venta' ? 'vendido' : 'descartado');
+          var estBaja = res.data.tipo==='muerte' ? 'muerto'
+            : res.data.tipo==='venta' ? 'vendido'
+            : res.data.tipo==='perdido' ? 'perdido'
+            : 'descartado';
           if(window.DB.aplicarEstadoBajaAnimal) await window.DB.aplicarEstadoBajaAnimal(res.data.animal_id, estBaja);
           else if(window._sb) await window._sb.from('animales').update({estado:estBaja, updated_at:new Date()}).eq('id', res.data.animal_id);
           if(window.AppState && window.AppState.animales){
@@ -1357,6 +1370,101 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     renderPesajesPendientes();
   });
   setTimeout(function(){ renderPesajesPendientes(); }, 1000);
+
+  // ── Búsqueda post-auditoría (faltantes del censo) ──
+  async function renderBusquedasAuditoria(){
+    var sec=document.getElementById('aud-busca-sec');
+    var cont=document.getElementById('aud-busca-lista');
+    var badge=document.getElementById('aud-busca-badge');
+    if(!sec||!cont) return;
+    if(!(window.DB && window.DB.getFaltantesPendientesHoy)){ sec.style.display='none'; return; }
+    var rows=[];
+    try{
+      var r=await window.DB.getFaltantesPendientesHoy(FINCA_ID);
+      rows=(r&&r.data)||[];
+    }catch(e){ sec.style.display='none'; return; }
+    if(!rows.length){ sec.style.display='none'; return; }
+    sec.style.display='';
+    if(badge){ badge.style.display='inline-block'; badge.textContent=rows.length+(rows.length===1?' animal':' animales'); }
+    cont.innerHTML=rows.map(function(f){
+      var an=f.animales||{};
+      var cod=an.codigo||f.chapeta||'—';
+      var fid=f.id;
+      return '<div style="border:1px solid var(--border);border-left:3px solid var(--red);border-radius:8px;padding:11px 14px;margin-bottom:8px;background:var(--bg2)" data-faltante="'+fid+'">'
+        +'<div style="font-size:14px;font-weight:700;color:var(--text)">🔍 Buscar #'+_esc(cod)
+          +(an.nombre&&an.nombre!==cod?(' · '+_esc(an.nombre)):'')
+        +'</div>'
+        +'<div style="font-size:12px;color:var(--text2);margin-top:2px">No visto en auditoría'
+          +(an.peso_actual!=null?(' · último peso '+an.peso_actual+' kg'):'')
+        +'</div>'
+        +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'
+          +'<button type="button" class="btn btn-sm" style="background:var(--green-bg);color:var(--green);border:1px solid var(--green)" onclick="resolverBusquedaAud(\''+fid+'\',true)">✓ Existe</button>'
+          +'<button type="button" class="btn btn-sm" style="background:var(--red-bg);color:var(--red);border:1px solid var(--red)" onclick="resolverBusquedaAud(\''+fid+'\',false)">No existe</button>'
+        +'</div>'
+        +'<div id="busca-form-'+fid+'" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">'
+          +'<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px">'
+            +'<input type="number" step="0.1" min="0" placeholder="Peso kg" id="busca-peso-'+fid+'" style="width:90px;padding:6px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:13px">'
+            +'<input type="number" min="1" max="5" step="0.5" placeholder="CC" id="busca-cc-'+fid+'" style="width:60px;padding:6px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:13px">'
+            +'<input type="number" min="1" max="5" step="1" placeholder="FAM" id="busca-fam-'+fid+'" style="width:60px;padding:6px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:13px">'
+          +'</div>'
+          +'<input type="url" placeholder="URL foto evidencia (opcional)" id="busca-foto-'+fid+'" style="width:100%;margin-bottom:6px;padding:6px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:12px">'
+          +'<input type="text" placeholder="Notas" id="busca-notas-'+fid+'" style="width:100%;margin-bottom:8px;padding:6px 8px;border:1px solid var(--border2);border-radius:6px;background:var(--surface);color:var(--text);font:inherit;font-size:12px">'
+          +'<button type="button" id="busca-ok-'+fid+'" style="font-size:12px;font-weight:700;padding:8px 14px;border-radius:8px;background:var(--teal);color:#04181a;border:none;cursor:pointer;font-family:inherit">Confirmar</button>'
+        +'</div>'
+      +'</div>';
+    }).join('');
+  }
+  window.resolverBusquedaAud=function(faltanteId, existe){
+    var form=document.getElementById('busca-form-'+faltanteId);
+    if(!form) return;
+    form.style.display='block';
+    var ok=document.getElementById('busca-ok-'+faltanteId);
+    if(!ok) return;
+    // Si no existe, peso no es obligatorio
+    var pesoEl=document.getElementById('busca-peso-'+faltanteId);
+    if(pesoEl) pesoEl.placeholder=existe?'Peso kg *':'Peso (n/a)';
+    ok.onclick=async function(){
+      ok.disabled=true;
+      try{
+        var peso=parseFloat((document.getElementById('busca-peso-'+faltanteId)||{}).value);
+        var cc=parseFloat((document.getElementById('busca-cc-'+faltanteId)||{}).value);
+        var fam=parseInt((document.getElementById('busca-fam-'+faltanteId)||{}).value,10);
+        var foto=(document.getElementById('busca-foto-'+faltanteId)||{}).value||'';
+        var notas=(document.getElementById('busca-notas-'+faltanteId)||{}).value||'';
+        if(existe && !(peso>0)){ alert('Ingresa el peso del animal encontrado'); ok.disabled=false; return; }
+        if(!existe && !notas && !foto){
+          if(!confirm('¿Confirmas que NO existe, sin foto ni nota? Se enviará baja «perdido» a tu aprobación.')){ ok.disabled=false; return; }
+        }
+        var r=await window.DB.resolverFaltanteAuditoria(faltanteId, {
+          existe: !!existe,
+          peso_kg: (peso>0)?peso:null,
+          cc: (cc>=1&&cc<=5)?cc:null,
+          famacha: (fam>=1&&fam<=5)?fam:null,
+          foto_url: foto||null,
+          notas: notas||null,
+          finca_id: FINCA_ID,
+          registrado_por: (window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'campo'
+        });
+        if(r&&r.error) throw r.error;
+        var card=document.querySelector('[data-faltante="'+faltanteId+'"]');
+        if(card){
+          card.style.opacity='0.4';
+          card.innerHTML=existe
+            ? '<div style="font-size:13px;color:var(--green)">✓ Encontrado · registrado en auditoría</div>'
+            : '<div style="font-size:13px;color:var(--amber,#F59E0B)">⏳ No existe · baja «perdido» enviada a tu aprobación</div>';
+        }
+        if(window.Approval&&window.Approval.toastAprobacion&&!existe){
+          window.Approval.toastAprobacion('OK','⏳ Propuesta de animal perdido · aprueba en la bandeja para sacarlo del inventario.');
+        }
+        setTimeout(renderBusquedasAuditoria, 1400);
+      }catch(e){
+        alert('Error: '+(e.message||e));
+        ok.disabled=false;
+      }
+    };
+  };
+  document.addEventListener('appstate:ready', renderBusquedasAuditoria);
+  setTimeout(renderBusquedasAuditoria, 1100);
 
   // ── AVISO A — Medicamentos terminados hoy (informativo) ──
   async function renderMedsTerminados(){

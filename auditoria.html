@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#00AFB6">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LAAAMB">
+<link rel="apple-touch-icon" href="icons/icon-laaamb.jpg">
+<meta name="msapplication-TileImage" content="icons/icon-laaamb.jpg">
+<title>LAAAMBAPP · Auditoría de hato</title>
+<script>(function(){var t=(function(){var _t=localStorage.getItem('laaamb-theme');return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute('data-theme',t);})();</script>
+<link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/laaamb.css">
+<script src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js" crossorigin="anonymous"></script>
+<script src="js/error-handler.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-client.js"></script>
+<script>window._sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);</script>
+<script src="js/auth.js"></script>
+<script src="js/roles.js"></script>
+<script src="js/approval.js?v=50"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/mobile-nav.js"></script>
+<script src="js/offline-db.js"></script>
+<script src="js/db.js?v=50"></script>
+<script src="js/app-state.js"></script>
+<script src="js/app-update.js?v=36"></script>
+<style>
+:root{
+  --teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
+  --bg:#F8F9FA;--bg2:#FFFFFF;--bg3:#F3F4F6;--surface:#FFFFFF;--surface2:#F3F4F6;
+  --border:#E5E7EB;--border2:#D1D5DB;--border3:#9CA3AF;
+  --text:#1A1A2E;--text2:#6B7280;--text3:#9CA3AF;--text4:#C4C9D4;
+  --green:#10B981;--red:#EF4444;--amber:#F59E0B;--orange:#F18F22;
+  --r:8px;--r2:14px;--sidebar:236px;--anim:.16s cubic-bezier(.4,0,.2,1);
+}
+html[data-theme="dark"]{
+  --bg:#0F172A;--bg2:#1E293B;--bg3:#1E293B;--surface:#1E293B;--surface2:#162032;
+  --border:#334155;--border2:#3E4C61;--border3:#475569;
+  --text:#F1F5F9;--text2:#94A3B8;--text3:#64748B;--text4:#475569;
+  --teal-bg:rgba(0,175,182,.12);--teal-bg2:rgba(0,175,182,.06);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
+.app{display:flex;height:100vh;width:100vw}
+.sidebar,#sidebar{width:var(--sidebar);min-width:var(--sidebar);max-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:10;flex-shrink:0}
+.sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sb-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:4px}
+.sb-logo-img{height:40px!important;width:40px!important;border-radius:9px;flex-shrink:0;object-fit:cover}
+.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;color:var(--teal)}
+.sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase}
+.nav-scroll{flex:1;min-height:0;overflow-y:auto;padding:8px 0}
+.nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text4);letter-spacing:1.2px;text-transform:uppercase}
+.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:var(--r);color:var(--text2);font-size:13px;text-decoration:none}
+.nav-link.active{background:var(--teal-bg);color:var(--teal);border:1px solid var(--border2)}
+.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}
+.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border)}
+.user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal)}
+.user-name{font-size:12px;font-weight:600}.user-role{font-size:10px;color:var(--text3)}
+#lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--r);width:46px;height:46px;align-items:center;justify-content:center;cursor:pointer}
+#lham svg{width:22px;height:22px;stroke:var(--text);stroke-width:2;fill:none;stroke-linecap:round}
+#lov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990}
+#lov.on{display:block}
+.main{flex:1;min-width:0;overflow-y:auto;padding:20px 16px 40px;background:var(--bg);-webkit-overflow-scrolling:touch}
+.page-head{margin-bottom:16px}
+.ph-eyebrow{font-size:10px;font-weight:700;color:var(--teal-d);text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px}
+.ph-title{font-family:'Sigmar',cursive;font-size:26px;color:var(--text);line-height:1.1}
+.ph-sub{font-size:13px;color:var(--text3);margin-top:6px;line-height:1.4}
+@media(max-width:860px){
+  #lham{display:flex}
+  .sidebar,#sidebar{position:fixed!important;left:0;top:0;bottom:0;transform:translateX(-105%);transition:transform .25s;z-index:9995}
+  .sidebar.on,#sidebar.on{transform:translateX(0)}
+  .main{padding:64px 12px 32px}
+}
+
+/* ── Auditoría UI ── */
+.aud-wrap{max-width:520px;margin:0 auto}
+.aud-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+  padding:12px 14px;border-radius:14px;background:var(--bg2);border:1px solid var(--border);
+  margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.04);
+}
+.aud-bar .big{font-family:'Sigmar',cursive;font-size:22px;color:var(--teal);line-height:1}
+.aud-bar .meta{font-size:11px;color:var(--text3);margin-top:2px}
+.aud-progress{
+  height:6px;border-radius:99px;background:var(--bg3);overflow:hidden;margin-top:8px;
+}
+.aud-progress > i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),#2dd4bf);border-radius:99px;transition:width .3s}
+.chip-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{
+  padding:8px 12px;border-radius:999px;border:1px solid var(--border2);background:var(--bg3);
+  color:var(--text2);font:inherit;font-size:12px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.chip.on{background:var(--teal-bg);border-color:var(--teal);color:var(--teal)}
+.card-aud{
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:16px;
+  box-shadow:0 8px 28px rgba(0,0,0,.06);margin-bottom:12px;
+}
+.card-aud h3{font-size:13px;font-weight:700;color:var(--text);margin:0 0 10px}
+.fld{margin-bottom:12px;position:relative}
+.fld label{display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px}
+.fld input,.fld select,.fld textarea{
+  width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;
+  padding:12px 13px;color:var(--text);font:inherit;font-size:16px; /* 16px evita zoom iOS */
+}
+.fld input:focus,.fld select:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,175,182,.15)}
+.dd{
+  display:none;position:absolute;left:0;right:0;top:100%;z-index:50;margin-top:4px;
+  background:var(--bg2);border:1px solid var(--border2);border-radius:12px;max-height:220px;overflow-y:auto;
+  box-shadow:0 12px 32px rgba(0,0,0,.18);
+}
+.dd.on{display:block}
+.dd-item{padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--border);font-size:14px}
+.dd-item:last-child{border-bottom:none}
+.dd-item:active,.dd-item:hover{background:var(--teal-bg)}
+.dd-item b{color:var(--teal)}
+.dd-empty{padding:12px;color:var(--text3);font-size:12px;text-align:center}
+.score-row{display:flex;gap:6px;flex-wrap:wrap}
+.score-btn{
+  flex:1;min-width:44px;min-height:48px;border-radius:12px;border:1.5px solid var(--border2);
+  background:var(--bg3);color:var(--text2);font:inherit;font-size:16px;font-weight:700;cursor:pointer;
+}
+.score-btn.on{background:var(--teal);color:#04181a;border-color:var(--teal)}
+.score-btn.warn.on{background:var(--amber);color:#1a1200;border-color:var(--amber)}
+.score-btn.bad.on{background:var(--red);color:#fff;border-color:var(--red)}
+.toggle-row{display:flex;gap:8px}
+.toggle-row button{
+  flex:1;min-height:48px;border-radius:12px;border:1.5px solid var(--border2);
+  background:var(--bg3);color:var(--text2);font:inherit;font-weight:700;cursor:pointer;
+}
+.toggle-row button.on-yes{background:rgba(241,143,34,.15);border-color:var(--orange);color:var(--orange)}
+.toggle-row button.on-no{background:rgba(16,185,129,.12);border-color:var(--green);color:var(--green)}
+.btn-row{display:flex;gap:8px;margin-top:8px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  min-height:48px;padding:12px 16px;border-radius:12px;border:none;font:inherit;font-weight:700;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn-primary{background:var(--teal);color:#04181a;flex:1}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-block{width:100%}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:999px;font-size:11px;font-weight:700}
+.pill-ok{background:rgba(16,185,129,.12);color:var(--green)}
+.pill-warn{background:rgba(245,158,11,.14);color:var(--amber)}
+.pill-bad{background:rgba(239,68,68,.12);color:var(--red)}
+.sel-animal{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 14px;border-radius:12px;background:var(--teal-bg2);border:1px solid rgba(0,175,182,.3);margin-bottom:12px;
+}
+.sel-animal .cod{font-size:18px;font-weight:800;color:var(--teal)}
+.sel-animal .sub{font-size:12px;color:var(--text2)}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.kpi{padding:12px;border-radius:12px;background:var(--bg3);border:1px solid var(--border)}
+.kpi .n{font-family:'Sigmar',cursive;font-size:22px;color:var(--teal);line-height:1}
+.kpi .l{font-size:11px;color:var(--text3);margin-top:4px}
+.list-mini{display:flex;flex-direction:column;gap:6px;max-height:200px;overflow-y:auto}
+.list-mini .row{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;background:var(--bg3);border-radius:8px;font-size:12px}
+.toast-fijo{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:10000;max-width:90%;
+  padding:10px 16px;border-radius:10px;background:#04181a;color:#fff;font-size:13px;font-weight:600;
+  box-shadow:0 8px 24px rgba(0,0,0,.3);display:none}
+.toast-fijo.on{display:block}
+.alert-banner{padding:12px 14px;border-radius:12px;margin-bottom:12px;font-size:13px;line-height:1.45;border:1px solid}
+.alert-banner.bad{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.35);color:var(--red)}
+.alert-banner.ok{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);color:var(--green)}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div class="app">
+<button id="lham" aria-label="Menú"><svg id="lico" viewBox="0 0 22 22"><line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/></svg></button>
+<div id="lov"></div>
+<aside class="sidebar" id="sidebar">
+  <div class="sb-head">
+    <a href="index.html" class="sb-logo"><img src="icons/icon.svg" alt="LAAAMB" class="sb-logo-img"><div><div class="sb-logo-text">LAAAMB</div><div class="sb-logo-sub">Corderos · App</div></div></a>
+  </div>
+  <nav class="nav-scroll" id="nav-scroll"></nav>
+  <div class="sb-foot">
+    <div class="user-row"><div class="avatar">—</div><div><div class="user-name">…</div><div class="user-role">—</div></div></div>
+    <button onclick="Auth.signOut()" style="width:100%;margin-top:10px;padding:9px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text3);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer">Cerrar sesión</button>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="aud-wrap">
+    <div class="page-head">
+      <div class="ph-eyebrow">La Marinilla · Censo físico multi-día</div>
+      <div class="ph-title">Auditoría de hato</div>
+      <div class="ph-sub">Chapeta → peso → CC → FAMACHA → tratamiento con síntoma. Inventario de cabezas solo con tu aprobación.</div>
+    </div>
+
+    <!-- HOME: lista / abrir -->
+    <div id="view-home">
+      <div id="home-active" class="hidden"></div>
+      <div class="card-aud">
+        <h3>Nueva jornada</h3>
+        <p style="font-size:12px;color:var(--text3);margin:0 0 12px;line-height:1.45">Congela el inventario activo actual como meta del censo (puede durar 1–2 días). Solo animales LAAAMB (no aparcería).</p>
+        <div class="fld">
+          <label>Auditor (veterinario / confianza)</label>
+          <input id="open-auditor" type="text" placeholder="Nombre del auditor">
+        </div>
+        <button type="button" class="btn btn-primary btn-block" id="btn-abrir">▶ Abrir auditoría</button>
+      </div>
+      <div class="card-aud">
+        <h3>Historial reciente</h3>
+        <div id="hist-list" class="list-mini"><div class="dd-empty">Cargando…</div></div>
+      </div>
+    </div>
+
+    <!-- CAMPO: cola -->
+    <div id="view-campo" class="hidden">
+      <div class="aud-bar">
+        <div>
+          <div class="big" id="campo-count">0 / 0</div>
+          <div class="meta" id="campo-meta">—</div>
+          <div class="aud-progress"><i id="campo-prog" style="width:0%"></i></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+          <span class="pill pill-ok" id="campo-estado">En campo</span>
+          <button type="button" class="btn btn-ghost" style="min-height:36px;padding:6px 10px;font-size:12px" id="btn-ir-cierre">Cerrar jornada →</button>
+        </div>
+      </div>
+
+      <div class="chip-row" id="grupo-chips"></div>
+
+      <div class="card-aud">
+        <h3>1 · Chapeta</h3>
+        <div class="fld" style="margin-bottom:8px">
+          <label>Buscar animal</label>
+          <input id="q-chapeta" type="text" inputmode="numeric" placeholder="Ej. 145" autocomplete="off" autocorrect="off" spellcheck="false">
+          <div class="dd" id="q-dd"></div>
+        </div>
+        <div id="sel-box" class="hidden"></div>
+      </div>
+
+      <div class="card-aud" id="form-animal" style="opacity:.45;pointer-events:none">
+        <h3>2 · Datos de campo</h3>
+        <div class="fld">
+          <label>Peso (kg)</label>
+          <input id="f-peso" type="number" inputmode="decimal" step="0.1" min="0" placeholder="Ej. 42.5">
+        </div>
+        <div class="fld">
+          <label>Condición corporal (1–5)</label>
+          <div class="score-row" id="f-cc"></div>
+        </div>
+        <div class="fld">
+          <label>FAMACHA (1–5)</label>
+          <div class="score-row" id="f-fam"></div>
+        </div>
+
+        <div class="fld">
+          <label>¿Tratamiento?</label>
+          <div class="toggle-row">
+            <button type="button" id="trato-no" class="on-no">No</button>
+            <button type="button" id="trato-si">Sí · con síntoma</button>
+          </div>
+        </div>
+
+        <div id="block-trato" class="hidden">
+          <div class="fld">
+            <label>Síntoma / diagnóstico *</label>
+            <select id="f-dx">
+              <option value="">— Selecciona —</option>
+              <option>Anemia / Haemonchus (FAMACHA alto)</option>
+              <option>Diarrea</option>
+              <option>Debilidad / pérdida de condición</option>
+              <option>Vacunación</option>
+              <option>Vitaminas / minerales</option>
+              <option>Herida / infección</option>
+              <option>Revisión veterinaria</option>
+              <option value="__OTRA__">Otra (especificar)</option>
+            </select>
+            <input id="f-dx-otro" class="hidden" type="text" placeholder="Especifica el síntoma…" style="margin-top:6px">
+          </div>
+          <div class="fld">
+            <label>Medicamento *</label>
+            <select id="f-med"><option value="">Cargando…</option></select>
+          </div>
+          <div class="fld">
+            <label>Dosis aplicada *</label>
+            <input id="f-dosis" type="text" placeholder="Ej. 2.5 mL">
+          </div>
+        </div>
+
+        <div class="btn-row">
+          <button type="button" class="btn btn-ghost" id="btn-limpiar">Limpiar</button>
+          <button type="button" class="btn btn-primary" id="btn-guardar">✓ Guardar y siguiente</button>
+        </div>
+      </div>
+
+      <div class="card-aud">
+        <h3>Últimos registrados</h3>
+        <div id="ultimos" class="list-mini"><div class="dd-empty">Aún ninguno</div></div>
+      </div>
+    </div>
+
+    <!-- CIERRE -->
+    <div id="view-cierre" class="hidden">
+      <div class="card-aud">
+        <h3>Cerrar jornada de auditoría</h3>
+        <div class="kpi-grid" id="cierre-kpis"></div>
+        <div class="fld">
+          <label>¿Faltaron animales por auditar? (grupos no traídos al corral)</label>
+          <div class="toggle-row">
+            <button type="button" id="faltan-no" class="on-no">No · censo completo en corral</button>
+            <button type="button" id="faltan-si">Sí · faltó traer grupos</button>
+          </div>
+        </div>
+        <div class="fld hidden" id="faltan-grupos-wrap">
+          <label>¿Cuáles grupos o notas?</label>
+          <textarea id="faltan-grupos" rows="2" placeholder="Ej. Machos del potrero alto; 2 corderos de sala cuna"></textarea>
+        </div>
+        <div class="fld">
+          <label>Notas del auditor (opcional)</label>
+          <textarea id="cierre-notas" rows="2" placeholder="Observaciones generales del día…"></textarea>
+        </div>
+        <button type="button" class="btn btn-primary btn-block" id="btn-cerrar">Generar informe y tareas de búsqueda</button>
+        <button type="button" class="btn btn-ghost btn-block" id="btn-back-campo" style="margin-top:8px">← Seguir registrando</button>
+      </div>
+    </div>
+
+    <!-- INFORME -->
+    <div id="view-informe" class="hidden">
+      <div id="informe-body"></div>
+      <button type="button" class="btn btn-primary btn-block" id="btn-home" style="margin-top:12px">Volver al inicio</button>
+      <a href="hoy.html" class="btn btn-ghost btn-block" style="margin-top:8px;text-decoration:none">Ir a Hoy · buscar faltantes →</a>
+    </div>
+  </div>
+</div>
+</div>
+<div class="toast-fijo" id="toast"></div>
+
+<script src="farm-selector.js"></script>
+<script>
+(function(){
+  var open=false;
+  var BARS='<line x1="3" y1="6" x2="19" y2="6"/><line x1="3" y1="11" x2="19" y2="11"/><line x1="3" y1="16" x2="19" y2="16"/>';
+  var CROSS='<line x1="4" y1="4" x2="18" y2="18"/><line x1="18" y1="4" x2="4" y2="18"/>';
+  function show(){open=true;document.getElementById('sidebar').classList.add('on');document.getElementById('lov').classList.add('on');document.getElementById('lico').innerHTML=CROSS;}
+  function hide(){open=false;document.getElementById('sidebar').classList.remove('on');document.getElementById('lov').classList.remove('on');document.getElementById('lico').innerHTML=BARS;}
+  document.getElementById('lham').onclick=function(){open?hide():show();};
+  document.getElementById('lov').onclick=hide;
+})();
+</script>
+<script>
+(function(){
+  var FINCA = (window.AppState && window.AppState._finca_id) || 'a1b2c3d4-0000-0000-0000-000000000001';
+  var GRUPOS = [
+    {id:'madres',t:'Madres'},{id:'levante',t:'Levante'},{id:'vacias',t:'Vacías'},
+    {id:'machos',t:'Machos'},{id:'crias',t:'Crías'},{id:'otro',t:'Otro'}
+  ];
+  var state = {
+    aud: null,
+    lineas: [],
+    grupo: 'madres',
+    animal: null,
+    cc: null,
+    fam: null,
+    trato: false,
+    faltanSi: false,
+    meds: []
+  };
+
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ var d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
+  function toast(msg){
+    var t=$('toast'); if(!t) return;
+    t.textContent=msg; t.classList.add('on');
+    setTimeout(function(){ t.classList.remove('on'); }, 2600);
+  }
+  function showView(name){
+    ['home','campo','cierre','informe'].forEach(function(v){
+      var el=$('view-'+v); if(el) el.classList.toggle('hidden', v!==name);
+    });
+  }
+  function quien(){
+    return (window.AUTH_PERFIL && (window.AUTH_PERFIL.nombre||window.AUTH_PERFIL.email)) || 'campo';
+  }
+  function activos(){
+    return ((window.AppState && window.AppState.animales) || []).filter(function(a){
+      return a && a.estado==='activo';
+    });
+  }
+
+  // ── Score buttons ──
+  function buildScores(el, key, max){
+    if(!el) return;
+    el.innerHTML='';
+    for(var i=1;i<=max;i++){
+      (function(n){
+        var b=document.createElement('button');
+        b.type='button'; b.className='score-btn'; b.textContent=String(n);
+        if(key==='fam' && n>=4) b.classList.add('bad');
+        else if(key==='fam' && n===3) b.classList.add('warn');
+        if(key==='cc' && n<=2) b.classList.add('bad');
+        b.onclick=function(){
+          state[key]=n;
+          Array.prototype.forEach.call(el.children, function(c){ c.classList.remove('on'); });
+          b.classList.add('on');
+        };
+        el.appendChild(b);
+      })(i);
+    }
+  }
+  buildScores($('f-cc'),'cc',5);
+  buildScores($('f-fam'),'fam',5);
+
+  // ── Grupo chips ──
+  function renderGrupos(){
+    var box=$('grupo-chips'); if(!box) return;
+    box.innerHTML=GRUPOS.map(function(g){
+      return '<button type="button" class="chip'+(state.grupo===g.id?' on':'')+'" data-g="'+g.id+'">'+g.t+'</button>';
+    }).join('');
+    box.querySelectorAll('.chip').forEach(function(b){
+      b.onclick=function(){
+        state.grupo=b.getAttribute('data-g');
+        renderGrupos();
+      };
+    });
+  }
+  renderGrupos();
+
+  // ── Autocomplete chapeta (1 → 14 → 145) ──
+  function filtrarSugerencias(q){
+    q=String(q||'').trim().toLowerCase();
+    var list=activos();
+    if(!q) return list.slice(0,8);
+    // Prioriza prefijo de código (chapeta), luego includes
+    var pref=[], mid=[];
+    list.forEach(function(a){
+      var cod=String(a.codigo||'').toLowerCase();
+      var nom=String(a.nombre||'').toLowerCase();
+      if(cod.indexOf(q)===0) pref.push(a);
+      else if(cod.indexOf(q)>=0 || nom.indexOf(q)>=0) mid.push(a);
+    });
+    return pref.concat(mid).slice(0,12);
+  }
+  function renderDD(items){
+    var dd=$('q-dd'); if(!dd) return;
+    if(!items.length){
+      dd.innerHTML='<div class="dd-empty">Sin coincidencias en inventario activo</div>';
+      dd.classList.add('on'); return;
+    }
+    dd.innerHTML=items.map(function(a){
+      var ya=state.lineas.some(function(l){ return l.animal_id===a.id; });
+      return '<div class="dd-item" data-id="'+a.id+'">'
+        +'<b>'+esc(a.codigo||'—')+'</b>'
+        +(a.nombre?' · '+esc(a.nombre):'')
+        +(a.peso_actual!=null?' · '+a.peso_actual+' kg':'')
+        +(ya?' <span class="pill pill-warn">ya visto</span>':'')
+        +'</div>';
+    }).join('');
+    dd.classList.add('on');
+    dd.querySelectorAll('.dd-item').forEach(function(el){
+      el.onmousedown=function(e){
+        e.preventDefault();
+        var id=el.getAttribute('data-id');
+        var a=activos().find(function(x){ return x.id===id; });
+        if(a) seleccionarAnimal(a);
+      };
+    });
+  }
+  function seleccionarAnimal(a){
+    state.animal=a;
+    state.cc=null; state.fam=null; state.trato=false;
+    $('q-chapeta').value=a.codigo||'';
+    $('q-dd').classList.remove('on');
+    var box=$('sel-box');
+    box.classList.remove('hidden');
+    box.innerHTML='<div class="sel-animal">'
+      +'<div><div class="cod">#'+esc(a.codigo||'—')+'</div>'
+      +'<div class="sub">'+(a.sexo||'')+(a.peso_actual!=null?' · último '+a.peso_actual+' kg':' · sin peso')+'</div></div>'
+      +'<button type="button" class="btn btn-ghost" style="min-height:36px;padding:6px 10px" id="btn-cambiar">Cambiar</button></div>';
+    var bc=$('btn-cambiar'); if(bc) bc.onclick=function(){ limpiarForm(true); };
+    var form=$('form-animal');
+    form.style.opacity='1'; form.style.pointerEvents='auto';
+    $('f-peso').value=a.peso_actual!=null?a.peso_actual:'';
+    $('f-peso').focus();
+    // reset scores
+    buildScores($('f-cc'),'cc',5);
+    buildScores($('f-fam'),'fam',5);
+    setTrato(false);
+  }
+  function limpiarForm(focusSearch){
+    state.animal=null; state.cc=null; state.fam=null; state.trato=false;
+    $('sel-box').classList.add('hidden'); $('sel-box').innerHTML='';
+    $('form-animal').style.opacity='.45'; $('form-animal').style.pointerEvents='none';
+    $('f-peso').value=''; $('f-dosis').value='';
+    $('f-dx').value=''; $('f-dx-otro').classList.add('hidden'); $('f-dx-otro').value='';
+    setTrato(false);
+    if(focusSearch){ $('q-chapeta').value=''; $('q-chapeta').focus(); }
+  }
+
+  $('q-chapeta').addEventListener('input', function(){
+    renderDD(filtrarSugerencias(this.value));
+  });
+  $('q-chapeta').addEventListener('focus', function(){
+    renderDD(filtrarSugerencias(this.value));
+  });
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('#q-chapeta') && !e.target.closest('#q-dd')){
+      $('q-dd').classList.remove('on');
+    }
+  });
+
+  function setTrato(si){
+    state.trato=!!si;
+    $('trato-si').classList.toggle('on-yes', si);
+    $('trato-no').classList.toggle('on-no', !si);
+    $('block-trato').classList.toggle('hidden', !si);
+  }
+  $('trato-si').onclick=function(){ setTrato(true); };
+  $('trato-no').onclick=function(){ setTrato(false); };
+  $('f-dx').onchange=function(){
+    $('f-dx-otro').classList.toggle('hidden', this.value!=='__OTRA__');
+  };
+
+  // ── Meds ──
+  async function loadMeds(){
+    try{
+      var r=await window.DB.getMedicamentos(FINCA);
+      state.meds=(r&&r.data)||[];
+    }catch(e){ state.meds=[]; }
+    var sel=$('f-med');
+    if(!sel) return;
+    if(!state.meds.length){
+      sel.innerHTML='<option value="">Sin medicamentos en inventario</option>'; return;
+    }
+    sel.innerHTML='<option value="">— Selecciona —</option>'+state.meds.map(function(m){
+      return '<option value="'+m.id+'" data-nombre="'+esc(m.nombre||'')+'">'+esc(m.nombre||'Med')+(m.stock_actual!=null?' · stock '+m.stock_actual:'')+'</option>';
+    }).join('');
+  }
+
+  // ── Campo bar ──
+  function refreshBar(){
+    if(!state.aud) return;
+    var total=state.aud.snapshot_total||0;
+    var vistos=state.lineas.length;
+    $('campo-count').textContent=vistos+' / '+total;
+    var pct=total?Math.min(100, Math.round(vistos/total*100)):0;
+    $('campo-prog').style.width=pct+'%';
+    var ini=state.aud.fecha_inicio||'';
+    $('campo-meta').textContent='Desde '+ini+' · multi-día · '+(state.aud.auditor_nombre||'auditor');
+  }
+  function renderUltimos(){
+    var box=$('ultimos');
+    var L=state.lineas.slice(0,12);
+    if(!L.length){ box.innerHTML='<div class="dd-empty">Aún ninguno</div>'; return; }
+    box.innerHTML=L.map(function(l){
+      var cod=(l.animales&&l.animales.codigo)||l.chapeta||'—';
+      return '<div class="row"><span><b>'+esc(cod)+'</b>'
+        +(l.peso_kg!=null?' · '+l.peso_kg+' kg':'')
+        +(l.famacha!=null?' · F'+l.famacha:'')
+        +(l.trato?' · 💊':'')
+        +'</span><span style="color:var(--text3)">'+esc(l.grupo_operativo||'')+'</span></div>';
+    }).join('');
+  }
+
+  async function loadLineas(){
+    if(!state.aud) return;
+    var r=await window.DB.getLineasAuditoria(state.aud.id);
+    state.lineas=(r&&r.data)||[];
+    refreshBar();
+    renderUltimos();
+  }
+
+  // ── Guardar animal ──
+  $('btn-limpiar').onclick=function(){ limpiarForm(true); };
+  $('btn-guardar').onclick=async function(){
+    if(!state.aud || !state.animal){ toast('Selecciona un animal'); return; }
+    var peso=parseFloat($('f-peso').value);
+    var btn=$('btn-guardar'); btn.disabled=true;
+    try{
+      var tratIds=[];
+      var dx='';
+      if(state.trato){
+        dx=$('f-dx').value==='__OTRA__'?($('f-dx-otro').value||'').trim():$('f-dx').value;
+        if(!dx){ toast('Indica el síntoma / diagnóstico'); btn.disabled=false; return; }
+        var medId=$('f-med').value;
+        var dosis=($('f-dosis').value||'').trim();
+        if(!medId || !dosis){ toast('Medicamento y dosis son obligatorios'); btn.disabled=false; return; }
+        // Tratamiento real (auditor = vet: se aplica)
+        var tr=await window.DB.saveTratamiento({
+          finca_id: FINCA,
+          animal_id: state.animal.id,
+          medicamento_id: medId,
+          dosis: dosis,
+          diagnostico: dx,
+          fecha_inicio: new Date().toISOString().slice(0,10),
+          notas: 'Auditoría de hato · '+dx,
+          registrado_por: quien(),
+          estado_aprobacion: 'aprobado',
+          estado: 'activo'
+        });
+        if(tr&&tr.error) throw tr.error;
+        if(tr&&tr.data&&tr.data.id){
+          tratIds.push(tr.data.id);
+          // Descontar stock al momento (vet en corral)
+          var ml=parseFloat(String(dosis).replace(/[^0-9.,]/g,'').replace(',','.'));
+          if(window.DB.descontarStockMedicamento && ml>0){
+            await window.DB.descontarStockMedicamento(medId, ml);
+          }
+        }
+      }
+
+      var r=await window.DB.registrarLineaAuditoria({
+        auditoria_id: state.aud.id,
+        finca_id: FINCA,
+        animal_id: state.animal.id,
+        chapeta: state.animal.codigo,
+        grupo_operativo: state.grupo,
+        peso_kg: (peso>0)?peso:null,
+        cc: state.cc,
+        famacha: state.fam,
+        trato: state.trato,
+        diagnostico: dx||null,
+        tratamiento_ids: tratIds,
+        registrado_por: quien()
+      });
+      if(r&&r.error) throw r.error;
+
+      // memoria local peso
+      if(peso>0 && window.AppState && window.AppState.animales){
+        var a=window.AppState.animales.find(function(x){return x.id===state.animal.id;});
+        if(a) a.peso_actual=peso;
+      }
+
+      toast('✓ #'+(state.animal.codigo||'')+' registrado');
+      await loadLineas();
+      limpiarForm(true);
+    }catch(e){
+      console.error(e);
+      toast('Error: '+(e.message||e));
+    }finally{
+      btn.disabled=false;
+    }
+  };
+
+  // ── Abrir / reanudar ──
+  async function enterCampo(aud){
+    state.aud=aud;
+    showView('campo');
+    await loadLineas();
+    loadMeds();
+    limpiarForm(true);
+  }
+
+  $('btn-abrir').onclick=async function(){
+    var nombre=($('open-auditor').value||'').trim()||quien();
+    var btn=$('btn-abrir'); btn.disabled=true;
+    try{
+      // Si ya hay abierta, reanudar
+      var open=await window.DB.getAuditoriaAbierta(FINCA);
+      if(open&&open.data){
+        toast('Reanudando auditoría abierta');
+        await enterCampo(open.data);
+        return;
+      }
+      var r=await window.DB.abrirAuditoria(FINCA, nombre);
+      if(r&&r.error) throw r.error;
+      toast('Auditoría abierta · snapshot '+(r.data.snapshot_total||0)+' activos');
+      await enterCampo(r.data);
+      loadHist();
+    }catch(e){
+      toast('Error: '+(e.message||e)+' — ¿corriste migración 0062?');
+    }finally{ btn.disabled=false; }
+  };
+
+  async function loadHist(){
+    var box=$('hist-list');
+    try{
+      var r=await window.DB.listAuditorias(FINCA, 10);
+      var rows=(r&&r.data)||[];
+      if(!rows.length){ box.innerHTML='<div class="dd-empty">Sin auditorías aún</div>'; return; }
+      box.innerHTML=rows.map(function(a){
+        var st=a.estado==='cerrada'?'cerrada':(a.estado==='en_campo'?'en campo':'abierta');
+        var pill=a.estado==='cerrada'?(a.alerta_umbral?'pill-bad':'pill-ok'):'pill-warn';
+        return '<div class="row" data-id="'+a.id+'" style="cursor:pointer">'
+          +'<span><b>'+esc(a.fecha_inicio||'')+'</b>'
+          +(a.fecha_fin&&a.fecha_fin!==a.fecha_inicio?' → '+esc(a.fecha_fin):'')
+          +' · '+(a.vistos_count||0)+'/'+(a.snapshot_total||0)
+          +'</span><span class="pill '+pill+'">'+st+'</span></div>';
+      }).join('');
+      box.querySelectorAll('.row').forEach(function(el){
+        el.onclick=async function(){
+          var id=el.getAttribute('data-id');
+          var r=await window.DB.getAuditoria(id);
+          if(r&&r.data){
+            if(r.data.estado==='cerrada'){
+              state.aud=r.data;
+              renderInforme(r.data);
+              showView('informe');
+            } else {
+              await enterCampo(r.data);
+            }
+          }
+        };
+      });
+      // banner si hay abierta
+      var ab=rows.find(function(a){return a.estado!=='cerrada';});
+      var ha=$('home-active');
+      if(ab){
+        ha.classList.remove('hidden');
+        ha.innerHTML='<div class="card-aud" style="border-color:rgba(0,175,182,.4)">'
+          +'<h3>Auditoría en curso</h3>'
+          +'<p style="font-size:13px;color:var(--text2);margin:0 0 10px">'
+          +'Desde <b>'+esc(ab.fecha_inicio)+'</b> · vistos <b>'+(ab.vistos_count||0)+'</b> de <b>'+(ab.snapshot_total||0)+'</b> · multi-día</p>'
+          +'<button type="button" class="btn btn-primary btn-block" id="btn-reanudar">Continuar en el corral →</button></div>';
+        $('btn-reanudar').onclick=async function(){
+          var r=await window.DB.getAuditoria(ab.id);
+          if(r&&r.data) enterCampo(r.data);
+        };
+      } else {
+        ha.classList.add('hidden'); ha.innerHTML='';
+      }
+    }catch(e){
+      box.innerHTML='<div class="dd-empty">No se pudo cargar. Ejecuta SQL 0062 en Supabase.</div>';
+    }
+  }
+
+  // ── Cierre ──
+  $('btn-ir-cierre').onclick=function(){
+    if(!state.aud) return;
+    var total=state.aud.snapshot_total||0;
+    var v=state.lineas.length;
+    $('cierre-kpis').innerHTML=
+      '<div class="kpi"><div class="n">'+total+'</div><div class="l">Snapshot sistema</div></div>'
+      +'<div class="kpi"><div class="n">'+v+'</div><div class="l">Vistos en corral</div></div>'
+      +'<div class="kpi"><div class="n">'+(total-v)+'</div><div class="l">No vistos aún</div></div>'
+      +'<div class="kpi"><div class="n">'+(total?Math.round(v/total*100):0)+'%</div><div class="l">Cobertura</div></div>';
+    showView('cierre');
+  };
+  $('btn-back-campo').onclick=function(){ showView('campo'); };
+  $('faltan-no').onclick=function(){
+    state.faltanSi=false;
+    $('faltan-no').classList.add('on-no');
+    $('faltan-si').classList.remove('on-yes');
+    $('faltan-grupos-wrap').classList.add('hidden');
+  };
+  $('faltan-si').onclick=function(){
+    state.faltanSi=true;
+    $('faltan-si').classList.add('on-yes');
+    $('faltan-no').classList.remove('on-no');
+    $('faltan-grupos-wrap').classList.remove('hidden');
+  };
+  $('btn-cerrar').onclick=async function(){
+    if(!state.aud) return;
+    var btn=$('btn-cerrar'); btn.disabled=true;
+    try{
+      var r=await window.DB.cerrarAuditoria(state.aud.id, {
+        faltan_por_auditar: state.faltanSi,
+        grupos_pendientes: state.faltanSi ? ($('faltan-grupos').value||'').trim() : null,
+        cerrado_por: quien(),
+        notas: ($('cierre-notas').value||'').trim()
+      });
+      if(r&&r.error) throw r.error;
+      state.aud=r.data;
+      renderInforme(r.data);
+      showView('informe');
+      toast('Informe listo · '+(r.faltantes||0)+' a buscar en Hoy');
+      loadHist();
+    }catch(e){
+      toast('Error al cerrar: '+(e.message||e));
+    }finally{ btn.disabled=false; }
+  };
+
+  function renderInforme(aud){
+    var inf=aud.informe_json||{};
+    var body=$('informe-body');
+    var alerta=inf.alerta_umbral_2pct || aud.alerta_umbral;
+    var html='';
+    if(alerta){
+      html+='<div class="alert-banner bad"><b>⚠ Alerta:</b> faltantes &gt; 2% del snapshot ('
+        +(inf.pct_faltantes!=null?inf.pct_faltantes: '?')+'%). Revisar búsquedas en Hoy.</div>';
+    } else {
+      html+='<div class="alert-banner ok"><b>✓ Cobertura</b> dentro del umbral (≤ 2% faltantes o censo completo).</div>';
+    }
+    html+='<div class="card-aud"><h3>Informe de auditoría</h3>'
+      +'<div class="kpi-grid">'
+      +'<div class="kpi"><div class="n">'+(inf.snapshot_total!=null?inf.snapshot_total:aud.snapshot_total)+'</div><div class="l">En sistema (snapshot)</div></div>'
+      +'<div class="kpi"><div class="n">'+(inf.vistos!=null?inf.vistos:aud.vistos_count)+'</div><div class="l">Vistos en corral</div></div>'
+      +'<div class="kpi"><div class="n">'+(inf.no_vistos!=null?inf.no_vistos:'—')+'</div><div class="l">No reportados</div></div>'
+      +'<div class="kpi"><div class="n">'+(inf.pct_cobertura!=null?inf.pct_cobertura+'%':'—')+'</div><div class="l">% cobertura</div></div>'
+      +'</div>';
+    html+='<p style="font-size:12px;color:var(--text2);margin:0 0 8px">Auditor: <b>'+esc(aud.auditor_nombre||'—')+'</b> · '
+      +esc(aud.fecha_inicio||'')+(aud.fecha_fin?' → '+esc(aud.fecha_fin):'')+'</p>';
+    if(aud.faltan_por_auditar){
+      html+='<p style="font-size:12px;color:var(--amber);margin:0 0 8px">Se declaró que <b>faltaron grupos</b> por traer al corral'
+        +(aud.grupos_pendientes?': '+esc(aud.grupos_pendientes):'.')+'</p>';
+    }
+    html+='</div>';
+
+    html+='<div class="card-aud"><h3>Estado del hato (vistos)</h3>'
+      +'<div class="kpi-grid">'
+      +'<div class="kpi"><div class="n">'+(inf.tratados||0)+'</div><div class="l">Con tratamiento</div></div>'
+      +'<div class="kpi"><div class="n">'+(inf.famacha_ge4||0)+'</div><div class="l">FAMACHA ≥ 4</div></div>'
+      +'<div class="kpi"><div class="n">'+(inf.cc_le2||0)+'</div><div class="l">CC ≤ 2</div></div>'
+      +'<div class="kpi"><div class="n">'+(inf.peso_promedio_kg!=null?inf.peso_promedio_kg:'—')+'</div><div class="l">Peso promedio kg</div></div>'
+      +'</div>';
+    var porDx=inf.tratamientos_por_sintoma||{};
+    var keys=Object.keys(porDx);
+    if(keys.length){
+      html+='<div style="font-size:12px;font-weight:700;margin:8px 0 6px">Tratamientos por síntoma</div><div class="list-mini">';
+      keys.forEach(function(k){
+        html+='<div class="row"><span>'+esc(k)+'</span><b>'+porDx[k]+'</b></div>';
+      });
+      html+='</div>';
+    } else {
+      html+='<p style="font-size:12px;color:var(--text3);margin:8px 0 0">Sin tratamientos en esta jornada.</p>';
+    }
+    html+='</div>';
+
+    html+='<div class="card-aud"><h3>No reportados</h3>'
+      +'<p style="font-size:12px;color:var(--text2);margin:0 0 8px;line-height:1.45">'
+      +'Se crearon <b>'+(inf.no_vistos||0)+'</b> tareas de búsqueda en <b>Hoy</b>. '
+      +'No se da de baja a nadie hasta que resuelvas “existe / no” con evidencia y <b>tú apruebes</b> (estado <b>perdido</b>).</p>'
+      +'<a href="hoy.html" style="color:var(--teal);font-weight:700;font-size:13px;text-decoration:none">Abrir Hoy → buscar faltantes</a>'
+      +'</div>';
+
+    body.innerHTML=html;
+  }
+  $('btn-home').onclick=function(){ showView('home'); loadHist(); };
+
+  // ── Boot ──
+  async function boot(){
+    var nom=quien();
+    if($('open-auditor') && !$('open-auditor').value) $('open-auditor').value=nom;
+    showView('home');
+    loadHist();
+  }
+  document.addEventListener('appstate:ready', boot);
+  setTimeout(boot, 800);
+})();
+</script>
+</body>
+</html>

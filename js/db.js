@@ -1945,6 +1945,300 @@ window.DB = {
     return upd;
   },
 
+  // ── AUDITORÍA MENSUAL DE HATO ────────────────────────
+  async listAuditorias(finca_id, limit) {
+    return await window._sb.from('auditorias_hato')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .order('fecha_inicio', { ascending: false })
+      .limit(limit || 24);
+  },
+  async getAuditoria(id) {
+    return await window._sb.from('auditorias_hato')
+      .select('*').eq('id', id).single();
+  },
+  async getAuditoriaAbierta(finca_id) {
+    return await window._sb.from('auditorias_hato')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .in('estado', ['abierta', 'en_campo'])
+      .order('fecha_inicio', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+  },
+  /** Abre auditoría multi-día con snapshot de activos del hato LAAAMB. */
+  async abrirAuditoria(finca_id, auditor_nombre) {
+    const act = await window._sb.from('animales')
+      .select('id, codigo, nombre, sexo, lote_actual_id, peso_actual, estado')
+      .eq('finca_id', finca_id)
+      .eq('estado', 'activo');
+    if (act.error) return act;
+    const rows = act.data || [];
+    const bySexo = {};
+    rows.forEach(function (a) {
+      var k = a.sexo || 'sin_sexo';
+      bySexo[k] = (bySexo[k] || 0) + 1;
+    });
+    const snapshot = {
+      animal_ids: rows.map(function (a) { return a.id; }),
+      codigos: rows.map(function (a) { return { id: a.id, codigo: a.codigo }; }),
+      by_sexo: bySexo,
+      total: rows.length,
+      tomado_en: new Date().toISOString()
+    };
+    const perfil = window.AUTH_PERFIL || {};
+    return await window._sb.from('auditorias_hato').insert({
+      finca_id: finca_id,
+      fecha_inicio: new Date().toISOString().slice(0, 10),
+      estado: 'en_campo',
+      auditor_nombre: auditor_nombre || perfil.nombre || null,
+      auditor_perfil_id: perfil.id || null,
+      snapshot_total: rows.length,
+      snapshot_json: snapshot,
+      vistos_count: 0
+    }).select().single();
+  },
+  async getLineasAuditoria(auditoria_id) {
+    return await window._sb.from('auditoria_lineas')
+      .select('*, animales(codigo, nombre, sexo, peso_actual)')
+      .eq('auditoria_id', auditoria_id)
+      .order('created_at', { ascending: false });
+  },
+  async getLineaAuditoriaAnimal(auditoria_id, animal_id) {
+    return await window._sb.from('auditoria_lineas')
+      .select('*')
+      .eq('auditoria_id', auditoria_id)
+      .eq('animal_id', animal_id)
+      .maybeSingle();
+  },
+  /**
+   * Registra animal visto: upsert línea + pesaje (si hay peso) + opcional tratamiento.
+   * Pesos y tratamientos se aplican YA (auditor = vet). Inventario de cabezas no se toca.
+   */
+  async registrarLineaAuditoria(payload) {
+    // payload: { auditoria_id, finca_id, animal_id, chapeta, grupo_operativo,
+    //   peso_kg, cc, famacha, trato, diagnostico, tratamiento_ids, notas, registrado_por }
+    const line = {
+      auditoria_id: payload.auditoria_id,
+      animal_id: payload.animal_id,
+      chapeta: payload.chapeta || null,
+      grupo_operativo: payload.grupo_operativo || 'otro',
+      peso_kg: payload.peso_kg != null ? payload.peso_kg : null,
+      cc: payload.cc != null ? payload.cc : null,
+      famacha: payload.famacha != null ? payload.famacha : null,
+      trato: !!payload.trato,
+      diagnostico: payload.diagnostico || null,
+      tratamiento_ids: payload.tratamiento_ids || [],
+      notas: payload.notas || null,
+      registrado_por: payload.registrado_por || null
+    };
+    const up = await window._sb.from('auditoria_lineas')
+      .upsert(line, { onConflict: 'auditoria_id,animal_id' })
+      .select().single();
+    if (up.error) return up;
+
+    // Peso: aplica directo (auditor vet) — sin bandeja
+    if (payload.peso_kg != null && payload.peso_kg > 0 && payload.finca_id) {
+      await this.savePesaje({
+        finca_id: payload.finca_id,
+        animal_id: payload.animal_id,
+        peso: payload.peso_kg,
+        fecha: new Date().toISOString().slice(0, 10),
+        tipo: 'auditoria',
+        registrado_por: payload.registrado_por || 'auditoria',
+        estado_aprobacion: 'aprobado'
+      });
+    }
+    // CC / FAMACHA en animal si hay columnas (best-effort)
+    const patch = { updated_at: new Date() };
+    if (payload.cc != null) patch.condicion_corporal = payload.cc;
+    // famacha no siempre existe en animales; se guarda en la línea
+    if (payload.cc != null) {
+      await window._sb.from('animales').update(patch).eq('id', payload.animal_id);
+    }
+
+    // Contador vistos
+    const cnt = await window._sb.from('auditoria_lineas')
+      .select('id', { count: 'exact', head: true })
+      .eq('auditoria_id', payload.auditoria_id);
+    if (cnt.count != null) {
+      await window._sb.from('auditorias_hato')
+        .update({ vistos_count: cnt.count, updated_at: new Date().toISOString(), estado: 'en_campo' })
+        .eq('id', payload.auditoria_id);
+    }
+    return up;
+  },
+  async getFaltantesAuditoria(auditoria_id, soloPendientes) {
+    let q = window._sb.from('auditoria_faltantes')
+      .select('*, animales(codigo, nombre, sexo, lote_actual_id, peso_actual, estado)')
+      .eq('auditoria_id', auditoria_id)
+      .order('chapeta');
+    if (soloPendientes) q = q.eq('estado', 'pendiente_busqueda');
+    return await q;
+  },
+  async getFaltantesPendientesHoy(finca_id) {
+    // Faltantes de auditorías abiertas o recién cerradas aún en búsqueda
+    return await window._sb.from('auditoria_faltantes')
+      .select('*, animales(codigo, nombre, sexo, peso_actual), auditorias_hato!inner(id, finca_id, fecha_inicio, estado)')
+      .eq('estado', 'pendiente_busqueda')
+      .eq('auditorias_hato.finca_id', finca_id)
+      .order('created_at', { ascending: true })
+      .limit(40);
+  },
+  /** Cierra auditoría: genera faltantes = snapshot − vistos, informe, umbral 2%. */
+  async cerrarAuditoria(auditoria_id, opts) {
+    // opts: { faltan_por_auditar, grupos_pendientes, cerrado_por, notas }
+    const aud = await this.getAuditoria(auditoria_id);
+    if (aud.error || !aud.data) return aud;
+    const A = aud.data;
+    if (A.estado === 'cerrada') return { data: A, error: null };
+
+    const lineas = await this.getLineasAuditoria(auditoria_id);
+    const vistos = new Set((lineas.data || []).map(function (l) { return l.animal_id; }));
+    const snap = A.snapshot_json || {};
+    const ids = snap.animal_ids || [];
+    const codMap = {};
+    (snap.codigos || []).forEach(function (c) { codMap[c.id] = c.codigo; });
+
+    const faltantes = ids.filter(function (id) { return !vistos.has(id); });
+    if (faltantes.length) {
+      const rows = faltantes.map(function (id) {
+        return {
+          auditoria_id: auditoria_id,
+          animal_id: id,
+          chapeta: codMap[id] || null,
+          estado: 'pendiente_busqueda'
+        };
+      });
+      // insert ignore duplicates
+      await window._sb.from('auditoria_faltantes').upsert(rows, {
+        onConflict: 'auditoria_id,animal_id',
+        ignoreDuplicates: true
+      });
+    }
+
+    const vistosN = vistos.size;
+    const total = A.snapshot_total || ids.length || 0;
+    const pctFalta = total > 0 ? (faltantes.length / total) * 100 : 0;
+    const alerta = pctFalta > 2;
+
+    // Métricas de lo visto
+    const L = lineas.data || [];
+    const conTrato = L.filter(function (l) { return l.trato; }).length;
+    const famachaAlto = L.filter(function (l) { return l.famacha != null && l.famacha >= 4; }).length;
+    const ccBaja = L.filter(function (l) { return l.cc != null && l.cc <= 2; }).length;
+    const porDx = {};
+    L.forEach(function (l) {
+      if (!l.diagnostico) return;
+      porDx[l.diagnostico] = (porDx[l.diagnostico] || 0) + 1;
+    });
+    const pesos = L.map(function (l) { return Number(l.peso_kg); }).filter(function (n) { return n > 0; });
+    const pesoProm = pesos.length
+      ? Math.round((pesos.reduce(function (s, n) { return s + n; }, 0) / pesos.length) * 10) / 10
+      : null;
+
+    const informe = {
+      snapshot_total: total,
+      vistos: vistosN,
+      no_vistos: faltantes.length,
+      pct_cobertura: total ? Math.round((vistosN / total) * 1000) / 10 : 0,
+      pct_faltantes: Math.round(pctFalta * 10) / 10,
+      alerta_umbral_2pct: alerta,
+      tratados: conTrato,
+      famacha_ge4: famachaAlto,
+      cc_le2: ccBaja,
+      peso_promedio_kg: pesoProm,
+      tratamientos_por_sintoma: porDx,
+      faltan_por_auditar: !!(opts && opts.faltan_por_auditar),
+      grupos_pendientes: (opts && opts.grupos_pendientes) || null,
+      cerrado_en: new Date().toISOString()
+    };
+
+    const upd = await window._sb.from('auditorias_hato').update({
+      estado: 'cerrada',
+      fecha_fin: new Date().toISOString().slice(0, 10),
+      vistos_count: vistosN,
+      faltan_por_auditar: !!(opts && opts.faltan_por_auditar),
+      grupos_pendientes: (opts && opts.grupos_pendientes) || null,
+      alerta_umbral: alerta,
+      informe_json: informe,
+      notas: (opts && opts.notas) || A.notas || null,
+      cerrado_por: (opts && opts.cerrado_por) || null,
+      updated_at: new Date().toISOString()
+    }).eq('id', auditoria_id).select().single();
+
+    return { data: upd.data, error: upd.error, informe: informe, faltantes: faltantes.length };
+  },
+  /** Resolución en HOY: encontrado → línea + cierra faltante; no → baja pendiente tipo perdido. */
+  async resolverFaltanteAuditoria(faltante_id, resolucion) {
+    // resolucion: { existe: bool, peso_kg, cc, famacha, foto_url, notas, finca_id, registrado_por }
+    const f = await window._sb.from('auditoria_faltantes')
+      .select('*, auditorias_hato(id, finca_id)')
+      .eq('id', faltante_id).single();
+    if (f.error || !f.data) return f;
+    const row = f.data;
+    const finca_id = resolucion.finca_id ||
+      (row.auditorias_hato && row.auditorias_hato.finca_id);
+
+    if (resolucion.existe) {
+      await this.registrarLineaAuditoria({
+        auditoria_id: row.auditoria_id,
+        finca_id: finca_id,
+        animal_id: row.animal_id,
+        chapeta: row.chapeta,
+        grupo_operativo: 'otro',
+        peso_kg: resolucion.peso_kg,
+        cc: resolucion.cc,
+        famacha: resolucion.famacha,
+        trato: false,
+        notas: resolucion.notas || 'Encontrado en búsqueda post-auditoría',
+        registrado_por: resolucion.registrado_por
+      });
+      return await window._sb.from('auditoria_faltantes').update({
+        estado: 'encontrado',
+        peso_kg: resolucion.peso_kg != null ? resolucion.peso_kg : null,
+        cc: resolucion.cc != null ? resolucion.cc : null,
+        famacha: resolucion.famacha != null ? resolucion.famacha : null,
+        foto_url: resolucion.foto_url || null,
+        notas: resolucion.notas || null,
+        resuelto_por: resolucion.registrado_por || null,
+        resuelto_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }).eq('id', faltante_id).select().single();
+    }
+
+    // No existe → propuesta de baja tipo perdido (NO saca del inventario hasta aprobar)
+    let bajaId = null;
+    if (finca_id) {
+      const baja = await this.saveBaja({
+        finca_id: finca_id,
+        animal_id: row.animal_id,
+        tipo: 'perdido',
+        fecha: new Date().toISOString().slice(0, 10),
+        causa: 'No localizado en auditoría mensual',
+        notas: resolucion.notas || 'Búsqueda post-auditoría: no existe',
+        foto_evidencia_url: resolucion.foto_url || null,
+        registrado_por: resolucion.registrado_por || null,
+        estado_aprobacion: (window.Approval && window.Approval.getEstadoInicial)
+          ? window.Approval.getEstadoInicial()
+          : 'pendiente',
+        ...(window.Approval && window.Approval.getPropuestoPor
+          ? window.Approval.getPropuestoPor()
+          : {})
+      });
+      if (baja && baja.data) bajaId = baja.data.id;
+    }
+    return await window._sb.from('auditoria_faltantes').update({
+      estado: bajaId ? 'baja_propuesta' : 'no_encontrado',
+      foto_url: resolucion.foto_url || null,
+      notas: resolucion.notas || null,
+      baja_id: bajaId,
+      resuelto_por: resolucion.registrado_por || null,
+      resuelto_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    }).eq('id', faltante_id).select().single();
+  },
+
   // ── UTILIDADES ───────────────────────────────────────
   async testConnection() {
     const { data, error } = await window._sb.from('fincas').select('count').single();

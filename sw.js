@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v35: RBAC auxiliar mínimo + aportante + aprobación real de inventario.
-const CACHE_NAME = 'laaambapp-v35';
-const CACHE_SHELL = 'laaambapp-shell-v35';
+// v36: auditoría mensual de hato (censo multi-día + HOY búsquedas).
+const CACHE_NAME = 'laaambapp-v36';
+const CACHE_SHELL = 'laaambapp-shell-v36';
 
 const STATIC_ASSETS = [
   './manifest.json',
