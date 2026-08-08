@@ -84,8 +84,15 @@ window.DB = {
 
   // ── PIVOTES (división física permanente; nivel superior del potrero) ──
   async getPivotes(finca_id) {
-    return await window._sb.from('pivotes')
-      .select('*').eq('finca_id', finca_id).eq('activo', true).order('nombre');
+    // Preferir columnas con geo (0065); si la columna no existe, fallback sin geojson.
+    let r = await window._sb.from('pivotes')
+      .select('id,finca_id,nombre,area_ha,area_ha_calc,tipo_pasto,capacidad_animales,notas,activo,geojson,created_at,updated_at')
+      .eq('finca_id', finca_id).eq('activo', true).order('nombre');
+    if (r.error && /geojson|area_ha_calc|column/i.test(String(r.error.message || r.error))) {
+      r = await window._sb.from('pivotes')
+        .select('*').eq('finca_id', finca_id).eq('activo', true).order('nombre');
+    }
+    return r;
   },
   async getPivotesEliminados(finca_id) {
     return await window._sb.from('pivotes')
@@ -97,11 +104,21 @@ window.DB = {
     return await window._sb.from('lotes').delete().eq('pivote_id', pivote_id);
   },
   async savePivote(pivote) {
-    if (pivote.id) {
-      return await window._sb.from('pivotes')
-        .update(pivote).eq('id', pivote.id).select().single();
+    // No mandar geojson en el insert genérico si la columna aún no existe en prod
+    const row = { ...pivote };
+    const geo = row.geojson; delete row.geojson;
+    let res;
+    if (row.id) {
+      res = await window._sb.from('pivotes')
+        .update(row).eq('id', row.id).select().single();
+    } else {
+      res = await window._sb.from('pivotes').insert(row).select().single();
     }
-    return await window._sb.from('pivotes').insert(pivote).select().single();
+    // Persist geo aparte (best-effort)
+    if (!res.error && res.data && res.data.id && geo) {
+      try { await this.savePivoteGeo(res.data.id, geo, row.area_ha); } catch (_) {}
+    }
+    return res;
   },
   async deletePivote(id) {
     return await window._sb.from('pivotes').update({ activo: false }).eq('id', id);
