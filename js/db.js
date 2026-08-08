@@ -1267,28 +1267,39 @@ window.DB = {
   // Toma realizada. Online → insert; offline → cola IndexedDB (patrón existente).
   // datos = { corderos_crianza_id, tipo, cantidad_ml, temperatura_ok?,
   //           responsable?, observacion?, finca_id? }
-  // Tras insert: descuenta leche en polvo del inventario_nutricion según formula_tetero.
+  // NOTA: tomas_realizadas NO tiene columna finca_id (schema 0040). finca_id
+  // solo se usa para descontar polvo en inventario_nutricion.
   async createTomaRealizada(datos) {
-    const payload = { ...datos, sincronizado: true };
+    const fincaId = datos.finca_id || 'a1b2c3d4-0000-0000-0000-000000000001';
+    const payload = {
+      corderos_crianza_id: datos.corderos_crianza_id,
+      tipo: datos.tipo || 'sustituto',
+      cantidad_ml: Number(datos.cantidad_ml) || 0,
+      temperatura_ok: datos.temperatura_ok != null ? datos.temperatura_ok : true,
+      responsable: datos.responsable || null,
+      observacion: datos.observacion || null,
+      sincronizado: true
+    };
+    if (datos.fecha_hora) payload.fecha_hora = datos.fecha_hora;
     const res = await window._sb.from('tomas_realizadas')
       .insert(payload).select().single();
     if (res.error && !navigator.onLine && window.OfflineDB) {
       await window.OfflineDB.encolar({
         tabla: 'tomas_realizadas',
         accion: 'insert',
-        datos: { ...datos, sincronizado: false }
+        datos: payload
       });
-      return { data: { ...datos, sincronizado: false }, error: null, offline: true };
+      return { data: { ...payload, sincronizado: false }, error: null, offline: true };
     }
     // Descontar polvo (best-effort; no tumba el registro de la toma)
     if (!res.error && res.data) {
       try {
         await this.descontarPolvoTetero({
-          finca_id: datos.finca_id || 'a1b2c3d4-0000-0000-0000-000000000001',
-          tipo: datos.tipo || 'sustituto',
-          cantidad_ml: Number(datos.cantidad_ml) || 0,
+          finca_id: fincaId,
+          tipo: payload.tipo,
+          cantidad_ml: payload.cantidad_ml,
           toma_realizada_id: res.data.id,
-          corderos_crianza_id: datos.corderos_crianza_id
+          corderos_crianza_id: payload.corderos_crianza_id
         });
       } catch (e) {
         console.warn('[DB] descontarPolvoTetero:', e && e.message);
@@ -2416,6 +2427,54 @@ window.DB = {
       resuelto_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }).eq('id', faltante_id).select().single();
+  },
+
+  // ── LLUVIA (control simple finca / potrero) ──────────
+  async getLluviaHoy(finca_id, fecha) {
+    const f = fecha || new Date().toISOString().slice(0, 10);
+    return await window._sb.from('registros_lluvia')
+      .select('*, lotes(nombre)')
+      .eq('finca_id', finca_id)
+      .eq('fecha', f)
+      .order('created_at', { ascending: false });
+  },
+  async getLluvias(finca_id, limit) {
+    return await window._sb.from('registros_lluvia')
+      .select('*, lotes(nombre)')
+      .eq('finca_id', finca_id)
+      .order('fecha', { ascending: false })
+      .limit(limit || 30);
+  },
+  /** Upsert lluvia del día a nivel finca (lote_id null). */
+  async saveLluvia(data) {
+    const finca_id = data.finca_id || 'a1b2c3d4-0000-0000-0000-000000000001';
+    const fecha = data.fecha || new Date().toISOString().slice(0, 10);
+    const lote_id = data.lote_id || null;
+    const payload = {
+      finca_id,
+      fecha,
+      llovio: data.llovio !== false,
+      intensidad: data.intensidad || null,
+      duracion_texto: data.duracion_texto || null,
+      lote_id,
+      notas: data.notas || null,
+      registrado_por: data.registrado_por || null
+    };
+    // Buscar existente del día (misma finca + mismo lote o sin lote)
+    let q = window._sb.from('registros_lluvia')
+      .select('id')
+      .eq('finca_id', finca_id)
+      .eq('fecha', fecha);
+    q = lote_id ? q.eq('lote_id', lote_id) : q.is('lote_id', null);
+    const ex = await q.maybeSingle();
+    if (ex && ex.data && ex.data.id) {
+      return await window._sb.from('registros_lluvia')
+        .update(payload)
+        .eq('id', ex.data.id)
+        .select().single();
+    }
+    return await window._sb.from('registros_lluvia')
+      .insert(payload).select().single();
   },
 
   // ── UTILIDADES ───────────────────────────────────────

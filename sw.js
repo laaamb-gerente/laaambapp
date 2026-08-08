@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v40: teteros DOSIS n/N (varias tomas/día).
-const CACHE_NAME = 'laaambapp-v40';
-const CACHE_SHELL = 'laaambapp-shell-v40';
+// v41: fix tetero sin finca_id; registro lluvia en Lotes.
+const CACHE_NAME = 'laaambapp-v41';
+const CACHE_SHELL = 'laaambapp-shell-v41';
 
 const STATIC_ASSETS = [
   './manifest.json',

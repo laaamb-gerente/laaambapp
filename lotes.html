@@ -375,6 +375,21 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
     </div>
   </div>
 
+  <!-- Control simple de lluvia (finca) -->
+  <div id="lluvia-card" style="margin:12px 16px 0;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--bg2);display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+    <div style="font-size:13px;font-weight:700;color:var(--text);min-width:90px">🌧 Lluvia hoy</div>
+    <div id="lluvia-estado" style="font-size:12px;color:var(--text3);flex:1;min-width:140px">Cargando…</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+      <button type="button" class="btn btn-sm" id="btn-lluvia-si" style="background:var(--sky-bg,rgba(56,176,216,.12));color:var(--sky,#38B0D8);border:1px solid var(--sky,#38B0D8);font-weight:700" onclick="registrarLluviaRapida(true)">+ Llovió</button>
+      <select id="lluvia-int" class="fi" style="width:auto;min-width:100px;padding:6px 8px;font-size:12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:inherit">
+        <option value="leve">Leve</option>
+        <option value="media" selected>Media</option>
+        <option value="fuerte">Fuerte</option>
+      </select>
+      <input id="lluvia-dur" type="text" placeholder="Duración (ej. 2 h)" style="width:110px;padding:6px 8px;font-size:12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:inherit">
+    </div>
+  </div>
+
   <div class="tabs-bar">
     <button class="tab-btn active" onclick="switchTab(this,'t-mapa')">Mapa satelital</button>
     <button class="tab-btn" onclick="switchTab(this,'t-pivotes')">Pivotes</button>
@@ -2532,6 +2547,61 @@ document.addEventListener('DOMContentLoaded', function(){
 // ── Datos en vivo desde Supabase (AppState) ─────────────────────────────────────
 // renderLotesTab() ya es consciente de la fuente: al estar AppState cargado,
 // toma los 5 lotes de Supabase y cuenta animales por lote_actual_id.
+// ── Lluvia hoy (registro simple) ──
+async function loadLluviaHoy(){
+  var el=document.getElementById('lluvia-estado');
+  if(!el||!window.DB||!window.DB.getLluviaHoy) return;
+  var FINCA=(window.AppState&&window.AppState._finca_id)||'a1b2c3d4-0000-0000-0000-000000000001';
+  try{
+    var r=await window.DB.getLluviaHoy(FINCA);
+    var rows=(r&&r.data)||[];
+    var gen=rows.find(function(x){ return !x.lote_id; })||rows[0];
+    if(!gen){
+      el.innerHTML='Sin registro hoy · toca <b>+ Llovió</b> si llovió';
+      el.style.color='var(--text3)';
+      return;
+    }
+    if(gen.llovio){
+      el.innerHTML='✅ Registrado: <b>'+(gen.intensidad||'media')+'</b>'
+        +(gen.duracion_texto?(' · '+gen.duracion_texto):'')
+        +(gen.registrado_por?(' · '+gen.registrado_por):'');
+      el.style.color='var(--sky,#38B0D8)';
+    } else {
+      el.innerHTML='Sin lluvia registrada hoy';
+      el.style.color='var(--text3)';
+    }
+  }catch(e){
+    el.textContent='Corre SQL 0064 para activar el registro de lluvia';
+    el.style.color='var(--amber)';
+  }
+}
+window.registrarLluviaRapida=async function(llovio){
+  if(!window.DB||!window.DB.saveLluvia){ toast('Capa de datos no lista','err'); return; }
+  var FINCA=(window.AppState&&window.AppState._finca_id)||'a1b2c3d4-0000-0000-0000-000000000001';
+  var intEl=document.getElementById('lluvia-int');
+  var durEl=document.getElementById('lluvia-dur');
+  var btn=document.getElementById('btn-lluvia-si');
+  if(btn) btn.disabled=true;
+  try{
+    var r=await window.DB.saveLluvia({
+      finca_id: FINCA,
+      llovio: !!llovio,
+      intensidad: intEl?intEl.value:'media',
+      duracion_texto: durEl?(durEl.value||'').trim():null,
+      registrado_por: (window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'campo'
+    });
+    if(r&&r.error) throw r.error;
+    toast(llovio?'🌧 Lluvia registrada':'Sin lluvia');
+    loadLluviaHoy();
+  }catch(e){
+    toast('Error: '+(e.message||e)+' · ¿SQL 0064?','err');
+  }finally{
+    if(btn) btn.disabled=false;
+  }
+};
+document.addEventListener('appstate:ready', function(){ loadLluviaHoy(); });
+setTimeout(loadLluviaHoy, 1200);
+
 document.addEventListener('appstate:ready', function(e){
   if(!window.AppState || !Array.isArray(window.AppState.lotes)) return;
   renderLotesTab();
