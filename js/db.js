@@ -1180,15 +1180,36 @@ window.DB = {
           .maybeSingle();
         if (existing.error) { errores.push(criaId + ': ' + existing.error.message); continue; }
         if (!existing.data) {
+          // Peso de ingreso si existe (mejor ml objetivo del protocolo)
+          let pesoIni = null;
+          try {
+            const an = await window._sb.from('animales')
+              .select('peso_actual, peso_nacimiento').eq('id', criaId).maybeSingle();
+            pesoIni = (an && an.data && (an.data.peso_actual || an.data.peso_nacimiento)) || null;
+          } catch (_) {}
+          const fechaIni = new Date().toISOString().slice(0, 10);
           const cc = await this.createCorderoCrianza({
             cordero_id: criaId,
             madre_id: madreId || null,
             motivo: motivo || 'muerte_madre',
             finca_id: FINCA,
-            fecha_inicio: new Date().toISOString().slice(0, 10)
+            fecha_inicio: fechaIni,
+            peso_inicio_kg: pesoIni
           });
           if (cc && cc.error) { errores.push(criaId + ': ' + cc.error.message); }
-          else if (cc && cc.data) creados.push(cc.data.id);
+          else if (cc && cc.data) {
+            creados.push(cc.data.id);
+            // Sin protocolo no aparecen en HOY ni en Tomas pendientes
+            try {
+              await this.asegurarProtocoloCrianza(cc.data.id, {
+                pesoKg: pesoIni || 0,
+                fechaInicio: fechaIni,
+                diasAdelante: 3
+              });
+            } catch (pe) {
+              errores.push(criaId + ' (protocolo): ' + (pe && pe.message));
+            }
+          }
         }
       } catch (e) { errores.push(criaId + ': ' + (e && e.message)); }
     }
@@ -1200,6 +1221,185 @@ window.DB = {
     return await window._sb.from('corderos_crianza')
       .update({ ...cambios, updated_at: new Date() })
       .eq('id', id).select().single();
+  },
+
+  /**
+   * Cierra crianza artificial.
+   * motivoCierre: 'destete' | 'prueba' | 'muerte'
+   * Schema CHECK: estado ∈ activo|destetado|muerto
+   */
+  async cerrarCorderoCrianza(id, { motivoCierre = 'destete', fecha = null, notas = null, cordero_id = null } = {}) {
+    const hoy = fecha || new Date().toISOString().slice(0, 10);
+    const estado = motivoCierre === 'muerte' ? 'muerto' : 'destetado';
+    const notaExtra = motivoCierre === 'prueba'
+      ? 'Cancelado: prueba / falsa creación (' + hoy + ')'
+      : (motivoCierre === 'destete' ? 'Destete sala cuna (' + hoy + ')' : 'Cerrado por muerte (' + hoy + ')');
+    const patch = {
+      estado,
+      fecha_destete: estado === 'destetado' ? hoy : null,
+      notas: notas ? (String(notas) + ' · ' + notaExtra) : notaExtra,
+      updated_at: new Date()
+    };
+    const res = await window._sb.from('corderos_crianza')
+      .update(patch).eq('id', id).select().single();
+    // Flag en animales
+    let animalId = cordero_id;
+    if (!animalId && res && res.data) animalId = res.data.cordero_id;
+    if (animalId) {
+      try {
+        await window._sb.from('animales').update({ en_sala_cuna: false }).eq('id', animalId);
+      } catch (_) {}
+    }
+    // Cancelar tomas pendientes futuras (no borrar historial)
+    try {
+      await window._sb.from('tomas_programadas')
+        .update({ estado: 'perdida', updated_at: new Date() })
+        .eq('corderos_crianza_id', id)
+        .eq('estado', 'pendiente')
+        .gte('fecha_hora_programada', new Date().toISOString());
+    } catch (_) {}
+    return res;
+  },
+
+  // ── Protocolo de tomas (motor central — usado por Sala Cuna, partos, bajas) ──
+  // Día de crianza → horarios + ventana + factor ml (peso*factor/n_tomas)
+  planProtocoloPorDia(dia) {
+    const d = Number(dia) || 0;
+    if (d <= 0) return { horas: [6, 11, 17, 22], ventana: 45, factor: 200, tipo: 'calostro', label: 'Día 0 · calostro/arranque' };
+    if (d >= 1 && d <= 3) return { horas: [6, 11, 17, 22], ventana: 45, factor: 200, tipo: 'sustituto', label: 'Días 1–3 · 4 tomas' };
+    if (d >= 4 && d <= 7) return { horas: [7, 13, 20], ventana: 60, factor: 220, tipo: 'sustituto', label: 'Días 4–7 · 3 tomas' };
+    if (d >= 8 && d <= 14) return { horas: [7, 14, 21], ventana: 60, factor: 240, tipo: 'sustituto', label: 'Días 8–14 · 3 tomas' };
+    if (d >= 15 && d <= 28) return { horas: [8, 18], ventana: 90, factor: 220, tipo: 'sustituto', label: 'Días 15–28 · 2 tomas' };
+    if (d >= 29 && d <= 56) return { horas: [8], ventana: 120, factor: 200, tipo: 'sustituto', label: 'Días 29–56 · 1 toma (pre-destete)' };
+    return null; // post-destete
+  },
+
+  _midLocal(d) {
+    const x = (d instanceof Date) ? d : new Date(d);
+    return new Date(x.getFullYear(), x.getMonth(), x.getDate());
+  },
+
+  diaCrianzaEnFecha(fechaInicio, targetDate) {
+    const ing = this._midLocal(fechaInicio || new Date());
+    const tgt = this._midLocal(targetDate || new Date());
+    return Math.floor((tgt - ing) / 86400000);
+  },
+
+  /**
+   * Genera tomas de un día concreto si aún no existen (idempotente).
+   * opts.soloFuturas: si true y es hoy, omite horas ya pasadas (salvo la más cercana).
+   */
+  async generarProtocoloDia(corderosCrianzaId, pesoKg, fechaInicio, targetDate, opts = {}) {
+    const soloFuturas = opts.soloFuturas !== false;
+    const peso = (+pesoKg > 0) ? +pesoKg : 0;
+    const tgt = this._midLocal(targetDate || new Date());
+    const dia = this.diaCrianzaEnFecha(fechaInicio, tgt);
+    if (dia > 56) return { data: [], error: null, skipped: 'post_destete' };
+
+    const plan = this.planProtocoloPorDia(Math.max(0, dia));
+    if (!plan) return { data: [], error: null, skipped: 'sin_plan' };
+
+    const s = new Date(tgt.getFullYear(), tgt.getMonth(), tgt.getDate(), 0, 0, 0).toISOString();
+    const e = new Date(tgt.getFullYear(), tgt.getMonth(), tgt.getDate(), 23, 59, 59, 999).toISOString();
+    try {
+      const ex = await this.getTomasProgramadasRango({
+        corderosCrianzaId: corderosCrianzaId,
+        desde: s,
+        hasta: e
+      });
+      if (ex && ex.data && ex.data.length) {
+        return { data: [], error: null, skipped: 'ya_existe', existentes: ex.data.length };
+      }
+    } catch (err) {
+      return { data: null, error: err };
+    }
+
+    const mlPorToma = peso > 0 ? Math.round(peso * plan.factor / plan.horas.length) : 100;
+    const now = Date.now();
+    let horas = plan.horas.slice();
+    if (soloFuturas) {
+      const isToday = this._midLocal(new Date()).getTime() === tgt.getTime();
+      if (isToday) {
+        const futuras = horas.filter(function (hr) {
+          const dt = new Date(tgt.getFullYear(), tgt.getMonth(), tgt.getDate(), hr, 0, 0, 0);
+          return dt.getTime() + 30 * 60000 >= now; // margen 30 min
+        });
+        // Si todas pasaron, deja 1 toma "ahora + 15 min" para no dejar el día vacío
+        if (!futuras.length) {
+          const dt = new Date(now + 15 * 60000);
+          horas = null;
+          const tomas = [{
+            corderos_crianza_id: corderosCrianzaId,
+            fecha_hora_programada: dt.toISOString(),
+            ventana_min: plan.ventana,
+            cantidad_ml_objetivo: mlPorToma,
+            tipo: plan.tipo === 'calostro' && dia <= 0 ? 'calostro' : 'sustituto'
+          }];
+          return await this.createTomasProgramadas(tomas);
+        }
+        horas = futuras;
+      }
+    }
+
+    const tomas = horas.map(function (hr) {
+      const dt = new Date(tgt.getFullYear(), tgt.getMonth(), tgt.getDate(), hr, 0, 0, 0);
+      return {
+        corderos_crianza_id: corderosCrianzaId,
+        fecha_hora_programada: dt.toISOString(),
+        ventana_min: plan.ventana,
+        cantidad_ml_objetivo: mlPorToma,
+        tipo: (plan.tipo === 'calostro' && dia <= 0) ? 'calostro' : 'sustituto'
+      };
+    });
+    return await this.createTomasProgramadas(tomas);
+  },
+
+  /**
+   * Asegura protocolo desde HOY hasta hoy+diasAdelante (idempotente por día).
+   * Es lo que hace que el cordero aparezca en HOY → Teteros.
+   */
+  async asegurarProtocoloCrianza(corderosCrianzaId, { pesoKg = 0, fechaInicio = null, diasAdelante = 3 } = {}) {
+    let peso = +pesoKg || 0;
+    let fi = fechaInicio;
+    if (!fi || !peso) {
+      try {
+        const r = await window._sb.from('corderos_crianza')
+          .select('fecha_inicio, peso_inicio_kg, cordero_id')
+          .eq('id', corderosCrianzaId).maybeSingle();
+        if (r && r.data) {
+          fi = fi || r.data.fecha_inicio;
+          if (!peso) peso = +r.data.peso_inicio_kg || 0;
+          if (!peso && r.data.cordero_id) {
+            const an = await window._sb.from('animales')
+              .select('peso_actual').eq('id', r.data.cordero_id).maybeSingle();
+            peso = (an && an.data && +an.data.peso_actual) || 0;
+          }
+        }
+      } catch (_) {}
+    }
+    fi = fi || new Date().toISOString().slice(0, 10);
+    const n = Math.max(0, Math.min(14, Number(diasAdelante) || 3));
+    const generados = [];
+    const saltados = [];
+    for (let i = 0; i <= n; i++) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() + i);
+      const res = await this.generarProtocoloDia(corderosCrianzaId, peso, fi, d, { soloFuturas: i === 0 });
+      if (res && res.skipped) saltados.push({ offset: i, reason: res.skipped });
+      else if (res && res.data && res.data.length) generados.push({ offset: i, n: res.data.length });
+      else if (res && res.error) saltados.push({ offset: i, reason: res.error.message || 'error' });
+    }
+    return { generados, saltados, peso, fechaInicio: fi };
+  },
+
+  // Compat: 2 días iniciales (día 0 calostro + día 1 sustituto) — partos
+  async generarProtocoloInicial(corderosCrianzaId, pesoInicioKg, fechaInicioISO) {
+    return await this.asegurarProtocoloCrianza(corderosCrianzaId, {
+      pesoKg: pesoInicioKg,
+      fechaInicio: fechaInicioISO,
+      diasAdelante: 2
+    });
   },
 
   // Eventos de calostro de un cordero, ordenados por fecha_hora ascendente.
@@ -1883,10 +2083,14 @@ window.DB = {
             crianzas_creadas++;
             await window._sb.from('corderos_nacidos')
               .update({ corderos_crianza_id: cc.data.id }).eq('id', cn.id);
-            // Protocolo de tomas (solo si la función de Sala Cuna está cargada)
-            if (typeof window.generarProtocoloInicial === 'function') {
-              try { await window.generarProtocoloInicial(cc.data.id, cn.peso_nacimiento_kg || 0, datosParto.fecha_parto); } catch (e) {}
-            }
+            // Protocolo de tomas (motor en DB; fallback a window si hay override en sala-cuna)
+            try {
+              if (typeof this.generarProtocoloInicial === 'function') {
+                await this.generarProtocoloInicial(cc.data.id, cn.peso_nacimiento_kg || 0, datosParto.fecha_parto);
+              } else if (typeof window.generarProtocoloInicial === 'function') {
+                await window.generarProtocoloInicial(cc.data.id, cn.peso_nacimiento_kg || 0, datosParto.fecha_parto);
+              }
+            } catch (e) { console.warn('[DB] protocolo parto:', e && e.message); }
           }
         } catch (e) { /* continuar con los demás corderos */ }
       }
@@ -1925,7 +2129,13 @@ window.DB = {
       });
       if (cc && cc.data) {
         await window._sb.from('corderos_nacidos').update({ corderos_crianza_id: cc.data.id }).eq('id', corderosNacidosId);
-        if (typeof window.generarProtocoloInicial === 'function') { try { await window.generarProtocoloInicial(cc.data.id, cn.peso_nacimiento_kg || 0, p.fecha_parto); } catch (e) {} }
+        try {
+          if (typeof this.generarProtocoloInicial === 'function') {
+            await this.generarProtocoloInicial(cc.data.id, cn.peso_nacimiento_kg || 0, p.fecha_parto);
+          } else if (typeof window.generarProtocoloInicial === 'function') {
+            await window.generarProtocoloInicial(cc.data.id, cn.peso_nacimiento_kg || 0, p.fecha_parto);
+          }
+        } catch (e) { console.warn('[DB] protocolo crianza:', e && e.message); }
       }
     }
     return upd;

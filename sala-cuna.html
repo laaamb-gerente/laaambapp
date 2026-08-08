@@ -29,7 +29,8 @@
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=39"></script>
+<script src="js/db.js?v=44"></script>
+<script src="js/app-update.js?v=44"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -101,12 +102,35 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .toma-ml b{color:var(--text);font-weight:700}
 /* ── CORDERO CARDS ── */
 .cuna-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
-.cuna-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;position:relative}
+.cuna-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:16px;position:relative;cursor:pointer;transition:border-color var(--anim),box-shadow var(--anim)}
+.cuna-card:hover{border-color:var(--border2);box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.cuna-card.sin-proto{border-color:rgba(241,143,34,.45);box-shadow:inset 0 0 0 1px rgba(241,143,34,.15)}
 .cuna-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
 .cuna-name{font-size:15px;font-weight:700;color:var(--text)}
 .cuna-motivo{font-size:11px;color:var(--text3);margin-top:1px}
 .cuna-mini{width:30px;height:30px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--teal);font-size:18px;line-height:1;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700}
 .cuna-mini:hover{background:var(--teal-bg);border-color:var(--teal)}
+.alert-box{padding:12px 14px;border-radius:var(--r2);border:1px solid;margin-bottom:14px;font-size:13px;line-height:1.45}
+.alert-box.warn{background:var(--amber-bg);border-color:rgba(245,158,11,.4);color:var(--text)}
+.alert-box.info{background:var(--teal-bg);border-color:var(--border2);color:var(--text)}
+.alert-box .ab-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.btn-sm{padding:7px 12px;font-size:12px;min-height:36px}
+.ficha-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}
+.ficha-chip{background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:8px 10px}
+.ficha-chip .k{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
+.ficha-chip .v{font-size:14px;font-weight:700;color:var(--text);margin-top:2px}
+.timeline{display:flex;flex-direction:column;gap:6px;margin:8px 0 14px}
+.tl-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border-radius:8px;border-left:3px solid var(--text3);font-size:12px}
+.tl-item.pend{border-left-color:var(--orange)}.tl-item.ok{border-left-color:var(--green)}.tl-item.lost{border-left-color:var(--red)}
+.tl-hora{font-weight:700;color:var(--text);min-width:42px}
+.tl-body{flex:1;color:var(--text2)}.tl-st{font-weight:700;font-size:11px}
+.guia-box{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:12px}
+.guia-box b{color:var(--text)}.guia-box a{color:var(--teal);font-weight:600;text-decoration:none}
+.act-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.act-grid .btn{width:100%}
+.modal{max-width:480px}
+.badge-proto{display:inline-block;margin-top:6px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px}
+.badge-proto.ok{background:var(--green-bg);color:var(--green)}.badge-proto.warn{background:var(--amber-bg);color:var(--amber)}.badge-proto.err{background:var(--red-bg);color:var(--red)}
 .cuna-rows{margin-top:10px;display:flex;flex-direction:column;gap:5px}
 .cuna-row{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--text2)}
 .cuna-row b{color:var(--text);font-weight:700}
@@ -196,18 +220,33 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     <div class="topbadges">
       <span class="tbadge red" id="badge-vencidas" style="display:none"><span class="n" id="n-vencidas">0</span> vencidas</span>
       <span class="tbadge gray"><span class="n" id="n-activos">0</span> en crianza</span>
+      <button type="button" class="btn btn-primary btn-sm" onclick="abrirEnrolar()">+ Enrolar cría</button>
     </div>
   </div>
 
+  <div class="guia-box">
+    <b>Cómo funciona con HOY</b><br>
+    1) El cordero entra a Sala Cuna (parto, muerte de madre o enrol manual).<br>
+    2) Se genera un <b>protocolo de tomas</b> (horarios + mL). Sin protocolo no hay cola de tetero.<br>
+    3) En <a href="hoy.html">HOY → Teteros</a> aparece <b>1 tarjeta por cordero</b> = su próxima toma (DOSIS n/N). Al marcar <b>Bebido hoy</b> pasa al final de la cola; al completar todas las del día <b>desaparece hasta mañana</b>.<br>
+    4) Tocá una tarjeta de crianza para ver la <b>ficha</b>: agenda de hoy, generar protocolo, destetar o cancelar pruebas.
+  </div>
+
+  <div id="alert-sin-proto" style="display:none"></div>
+
   <!-- [B] TOMAS PENDIENTES HOY -->
   <div class="sec">
-    <div class="sec-title"><span class="dot" style="background:var(--orange)"></span>Tomas pendientes hoy</div>
+    <div class="sec-title"><span class="dot" style="background:var(--orange)"></span>Tomas pendientes hoy
+      <a href="hoy.html" style="margin-left:auto;font-size:11px;color:var(--teal);text-decoration:none;font-weight:600">→ Cola en HOY</a>
+    </div>
     <div class="toma-grid" id="tomas-list"><div class="empty-box">Cargando…</div></div>
   </div>
 
   <!-- [C] CORDEROS EN CRIANZA -->
   <div class="sec">
-    <div class="sec-title"><span class="dot"></span>Corderos en crianza</div>
+    <div class="sec-title"><span class="dot"></span>Corderos en crianza
+      <span style="margin-left:auto;font-size:11px;color:var(--text3);font-weight:500;text-transform:none;letter-spacing:0">Tocá una tarjeta → ficha</span>
+    </div>
     <div class="cuna-grid" id="corderos-list"></div>
     <div id="corderos-empty"></div>
   </div>
@@ -249,41 +288,60 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 
 <script>
 // ═══════════════════════════════════════════════════════════════════
-//  SALA CUNA — pantalla móvil (Fase 2). Gating de UI: Opción C.
-//  Solo usa métodos de js/db.js (Fase 1). Las analíticas de gerente
-//  (perdidas + compliance) no tienen método propio: se consultan con
-//  window._sb directo y columnas reales, igual que hoy.html/index.html.
+//  SALA CUNA — módulo operativo completo
+//  Ficha · protocolo · HOY sync · enrol · destete / cancelar pruebas
+//  Motor de protocolo: js/db.js (asegurarProtocoloCrianza)
 // ═══════════════════════════════════════════════════════════════════
 (function(){
   'use strict';
   var DB = window.DB;
+  var FINCA = 'a1b2c3d4-0000-0000-0000-000000000001';
   var MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-  var MOTIVOS = {huerfano:'Huérfano', mala_madre:'Mala madre', sustituto_voluntario:'Sustituto voluntario', baja_produccion_madre:'Baja producción madre'};
+  var MOTIVOS = {
+    huerfano:'Huérfano',
+    mala_madre:'Mala madre',
+    sustituto_voluntario:'Sustituto voluntario',
+    baja_produccion_madre:'Baja producción madre',
+    muerte_madre:'Muerte de madre'
+  };
 
-  var corderos = [];          // getCorderosCrianza(true)
-  var corderosMap = {};       // corderos_crianza_id -> fila
-  var tomasHoy = [];          // tomas pendientes de hoy
+  var corderos = [];
+  var corderosMap = {};
+  var tomasHoy = [];
+  var protoHoyMap = {}; // crianzaId -> { n, pendientes }
+  var sinProtoIds = [];
 
   function esc(s){ return (s==null?'':String(s)).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function esGerente(){ var r = window.AUTH_ROL; return r === 'gerente' || r === 'administrador' || r === 'admin'; }
   function miPerfilId(){ return (window.AUTH_PERFIL && window.AUTH_PERFIL.id) || null; }
   function num(n){ return Math.round((+n||0)*10)/10; }
-
+  function nombreCordero(c){
+    if(!c) return 'Cordero';
+    if(c.cordero) return c.cordero.nombre || c.cordero.codigo || 'Cordero';
+    return 'Cordero';
+  }
+  function codigoCordero(c){
+    return (c && c.cordero && c.cordero.codigo) ? c.cordero.codigo : '';
+  }
+  function diasCrianza(c){
+    if(!c || !c.fecha_inicio) return 0;
+    var a = new Date(c.fecha_inicio); a.setHours(0,0,0,0);
+    var b = new Date(); b.setHours(0,0,0,0);
+    return Math.max(0, Math.floor((b - a) / 86400000));
+  }
   function toast(msg, err){
     var t = document.getElementById('toast');
     t.textContent = msg; t.className = err ? 'on err' : 'on';
-    clearTimeout(t._tm); t._tm = setTimeout(function(){ t.className=''; }, 2600);
+    clearTimeout(t._tm); t._tm = setTimeout(function(){ t.className=''; }, 2800);
   }
-
   function startOfTodayISO(){ var d=new Date(); d.setHours(0,0,0,0); return d.toISOString(); }
   function endOfTodayISO(){ var d=new Date(); d.setHours(23,59,59,999); return d.toISOString(); }
-
+  function fechaHoyStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
   function fmtHora(iso){
     var d = new Date(iso);
     var h = d.getHours(), m = d.getMinutes();
     return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;
   }
-  // Cuenta regresiva relativa a ahora → {text, cls}
   function cuenta(iso){
     var diffMin = Math.round((new Date(iso).getTime() - Date.now())/60000);
     var cls = diffMin > 15 ? 'green' : (diffMin >= 0 ? 'amber' : 'red');
@@ -297,6 +355,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     else txt = 'hace ' + dur(abs);
     return { text: txt, cls: cls };
   }
+  function planLabel(dia){
+    if(DB.planProtocoloPorDia){
+      var p = DB.planProtocoloPorDia(dia);
+      return p ? p.label : (dia > 56 ? 'Listo para destete' : 'Sin plan');
+    }
+    return 'Día ' + dia;
+  }
 
   // ── CARGA PRINCIPAL ──
   async function cargar(){
@@ -304,31 +369,30 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     document.getElementById('ph-date').textContent =
       hoy.getDate() + ' de ' + MESES[hoy.getMonth()] + ' de ' + hoy.getFullYear();
 
-    // Corderos activos
     var rc = await DB.getCorderosCrianza(true);
     corderos = (rc && rc.data) || [];
     corderosMap = {};
     corderos.forEach(function(c){ corderosMap[c.id] = c; });
     document.getElementById('n-activos').textContent = corderos.length;
 
-    // Badge de vencidas (todas las pendientes con ventana superada)
     try{
       var rv = await DB.getTomasVencidas();
       var nv = (rv && rv.data ? rv.data.length : 0);
       var bv = document.getElementById('badge-vencidas');
       document.getElementById('n-vencidas').textContent = nv;
       bv.style.display = nv > 0 ? '' : 'none';
-    }catch(e){ /* sin bloquear */ }
+    }catch(e){}
 
+    await cargarEstadoProtocolos();
     await renderTomas();
     renderCorderos();
+    renderAlertaSinProto();
 
     if(esGerente()){
       document.getElementById('sec-gerente').style.display = '';
       renderGerente();
     }
 
-    // Iniciar el loop anti-olvido una sola vez.
     if(!cargar._tickIniciado){
       cargar._tickIniciado = true;
       tickSalaCuna();
@@ -336,7 +400,46 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     }
   }
 
-  // ── [B] TOMAS PENDIENTES HOY (offline-aware) ──
+  async function cargarEstadoProtocolos(){
+    protoHoyMap = {};
+    sinProtoIds = [];
+    if(!corderos.length) return;
+    try{
+      var rt = await DB.getTomasProgramadasRango({
+        desde: startOfTodayISO(),
+        hasta: endOfTodayISO()
+      });
+      var rows = (rt && rt.data) || [];
+      rows.forEach(function(t){
+        var a = protoHoyMap[t.corderos_crianza_id] || (protoHoyMap[t.corderos_crianza_id] = { n:0, pendientes:0 });
+        a.n++;
+        if(!t.estado || t.estado === 'pendiente') a.pendientes++;
+      });
+    }catch(e){}
+    corderos.forEach(function(c){
+      if(!protoHoyMap[c.id] || !protoHoyMap[c.id].n) sinProtoIds.push(c.id);
+    });
+  }
+
+  function renderAlertaSinProto(){
+    var box = document.getElementById('alert-sin-proto');
+    if(!box) return;
+    if(!sinProtoIds.length){ box.style.display = 'none'; box.innerHTML = ''; return; }
+    var names = sinProtoIds.map(function(id){
+      return nombreCordero(corderosMap[id]) + (codigoCordero(corderosMap[id]) ? ' ('+codigoCordero(corderosMap[id])+')' : '');
+    });
+    box.style.display = '';
+    box.innerHTML = '<div class="alert-box warn">'
+      + '<b>⚠ ' + sinProtoIds.length + ' cría(s) sin protocolo de hoy</b> — no entran bien a la cola de <a href="hoy.html" style="color:var(--teal);font-weight:700">HOY · Teteros</a> '
+      + '(solo aparecen como “toma extra” ad-hoc). Suele pasar con enrolamientos de prueba, bajas de madre o migraciones sin agenda.<br>'
+      + '<span style="font-size:12px;color:var(--text2)">' + esc(names.join(' · ')) + '</span>'
+      + '<div class="ab-actions">'
+      +   '<button type="button" class="btn btn-primary btn-sm" onclick="generarProtocolosFaltantes()">🍼 Generar protocolos faltantes (hoy+3d)</button>'
+      +   '<button type="button" class="btn btn-ghost btn-sm" onclick="abrirFicha(\'' + sinProtoIds[0] + '\')">Ver ficha del primero</button>'
+      + '</div></div>';
+  }
+
+  // ── [B] TOMAS PENDIENTES HOY ──
   async function renderTomas(){
     var rt = null, err = false;
     try{
@@ -346,9 +449,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     if(!err && rt && rt.data){
       tomasHoy = rt.data;
       setOffline(false);
-      guardarTomasCache(tomasHoy);          // refrescar agenda local
+      guardarTomasCache(tomasHoy);
     } else {
-      tomasHoy = await leerTomasCacheHoy();  // sin conexión → cache local
+      tomasHoy = await leerTomasCacheHoy();
       setOffline(true);
     }
     pintarTomas();
@@ -357,7 +460,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
   function pintarTomas(){
     var cont = document.getElementById('tomas-list');
     if(!tomasHoy.length){
-      cont.innerHTML = '<div class="empty-box">No hay tomas pendientes para hoy. ✓</div>';
+      var extra = sinProtoIds.length
+        ? '<br><span style="color:var(--amber)">Hay ' + sinProtoIds.length + ' cría(s) sin protocolo — generá el protocolo desde la alerta o la ficha.</span>'
+        : '';
+      cont.innerHTML = '<div class="empty-box">No hay tomas programadas pendientes para hoy. ✓' + extra + '</div>';
       return;
     }
     cont.innerHTML = tomasHoy.map(tarjetaToma).join('');
@@ -365,11 +471,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 
   function tarjetaToma(t){
     var c = corderosMap[t.corderos_crianza_id];
-    var nombre = c && c.cordero ? (c.cordero.nombre || c.cordero.codigo || 'Cordero') : 'Cordero';
-    var arete = c && c.cordero && c.cordero.codigo ? (' · ' + esc(c.cordero.codigo)) : '';
+    var nombre = nombreCordero(c);
+    var arete = codigoCordero(c) ? (' · ' + esc(codigoCordero(c))) : '';
     var motivo = c ? (MOTIVOS[c.motivo] || c.motivo || '') : '';
     var tipoTxt = t.tipo === 'calostro' ? 'Calostro' : 'Sustituto';
-    // Estados terminales: cumplida / perdida
     if(t.estado === 'cumplida' || t.estado === 'perdida'){
       var done = t.estado === 'cumplida';
       return '<div class="toma-card ' + (done ? 'green' : 'red') + '" id="tcard-' + t.id + '">'
@@ -390,7 +495,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       +   '<div class="toma-when ' + cd.cls + '" id="when-' + t.id + '">🕑 ' + fmtHora(t.fecha_hora_programada) + ' · ' + cd.text + '</div>'
       +   '<div class="toma-ml">Objetivo: <b>' + num(t.cantidad_ml_objetivo) + ' mL</b></div>'
       + '</div>'
-      + '<button class="btn-reg" onclick="abrirRegistroToma(\'' + t.id + '\')">Registrar →</button>'
+      + '<button class="btn-reg" onclick="event.stopPropagation();abrirRegistroToma(\'' + t.id + '\')">Registrar →</button>'
       + '</div>';
   }
 
@@ -399,7 +504,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     if(b) b.style.display = off ? '' : 'none';
   }
 
-  // ── CACHE LOCAL DE AGENDA (IndexedDB · store tomas_programadas_cache) ──
   function guardarTomasCache(list){
     if(!window.OfflineDB) return;
     window.OfflineDB.vaciar('tomas_programadas_cache')
@@ -420,7 +524,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     var t = tomasHoy.filter(function(x){ return x.id === tomaId; })[0];
     if(t){ t.estado = estado; if(window.OfflineDB) window.OfflineDB.guardar('tomas_programadas_cache', t).catch(function(){}); }
   }
-  // Marca la programada (online o, si no hay red, encolando un update por id)
   async function marcarEstadoConOffline(tomaId, estado, realId){
     try{
       var r = await DB.marcarTomaEstado(tomaId, estado, realId || null);
@@ -439,31 +542,40 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     var empty = document.getElementById('corderos-empty');
     if(!corderos.length){
       cont.innerHTML = '';
-      empty.innerHTML = '<div class="empty-box">No hay corderos en crianza artificial actualmente.<br>Los corderos se añaden desde el registro de parto.</div>';
+      empty.innerHTML = '<div class="empty-box">No hay corderos en crianza artificial.<br>'
+        + 'Enrolá desde <b>parto</b>, al registrar <b>muerte de madre</b>, o con <b>+ Enrolar cría</b>.</div>';
       return;
     }
     empty.innerHTML = '';
-    // Tarjetas base (placeholders) + enriquecido async por cordero
     cont.innerHTML = corderos.map(function(c){
-      var nombre = c.cordero ? (c.cordero.nombre || c.cordero.codigo || 'Cordero') : 'Cordero';
-      var dias = c.fecha_inicio ? Math.max(0, Math.floor((Date.now() - new Date(c.fecha_inicio).getTime())/86400000)) : '—';
+      var nombre = nombreCordero(c);
+      var cod = codigoCordero(c);
+      var dias = diasCrianza(c);
       var resp = c.responsable && c.responsable.nombre ? esc(c.responsable.nombre) : 'Sin asignar';
-      return '<div class="cuna-card" id="cuna-' + c.id + '">'
+      var ph = protoHoyMap[c.id];
+      var sinP = !ph || !ph.n;
+      var badge = sinP
+        ? '<span class="badge-proto warn">Sin protocolo hoy</span>'
+        : '<span class="badge-proto ok">' + ph.pendientes + ' pend. / ' + ph.n + ' hoy</span>';
+      var fase = planLabel(dias);
+      return '<div class="cuna-card' + (sinP ? ' sin-proto' : '') + '" id="cuna-' + c.id + '" onclick="abrirFicha(\'' + c.id + '\')">'
         + '<div class="cuna-top">'
-        +   '<div><div class="cuna-name">' + esc(nombre) + '</div>'
-        +   '<div class="cuna-motivo">' + esc(MOTIVOS[c.motivo] || c.motivo || '') + '</div></div>'
-        +   '<button class="cuna-mini" title="Registrar pesaje" onclick="abrirPesaje(\'' + c.id + '\')">+</button>'
+        +   '<div><div class="cuna-name">' + esc(nombre) + (cod ? ' <span style="font-weight:500;color:var(--text3);font-size:12px">· '+esc(cod)+'</span>' : '') + '</div>'
+        +   '<div class="cuna-motivo">' + esc(MOTIVOS[c.motivo] || c.motivo || '') + ' · ' + esc(fase) + '</div>'
+        +   badge
+        +   '</div>'
+        +   '<button class="cuna-mini" title="Pesaje rápido" onclick="event.stopPropagation();abrirPesaje(\'' + c.id + '\')">+</button>'
         + '</div>'
         + '<div class="cuna-rows">'
-        +   '<div class="cuna-row"><span>Días en crianza</span><b>' + dias + '</b></div>'
+        +   '<div class="cuna-row"><span>Días en crianza</span><b>' + dias + ' / 56</b></div>'
         +   '<div class="cuna-row"><span>Último peso</span><b id="peso-' + c.id + '">…</b></div>'
         +   '<div class="cuna-row"><span>GMD</span><b id="gmd-' + c.id + '">…</b></div>'
         +   '<div class="cuna-row"><span>Responsable</span><b>' + resp + '</b></div>'
         + '</div>'
         + '<div id="cal-' + c.id + '"></div>'
+        + '<div style="margin-top:10px;font-size:11px;color:var(--teal);font-weight:600">Ver ficha y protocolo →</div>'
         + '</div>';
     }).join('');
-    // Enriquecer cada tarjeta
     corderos.forEach(function(c){ enriquecerCordero(c); });
   }
 
@@ -473,7 +585,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       var rp = await DB.getPesajesCordero(animalId);
       var pes = (rp && rp.data) || [];
       var pesoEl = document.getElementById('peso-' + c.id);
-      if(pesoEl) pesoEl.textContent = pes.length ? (num(pes[0].peso_kg) + ' kg') : 'Sin datos';
+      if(pesoEl) pesoEl.textContent = pes.length ? (num(pes[0].peso_kg) + ' kg') : (c.peso_inicio_kg ? num(c.peso_inicio_kg)+' kg (ingreso)' : 'Sin datos');
     }catch(e){}
     try{
       var gmd = await DB.calcularGMD(animalId);
@@ -493,77 +605,284 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
   function badgeCalostro(total, pesoInicio){
     total = +total || 0;
     if(total <= 0) return '<span class="cuna-cal red">🔴 Sin calostro registrado</span>';
-    // Objetivo teórico: 50 mL/kg × peso × 4 tomas en 24h = 200 mL/kg
     var objetivo = (+pesoInicio > 0) ? (50 * (+pesoInicio) * 4) : 0;
     if(objetivo > 0 && total >= objetivo) return '<span class="cuna-cal green">✅ Calostro completo (' + num(total) + ' mL)</span>';
     if(objetivo > 0) return '<span class="cuna-cal amber">🟡 Calostro parcial (' + num(total) + ' de ~' + num(objetivo) + ' mL)</span>';
     return '<span class="cuna-cal amber">🟡 Calostro: ' + num(total) + ' mL</span>';
   }
 
-  // ── [D] PERDIDAS + COMPLIANCE (solo gerente/admin) ──
-  async function renderGerente(){
-    var hoyIni = startOfTodayISO(), hoyFin = endOfTodayISO();
-    // Perdidas hoy (no hay método db.js → consulta directa con columnas reales)
-    var pcont = document.getElementById('perdidas-list');
-    try{
-      var rp = await window._sb.from('tomas_programadas')
-        .select('*, responsable:responsable_asignado(nombre)')
-        .eq('estado', 'perdida')
-        .gte('fecha_hora_programada', hoyIni)
-        .lte('fecha_hora_programada', hoyFin)
-        .order('fecha_hora_programada', { ascending: true });
-      var perdidas = (rp && rp.data) || [];
-      if(!perdidas.length){
-        pcont.innerHTML = '<div class="empty-box">Ninguna toma perdida hoy. ✓</div>';
-      } else {
-        pcont.innerHTML = perdidas.map(function(t){
-          var c = corderosMap[t.corderos_crianza_id];
-          var nombre = c && c.cordero ? (c.cordero.nombre || c.cordero.codigo || 'Cordero') : 'Cordero';
-          var resp = t.responsable && t.responsable.nombre ? esc(t.responsable.nombre) : 'Sin asignar';
-          return '<div class="lost-item">'
-            + '<div style="flex:1"><span class="lost-name">' + esc(nombre) + '</span>'
-            + ' <span class="lost-meta">· ' + fmtHora(t.fecha_hora_programada) + ' · ' + (t.tipo === 'calostro' ? 'Calostro' : 'Sustituto') + '</span></div>'
-            + '<div class="lost-meta">' + resp + '</div>'
-            + '</div>';
-        }).join('');
-      }
-    }catch(e){ pcont.innerHTML = '<div class="empty-box">No se pudo cargar tomas perdidas.</div>'; }
+  // ── FICHA DEL CORDERO ──
+  async function abrirFicha(crianzaId){
+    var c = corderosMap[crianzaId];
+    if(!c){ toast('Cordero no encontrado', true); return; }
+    var nombre = nombreCordero(c);
+    var cod = codigoCordero(c);
+    var dias = diasCrianza(c);
+    var desteteEn = Math.max(0, 56 - dias);
+    var ph = protoHoyMap[crianzaId];
+    var sinP = !ph || !ph.n;
 
-    // Compliance 7 días (cumplidas / cumplidas+perdidas) por cordero
-    var ccont = document.getElementById('compliance-list');
-    if(!corderos.length){ ccont.innerHTML = '<div class="empty-box">Sin corderos en crianza.</div>'; return; }
+    abrirModal('Ficha · ' + nombre, '<div class="empty-box">Cargando agenda…</div>');
+
+    var tomasDia = [], tomasManana = [], realizadas = [];
     try{
-      var sieteAgo = new Date(Date.now() - 7*86400000).toISOString();
-      var rg = await window._sb.from('tomas_programadas')
-        .select('corderos_crianza_id, estado')
-        .gte('fecha_hora_programada', sieteAgo)
-        .in('estado', ['cumplida', 'perdida']);
-      var rows = (rg && rg.data) || [];
-      var agg = {};
-      rows.forEach(function(r){
-        var a = agg[r.corderos_crianza_id] || (agg[r.corderos_crianza_id] = { ok:0, tot:0 });
-        a.tot++; if(r.estado === 'cumplida') a.ok++;
-      });
-      ccont.innerHTML = corderos.map(function(c){
-        var nombre = c.cordero ? (c.cordero.nombre || c.cordero.codigo || 'Cordero') : 'Cordero';
-        var a = agg[c.id];
-        if(!a || !a.tot){
-          return '<div class="comp-row"><div class="comp-name">' + esc(nombre) + '</div>'
-            + '<div class="comp-track"></div><div class="comp-pct" style="color:var(--text3)">—</div></div>'
-            + '<div class="cuna-motivo" style="margin:-6px 0 8px 130px;font-size:10px">Sin datos de compliance</div>';
-        }
-        var pct = Math.round(a.ok / a.tot * 100);
-        var cls = pct >= 90 ? 'green' : (pct >= 70 ? 'amber' : 'red');
-        return '<div class="comp-row">'
-          + '<div class="comp-name">' + esc(nombre) + '</div>'
-          + '<div class="comp-track"><div class="comp-fill ' + cls + '" style="width:' + pct + '%"></div></div>'
-          + '<div class="comp-pct">' + pct + '%</div>'
-          + '</div>';
-      }).join('');
-    }catch(e){ ccont.innerHTML = '<div class="empty-box">No se pudo cargar compliance.</div>'; }
+      var r1 = await DB.getTomasProgramadasRango({ corderosCrianzaId: crianzaId, desde: startOfTodayISO(), hasta: endOfTodayISO() });
+      tomasDia = (r1 && r1.data) || [];
+    }catch(e){}
+    try{
+      var m0 = new Date(); m0.setDate(m0.getDate()+1); m0.setHours(0,0,0,0);
+      var m1 = new Date(m0); m1.setHours(23,59,59,999);
+      var r2 = await DB.getTomasProgramadasRango({ corderosCrianzaId: crianzaId, desde: m0.toISOString(), hasta: m1.toISOString() });
+      tomasManana = (r2 && r2.data) || [];
+    }catch(e){}
+    try{
+      var r3 = await DB.getTomasRealizadas(crianzaId);
+      realizadas = ((r3 && r3.data) || []).slice(0, 5);
+    }catch(e){}
+
+    var peso = await pesoActualCordero(c);
+    var fase = planLabel(dias);
+    var madre = c.madre ? (c.madre.codigo || c.madre.nombre || '—') : '—';
+
+    function tl(t){
+      var st = t.estado || 'pendiente';
+      var cls = st === 'cumplida' ? 'ok' : (st === 'perdida' ? 'lost' : 'pend');
+      var stLbl = st === 'cumplida' ? 'Cumplida' : (st === 'perdida' ? 'Perdida' : 'Pendiente · sale en HOY');
+      return '<div class="tl-item ' + cls + '">'
+        + '<div class="tl-hora">' + fmtHora(t.fecha_hora_programada) + '</div>'
+        + '<div class="tl-body">' + (t.tipo === 'calostro' ? 'Calostro' : 'Sustituto')
+        + ' · <b>' + num(t.cantidad_ml_objetivo) + ' mL</b></div>'
+        + '<div class="tl-st" style="color:var(--' + (cls==='ok'?'green':cls==='lost'?'red':'orange') + ')">' + stLbl + '</div></div>';
+    }
+
+    var agendaHoy = tomasDia.length
+      ? '<div class="timeline">' + tomasDia.map(tl).join('') + '</div>'
+      : '<div class="empty-box" style="padding:12px;margin-bottom:10px">Sin tomas programadas hoy.<br>'
+        + (sinP ? '<b style="color:var(--amber)">Este animal no tiene protocolo → no guía la cola de HOY.</b>' : '') + '</div>';
+
+    var html = ''
+      + '<div style="font-size:12px;color:var(--text2);margin-bottom:4px">' + esc(MOTIVOS[c.motivo]||c.motivo||'')
+      + (cod ? ' · arete <b style="color:var(--text)">' + esc(cod) + '</b>' : '')
+      + ' · madre ' + esc(madre) + '</div>'
+      + '<div class="ficha-meta">'
+      +   '<div class="ficha-chip"><div class="k">Días crianza</div><div class="v">' + dias + ' / 56</div></div>'
+      +   '<div class="ficha-chip"><div class="k">Destete en</div><div class="v">' + (desteteEn === 0 ? 'Hoy/listo' : desteteEn + ' d') + '</div></div>'
+      +   '<div class="ficha-chip"><div class="k">Peso ref.</div><div class="v">' + (peso ? num(peso) + ' kg' : '—') + '</div></div>'
+      +   '<div class="ficha-chip"><div class="k">Fase protocolo</div><div class="v" style="font-size:12px">' + esc(fase) + '</div></div>'
+      + '</div>'
+      + '<div class="guia-box" style="margin-top:0">'
+      +   '<b>Cuándo aparece / sale de HOY</b><br>'
+      +   '· <b>Aparece</b> si tiene al menos 1 toma <b>pendiente</b> de hoy (o atrasada).<br>'
+      +   '· Muestra la <b>próxima</b> dosis (DOSIS n/N). Al beber, va al final de la cola.<br>'
+      +   '· <b>Sale</b> de HOY cuando todas las tomas del día están cumplidas o perdidas.<br>'
+      +   '· Vuelve <b>mañana</b> si hay protocolo del día siguiente (se genera de noche o con “Extender”).'
+      + '</div>'
+      + '<div class="sec-title" style="margin-bottom:6px"><span class="dot" style="background:var(--orange)"></span>Agenda de hoy</div>'
+      + agendaHoy
+      + (tomasManana.length
+        ? '<div class="sec-title" style="margin-bottom:6px"><span class="dot"></span>Mañana (' + tomasManana.length + ' tomas)</div>'
+          + '<div class="timeline">' + tomasManana.map(tl).join('') + '</div>'
+        : '<div style="font-size:11px;color:var(--text3);margin-bottom:10px">Mañana: aún sin protocolo' + (dias >= 56 ? ' (destete)' : ' — usá “Extender 3 días”') + '.</div>')
+      + (realizadas.length
+        ? '<div class="sec-title" style="margin-bottom:6px"><span class="dot" style="background:var(--green)"></span>Últimas tomas reales</div>'
+          + '<div style="font-size:11px;color:var(--text2);margin-bottom:12px">'
+          + realizadas.map(function(r){
+              return esc((r.fecha_hora||'').slice(0,16).replace('T',' ')) + ' · ' + num(r.cantidad_ml) + ' mL ' + (r.tipo||'');
+            }).join('<br>') + '</div>'
+        : '')
+      + '<div class="sec-title" style="margin-bottom:6px"><span class="dot"></span>Acciones</div>'
+      + '<div class="act-grid">'
+      +   '<button type="button" class="btn btn-primary btn-sm" onclick="accionGenerarProto(\'' + crianzaId + '\',3)">🍼 Protocolo hoy+3d</button>'
+      +   '<button type="button" class="btn btn-ghost btn-sm" onclick="accionGenerarProto(\'' + crianzaId + '\',7)">📅 Extender 7 días</button>'
+      +   '<button type="button" class="btn btn-ghost btn-sm" onclick="abrirPesaje(\'' + crianzaId + '\')">⚖️ Pesaje</button>'
+      +   '<button type="button" class="btn btn-ghost btn-sm" onclick="abrirRegistroTomaExtra(\'' + crianzaId + '\')">🥛 Toma extra</button>'
+      +   '<button type="button" class="btn btn-ghost btn-sm" onclick="accionDestetar(\'' + crianzaId + '\')">✅ Destetar</button>'
+      +   '<button type="button" class="btn btn-ghost btn-sm" style="color:var(--red);border-color:rgba(239,68,68,.35)" onclick="accionCancelarPrueba(\'' + crianzaId + '\')">🗑 Era prueba</button>'
+      + '</div>'
+      + '<div class="modal-msg" id="f-msg" style="margin-top:10px"></div>'
+      + '<a href="hoy.html" class="btn btn-ghost" style="width:100%;margin-top:10px">→ Abrir cola HOY · Teteros</a>';
+
+    document.getElementById('modal-title').textContent = 'Ficha · ' + nombre;
+    document.getElementById('modal-body').innerHTML = html;
   }
 
-  // ── MODALES ──
+  async function pesoActualCordero(c){
+    try{
+      var r = await DB.getPesajesCordero(c.cordero_id);
+      if(r && r.data && r.data.length) return +r.data[0].peso_kg;
+    }catch(e){}
+    return +c.peso_inicio_kg || 0;
+  }
+
+  async function accionGenerarProto(crianzaId, dias){
+    var c = corderosMap[crianzaId];
+    if(!c) return;
+    var msg = document.getElementById('f-msg');
+    if(msg){ msg.className = 'modal-msg'; msg.textContent = 'Generando protocolo…'; }
+    try{
+      var peso = await pesoActualCordero(c);
+      var res = await DB.asegurarProtocoloCrianza(crianzaId, {
+        pesoKg: peso,
+        fechaInicio: c.fecha_inicio,
+        diasAdelante: dias
+      });
+      var n = (res.generados || []).reduce(function(s, g){ return s + (g.n || 0); }, 0);
+      toast(n ? ('Protocolo listo · ' + n + ' tomas nuevas') : 'Protocolo ya estaba al día ✓');
+      await cargar();
+      await abrirFicha(crianzaId);
+    }catch(e){
+      if(msg){ msg.className = 'modal-msg err'; msg.textContent = (e && e.message) || 'No se pudo generar'; }
+      toast('Error al generar protocolo', true);
+    }
+  }
+
+  async function generarProtocolosFaltantes(){
+    if(!sinProtoIds.length){ toast('Nadie sin protocolo'); return; }
+    toast('Generando ' + sinProtoIds.length + ' protocolo(s)…');
+    var ok = 0, fail = 0;
+    for(var i = 0; i < sinProtoIds.length; i++){
+      var id = sinProtoIds[i];
+      var c = corderosMap[id];
+      if(!c) continue;
+      try{
+        var peso = await pesoActualCordero(c);
+        await DB.asegurarProtocoloCrianza(id, { pesoKg: peso, fechaInicio: c.fecha_inicio, diasAdelante: 3 });
+        ok++;
+      }catch(e){ fail++; }
+    }
+    toast(ok + ' listo' + (fail ? (' · ' + fail + ' error(es)') : ''));
+    await cargar();
+  }
+
+  async function accionDestetar(crianzaId){
+    var c = corderosMap[crianzaId];
+    if(!c) return;
+    if(!confirm('¿Destetar a ' + nombreCordero(c) + '?\nSale de Sala Cuna y de la cola de HOY. Se marcan tomas futuras como perdidas.')) return;
+    try{
+      var r = await DB.cerrarCorderoCrianza(crianzaId, {
+        motivoCierre: 'destete',
+        cordero_id: c.cordero_id
+      });
+      if(r && r.error) throw r.error;
+      cerrarModal();
+      toast('Destetado · fuera de Sala Cuna ✓');
+      await cargar();
+    }catch(e){ toast('No se pudo destetar: ' + (e && e.message), true); }
+  }
+
+  async function accionCancelarPrueba(crianzaId){
+    var c = corderosMap[crianzaId];
+    if(!c) return;
+    if(!confirm('¿Cancelar a ' + nombreCordero(c) + ' como PRUEBA / falsa creación?\nSe cierra la crianza (estado destetado + nota de prueba) y deja de salir en HOY.\nNo borra el animal del hato.')) return;
+    try{
+      var r = await DB.cerrarCorderoCrianza(crianzaId, {
+        motivoCierre: 'prueba',
+        cordero_id: c.cordero_id,
+        notas: c.notas || null
+      });
+      if(r && r.error) throw r.error;
+      cerrarModal();
+      toast('Crianza de prueba cancelada ✓');
+      await cargar();
+    }catch(e){ toast('No se pudo cancelar: ' + (e && e.message), true); }
+  }
+
+  // ── ENROLAR ──
+  async function abrirEnrolar(){
+    var animales = [];
+    try{
+      if(window.AppState && window.AppState.animales && window.AppState.animales.length){
+        animales = window.AppState.animales.filter(function(a){ return a.estado === 'activo'; });
+      } else {
+        var ra = await DB.getAnimales(FINCA, { estado: 'activo' });
+        animales = (ra && ra.data) || [];
+      }
+    }catch(e){}
+    // Excluir ya en crianza activa
+    var enCuna = {};
+    corderos.forEach(function(c){ if(c.cordero_id) enCuna[c.cordero_id] = 1; });
+    animales = animales.filter(function(a){ return !enCuna[a.id]; });
+    // Preferir jóvenes / sin destete
+    animales.sort(function(a, b){
+      var pa = +(a.peso_actual || 99), pb = +(b.peso_actual || 99);
+      return pa - pb;
+    });
+    var opts = animales.slice(0, 200).map(function(a){
+      var lbl = (a.codigo || a.nombre || a.id.slice(0,8))
+        + (a.nombre && a.codigo && a.nombre !== a.codigo ? ' · ' + a.nombre : '')
+        + (a.peso_actual != null ? ' · ' + a.peso_actual + ' kg' : '');
+      return '<option value="' + a.id + '" data-peso="' + (a.peso_actual || '') + '" data-madre="' + (a.madre_id || '') + '">' + esc(lbl) + '</option>';
+    }).join('');
+
+    var hoy = fechaHoyStr();
+    var html = ''
+      + '<div class="guia-box">Enrolá una cría real del hato. Se crea la crianza y se genera protocolo (hoy+3 días) para que aparezca en HOY.</div>'
+      + '<div class="fld"><label>Animal</label><select id="e-animal"><option value="">— Elegir —</option>' + opts + '</select></div>'
+      + '<div class="fld"><label>Motivo</label><select id="e-motivo">'
+      +   '<option value="huerfano">Huérfano</option>'
+      +   '<option value="muerte_madre">Muerte de madre</option>'
+      +   '<option value="mala_madre">Mala madre</option>'
+      +   '<option value="baja_produccion_madre">Baja producción madre</option>'
+      +   '<option value="sustituto_voluntario">Sustituto voluntario</option>'
+      + '</select></div>'
+      + '<div class="fld"><label>Fecha inicio</label><input type="date" id="e-fecha" value="' + hoy + '"></div>'
+      + '<div class="fld"><label>Peso ingreso (kg)</label><input type="number" id="e-peso" min="0" step="0.1" placeholder="Ej. 3.5"></div>'
+      + '<div class="fld"><label>Notas</label><textarea id="e-notas" placeholder="Opcional. Si es prueba, preferí no enrolar o cancelar luego con “Era prueba”."></textarea></div>'
+      + '<div class="modal-msg" id="e-msg"></div>'
+      + '<button class="btn btn-primary" style="width:100%" id="e-save" onclick="guardarEnrol()">Enrolar + generar protocolo</button>';
+    abrirModal('Enrolar en Sala Cuna', html);
+    var sel = document.getElementById('e-animal');
+    if(sel) sel.onchange = function(){
+      var o = sel.options[sel.selectedIndex];
+      var p = o && o.getAttribute('data-peso');
+      if(p) document.getElementById('e-peso').value = p;
+    };
+  }
+
+  async function guardarEnrol(){
+    var animalId = document.getElementById('e-animal').value;
+    if(!animalId){ var m=document.getElementById('e-msg'); m.className='modal-msg err'; m.textContent='Elegí un animal.'; return; }
+    var btn = document.getElementById('e-save'); btn.disabled = true; btn.textContent = 'Enrolando…';
+    var peso = parseFloat(document.getElementById('e-peso').value) || null;
+    var fecha = document.getElementById('e-fecha').value || fechaHoyStr();
+    var motivo = document.getElementById('e-motivo').value || 'huerfano';
+    var notas = document.getElementById('e-notas').value || null;
+    var madreId = null;
+    try{
+      var o = document.getElementById('e-animal').options[document.getElementById('e-animal').selectedIndex];
+      madreId = o.getAttribute('data-madre') || null;
+    }catch(e){}
+    try{
+      await window._sb.from('animales').update({ en_sala_cuna: true }).eq('id', animalId);
+      var cc = await DB.createCorderoCrianza({
+        cordero_id: animalId,
+        madre_id: madreId || null,
+        motivo: motivo,
+        metodo: 'tetero',
+        estado: 'activo',
+        fecha_inicio: fecha,
+        peso_inicio_kg: peso,
+        finca_id: FINCA,
+        notas: notas,
+        responsable_default: miPerfilId()
+      });
+      if(cc && cc.error) throw cc.error;
+      var id = cc.data && cc.data.id;
+      if(id){
+        await DB.asegurarProtocoloCrianza(id, { pesoKg: peso || 0, fechaInicio: fecha, diasAdelante: 3 });
+      }
+      cerrarModal();
+      toast('Enrolado + protocolo generado ✓');
+      await cargar();
+      if(id) await abrirFicha(id);
+    }catch(e){
+      btn.disabled = false; btn.textContent = 'Enrolar + generar protocolo';
+      var mm = document.getElementById('e-msg'); mm.className = 'modal-msg err';
+      mm.textContent = (e && e.message) || 'Error al enrolar';
+    }
+  }
+
+  // ── MODALES toma / pesaje ──
   function abrirModal(titulo, html){
     document.getElementById('modal-title').textContent = titulo;
     document.getElementById('modal-body').innerHTML = html;
@@ -571,12 +890,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
   }
   function cerrarModal(){ document.getElementById('modal-ov').classList.remove('on'); }
 
-  // Registrar toma realizada
   function abrirRegistroToma(tomaId){
     var t = tomasHoy.filter(function(x){ return x.id === tomaId; })[0];
-    if(!t){ toast('Toma no encontrada', true); return; }
+    if(!t){
+      // buscar en ficha: recargar desde map no tiene todas — toast
+      toast('Toma no en pendientes de hoy — usá Toma extra o HOY', true);
+      return;
+    }
     var c = corderosMap[t.corderos_crianza_id];
-    var nombre = c && c.cordero ? (c.cordero.nombre || c.cordero.codigo || 'Cordero') : 'Cordero';
+    var nombre = nombreCordero(c);
     var html = ''
       + '<div style="font-size:13px;color:var(--text2);margin-bottom:14px">'
       +   (t.tipo === 'calostro' ? '🍼 Calostro' : '🥛 Sustituto') + ' · <b style="color:var(--text)">' + esc(nombre) + '</b>'
@@ -587,6 +909,46 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       + '<div class="modal-msg" id="r-msg"></div>'
       + '<button class="btn btn-primary" style="width:100%" id="r-save" onclick="guardarToma(\'' + tomaId + '\')">Guardar toma</button>';
     abrirModal('Registrar toma', html);
+  }
+
+  function abrirRegistroTomaExtra(crianzaId){
+    var c = corderosMap[crianzaId];
+    if(!c) return;
+    var nombre = nombreCordero(c);
+    var html = ''
+      + '<div style="font-size:13px;color:var(--text2);margin-bottom:14px">Toma <b>sin</b> programar · <b style="color:var(--text)">' + esc(nombre) + '</b></div>'
+      + '<div class="fld"><label>Tipo</label><select id="r-tipo"><option value="sustituto">Sustituto</option><option value="calostro">Calostro</option></select></div>'
+      + '<div class="fld"><label>mL realizados</label><input type="number" id="r-ml" min="0" step="1" value="100"></div>'
+      + '<div class="toggle-row"><span>🌡️ Temperatura OK</span><input type="checkbox" id="r-temp" checked></div>'
+      + '<div class="fld"><label>Observación</label><textarea id="r-obs" placeholder="Toma extra…"></textarea></div>'
+      + '<div class="modal-msg" id="r-msg"></div>'
+      + '<button class="btn btn-primary" style="width:100%" id="r-save" onclick="guardarTomaExtra(\'' + crianzaId + '\')">Guardar toma extra</button>';
+    abrirModal('Toma extra', html);
+  }
+
+  async function guardarTomaExtra(crianzaId){
+    var ml = parseFloat(document.getElementById('r-ml').value);
+    if(isNaN(ml) || ml < 0){ document.getElementById('r-msg').className='modal-msg err'; document.getElementById('r-msg').textContent='Indica mL.'; return; }
+    var btn = document.getElementById('r-save'); btn.disabled = true; btn.textContent = 'Guardando…';
+    try{
+      var res = await DB.createTomaRealizada({
+        corderos_crianza_id: crianzaId,
+        tipo: document.getElementById('r-tipo').value || 'sustituto',
+        cantidad_ml: ml,
+        temperatura_ok: document.getElementById('r-temp').checked,
+        responsable: miPerfilId(),
+        observacion: document.getElementById('r-obs').value || 'Toma extra',
+        finca_id: FINCA
+      });
+      if(res.error && !res.offline) throw res.error;
+      cerrarModal();
+      toast('Toma extra registrada ✓');
+      await cargar();
+    }catch(e){
+      btn.disabled = false; btn.textContent = 'Guardar toma extra';
+      document.getElementById('r-msg').className = 'modal-msg err';
+      document.getElementById('r-msg').textContent = 'Error al guardar';
+    }
   }
 
   async function guardarToma(tomaId){
@@ -601,13 +963,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       cantidad_ml: ml,
       temperatura_ok: document.getElementById('r-temp').checked,
       responsable: miPerfilId(),
-      observacion: document.getElementById('r-obs').value || null
+      observacion: document.getElementById('r-obs').value || null,
+      finca_id: FINCA
     };
     try{
       var res = await DB.createTomaRealizada(payload);
       if(res.error && !res.offline){ throw res.error; }
       var realId = (res.data && res.data.id) || null;
-      // Marca la programada como cumplida (online; offline encola update por id).
       await marcarEstadoConOffline(tomaId, 'cumplida', realId);
       cerrarModal();
       toast(res.offline ? 'Guardado offline · se sincronizará' : 'Toma registrada ✓');
@@ -618,12 +980,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     }
   }
 
-  // Registrar pesaje rápido
   function abrirPesaje(corderoCrianzaId){
     var c = corderosMap[corderoCrianzaId];
     if(!c){ toast('Cordero no encontrado', true); return; }
-    var nombre = c.cordero ? (c.cordero.nombre || c.cordero.codigo || 'Cordero') : 'Cordero';
-    var hoy = new Date(); var iso = hoy.getFullYear() + '-' + ('0'+(hoy.getMonth()+1)).slice(-2) + '-' + ('0'+hoy.getDate()).slice(-2);
+    var nombre = nombreCordero(c);
+    var iso = fechaHoyStr();
     var html = ''
       + '<div style="font-size:13px;color:var(--text2);margin-bottom:14px">⚖️ <b style="color:var(--text)">' + esc(nombre) + '</b></div>'
       + '<div class="fld"><label>Peso (kg)</label><input type="number" id="p-peso" min="0" step="0.1" placeholder="Ej. 4.2"></div>'
@@ -653,7 +1014,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       if(res.error){ throw res.error; }
       cerrarModal();
       toast('Pesaje registrado ✓');
-      // Refrescar solo la tarjeta del cordero
       enriquecerCordero(c);
     }catch(e){
       btn.disabled = false; btn.textContent = 'Guardar pesaje';
@@ -661,69 +1021,85 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     }
   }
 
-  // ── PROTOCOLO AUTOMÁTICO DE TOMAS (PASO 3) ──
-  // Se invoca al crear un cordero en crianza (flujo de registro de parto).
-  // Genera los 2 primeros días: 24h de calostro (5 tomas) + 1 día de sustituto (4 tomas).
-  // El motor de alertas (Fase 3) extenderá el protocolo día a día.
-  async function generarProtocoloInicial(corderosCrianzaId, pesoInicioKg, fechaInicioISO){
-    var base = new Date(fechaInicioISO || new Date().toISOString());
-    if(isNaN(base.getTime())) base = new Date();
-    var peso = (+pesoInicioKg > 0) ? +pesoInicioKg : 0;
-    var tomas = [];
+  // ── Gerente ──
+  async function renderGerente(){
+    var hoyIni = startOfTodayISO(), hoyFin = endOfTodayISO();
+    var pcont = document.getElementById('perdidas-list');
+    try{
+      var rp = await window._sb.from('tomas_programadas')
+        .select('*, responsable:responsable_asignado(nombre)')
+        .eq('estado', 'perdida')
+        .gte('fecha_hora_programada', hoyIni)
+        .lte('fecha_hora_programada', hoyFin)
+        .order('fecha_hora_programada', { ascending: true });
+      var perdidas = (rp && rp.data) || [];
+      if(!perdidas.length){
+        pcont.innerHTML = '<div class="empty-box">Ninguna toma perdida hoy. ✓</div>';
+      } else {
+        pcont.innerHTML = perdidas.map(function(t){
+          var c = corderosMap[t.corderos_crianza_id];
+          var nombre = nombreCordero(c);
+          var resp = t.responsable && t.responsable.nombre ? esc(t.responsable.nombre) : 'Sin asignar';
+          return '<div class="lost-item">'
+            + '<div style="flex:1"><span class="lost-name">' + esc(nombre) + '</span>'
+            + ' <span class="lost-meta">· ' + fmtHora(t.fecha_hora_programada) + ' · ' + (t.tipo === 'calostro' ? 'Calostro' : 'Sustituto') + '</span></div>'
+            + '<div class="lost-meta">' + resp + '</div></div>';
+        }).join('');
+      }
+    }catch(e){ pcont.innerHTML = '<div class="empty-box">No se pudo cargar tomas perdidas.</div>'; }
 
-    // Día 0-1: 5 tomas de calostro (≈10% peso en 24h, repartido en 5)
-    var mlCalostro = peso > 0 ? Math.round((peso * 200) / 5) : 0;
-    [1, 4, 8, 14, 20].forEach(function(h){
-      var dt = new Date(base.getTime() + h * 3600000);
-      tomas.push({
-        corderos_crianza_id: corderosCrianzaId,
-        fecha_hora_programada: dt.toISOString(),
-        ventana_min: 45,
-        cantidad_ml_objetivo: mlCalostro,
-        tipo: 'calostro'
+    var ccont = document.getElementById('compliance-list');
+    if(!corderos.length){ ccont.innerHTML = '<div class="empty-box">Sin corderos en crianza.</div>'; return; }
+    try{
+      var sieteAgo = new Date(Date.now() - 7*86400000).toISOString();
+      var rg = await window._sb.from('tomas_programadas')
+        .select('corderos_crianza_id, estado')
+        .gte('fecha_hora_programada', sieteAgo)
+        .in('estado', ['cumplida', 'perdida']);
+      var rows = (rg && rg.data) || [];
+      var agg = {};
+      rows.forEach(function(r){
+        var a = agg[r.corderos_crianza_id] || (agg[r.corderos_crianza_id] = { ok:0, tot:0 });
+        a.tot++; if(r.estado === 'cumplida') a.ok++;
       });
-    });
-
-    // Día siguiente: 4 tomas de sustituto a las 06:00, 12:00, 18:00, 22:00 (hora local)
-    var mlSust = peso > 0 ? Math.round((peso * 200) / 4) : 0;
-    [6, 12, 18, 22].forEach(function(hora){
-      var dt = new Date(base.getFullYear(), base.getMonth(), base.getDate() + 1, hora, 0, 0, 0);
-      tomas.push({
-        corderos_crianza_id: corderosCrianzaId,
-        fecha_hora_programada: dt.toISOString(),
-        ventana_min: 45,
-        cantidad_ml_objetivo: mlSust,
-        tipo: 'sustituto'
-      });
-    });
-
-    return await DB.createTomasProgramadas(tomas);
+      ccont.innerHTML = corderos.map(function(c){
+        var nombre = nombreCordero(c);
+        var a = agg[c.id];
+        if(!a || !a.tot){
+          return '<div class="comp-row"><div class="comp-name">' + esc(nombre) + '</div>'
+            + '<div class="comp-track"></div><div class="comp-pct" style="color:var(--text3)">—</div></div>';
+        }
+        var pct = Math.round(a.ok / a.tot * 100);
+        var cls = pct >= 90 ? 'green' : (pct >= 70 ? 'amber' : 'red');
+        return '<div class="comp-row">'
+          + '<div class="comp-name">' + esc(nombre) + '</div>'
+          + '<div class="comp-track"><div class="comp-fill ' + cls + '" style="width:' + pct + '%"></div></div>'
+          + '<div class="comp-pct">' + pct + '%</div></div>';
+      }).join('');
+    }catch(e){ ccont.innerHTML = '<div class="empty-box">No se pudo cargar compliance.</div>'; }
   }
 
-  // ══ LOOP ANTI-OLVIDO (PASO 3) ══════════════════════════════════════
+  // ── LOOP + notificaciones ──
   function tickSalaCuna(){
     var now = Date.now();
     tomasHoy.forEach(function(t){
-      if(t.estado && t.estado !== 'pendiente') return;     // ya cumplida/perdida
+      if(t.estado && t.estado !== 'pendiente') return;
       var prog = new Date(t.fecha_hora_programada).getTime();
       var limite = prog + ((+t.ventana_min || 45) * 60000);
       var c = corderosMap[t.corderos_crianza_id];
-      var nombre = c && c.cordero ? (c.cordero.nombre || c.cordero.codigo || 'Cordero') : 'Cordero';
+      var nombre = nombreCordero(c);
       if(now > limite){
-        // 3c. recién vencida → perdida + notificar + repintar tarjeta en rojo
         t.estado = 'perdida';
         marcarEstadoConOffline(t.id, 'perdida', null);
         notificarTomaVencida(nombre, t.tipo, fmtHora(t.fecha_hora_programada), t.id);
         var card = document.getElementById('tcard-' + t.id);
         if(card) card.outerHTML = tarjetaToma(t);
       } else {
-        // 3b. actualizar cuenta regresiva sin re-render total
         var cd = cuenta(t.fecha_hora_programada);
         var w = document.getElementById('when-' + t.id);
         if(w){ w.textContent = '🕑 ' + fmtHora(t.fecha_hora_programada) + ' · ' + cd.text; w.className = 'toma-when ' + cd.cls; }
         var card2 = document.getElementById('tcard-' + t.id);
         if(card2) card2.className = 'toma-card ' + cd.cls;
-        // notificar próxima toma (≤15 min, una sola vez)
         var diffMin = Math.round((prog - now) / 60000);
         if(diffMin >= 0 && diffMin <= 15 && !tomaPrevistaNotificada.has(t.id)){
           tomaPrevistaNotificada.add(t.id);
@@ -732,7 +1108,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       }
     });
     updateBadges();
-    extensionNocturna();   // 3d
+    extensionNocturna();
   }
 
   function updateBadges(){
@@ -752,7 +1128,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     if(na) na.textContent = corderos.length;
   }
 
-  // ══ NOTIFICACIONES LOCALES (PASO 4) ════════════════════════════════
   var tomaPrevistaNotificada = new Set();
   var tomaVencidaNotificada = new Set();
   function pedirPermisoNotif(){
@@ -773,7 +1148,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     if(tomaVencidaNotificada.has(tomaId)) return;
     tomaVencidaNotificada.add(tomaId);
     mostrarNotif('⏰ Toma vencida — ' + nombre,
-      'Toma de ' + (tipo === 'calostro' ? 'calostro' : 'sustituto') + ' programada a las ' + horaStr + ' no fue registrada.',
+      'Toma de ' + (tipo === 'calostro' ? 'calostro' : 'sustituto') + ' a las ' + horaStr + ' no registrada.',
       'toma-vencida-' + tomaId);
   }
   function notificarTomaProxima(nombre, tipo, min, tomaId){
@@ -782,52 +1157,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       'toma-proxima-' + tomaId);
   }
 
-  // ══ EXTENSIÓN DIARIA DEL PROTOCOLO (PASO 2) ════════════════════════
-  function planPorDia(dia){
-    if(dia >= 1 && dia <= 3)   return { horas:[6,11,17,22], ventana:45,  factor:200 };
-    if(dia >= 4 && dia <= 7)   return { horas:[7,13,20],    ventana:60,  factor:220 };
-    if(dia >= 8 && dia <= 14)  return { horas:[7,14,21],    ventana:60,  factor:240 };
-    if(dia >= 15 && dia <= 28) return { horas:[8,18],       ventana:90,  factor:220 };
-    if(dia >= 29 && dia <= 56) return { horas:[8],          ventana:120, factor:200 };
-    return null;   // día 0 (calostro, ya generado) o > 56 (destete)
-  }
-  // Genera las tomas de MAÑANA para un cordero. Idempotente.
-  async function extenderProtocolo(corderosCrianzaId, pesoKg, fechaIngreso){
-    var peso = (+pesoKg > 0) ? +pesoKg : 0;
-    var ingreso = new Date(fechaIngreso || new Date().toISOString());
-    if(isNaN(ingreso.getTime())) ingreso = new Date();
-    var ingMid = new Date(ingreso.getFullYear(), ingreso.getMonth(), ingreso.getDate());
-    var h = new Date();
-    var manana = new Date(h.getFullYear(), h.getMonth(), h.getDate() + 1);
-    var diaManana = Math.floor((manana - ingMid) / 86400000);
-    var plan = planPorDia(diaManana);
-    if(!plan) return;   // nada que generar (calostro día 0 o post-destete)
-    // Idempotencia: ¿ya hay tomas para mañana?
-    var s = new Date(manana.getFullYear(), manana.getMonth(), manana.getDate(), 0, 0, 0).toISOString();
-    var e = new Date(manana.getFullYear(), manana.getMonth(), manana.getDate(), 23, 59, 59).toISOString();
-    try{
-      var ex = await DB.getTomasPendientes({ corderosCrianzaId: corderosCrianzaId, desde: s, hasta: e });
-      if(ex && ex.data && ex.data.length) return;   // ya generado → no duplicar
-    }catch(err){ return; }   // si no se puede verificar, no arriesgar duplicados
-    var mlPorToma = peso > 0 ? Math.round(peso * plan.factor / plan.horas.length) : 0;
-    var tomas = plan.horas.map(function(hr){
-      var dt = new Date(manana.getFullYear(), manana.getMonth(), manana.getDate(), hr, 0, 0, 0);
-      return {
-        corderos_crianza_id: corderosCrianzaId,
-        fecha_hora_programada: dt.toISOString(),
-        ventana_min: plan.ventana,
-        cantidad_ml_objetivo: mlPorToma,
-        tipo: 'sustituto'
-      };
-    });
-    return await DB.createTomasProgramadas(tomas);
-  }
-  function fechaHoyStr(){ var d = new Date(); return d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2); }
-  async function pesoActualCordero(c){
-    try{ var r = await DB.getPesajesCordero(c.cordero_id); if(r && r.data && r.data.length) return +r.data[0].peso_kg; }catch(e){}
-    return +c.peso_inicio_kg || 0;
-  }
-  // Generación nocturna (20:00–23:59), una vez por día, para cada cordero activo.
+  // Extensión nocturna via motor DB (idempotente)
   function extensionNocturna(){
     if(new Date().getHours() < 20) return;
     var key = 'sc_extendido_' + fechaHoyStr();
@@ -836,23 +1166,47 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     corderos.forEach(function(c){
       if(c.estado && c.estado !== 'activo') return;
       pesoActualCordero(c).then(function(peso){
-        extenderProtocolo(c.id, peso, c.fecha_inicio).catch(function(){});
+        if(DB.asegurarProtocoloCrianza){
+          DB.asegurarProtocoloCrianza(c.id, { pesoKg: peso, fechaInicio: c.fecha_inicio, diasAdelante: 2 }).catch(function(){});
+        }
       });
     });
   }
 
-  // Exponer funciones usadas por onclick y por el flujo de parto.
+  // Compat partos / flujos viejos
+  async function generarProtocoloInicial(corderosCrianzaId, pesoInicioKg, fechaInicioISO){
+    if(DB.generarProtocoloInicial){
+      return await DB.generarProtocoloInicial(corderosCrianzaId, pesoInicioKg, fechaInicioISO);
+    }
+    return await DB.asegurarProtocoloCrianza(corderosCrianzaId, {
+      pesoKg: pesoInicioKg, fechaInicio: fechaInicioISO, diasAdelante: 2
+    });
+  }
+  async function extenderProtocolo(corderosCrianzaId, pesoKg, fechaIngreso){
+    return await DB.asegurarProtocoloCrianza(corderosCrianzaId, {
+      pesoKg: pesoKg, fechaInicio: fechaIngreso, diasAdelante: 1
+    });
+  }
+
   window.abrirRegistroToma = abrirRegistroToma;
   window.guardarToma = guardarToma;
+  window.guardarTomaExtra = guardarTomaExtra;
+  window.abrirRegistroTomaExtra = abrirRegistroTomaExtra;
   window.abrirPesaje = abrirPesaje;
   window.guardarPesaje = guardarPesaje;
   window.cerrarModal = cerrarModal;
+  window.abrirFicha = abrirFicha;
+  window.abrirEnrolar = abrirEnrolar;
+  window.guardarEnrol = guardarEnrol;
+  window.accionGenerarProto = accionGenerarProto;
+  window.generarProtocolosFaltantes = generarProtocolosFaltantes;
+  window.accionDestetar = accionDestetar;
+  window.accionCancelarPrueba = accionCancelarPrueba;
   window.generarProtocoloInicial = generarProtocoloInicial;
   window.extenderProtocolo = extenderProtocolo;
   window.tickSalaCuna = tickSalaCuna;
   window.recargarSalaCuna = cargar;
 
-  // ── ARRANQUE (espera a que auth deje listo AUTH_ROL) ──
   function whenReady(cb){
     if(window.AUTH_ROL){ cb(); return; }
     var n = 0;
@@ -862,7 +1216,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     }, 100);
   }
   document.addEventListener('DOMContentLoaded', function(){
-    pedirPermisoNotif();          // 4a. solicitar permiso de notificación
+    pedirPermisoNotif();
     whenReady(cargar);
   });
 })();
