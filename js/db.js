@@ -2653,12 +2653,95 @@ window.DB = {
       .eq('fecha', f)
       .order('created_at', { ascending: false });
   },
-  async getLluvias(finca_id, limit) {
-    return await window._sb.from('registros_lluvia')
+  /**
+   * Historial de lluvias.
+   * getLluvias(fincaId, 30)  — compat (limit numérico)
+   * getLluvias(fincaId, { desde, hasta, limit, soloLlovio })
+   */
+  async getLluvias(finca_id, opts) {
+    const o = (typeof opts === 'number') ? { limit: opts } : (opts || {});
+    let q = window._sb.from('registros_lluvia')
       .select('*, lotes(nombre)')
       .eq('finca_id', finca_id)
+      .order('fecha', { ascending: false });
+    if (o.desde) q = q.gte('fecha', o.desde);
+    if (o.hasta) q = q.lte('fecha', o.hasta);
+    if (o.soloLlovio) q = q.eq('llovio', true);
+    if (o.limit) q = q.limit(o.limit);
+    else if (!o.desde && !o.hasta) q = q.limit(60);
+    return await q;
+  },
+  /** Último día con llovio=true (para “hace X días”). */
+  async getUltimaLluvia(finca_id) {
+    return await window._sb.from('registros_lluvia')
+      .select('fecha, intensidad, duracion_texto, notas, registrado_por')
+      .eq('finca_id', finca_id)
+      .eq('llovio', true)
       .order('fecha', { ascending: false })
-      .limit(limit || 30);
+      .limit(1)
+      .maybeSingle();
+  },
+  /**
+   * Resumen de un rango [desde, hasta] (fechas YYYY-MM-DD).
+   * Nota: solo cuenta días CON registro; días sin tocar la app no son “secos” seguros.
+   */
+  async getResumenLluvia(finca_id, desde, hasta) {
+    const r = await this.getLluvias(finca_id, { desde, hasta, limit: 500 });
+    if (r.error) return { data: null, error: r.error };
+    const rows = r.data || [];
+    // 1 registro por fecha (preferir finca general sin lote)
+    const byFecha = {};
+    rows.forEach(function (row) {
+      const k = row.fecha;
+      if (!byFecha[k] || !row.lote_id) byFecha[k] = row;
+    });
+    const fechas = Object.keys(byFecha).sort();
+    let diasLlovio = 0, diasSecoReg = 0, leve = 0, media = 0, fuerte = 0;
+    fechas.forEach(function (f) {
+      const row = byFecha[f];
+      if (row.llovio) {
+        diasLlovio++;
+        if (row.intensidad === 'leve') leve++;
+        else if (row.intensidad === 'fuerte') fuerte++;
+        else media++;
+      } else diasSecoReg++;
+    });
+    // Días calendario del rango
+    let diasRango = 0;
+    try {
+      const a = new Date(desde + 'T12:00:00');
+      const b = new Date(hasta + 'T12:00:00');
+      diasRango = Math.max(1, Math.round((b - a) / 86400000) + 1);
+    } catch (e) { diasRango = fechas.length || 1; }
+
+    const ultima = await this.getUltimaLluvia(finca_id);
+    let diasSinLluvia = null;
+    let fechaUltima = null;
+    if (ultima && ultima.data && ultima.data.fecha) {
+      fechaUltima = ultima.data.fecha;
+      const hoy = new Date(); hoy.setHours(12, 0, 0, 0);
+      const u = new Date(fechaUltima + 'T12:00:00');
+      diasSinLluvia = Math.max(0, Math.round((hoy - u) / 86400000));
+    }
+
+    return {
+      data: {
+        desde, hasta,
+        dias_rango: diasRango,
+        dias_con_registro: fechas.length,
+        dias_llovio: diasLlovio,
+        dias_seco_registrado: diasSecoReg,
+        dias_sin_registro: Math.max(0, diasRango - fechas.length),
+        pct_lluvia: diasRango > 0 ? Math.round((diasLlovio / diasRango) * 100) : 0,
+        intensidad: { leve, media, fuerte },
+        dias_sin_lluvia: diasSinLluvia,
+        fecha_ultima_lluvia: fechaUltima,
+        ultima: (ultima && ultima.data) || null,
+        por_fecha: byFecha,
+        registros: rows
+      },
+      error: null
+    };
   },
   /** Upsert lluvia del día a nivel finca (lote_id null). */
   async saveLluvia(data) {

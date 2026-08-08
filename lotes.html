@@ -37,7 +37,7 @@
 <script src="js/approval.js?v=39"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=41"></script>
+<script src="js/db.js?v=45"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
@@ -375,18 +375,20 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
     </div>
   </div>
 
-  <!-- Control simple de lluvia (finca) -->
+  <!-- Control simple de lluvia (finca) — registro rápido -->
   <div id="lluvia-card" style="margin:12px 16px 0;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--bg2);display:flex;flex-wrap:wrap;gap:10px;align-items:center">
     <div style="font-size:13px;font-weight:700;color:var(--text);min-width:90px">🌧 Lluvia hoy</div>
     <div id="lluvia-estado" style="font-size:12px;color:var(--text3);flex:1;min-width:140px">Cargando…</div>
     <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
       <button type="button" class="btn btn-sm" id="btn-lluvia-si" style="background:var(--sky-bg,rgba(56,176,216,.12));color:var(--sky,#38B0D8);border:1px solid var(--sky,#38B0D8);font-weight:700" onclick="registrarLluviaRapida(true)">+ Llovió</button>
+      <button type="button" class="btn btn-sm btn-ghost" id="btn-lluvia-no" style="font-size:12px;font-weight:600" onclick="registrarLluviaRapida(false)" title="Marcar el día como seco">Seco</button>
       <select id="lluvia-int" class="fi" style="width:auto;min-width:100px;padding:6px 8px;font-size:12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:inherit">
         <option value="leve">Leve</option>
         <option value="media" selected>Media</option>
         <option value="fuerte">Fuerte</option>
       </select>
       <input id="lluvia-dur" type="text" placeholder="Duración (ej. 2 h)" style="width:110px;padding:6px 8px;font-size:12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:inherit">
+      <button type="button" class="btn btn-sm btn-ghost" style="font-size:11px;font-weight:700;color:var(--sky,#38B0D8)" onclick="irTabLluvia()">Historial →</button>
     </div>
   </div>
 
@@ -394,6 +396,7 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
     <button class="tab-btn active" onclick="switchTab(this,'t-mapa')">Mapa satelital</button>
     <button class="tab-btn" onclick="switchTab(this,'t-pivotes')">Pivotes</button>
     <button class="tab-btn" onclick="switchTab(this,'t-lotes')">Potreros</button>
+    <button class="tab-btn" onclick="switchTab(this,'t-lluvia')">🌧 Lluvia</button>
     <button class="tab-btn" onclick="switchTab(this,'t-movimientos')">Movimientos</button>
     <button class="tab-btn" onclick="switchTab(this,'t-establos')">Establos</button>
   </div>
@@ -498,6 +501,54 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
       <div class="lote-grid" id="lote-grid"></div>
       <!-- #5 · Historial de rotación / descanso -->
       <div id="historial-rotacion" style="margin-top:24px"></div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB LLUVIA (historial + métricas) ═══ -->
+  <div class="tab-content" id="t-lluvia">
+    <div class="lotes-scroll" style="padding:16px">
+      <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:14px">
+        <div>
+          <div style="font-family:'Sigmar',cursive;font-size:20px;color:var(--text);line-height:1.1">🌧 Lluvia</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px">Historial · días secos · rango de fechas</div>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+          <button type="button" class="btn btn-sm btn-ghost lluvia-range-btn" data-days="7" onclick="setLluviaRango(7)">7 d</button>
+          <button type="button" class="btn btn-sm btn-ghost lluvia-range-btn" data-days="14" onclick="setLluviaRango(14)">14 d</button>
+          <button type="button" class="btn btn-sm btn-primary lluvia-range-btn" data-days="30" onclick="setLluviaRango(30)">30 d</button>
+          <button type="button" class="btn btn-sm btn-ghost lluvia-range-btn" data-days="90" onclick="setLluviaRango(90)">90 d</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:12px">
+        <div class="fg" style="margin:0;min-width:130px"><label class="fl" style="font-size:10px">Desde</label>
+          <input type="date" class="fi" id="lluvia-desde" style="padding:8px 10px;font-size:13px"></div>
+        <div class="fg" style="margin:0;min-width:130px"><label class="fl" style="font-size:10px">Hasta</label>
+          <input type="date" class="fi" id="lluvia-hasta" style="padding:8px 10px;font-size:13px"></div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="cargarTabLluvia()">Aplicar rango</button>
+        <button type="button" class="btn btn-sm" style="background:var(--sky-bg);color:var(--sky);border:1px solid var(--sky);font-weight:700" onclick="registrarLluviaRapida(true);setTimeout(cargarTabLluvia,400)">+ Llovió hoy</button>
+      </div>
+
+      <div id="lluvia-kpis" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px">
+        <div style="padding:20px;text-align:center;color:var(--text3);grid-column:1/-1">Cargando métricas…</div>
+      </div>
+
+      <div style="margin-bottom:8px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Calendario del rango</div>
+      <div id="lluvia-strip" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:18px;padding:12px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;min-height:48px"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:12px;font-size:11px;color:var(--text3);margin:-8px 0 16px 4px">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--sky);vertical-align:middle;margin-right:4px"></span>Llovió</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--amber);vertical-align:middle;margin-right:4px"></span>Seco (registrado)</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--bg3);border:1px solid var(--border2);vertical-align:middle;margin-right:4px"></span>Sin registro</span>
+      </div>
+
+      <div style="margin-bottom:8px;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Historial</div>
+      <div id="lluvia-hist" style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden">
+        <div style="padding:20px;text-align:center;color:var(--text3)">Cargando…</div>
+      </div>
+      <p style="font-size:11px;color:var(--text3);margin-top:12px;line-height:1.45">
+        Tip: registrá con <b>+ Llovió</b> (o <b>Seco</b>) en la barra de arriba. Los días sin tocar la app no cuentan como secos — solo como “sin registro”.
+        Útil para pastoreo regenerativo y presión parasitaria en trópico húmedo.
+      </p>
     </div>
   </div>
 
@@ -686,11 +737,18 @@ function toast(msg,type){
 function switchTab(btn, tabId){
   document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
   document.querySelectorAll('.tab-content').forEach(function(t){t.classList.remove('active');});
-  btn.classList.add('active');
-  document.getElementById(tabId).classList.add('active');
+  if(btn) btn.classList.add('active');
+  else {
+    document.querySelectorAll('.tab-btn').forEach(function(b){
+      if(b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(tabId)>=0) b.classList.add('active');
+    });
+  }
+  var panel=document.getElementById(tabId);
+  if(panel) panel.classList.add('active');
   if(tabId==='t-mapa') setTimeout(function(){if(MAP)MAP.invalidateSize();},50);
   if(tabId==='t-pivotes' && typeof renderPivotesTab==='function') renderPivotesTab();
   if(tabId==='t-lotes' && typeof renderHistorialRotacion==='function') renderHistorialRotacion();
+  if(tabId==='t-lluvia' && typeof cargarTabLluvia==='function') cargarTabLluvia();
   if(tabId==='t-establos'){ if(typeof cargarEstablos==='function') cargarEstablos(); if(typeof llenarSelectsEncerrar==='function') llenarSelectsEncerrar(); }
 }
 
@@ -2547,60 +2605,257 @@ document.addEventListener('DOMContentLoaded', function(){
 // ── Datos en vivo desde Supabase (AppState) ─────────────────────────────────────
 // renderLotesTab() ya es consciente de la fuente: al estar AppState cargado,
 // toma los 5 lotes de Supabase y cuenta animales por lote_actual_id.
-// ── Lluvia hoy (registro simple) ──
+// ── Lluvia: registro rápido + submódulo historial/métricas ──
+function _fincaLluvia(){
+  return (window.AppState&&window.AppState._finca_id)||'a1b2c3d4-0000-0000-0000-000000000001';
+}
+function _isoDate(d){
+  var x=d instanceof Date?d:new Date(d);
+  return x.getFullYear()+'-'+('0'+(x.getMonth()+1)).slice(-2)+'-'+('0'+x.getDate()).slice(-2);
+}
+function _diasEntre(a,b){
+  var d1=new Date(a+'T12:00:00'), d2=new Date(b+'T12:00:00');
+  return Math.round((d2-d1)/86400000);
+}
+function _fmtFechaCorta(iso){
+  if(!iso) return '—';
+  try{
+    var p=String(iso).slice(0,10).split('-');
+    return p[2]+'/'+p[1]+'/'+p[0].slice(2);
+  }catch(e){ return iso; }
+}
+function _escL(s){
+  return (s==null?'':String(s)).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});
+}
+
 async function loadLluviaHoy(){
   var el=document.getElementById('lluvia-estado');
   if(!el||!window.DB||!window.DB.getLluviaHoy) return;
-  var FINCA=(window.AppState&&window.AppState._finca_id)||'a1b2c3d4-0000-0000-0000-000000000001';
+  var FINCA=_fincaLluvia();
   try{
     var r=await window.DB.getLluviaHoy(FINCA);
     var rows=(r&&r.data)||[];
     var gen=rows.find(function(x){ return !x.lote_id; })||rows[0];
+
+    // Días desde última lluvia
+    var extra='';
+    try{
+      var ul=await window.DB.getUltimaLluvia(FINCA);
+      if(ul&&ul.data&&ul.data.fecha){
+        var n=_diasEntre(ul.data.fecha, _isoDate(new Date()));
+        if(n===0) extra=' · <b style="color:var(--sky)">llovió hoy</b>';
+        else if(n===1) extra=' · última lluvia <b>ayer</b>';
+        else extra=' · sin lluvia hace <b>'+n+' días</b> ('+_fmtFechaCorta(ul.data.fecha)+')';
+      } else {
+        extra=' · sin lluvias en historial';
+      }
+    }catch(e2){}
+
     if(!gen){
-      el.innerHTML='Sin registro hoy · toca <b>+ Llovió</b> si llovió';
+      el.innerHTML='Sin registro hoy · <b>+ Llovió</b> o <b>Seco</b>'+extra;
       el.style.color='var(--text3)';
       return;
     }
     if(gen.llovio){
-      el.innerHTML='✅ Registrado: <b>'+(gen.intensidad||'media')+'</b>'
-        +(gen.duracion_texto?(' · '+gen.duracion_texto):'')
-        +(gen.registrado_por?(' · '+gen.registrado_por):'');
+      el.innerHTML='✅ Hoy: <b>'+(gen.intensidad||'media')+'</b>'
+        +(gen.duracion_texto?(' · '+_escL(gen.duracion_texto)):'')
+        +extra;
       el.style.color='var(--sky,#38B0D8)';
     } else {
-      el.innerHTML='Sin lluvia registrada hoy';
-      el.style.color='var(--text3)';
+      el.innerHTML='☀ Hoy marcado <b>seco</b>'+extra;
+      el.style.color='var(--amber)';
     }
   }catch(e){
     el.textContent='Corre SQL 0064 para activar el registro de lluvia';
     el.style.color='var(--amber)';
   }
 }
+
 window.registrarLluviaRapida=async function(llovio){
   if(!window.DB||!window.DB.saveLluvia){ toast('Capa de datos no lista','err'); return; }
-  var FINCA=(window.AppState&&window.AppState._finca_id)||'a1b2c3d4-0000-0000-0000-000000000001';
+  var FINCA=_fincaLluvia();
   var intEl=document.getElementById('lluvia-int');
   var durEl=document.getElementById('lluvia-dur');
   var btn=document.getElementById('btn-lluvia-si');
+  var btnNo=document.getElementById('btn-lluvia-no');
   if(btn) btn.disabled=true;
+  if(btnNo) btnNo.disabled=true;
   try{
     var r=await window.DB.saveLluvia({
       finca_id: FINCA,
       llovio: !!llovio,
-      intensidad: intEl?intEl.value:'media',
-      duracion_texto: durEl?(durEl.value||'').trim():null,
+      intensidad: llovio?(intEl?intEl.value:'media'):null,
+      duracion_texto: llovio&&durEl?(durEl.value||'').trim():null,
       registrado_por: (window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'campo'
     });
     if(r&&r.error) throw r.error;
-    toast(llovio?'🌧 Lluvia registrada':'Sin lluvia');
+    toast(llovio?'🌧 Lluvia registrada':'☀ Día marcado seco');
     loadLluviaHoy();
+    var tab=document.getElementById('t-lluvia');
+    if(tab&&tab.classList.contains('active')) cargarTabLluvia();
   }catch(e){
     toast('Error: '+(e.message||e)+' · ¿SQL 0064?','err');
   }finally{
     if(btn) btn.disabled=false;
+    if(btnNo) btnNo.disabled=false;
   }
 };
+
+window.irTabLluvia=function(){
+  var btn=null;
+  document.querySelectorAll('.tab-btn').forEach(function(b){
+    if((b.getAttribute('onclick')||'').indexOf('t-lluvia')>=0) btn=b;
+  });
+  switchTab(btn,'t-lluvia');
+};
+
+window.setLluviaRango=function(days){
+  var hasta=new Date();
+  var desde=new Date();
+  desde.setDate(desde.getDate()-(days-1));
+  var dEl=document.getElementById('lluvia-desde');
+  var hEl=document.getElementById('lluvia-hasta');
+  if(dEl) dEl.value=_isoDate(desde);
+  if(hEl) hEl.value=_isoDate(hasta);
+  document.querySelectorAll('.lluvia-range-btn').forEach(function(b){
+    var on=String(b.getAttribute('data-days'))===String(days);
+    b.className='btn btn-sm lluvia-range-btn '+(on?'btn-primary':'btn-ghost');
+  });
+  cargarTabLluvia();
+};
+
+function _kpiCard(valor, label, sub, color){
+  color=color||'var(--text)';
+  return '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 12px">'
+    +'<div style="font-family:Sigmar,cursive;font-size:26px;line-height:1;color:'+color+'">'+valor+'</div>'
+    +'<div style="font-size:12px;font-weight:700;color:var(--text);margin-top:6px">'+label+'</div>'
+    +(sub?'<div style="font-size:11px;color:var(--text3);margin-top:2px;line-height:1.3">'+sub+'</div>':'')
+    +'</div>';
+}
+
+window.cargarTabLluvia=async function(){
+  var kpis=document.getElementById('lluvia-kpis');
+  var strip=document.getElementById('lluvia-strip');
+  var hist=document.getElementById('lluvia-hist');
+  if(!kpis) return;
+
+  var dEl=document.getElementById('lluvia-desde');
+  var hEl=document.getElementById('lluvia-hasta');
+  if(dEl&&!dEl.value){
+    var d0=new Date(); d0.setDate(d0.getDate()-29);
+    dEl.value=_isoDate(d0);
+  }
+  if(hEl&&!hEl.value) hEl.value=_isoDate(new Date());
+  var desde=dEl?dEl.value:_isoDate(new Date());
+  var hasta=hEl?hEl.value:_isoDate(new Date());
+  if(desde>hasta){ var t=desde; desde=hasta; hasta=t; if(dEl)dEl.value=desde; if(hEl)hEl.value=hasta; }
+
+  if(!window.DB||!window.DB.getResumenLluvia){
+    kpis.innerHTML='<div style="padding:16px;color:var(--amber)">Capa de datos no lista.</div>';
+    return;
+  }
+
+  kpis.innerHTML='<div style="padding:16px;color:var(--text3);grid-column:1/-1">Cargando métricas…</div>';
+  if(strip) strip.innerHTML='';
+  if(hist) hist.innerHTML='<div style="padding:16px;text-align:center;color:var(--text3)">Cargando…</div>';
+
+  try{
+    var res=await window.DB.getResumenLluvia(_fincaLluvia(), desde, hasta);
+    if(res.error) throw res.error;
+    var s=res.data||{};
+    var sin=s.dias_sin_lluvia;
+    var sinTxt=sin==null?'—':(sin===0?'0':String(sin));
+    var sinSub=s.fecha_ultima_lluvia
+      ?('Última: '+_fmtFechaCorta(s.fecha_ultima_lluvia)+(s.ultima&&s.ultima.intensidad?(' · '+s.ultima.intensidad):''))
+      :'Sin lluvias registradas aún';
+    var sinColor=sin==null?'var(--text3)':(sin===0?'var(--sky)':(sin>=7?'var(--amber)':'var(--text)'));
+
+    kpis.innerHTML=
+      _kpiCard(sinTxt,'Días sin lluvia',sinSub,sinColor)
+      +_kpiCard(String(s.dias_llovio||0),'Días con lluvia','En el rango · '+(s.dias_rango||0)+' d', 'var(--sky)')
+      +_kpiCard((s.pct_lluvia!=null?s.pct_lluvia:'—')+'%','% días con lluvia','Sobre el calendario del rango','var(--teal)')
+      +_kpiCard(String(s.dias_seco_registrado||0),'Días secos marcados','Solo si tocaste “Seco”','var(--amber)')
+      +_kpiCard(String(s.dias_sin_registro||0),'Sin registro','Días del rango sin tocar la app','var(--text3)')
+      +_kpiCard(
+        (s.intensidad?(s.intensidad.leve||0)+'/'+(s.intensidad.media||0)+'/'+(s.intensidad.fuerte||0):'—'),
+        'Leve / Media / Fuerte',
+        'Desglose de días con lluvia',
+        'var(--text)'
+      );
+
+    // Calendario strip
+    if(strip){
+      var html='';
+      var cur=new Date(desde+'T12:00:00');
+      var end=new Date(hasta+'T12:00:00');
+      var por=s.por_fecha||{};
+      while(cur<=end){
+        var iso=_isoDate(cur);
+        var row=por[iso];
+        var bg, title, border='transparent';
+        if(!row){ bg='var(--bg3)'; border='var(--border2)'; title=iso+' · sin registro'; }
+        else if(row.llovio){
+          bg='var(--sky)';
+          title=iso+' · llovió '+(row.intensidad||'')+(row.duracion_texto?(' · '+row.duracion_texto):'');
+        } else {
+          bg='var(--amber)';
+          title=iso+' · seco';
+        }
+        var isToday=iso===_isoDate(new Date());
+        html+='<div title="'+_escL(title)+'" style="width:22px;height:22px;border-radius:5px;background:'+bg
+          +';border:1px solid '+(isToday?'var(--text)':border)
+          +';cursor:default;flex-shrink:0"></div>';
+        cur.setDate(cur.getDate()+1);
+      }
+      strip.innerHTML=html||'<span style="color:var(--text3);font-size:12px">Sin días en el rango</span>';
+    }
+
+    // Historial lista
+    if(hist){
+      var regs=(s.registros||[]).slice().sort(function(a,b){
+        return String(b.fecha).localeCompare(String(a.fecha));
+      });
+      // dedupe by fecha prefer no-lote
+      var seen={}, list=[];
+      regs.forEach(function(r){
+        if(seen[r.fecha]&&r.lote_id) return;
+        if(seen[r.fecha]&&!r.lote_id){ list=list.filter(function(x){return x.fecha!==r.fecha;}); }
+        seen[r.fecha]=1;
+        list.push(r);
+      });
+      if(!list.length){
+        hist.innerHTML='<div style="padding:22px;text-align:center;color:var(--text3);font-size:13px;line-height:1.5">'
+          +'No hay registros en este rango.<br>Usá <b>+ Llovió</b> en la barra de arriba.</div>';
+      } else {
+        hist.innerHTML=list.map(function(r){
+          var ico=r.llovio?'🌧':'☀';
+          var lbl=r.llovio
+            ?('<b style="color:var(--sky)">Llovió</b> · '+(r.intensidad||'media')+(r.duracion_texto?(' · '+_escL(r.duracion_texto)):''))
+            :'<b style="color:var(--amber)">Seco</b>';
+          var meta=[];
+          if(r.lotes&&r.lotes.nombre) meta.push(r.lotes.nombre);
+          if(r.registrado_por) meta.push(r.registrado_por);
+          if(r.notas) meta.push(r.notas);
+          return '<div style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-bottom:1px solid var(--border)">'
+            +'<div style="font-size:20px;line-height:1">'+ico+'</div>'
+            +'<div style="flex:1;min-width:0">'
+            +  '<div style="font-size:13px;font-weight:700;color:var(--text)">'+_fmtFechaCorta(r.fecha)
+            +    ' <span style="font-weight:500;color:var(--text3);font-size:11px">'+_escL(String(r.fecha).slice(0,10))+'</span></div>'
+            +  '<div style="font-size:12px;color:var(--text2);margin-top:2px">'+lbl+'</div>'
+            +(meta.length?'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+_escL(meta.join(' · '))+'</div>':'')
+            +'</div></div>';
+        }).join('');
+      }
+    }
+  }catch(e){
+    kpis.innerHTML='<div style="padding:16px;color:var(--amber);grid-column:1/-1">No se pudo cargar. ¿Corriste SQL 0064?<br><span style="font-size:11px">'+_escL(e&&e.message)+'</span></div>';
+    if(hist) hist.innerHTML='';
+  }
+};
+
 document.addEventListener('appstate:ready', function(){ loadLluviaHoy(); });
 setTimeout(loadLluviaHoy, 1200);
+// Rango default 30d al abrir pestaña (inputs se llenan en cargarTabLluvia)
 
 document.addEventListener('appstate:ready', function(e){
   if(!window.AppState || !Array.isArray(window.AppState.lotes)) return;

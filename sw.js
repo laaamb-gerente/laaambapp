@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v44: Sala Cuna completa — ficha, protocolos, enrol, destete/pruebas.
-const CACHE_NAME = 'laaambapp-v44';
-const CACHE_SHELL = 'laaambapp-shell-v44';
+// v45: Lluvia — historial + métricas en pestaña Potreros/Lotes.
+const CACHE_NAME = 'laaambapp-v45';
+const CACHE_SHELL = 'laaambapp-shell-v45';
 
 const STATIC_ASSETS = [
   './manifest.json',
