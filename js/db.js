@@ -1420,14 +1420,19 @@ window.DB = {
       mlDiaTotal = nCrias * 400;
     }
 
-    // Reparto: ~30% calostro / 70% sustituto si hay mix; si solo hay calostro stage unknown, use 20/80
+    // Un insumo por tipo; si comparten nombre o hay filas duplicadas, deduplicar.
     const fracciones = [
       { tipo: 'calostro', fraccion: 0.25 },
       { tipo: 'sustituto', fraccion: 0.75 }
     ];
+    const vistosIng = {};
 
     for (const fr of fracciones) {
       const form = await this.getFormulaTetero(FINCA, fr.tipo);
+      const ingKey = String(form.ingrediente || fr.tipo).trim().toLowerCase();
+      if (vistosIng[ingKey]) continue; // evita banner duplicado del mismo polvo
+      vistosIng[ingKey] = true;
+
       const mlDia = mlDiaTotal * fr.fraccion;
       const gPorL = Number(form.g_polvo_por_litro) || 130;
       const mlAgua = Number(form.ml_agua_por_litro) || 1000;

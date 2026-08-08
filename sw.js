@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v42: teteros 1 tarjeta/cordero; tras Bebido hoy va al final de la cola.
-const CACHE_NAME = 'laaambapp-v42';
-const CACHE_SHELL = 'laaambapp-shell-v42';
+// v43: teteros 1 tarjeta/cordero; tras Bebido hoy va al final de la cola.
+const CACHE_NAME = 'laaambapp-v43';
+const CACHE_SHELL = 'laaambapp-shell-v43';
 
 const STATIC_ASSETS = [
   './manifest.json',
