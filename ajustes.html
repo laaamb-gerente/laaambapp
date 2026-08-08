@@ -102,7 +102,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text4);display:flex;align-items:center;gap:8px;margin:24px 0 14px}
 .section-label::after{content:'';flex:1;height:1px;background:var(--border)}
 /* ── Tabs (mismo patrón que reproduccion.html / salud.html) ── */
-.tab-nav{display:flex;gap:2px;padding:0 4px;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;margin-bottom:22px}
+.tab-nav{display:flex;gap:2px;padding:0 4px;border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;overscroll-behavior-x:contain;overscroll-behavior-y:none;-webkit-overflow-scrolling:touch;margin-bottom:22px}
 .tn{padding:10px 18px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim);white-space:nowrap}
 .tn:hover{color:var(--text)}.tn.active{color:var(--teal);border-bottom-color:var(--teal)}
 .fg{margin-bottom:16px}
@@ -203,7 +203,7 @@ tbody td{padding:11px 14px;color:var(--text);vertical-align:middle}
 <script src="js/db.js?v=40"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
-<script src="js/app-update.js?v=38"></script>
+<script src="js/app-update.js?v=39"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
 </head>

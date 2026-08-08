@@ -14,7 +14,7 @@
 <title>LAAAMBAPP · Lotes & Potreros</title>
 <script>(function(){var t=(function(){var _t=localStorage.getItem('laaamb-theme');return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute('data-theme',t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/laaamb.css">
+<link rel="stylesheet" href="css/laaamb.css?v=46">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -37,7 +37,7 @@
 <script src="js/approval.js?v=39"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=45"></script>
+<script src="js/db.js?v=46"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
@@ -118,8 +118,22 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .ph-actions{display:flex;gap:6px;flex-wrap:wrap}
 
 /* ── TABS ── */
-.tabs-bar{display:flex;gap:2px;padding:10px 24px 0;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
-.tab-btn{padding:8px 16px;font-family:'Changa',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.tabs-bar{display:flex;gap:2px;padding:10px 24px 0;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;overscroll-behavior-x:contain;overscroll-behavior-y:none;-webkit-overflow-scrolling:touch;overflow-y:hidden;touch-action:pan-x;overscroll-behavior-x:contain;overscroll-behavior-y:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
+.tab-btn{padding:8px 16px;font-family:'Changa',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:var(--text3);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim);white-space:nowrap;display:flex;align-items:center;gap:6px;flex-shrink:0}
+/* Lluvia: grillas que no se pegan/traslapan en mobile */
+.lluvia-reg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px;align-items:end}
+.lluvia-fld{min-width:0;display:flex;flex-direction:column;gap:4px}
+.lluvia-fld label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px}
+.lluvia-inp{width:100%;max-width:100%;min-width:0;box-sizing:border-box;padding:10px 12px;font-size:16px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:inherit;-webkit-appearance:none;appearance:none}
+.lluvia-fld-full{grid-column:1 / -1}
+.lluvia-btns{display:flex;gap:8px;flex-wrap:nowrap}
+.lluvia-range-box{margin-bottom:14px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:12px}
+@media(max-width:520px){
+  .lluvia-reg-grid{grid-template-columns:1fr}
+  .lluvia-fld-full{grid-column:1}
+  .lluvia-btns{flex-direction:column}
+  .lluvia-btns .btn{width:100%}
+}
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active{color:var(--teal);border-bottom-color:var(--teal)}
 .tab-content{display:none;flex:1;overflow:hidden;flex-direction:column}
@@ -375,20 +389,34 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
     </div>
   </div>
 
-  <!-- Control simple de lluvia (finca) — registro rápido -->
-  <div id="lluvia-card" style="margin:12px 16px 0;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--bg2);display:flex;flex-wrap:wrap;gap:10px;align-items:center">
-    <div style="font-size:13px;font-weight:700;color:var(--text);min-width:90px">🌧 Lluvia hoy</div>
-    <div id="lluvia-estado" style="font-size:12px;color:var(--text3);flex:1;min-width:140px">Cargando…</div>
-    <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
-      <button type="button" class="btn btn-sm" id="btn-lluvia-si" style="background:var(--sky-bg,rgba(56,176,216,.12));color:var(--sky,#38B0D8);border:1px solid var(--sky,#38B0D8);font-weight:700" onclick="registrarLluviaRapida(true)">+ Llovió</button>
-      <button type="button" class="btn btn-sm btn-ghost" id="btn-lluvia-no" style="font-size:12px;font-weight:600" onclick="registrarLluviaRapida(false)" title="Marcar el día como seco">Seco</button>
-      <select id="lluvia-int" class="fi" style="width:auto;min-width:100px;padding:6px 8px;font-size:12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:inherit">
-        <option value="leve">Leve</option>
-        <option value="media" selected>Media</option>
-        <option value="fuerte">Fuerte</option>
-      </select>
-      <input id="lluvia-dur" type="text" placeholder="Duración (ej. 2 h)" style="width:110px;padding:6px 8px;font-size:12px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:inherit">
-      <button type="button" class="btn btn-sm btn-ghost" style="font-size:11px;font-weight:700;color:var(--sky,#38B0D8)" onclick="irTabLluvia()">Historial →</button>
+  <!-- Control simple de lluvia (finca) — registro rápido + día a elegir -->
+  <div id="lluvia-card" style="margin:12px 16px 0;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--bg2)">
+    <div style="display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:700;color:var(--text)">🌧 Lluvia</div>
+      <button type="button" class="btn btn-sm btn-ghost" style="font-size:11px;font-weight:700;color:var(--sky,#38B0D8);min-height:36px" onclick="irTabLluvia()">Historial →</button>
+    </div>
+    <div id="lluvia-estado" style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.4">Cargando…</div>
+    <div class="lluvia-reg-grid">
+      <div class="lluvia-fld">
+        <label for="lluvia-fecha">Día a registrar</label>
+        <input type="date" id="lluvia-fecha" class="lluvia-inp">
+      </div>
+      <div class="lluvia-fld">
+        <label for="lluvia-int">Intensidad</label>
+        <select id="lluvia-int" class="lluvia-inp">
+          <option value="leve">Leve</option>
+          <option value="media" selected>Media</option>
+          <option value="fuerte">Fuerte</option>
+        </select>
+      </div>
+      <div class="lluvia-fld lluvia-fld-full">
+        <label for="lluvia-dur">Duración (opcional)</label>
+        <input id="lluvia-dur" type="text" class="lluvia-inp" placeholder="Ej. 2 h, toda la tarde" inputmode="text">
+      </div>
+      <div class="lluvia-fld lluvia-fld-full lluvia-btns">
+        <button type="button" class="btn btn-sm" id="btn-lluvia-si" style="flex:1;min-height:44px;background:var(--sky-bg,rgba(56,176,216,.12));color:var(--sky,#38B0D8);border:1px solid var(--sky,#38B0D8);font-weight:700" onclick="registrarLluviaRapida(true)">+ Llovió</button>
+        <button type="button" class="btn btn-sm btn-ghost" id="btn-lluvia-no" style="flex:1;min-height:44px;font-size:13px;font-weight:600" onclick="registrarLluviaRapida(false)" title="Marcar el día como seco">Seco</button>
+      </div>
     </div>
   </div>
 
@@ -520,13 +548,21 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
         </div>
       </div>
 
-      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-bottom:14px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:12px">
-        <div class="fg" style="margin:0;min-width:130px"><label class="fl" style="font-size:10px">Desde</label>
-          <input type="date" class="fi" id="lluvia-desde" style="padding:8px 10px;font-size:13px"></div>
-        <div class="fg" style="margin:0;min-width:130px"><label class="fl" style="font-size:10px">Hasta</label>
-          <input type="date" class="fi" id="lluvia-hasta" style="padding:8px 10px;font-size:13px"></div>
-        <button type="button" class="btn btn-primary btn-sm" onclick="cargarTabLluvia()">Aplicar rango</button>
-        <button type="button" class="btn btn-sm" style="background:var(--sky-bg);color:var(--sky);border:1px solid var(--sky);font-weight:700" onclick="registrarLluviaRapida(true);setTimeout(cargarTabLluvia,400)">+ Llovió hoy</button>
+      <div class="lluvia-range-box">
+        <div class="lluvia-reg-grid lluvia-range-grid">
+          <div class="lluvia-fld">
+            <label for="lluvia-desde">Desde</label>
+            <input type="date" class="lluvia-inp" id="lluvia-desde">
+          </div>
+          <div class="lluvia-fld">
+            <label for="lluvia-hasta">Hasta</label>
+            <input type="date" class="lluvia-inp" id="lluvia-hasta">
+          </div>
+          <div class="lluvia-fld lluvia-fld-full lluvia-btns">
+            <button type="button" class="btn btn-primary btn-sm" style="flex:1;min-height:44px" onclick="cargarTabLluvia()">Aplicar rango</button>
+            <button type="button" class="btn btn-sm" style="flex:1;min-height:44px;background:var(--sky-bg);color:var(--sky);border:1px solid var(--sky);font-weight:700" onclick="registrarLluviaRapida(true);setTimeout(cargarTabLluvia,500)">+ Llovió (día elegido)</button>
+          </div>
+        </div>
       </div>
 
       <div id="lluvia-kpis" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:16px">
@@ -2631,9 +2667,13 @@ function _escL(s){
 async function loadLluviaHoy(){
   var el=document.getElementById('lluvia-estado');
   if(!el||!window.DB||!window.DB.getLluviaHoy) return;
+  _initFechaLluviaInput();
   var FINCA=_fincaLluvia();
+  var fecha=_fechaLluviaElegida();
+  var esHoy=fecha===_isoDate(new Date());
+  var diaLbl=esHoy?'hoy':_fmtFechaCorta(fecha);
   try{
-    var r=await window.DB.getLluviaHoy(FINCA);
+    var r=await window.DB.getLluviaHoy(FINCA, fecha);
     var rows=(r&&r.data)||[];
     var gen=rows.find(function(x){ return !x.lote_id; })||rows[0];
 
@@ -2643,8 +2683,8 @@ async function loadLluviaHoy(){
       var ul=await window.DB.getUltimaLluvia(FINCA);
       if(ul&&ul.data&&ul.data.fecha){
         var n=_diasEntre(ul.data.fecha, _isoDate(new Date()));
-        if(n===0) extra=' · <b style="color:var(--sky)">llovió hoy</b>';
-        else if(n===1) extra=' · última lluvia <b>ayer</b>';
+        if(n===0) extra=' · última lluvia: <b style="color:var(--sky)">hoy</b>';
+        else if(n===1) extra=' · última lluvia: <b>ayer</b>';
         else extra=' · sin lluvia hace <b>'+n+' días</b> ('+_fmtFechaCorta(ul.data.fecha)+')';
       } else {
         extra=' · sin lluvias en historial';
@@ -2652,17 +2692,17 @@ async function loadLluviaHoy(){
     }catch(e2){}
 
     if(!gen){
-      el.innerHTML='Sin registro hoy · <b>+ Llovió</b> o <b>Seco</b>'+extra;
+      el.innerHTML='Sin registro el <b>'+diaLbl+'</b> · elegí el día (cuaderno) y tocá <b>+ Llovió</b> o <b>Seco</b>'+extra;
       el.style.color='var(--text3)';
       return;
     }
     if(gen.llovio){
-      el.innerHTML='✅ Hoy: <b>'+(gen.intensidad||'media')+'</b>'
+      el.innerHTML='✅ <b>'+diaLbl+'</b>: <b>'+(gen.intensidad||'media')+'</b>'
         +(gen.duracion_texto?(' · '+_escL(gen.duracion_texto)):'')
         +extra;
       el.style.color='var(--sky,#38B0D8)';
     } else {
-      el.innerHTML='☀ Hoy marcado <b>seco</b>'+extra;
+      el.innerHTML='☀ <b>'+diaLbl+'</b> marcado <b>seco</b>'+extra;
       el.style.color='var(--amber)';
     }
   }catch(e){
@@ -2671,9 +2711,28 @@ async function loadLluviaHoy(){
   }
 }
 
+function _fechaLluviaElegida(){
+  var el=document.getElementById('lluvia-fecha');
+  var v=el&&el.value?el.value:'';
+  if(!v) v=_isoDate(new Date());
+  // No permitir futuro
+  var hoy=_isoDate(new Date());
+  if(v>hoy) v=hoy;
+  if(el) el.value=v;
+  return v;
+}
+function _initFechaLluviaInput(){
+  var el=document.getElementById('lluvia-fecha');
+  if(!el) return;
+  if(!el.value) el.value=_isoDate(new Date());
+  el.max=_isoDate(new Date());
+  el.onchange=function(){ loadLluviaHoy(); };
+}
+
 window.registrarLluviaRapida=async function(llovio){
   if(!window.DB||!window.DB.saveLluvia){ toast('Capa de datos no lista','err'); return; }
   var FINCA=_fincaLluvia();
+  var fecha=_fechaLluviaElegida();
   var intEl=document.getElementById('lluvia-int');
   var durEl=document.getElementById('lluvia-dur');
   var btn=document.getElementById('btn-lluvia-si');
@@ -2683,13 +2742,17 @@ window.registrarLluviaRapida=async function(llovio){
   try{
     var r=await window.DB.saveLluvia({
       finca_id: FINCA,
+      fecha: fecha,
       llovio: !!llovio,
       intensidad: llovio?(intEl?intEl.value:'media'):null,
       duracion_texto: llovio&&durEl?(durEl.value||'').trim():null,
       registrado_por: (window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'campo'
     });
     if(r&&r.error) throw r.error;
-    toast(llovio?'🌧 Lluvia registrada':'☀ Día marcado seco');
+    var esHoy=fecha===_isoDate(new Date());
+    toast(llovio
+      ?('🌧 Lluvia del '+_fmtFechaCorta(fecha)+(esHoy?'':' (histórico)'))
+      :('☀ Seco el '+_fmtFechaCorta(fecha)));
     loadLluviaHoy();
     var tab=document.getElementById('t-lluvia');
     if(tab&&tab.classList.contains('active')) cargarTabLluvia();

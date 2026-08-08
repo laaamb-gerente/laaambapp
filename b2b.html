@@ -116,7 +116,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 select.fi{cursor:pointer}
 
 /* TABS */
-.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:20px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;overscroll-behavior-x:contain;overscroll-behavior-y:none;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}
 .tab{padding:10px 18px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border:none;background:none;font-family:'Changa',sans-serif;border-bottom:2px solid transparent;transition:all var(--anim)}
 .tab:hover{color:var(--text2)}
 .tab.active{color:var(--teal);border-bottom-color:var(--teal)}

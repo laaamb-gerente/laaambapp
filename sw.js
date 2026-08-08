@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v45: Lluvia — historial + métricas en pestaña Potreros/Lotes.
-const CACHE_NAME = 'laaambapp-v45';
-const CACHE_SHELL = 'laaambapp-shell-v45';
+// v46: tabs solo horizontal; lluvia con día elegible + fechas mobile.
+const CACHE_NAME = 'laaambapp-v46';
+const CACHE_SHELL = 'laaambapp-shell-v46';
 
 const STATIC_ASSETS = [
   './manifest.json',

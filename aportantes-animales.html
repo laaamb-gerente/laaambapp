@@ -14,7 +14,7 @@
 <title>LAAAMBAPP · Aparcería · Animales</title>
 <script>(function(){var t=(function(){var _t=localStorage.getItem('laaamb-theme');return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute('data-theme',t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/laaamb.css">
+<link rel="stylesheet" href="css/laaamb.css?v=46">
 <script src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js" crossorigin="anonymous"></script>
 <script src="js/error-handler.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -150,7 +150,7 @@ tr.muerto{opacity:.5}
 }
 
 .modal.ficha-modal{max-width:820px;width:96%}
-.ficha-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);overflow-x:auto;margin:0 0 14px}
+.ficha-tabs{display:flex;gap:2px;border-bottom:1px solid var(--border);overflow-x:auto;overflow-y:hidden;touch-action:pan-x;overscroll-behavior-x:contain;overscroll-behavior-y:none;-webkit-overflow-scrolling:touch;margin:0 0 14px}
 .ficha-tab{padding:8px 12px;font-size:12px;font-weight:700;color:var(--text3);cursor:pointer;border:none;background:transparent;border-bottom:2px solid transparent;white-space:nowrap}
 .ficha-tab.on{color:var(--teal-d);border-bottom-color:var(--teal)}
 .ficha-pane{display:none}

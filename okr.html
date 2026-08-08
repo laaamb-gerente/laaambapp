@@ -14,7 +14,7 @@
 <title>LAAAMBAPP · OKRs & Análisis</title>
 <script>(function(){var t=(function(){var _t=localStorage.getItem("laaamb-theme");return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute("data-theme",t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/laaamb.css">
+<link rel="stylesheet" href="css/laaamb.css?v=46">
 <!-- Supabase JS SDK -->
 <!-- Sentry: monitoreo de errores -->
 <script
@@ -76,7 +76,7 @@ html[data-theme="dark"]{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182
   .main{width:100vw}
   .page-head{padding:12px 16px !important;padding-left:60px !important;flex-wrap:wrap;gap:8px}
   .ph-actions{flex-wrap:wrap;gap:6px}
-  .tab-nav{padding:0 12px !important;overflow-x:auto}
+  .tab-nav{padding:0 12px !important;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;overscroll-behavior-x:contain;overscroll-behavior-y:none;-webkit-overflow-scrolling:touch}
   .content{padding:14px 14px 48px !important}
   .g2,.g3{grid-template-columns:1fr !important}
   .g4{grid-template-columns:1fr !important}
@@ -126,7 +126,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .ph-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
 
 /* TAB BAR */
-.tab-nav{display:flex;gap:2px;padding:0 28px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto}
+.tab-nav{display:flex;gap:2px;padding:0 28px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;overscroll-behavior-x:contain;overscroll-behavior-y:none;-webkit-overflow-scrolling:touch}
 .tn{padding:10px 18px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim);white-space:nowrap}
 .tn:hover{color:var(--text)}
 .tn.active{color:var(--teal);border-bottom-color:var(--teal)}

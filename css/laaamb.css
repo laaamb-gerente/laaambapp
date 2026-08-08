@@ -114,6 +114,31 @@ body.laaamb{
 .lb-empty{text-align:center; padding:40px 20px; color:var(--text-3); font-size:13px}
 .lb-divider{height:1px; background:var(--border); border:none; margin:0}
 
+/* ── Tabs / chips: SOLO scroll horizontal (patrón Reproducción) ──
+   Evita el “arrastre libre” en mobile (arriba/abajo + diagonal). */
+.tab-nav,
+.tabs-bar,
+.tabs,
+.ficha-tabs,
+.rango-chips,
+.lb-chips{
+  overflow-x:auto !important;
+  overflow-y:hidden !important;
+  touch-action:pan-x !important;
+  overscroll-behavior-x:contain;
+  overscroll-behavior-y:none;
+  -webkit-overflow-scrolling:touch;
+  flex-wrap:nowrap;
+}
+.tab-nav > *,
+.tabs-bar > *,
+.tabs > *,
+.ficha-tabs > *,
+.rango-chips > *,
+.lb-chips > *{
+  flex-shrink:0;
+}
+
 /* ── Escritorio: la lista puede mostrarse como tabla densa ── */
 @media (min-width:900px){
   .lb-list{padding:16px 24px 24px}

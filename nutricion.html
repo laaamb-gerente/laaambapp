@@ -14,7 +14,7 @@
 <title>LAAAMBAPP · Nutrición</title>
 <script>(function(){var t=(function(){var _t=localStorage.getItem('laaamb-theme');return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute('data-theme',t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/laaamb.css">
+<link rel="stylesheet" href="css/laaamb.css?v=46">
 <!-- Sentry: monitoreo de errores -->
 <script
   src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js"
@@ -117,7 +117,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .btn-success{background:var(--green-bg);color:var(--green);border:1px solid rgba(46,199,122,.25)}.btn-success:hover{background:rgba(46,199,122,.18)}
 .btn-block{width:100%;justify-content:center}
 /* ── TABS ── */
-.tab-nav{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:20px;overflow-x:auto}
+.tab-nav{display:flex;gap:2px;border-bottom:1px solid var(--border);margin-bottom:20px;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;overscroll-behavior-x:contain;overscroll-behavior-y:none;-webkit-overflow-scrolling:touch}
 .tn{padding:10px 18px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim);white-space:nowrap}
 .tn:hover{color:var(--text)}.tn.active{color:var(--teal);border-bottom-color:var(--teal)}
 .tab-pane{animation:fadeIn .2s ease}

@@ -14,7 +14,7 @@
 <title>LAAAMBAPP · Salud & Tratamientos</title>
 <script>(function(){var t=(function(){var _t=localStorage.getItem("laaamb-theme");return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute("data-theme",t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/laaamb.css">
+<link rel="stylesheet" href="css/laaamb.css?v=46">
 <!-- Supabase JS SDK -->
 <!-- Sentry: monitoreo de errores -->
 <script
@@ -101,7 +101,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .ph-title{font-family:'Sigmar',cursive;font-size:24px;color:var(--text);letter-spacing:.3px}
 .ph-sub{font-size:12px;color:var(--text3);margin-top:2px}
 .ph-actions{display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap}
-.tab-nav{display:flex;gap:2px;padding:0 28px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto;touch-action:pan-x;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.tab-nav{display:flex;gap:2px;padding:0 28px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;overscroll-behavior-x:contain;overscroll-behavior-y:none;-webkit-overflow-scrolling:touch;touch-action:pan-x;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
 .tn{padding:10px 18px;font-size:13px;font-weight:600;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all var(--anim);white-space:nowrap}
 .tn:hover{color:var(--text)}.tn.active{color:var(--teal);border-bottom-color:var(--teal)}
 .content{flex:1;overflow-y:auto;padding:24px 28px 48px}
