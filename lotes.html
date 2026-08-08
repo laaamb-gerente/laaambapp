@@ -150,8 +150,36 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 }
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active{color:var(--teal);border-bottom-color:var(--teal)}
-.tab-content{display:none;flex:1;overflow:hidden;flex-direction:column}
+.tab-content{display:none;flex:1;overflow:hidden;flex-direction:column;min-height:0}
 .tab-content.active{display:flex}
+/* Dashboard resumen */
+.dash-scroll{padding:14px 16px 28px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.dash-head{margin-bottom:12px}
+.dash-title{font-family:'Sigmar',cursive;font-size:18px;color:var(--text);line-height:1.15}
+.dash-sub{font-size:12px;color:var(--text3);margin-top:3px}
+.dash-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+.dash-kpi{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 12px 11px;min-width:0}
+.dash-kpi .dk-val{font-family:'Sigmar',cursive;font-size:22px;line-height:1.1;color:var(--text);word-break:break-word}
+.dash-kpi .dk-lbl{font-size:11px;font-weight:700;color:var(--text2);margin-top:5px}
+.dash-kpi .dk-sub{font-size:10px;color:var(--text3);margin-top:3px;line-height:1.3}
+.dash-kpi.alert .dk-val{color:var(--amber)}
+.dash-kpi.crit .dk-val{color:var(--red)}
+.dash-kpi.ok .dk-val{color:var(--teal)}
+.dash-kpi.sky .dk-val{color:var(--sky,#38B0D8)}
+.dash-kpi.skeleton{grid-column:1/-1;text-align:center;color:var(--text3);padding:20px;font-size:13px}
+.dash-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.lluvia-card-dash{padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--bg2);margin-top:4px}
+.lluvia-card-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}
+@media(min-width:700px){
+  .dash-kpis{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:768px){
+  .dash-scroll{padding:12px 12px 24px}
+  .dash-title{font-size:16px}
+  .dash-kpi .dk-val{font-size:20px}
+  /* Mapa recupera altura: ya no compite con el formulario de lluvia */
+  #map{height:calc(100vh - 130px)!important}
+}
 
 /* ── BUTTONS / BADGES / FORMS ── */
 .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:var(--r);font-family:'Changa',sans-serif;font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all var(--anim);white-space:nowrap}
@@ -403,39 +431,10 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
     </div>
   </div>
 
-  <!-- Control simple de lluvia (finca) — registro rápido + día a elegir -->
-  <div id="lluvia-card" style="margin:12px 16px 0;padding:12px 14px;border-radius:12px;border:1px solid var(--border);background:var(--bg2)">
-    <div style="display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between;margin-bottom:10px">
-      <div style="font-size:13px;font-weight:700;color:var(--text)">🌧 Lluvia</div>
-      <button type="button" class="btn btn-sm btn-ghost" style="font-size:11px;font-weight:700;color:var(--sky,#38B0D8);min-height:36px" onclick="irTabLluvia()">Historial →</button>
-    </div>
-    <div id="lluvia-estado" style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.4">Cargando…</div>
-    <div class="lluvia-reg-grid">
-      <div class="lluvia-fld">
-        <label for="lluvia-fecha">Día a registrar</label>
-        <input type="date" id="lluvia-fecha" class="lluvia-inp">
-      </div>
-      <div class="lluvia-fld">
-        <label for="lluvia-int">Intensidad</label>
-        <select id="lluvia-int" class="lluvia-inp">
-          <option value="leve">Leve</option>
-          <option value="media" selected>Media</option>
-          <option value="fuerte">Fuerte</option>
-        </select>
-      </div>
-      <div class="lluvia-fld lluvia-fld-full">
-        <label for="lluvia-dur">Duración (opcional)</label>
-        <input id="lluvia-dur" type="text" class="lluvia-inp" placeholder="Ej. 2 h, toda la tarde" inputmode="text">
-      </div>
-      <div class="lluvia-fld lluvia-fld-full lluvia-btns">
-        <button type="button" class="btn btn-sm" id="btn-lluvia-si" style="flex:1;min-height:44px;background:var(--sky-bg,rgba(56,176,216,.12));color:var(--sky,#38B0D8);border:1px solid var(--sky,#38B0D8);font-weight:700" onclick="registrarLluviaRapida(true)">+ Llovió</button>
-        <button type="button" class="btn btn-sm btn-ghost" id="btn-lluvia-no" style="flex:1;min-height:44px;font-size:13px;font-weight:600" onclick="registrarLluviaRapida(false)" title="Marcar el día como seco">Seco</button>
-      </div>
-    </div>
-  </div>
-
+  <!-- Tabs primero: el mapa/contenido usan casi toda la pantalla en mobile -->
   <div class="tabs-bar">
-    <button class="tab-btn active" onclick="switchTab(this,'t-mapa')">Mapa satelital</button>
+    <button class="tab-btn active" onclick="switchTab(this,'t-resumen')">Resumen</button>
+    <button class="tab-btn" onclick="switchTab(this,'t-mapa')">Mapa</button>
     <button class="tab-btn" onclick="switchTab(this,'t-pivotes')">Pivotes</button>
     <button class="tab-btn" onclick="switchTab(this,'t-lotes')">Potreros</button>
     <button class="tab-btn" onclick="switchTab(this,'t-lluvia')">🌧 Lluvia</button>
@@ -443,8 +442,57 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
     <button class="tab-btn" onclick="switchTab(this,'t-establos')">Establos</button>
   </div>
 
+  <!-- ═══ TAB RESUMEN (dashboard + lluvia abajo) ═══ -->
+  <div class="tab-content active" id="t-resumen">
+    <div class="lotes-scroll dash-scroll">
+      <div class="dash-head">
+        <div class="dash-title">Dashboard · pastoreo</div>
+        <div class="dash-sub">Snapshot de potreros, carga y clima · La Marinilla</div>
+      </div>
+      <div class="dash-kpis" id="dash-lotes-kpis">
+        <div class="dash-kpi skeleton">Cargando…</div>
+      </div>
+      <div class="dash-actions">
+        <button type="button" class="btn btn-primary btn-sm" onclick="goTab('t-mapa')">🗺 Abrir mapa</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="openModal('modal-mover')">↔ Mover animales</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="goTab('t-lluvia')">Historial lluvia</button>
+      </div>
+
+      <!-- Registro de lluvia: debajo de las cards (ya no encima de los tabs) -->
+      <div id="lluvia-card" class="lluvia-card-dash">
+        <div class="lluvia-card-head">
+          <div style="font-size:14px;font-weight:700;color:var(--text)">🌧 Registrar lluvia</div>
+          <button type="button" class="btn btn-sm btn-ghost" style="font-size:11px;font-weight:700;color:var(--sky,#38B0D8);min-height:36px" onclick="goTab('t-lluvia')">Ver historial →</button>
+        </div>
+        <div id="lluvia-estado" style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.4">Cargando…</div>
+        <div class="lluvia-reg-grid">
+          <div class="lluvia-fld">
+            <label for="lluvia-fecha">Día a registrar</label>
+            <input type="date" id="lluvia-fecha" class="lluvia-inp">
+          </div>
+          <div class="lluvia-fld">
+            <label for="lluvia-int">Intensidad</label>
+            <select id="lluvia-int" class="lluvia-inp">
+              <option value="leve">Leve</option>
+              <option value="media" selected>Media</option>
+              <option value="fuerte">Fuerte</option>
+            </select>
+          </div>
+          <div class="lluvia-fld lluvia-fld-full">
+            <label for="lluvia-dur">Duración (opcional)</label>
+            <input id="lluvia-dur" type="text" class="lluvia-inp" placeholder="Ej. 2 h, toda la tarde" inputmode="text">
+          </div>
+          <div class="lluvia-fld lluvia-fld-full lluvia-btns">
+            <button type="button" class="btn btn-sm" id="btn-lluvia-si" style="flex:1;min-height:44px;background:var(--sky-bg,rgba(56,176,216,.12));color:var(--sky,#38B0D8);border:1px solid var(--sky,#38B0D8);font-weight:700" onclick="registrarLluviaRapida(true)">+ Llovió</button>
+            <button type="button" class="btn btn-sm btn-ghost" id="btn-lluvia-no" style="flex:1;min-height:44px;font-size:13px;font-weight:600" onclick="registrarLluviaRapida(false)" title="Marcar el día como seco">Seco</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ TAB MAPA ═══ -->
-  <div class="tab-content active" id="t-mapa" style="position:relative">
+  <div class="tab-content" id="t-mapa" style="position:relative">
     <div id="map"></div>
     <!-- Selector de finca en el mapa -->
     <div class="map-finca-selector" id="map-finca-selector-wrap">
@@ -591,7 +639,7 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
           </div>
           <div class="lluvia-fld lluvia-fld-full lluvia-btns">
             <button type="button" class="btn btn-primary btn-sm" style="flex:1;min-height:44px" onclick="cargarTabLluvia()">Aplicar rango</button>
-            <button type="button" class="btn btn-sm" style="flex:1;min-height:44px;background:var(--sky-bg);color:var(--sky);border:1px solid var(--sky);font-weight:700" onclick="registrarLluviaRapida(true);setTimeout(cargarTabLluvia,500)">+ Llovió (día elegido)</button>
+            <button type="button" class="btn btn-sm" style="flex:1;min-height:44px;background:var(--sky-bg);color:var(--sky);border:1px solid var(--sky);font-weight:700" onclick="goTab('t-resumen');setTimeout(function(){var el=document.getElementById('lluvia-card');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},100)">+ Registrar en Resumen</button>
           </div>
         </div>
       </div>
@@ -613,7 +661,7 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
         <div style="padding:20px;text-align:center;color:var(--text3)">Cargando…</div>
       </div>
       <p style="font-size:11px;color:var(--text3);margin-top:12px;line-height:1.45">
-        Tip: registrá con <b>+ Llovió</b> (o <b>Seco</b>) en la barra de arriba. Los días sin tocar la app no cuentan como secos — solo como “sin registro”.
+        Tip: registrá lluvia en la pestaña <b>Resumen</b> (debajo de las cards). Los días sin tocar la app no cuentan como secos — solo como “sin registro”.
         Útil para pastoreo regenerativo y presión parasitaria en trópico húmedo.
       </p>
     </div>
@@ -807,17 +855,30 @@ function switchTab(btn, tabId){
   if(btn) btn.classList.add('active');
   else {
     document.querySelectorAll('.tab-btn').forEach(function(b){
-      if(b.getAttribute('onclick') && b.getAttribute('onclick').indexOf(tabId)>=0) b.classList.add('active');
+      if(b.getAttribute('onclick') && b.getAttribute('onclick').indexOf("'"+tabId+"'")>=0) b.classList.add('active');
     });
   }
   var panel=document.getElementById(tabId);
   if(panel) panel.classList.add('active');
-  if(tabId==='t-mapa') setTimeout(function(){if(MAP)MAP.invalidateSize();},50);
+  if(tabId==='t-resumen' && typeof renderDashboardLotes==='function') renderDashboardLotes();
+  if(tabId==='t-mapa') setTimeout(function(){if(MAP)MAP.invalidateSize();},80);
   if(tabId==='t-pivotes' && typeof renderPivotesTab==='function') renderPivotesTab();
-  if(tabId==='t-lotes' && typeof renderHistorialRotacion==='function') renderHistorialRotacion();
+  if(tabId==='t-lotes'){
+    if(typeof renderLotesTab==='function') renderLotesTab();
+    if(typeof renderHistorialRotacion==='function') renderHistorialRotacion();
+  }
   if(tabId==='t-lluvia' && typeof cargarTabLluvia==='function') cargarTabLluvia();
   if(tabId==='t-establos'){ if(typeof cargarEstablos==='function') cargarEstablos(); if(typeof llenarSelectsEncerrar==='function') llenarSelectsEncerrar(); }
 }
+/** Navegación a tab por id (sin depender de querySelector frágil). */
+window.goTab=function(tabId){
+  var btn=null;
+  document.querySelectorAll('.tab-btn').forEach(function(b){
+    var oc=b.getAttribute('onclick')||'';
+    if(oc.indexOf("'"+tabId+"'")>=0 || oc.indexOf('"'+tabId+'"')>=0) btn=b;
+  });
+  switchTab(btn, tabId);
+};
 
 // ══════════════════════════════════════════════════════
 // DATA HELPERS
@@ -2930,6 +2991,10 @@ window.registrarLluviaRapida=async function(llovio){
       ?('🌧 Lluvia del '+_fmtFechaCorta(fecha)+(esHoy?'':' (histórico)'))
       :('☀ Seco el '+_fmtFechaCorta(fecha)));
     loadLluviaHoy();
+    if(typeof renderDashboardLotes==='function'){
+      var tr=document.getElementById('t-resumen');
+      if(tr&&tr.classList.contains('active')) renderDashboardLotes();
+    }
     var tab=document.getElementById('t-lluvia');
     if(tab&&tab.classList.contains('active')) cargarTabLluvia();
   }catch(e){
@@ -2940,12 +3005,104 @@ window.registrarLluviaRapida=async function(llovio){
   }
 };
 
-window.irTabLluvia=function(){
-  var btn=null;
-  document.querySelectorAll('.tab-btn').forEach(function(b){
-    if((b.getAttribute('onclick')||'').indexOf('t-lluvia')>=0) btn=b;
+window.irTabLluvia=function(){ goTab('t-lluvia'); };
+
+// ── Dashboard Resumen (KPIs de pastoreo) ──
+function _dashCard(val, lbl, sub, cls){
+  return '<div class="dash-kpi'+(cls?(' '+cls):'')+'">'
+    +'<div class="dk-val">'+val+'</div>'
+    +'<div class="dk-lbl">'+lbl+'</div>'
+    +(sub?'<div class="dk-sub">'+sub+'</div>':'')
+    +'</div>';
+}
+window.renderDashboardLotes=async function(){
+  var host=document.getElementById('dash-lotes-kpis');
+  if(!host) return;
+
+  var useAS=window.AppState&&window.AppState._loaded;
+  var animales=useAS
+    ? window.AppState.getAnimalesActivos()
+    : ((AppData.get().animales||[]).filter(function(a){return a.activo!==false&&a.estado!=='baja'&&a.estado!=='muerto';}));
+  var nAnim=animales.length;
+
+  var lotes=useAS&&Array.isArray(window.AppState.lotes)
+    ? window.AppState.lotes
+    : ((AppData.get().lotes||[]).filter(function(l){return l.activo!==false;}));
+  var nPot=lotes.length;
+
+  var pivs=window._pivotes||[];
+  var nPiv=pivs.length;
+
+  var ha=0;
+  lotes.forEach(function(l){ ha+=parseFloat(l.hectareas!=null?l.hectareas:l.area_ha)||0; });
+  if(ha<=0 && window.AppState&&window.AppState.finca){
+    ha=parseFloat(window.AppState.finca.area_ha||window.AppState.finca.perimetro_area_ha)||0;
+  }
+
+  // Ocupados / vacíos (por animales en lote)
+  var ocupados=0, vacios=0, critCarga=0;
+  var objetivoKgHa=(window.AppState&&window.AppState.finca&&window.AppState.finca.config&&window.AppState.finca.config.carga_animal_kgha)||200000;
+  lotes.forEach(function(l){
+    var id=l.id;
+    var en=animales.filter(function(a){
+      if(useAS) return a.lote_actual_id===id;
+      return (a.lote===l.nombre||a.lote_nombre===l.nombre);
+    });
+    if(en.length) ocupados++; else vacios++;
+    var haL=parseFloat(l.hectareas!=null?l.hectareas:l.area_ha)||0;
+    if(haL>0 && en.length){
+      var bio=en.reduce(function(s,a){return s+(parseFloat(a.peso_actual)||25);},0);
+      var kgHa=bio/haL;
+      if(kgHa>=objetivoKgHa*0.9) critCarga++;
+    }
   });
-  switchTab(btn,'t-lluvia');
+
+  // Días sin lluvia
+  var diasSin='—', lluviaCls='';
+  var lluviaSub='Sin historial aún';
+  try{
+    if(window.DB&&window.DB.getUltimaLluvia){
+      var ul=await window.DB.getUltimaLluvia(_fincaLluvia());
+      if(ul&&ul.data&&ul.data.fecha){
+        var n=_diasEntre(ul.data.fecha, _isoDate(new Date()));
+        diasSin=String(n);
+        lluviaSub=n===0?'Llovió hoy':('Última: '+_fmtFechaCorta(ul.data.fecha));
+        lluviaCls=n===0?'sky':(n>=7?'alert':(n>=14?'crit':''));
+      }
+    }
+  }catch(e){}
+
+  // En descanso (movimientos) — best effort
+  var enDescanso='—', descSub='Rotación / movimientos';
+  try{
+    if(window.DB&&window.DB.getHistorialRotacion){
+      var hr=await window.DB.getHistorialRotacion(_fincaLluvia());
+      var rows=(hr&&hr.data)||[];
+      var nD=0;
+      var seen={};
+      rows.forEach(function(m){
+        if(m.estado!=='en_descanso') return;
+        var k=m.lote_id||m.id;
+        if(seen[k]) return;
+        seen[k]=1; nD++;
+      });
+      if(Object.keys(seen).length||rows.length){
+        enDescanso=String(nD);
+        descSub=nD? (nD+' potrero(s) en descanso') : 'Ninguno marcado en descanso';
+      }
+    }
+  }catch(e){}
+
+  host.innerHTML=
+    _dashCard(String(nAnim),'Animales activos','En el hato (estado activo)','ok')
+    +_dashCard(String(nPot),'Potreros', (nPiv? (nPiv+' pivote'+(nPiv===1?'':'s')) : 'Sin pivotes aún'),'')
+    +_dashCard(ocupados+' / '+vacios,'Ocupados / vacíos','Potreros con y sin animales', ocupados? 'ok':'')
+    +_dashCard(diasSin,'Días sin lluvia',lluviaSub,lluviaCls)
+    +_dashCard(ha>0?(Math.round(ha*10)/10):'—','Área (ha)', ha>0?'Suma potreros / finca':'Dibujá perímetro o potreros','')
+    +_dashCard(critCarga?String(critCarga):'0','Carga alta', critCarga?('≥90% meta kg/ha'):('Meta '+Number(objetivoKgHa).toLocaleString('es-CO')+' kg/ha'), critCarga?'crit':'ok');
+
+  // Refrescar estado del formulario de lluvia (debajo de cards)
+  if(typeof loadLluviaHoy==='function') loadLluviaHoy();
 };
 
 window.setLluviaRango=function(days){
@@ -3092,8 +3249,14 @@ window.cargarTabLluvia=async function(){
   }
 };
 
-document.addEventListener('appstate:ready', function(){ loadLluviaHoy(); });
-setTimeout(loadLluviaHoy, 1200);
+document.addEventListener('appstate:ready', function(){
+  loadLluviaHoy();
+  if(typeof renderDashboardLotes==='function') renderDashboardLotes();
+});
+setTimeout(function(){
+  loadLluviaHoy();
+  if(typeof renderDashboardLotes==='function') renderDashboardLotes();
+}, 900);
 // Rango default 30d al abrir pestaña (inputs se llenan en cargarTabLluvia)
 
 document.addEventListener('appstate:ready', function(e){
@@ -3467,16 +3630,13 @@ async function confirmarEliminarPivote(id){
   toast('Pivote eliminado. Historial conservado.');
 }
 function verPivoteEnMapa(id){
-  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
-  document.querySelectorAll('.tab-content').forEach(function(c){c.classList.remove('active');});
-  var mapaTab=document.getElementById('t-mapa'); if(mapaTab) mapaTab.classList.add('active');
-  var btns=document.querySelectorAll('.tab-btn'); if(btns[0]) btns[0].classList.add('active');
+  goTab('t-mapa');
   setTimeout(function(){
     if(MAP) MAP.invalidateSize();
     var pl=window.pivoteLayers[id];
     if(pl&&pl.poly){ try{ MAP.fitBounds(pl.poly.getBounds(),{padding:[60,60]}); }catch(e){} }
     abrirFichaPivote(id);
-  },140);
+  },160);
 }
 
 // ═══ FICHA PIVOTE + RIEGO ═══════════════════════════════════
