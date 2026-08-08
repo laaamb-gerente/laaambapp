@@ -14,7 +14,7 @@
 <title>LAAAMBAPP · Lotes & Potreros</title>
 <script>(function(){var t=(function(){var _t=localStorage.getItem('laaamb-theme');return _t==='dark'||_t==='light'?_t:'light';})();document.documentElement.setAttribute('data-theme',t);})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/laaamb.css?v=46">
+<link rel="stylesheet" href="css/laaamb.css?v=47">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -37,7 +37,7 @@
 <script src="js/approval.js?v=39"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=46"></script>
+<script src="js/db.js?v=47"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
@@ -133,6 +133,20 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
   .lluvia-fld-full{grid-column:1}
   .lluvia-btns{flex-direction:column}
   .lluvia-btns .btn{width:100%}
+}
+/* Modo mapa + ficha pivote */
+.map-mode-btn.active{background:var(--teal)!important;color:#04181a!important;border:none!important}
+.ficha-piv-ov{display:none;position:absolute;inset:0;z-index:700;background:rgba(0,0,0,.35);align-items:flex-end;justify-content:center}
+.ficha-piv-ov.open{display:flex}
+.ficha-piv-sheet{width:100%;max-width:480px;max-height:88%;overflow-y:auto;background:var(--bg2);border-radius:16px 16px 0 0;border:1px solid var(--border2);box-shadow:0 -8px 32px rgba(0,0,0,.35);padding:0 0 16px}
+.ficha-piv-handle{width:40px;height:4px;border-radius:2px;background:var(--border2);margin:10px auto 6px}
+.ficha-piv-kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.ficha-piv-kpi{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px}
+.ficha-piv-kpi .k{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase}
+.ficha-piv-kpi .v{font-size:15px;font-weight:700;color:var(--text);margin-top:2px}
+#map-mode-bar{max-width:calc(100% - 24px)}
+@media(max-width:480px){
+  #map-mode-bar{left:12px;right:12px;transform:none;justify-content:center;flex-wrap:wrap}
 }
 .tab-btn:hover{color:var(--text)}
 .tab-btn.active{color:var(--teal);border-bottom-color:var(--teal)}
@@ -437,8 +451,14 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
       <div class="map-finca-label">Finca activa para dibujo</div>
       <div class="map-finca-btns" id="map-finca-selector"></div>
     </div>
-    <!-- Toolbar -->
-    <div class="map-toolbar">
+    <!-- Modo VISTA (default) vs EDITAR — finca/pivotes bloqueados salvo Editar -->
+    <div id="map-mode-bar" style="position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:550;display:flex;gap:6px;align-items:center;background:var(--bg2);border:1px solid var(--border2);border-radius:99px;padding:4px 6px;box-shadow:0 4px 16px rgba(0,0,0,.25)">
+      <button type="button" class="btn btn-sm map-mode-btn active" id="btn-mode-vista" onclick="setMapMode('vista')" style="border-radius:99px;min-height:34px;padding:6px 12px;font-size:12px;font-weight:700">👁 Vista</button>
+      <button type="button" class="btn btn-sm map-mode-btn btn-ghost" id="btn-mode-editar" onclick="setMapMode('editar')" style="border-radius:99px;min-height:34px;padding:6px 12px;font-size:12px;font-weight:700">✎ Editar</button>
+      <button type="button" class="btn btn-sm btn-ghost" id="btn-capa-base" onclick="toggleBaseMapCapa()" style="border-radius:99px;min-height:34px;padding:6px 10px;font-size:11px;font-weight:600" title="Satélite / Ortomosaico dron">🗺 Base</button>
+    </div>
+    <!-- Toolbar (solo visible en modo EDITAR) -->
+    <div class="map-toolbar" id="map-toolbar-edit" style="display:none">
       <button class="map-tool-btn" id="btn-draw-finca" onclick="startDrawFinca()" data-tip="Dibujar perímetro de finca">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M2 17L8 5l4 7 2-3 4 8H2z"/></svg>
       </button>
@@ -451,10 +471,10 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
       <button class="map-undo-btn" id="btn-undo-point" onclick="deshacerUltimoPunto()" data-tip="Deshacer último punto">
         ↩
       </button>
-      <button class="map-tool-btn" id="btn-edit-mode" onclick="toggleEditMode()" data-tip="Editar vértices — arrastra los puntos azules" style="margin-top:8px">
+      <button class="map-tool-btn" id="btn-edit-mode" onclick="toggleEditMode()" data-tip="Editar vértices del perímetro de finca" style="margin-top:8px">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M13 3l4 4-9 9-5 1 1-5 9-9z"/></svg>
       </button>
-      <button class="map-tool-btn" id="btn-satellite" onclick="toggleSatellite()" data-tip="Alternar satélite / mapa">
+      <button class="map-tool-btn" id="btn-satellite" onclick="toggleSatellite()" data-tip="Alternar satélite / calles" style="margin-top:8px">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18"><circle cx="10" cy="10" r="7"/><path d="M3 10a7 7 0 0114 0"/><path d="M10 3v14"/></svg>
       </button>
     </div>
@@ -484,6 +504,17 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
         </div>
       </div>
     </div>
+    <!-- Banner ortomosaico / dron -->
+    <div id="map-orto-banner" style="display:none;position:absolute;bottom:12px;left:12px;right:12px;z-index:540;padding:8px 12px;background:rgba(8,15,16,.88);border:1px solid rgba(0,175,182,.35);border-radius:10px;color:#d8edef;font-size:11px;line-height:1.4;pointer-events:none"></div>
+
+    <!-- Ficha pivote (bottom sheet) -->
+    <div id="ficha-pivote-ov" class="ficha-piv-ov" onclick="if(event.target===this)cerrarFichaPivote()">
+      <div class="ficha-piv-sheet" id="ficha-pivote-sheet">
+        <div class="ficha-piv-handle"></div>
+        <div id="ficha-pivote-body"><div style="padding:20px;text-align:center;color:var(--text3)">Cargando…</div></div>
+      </div>
+    </div>
+
     <!-- Legend -->
     <div class="map-legend" id="map-legend">
       <div class="map-legend-title">Carga (kg/ha)</div>
@@ -836,9 +867,12 @@ function getColabs(){
 // MAPA
 // ══════════════════════════════════════════════════════
 var MAP=null, GSAT=null, GSTREET=null, isSat=true;
-var drawMode=null; // 'finca' | 'lote' | null
+var GORTO=null;              // capa ortomosaico dron (tiles o image overlay)
+var mapMode='vista';         // 'vista' | 'editar' — default bloqueado
+var drawMode=null; // 'finca' | 'lote' | 'pivote' | null
 var editMode=false;
 var activeFincaMap='default';
+window._capaMapaConfig=null; // fincas.capa_mapa
 var currentPoints=[]; // puntos del polígono en dibujo
 var tempMarkers=[]; // marcadores temporales durante dibujo
 var tempPolyline=null; // línea preview
@@ -878,9 +912,13 @@ function initMap(){
   // Centro inicial — vereda San Bernardo, Ibagué, Tolima (La Marinilla)
   MAP.setView([4.3574,-75.0822],16);
 
-  // Click handler para dibujo
+  // Modo vista por defecto (finca/pivotes bloqueados)
+  if(typeof setMapMode==='function') setMapMode('vista');
+  if(typeof loadCapaMapaFinca==='function') loadCapaMapaFinca();
+
+  // Click handler para dibujo (solo en modo editar + drawMode activo)
   MAP.on('click',function(e){
-    if(!drawMode) return;
+    if(mapMode!=='editar' || !drawMode) return;
     addDrawPoint(e.latlng);
   });
 
@@ -944,6 +982,7 @@ function toggleSatellite(){
 
 // ── DIBUJO ──────────────────────────────────────────
 function startDrawFinca(){
+  if(mapMode!=='editar') setMapMode('editar');
   if(drawMode==='finca'){cancelDraw();return;}
   cancelDraw();
   drawMode='finca';
@@ -968,6 +1007,7 @@ function iniciarNuevoLoteDesdeMapa(){
 }
 
 function startDrawLote(){
+  if(mapMode!=='editar') setMapMode('editar');
   var fincaLotes=getLotesForFinca(activeFincaMap);
   // Verificar que hay perímetro de finca
   if(!fincaLayers[activeFincaMap]){
@@ -1227,7 +1267,24 @@ async function loadGeometries(){
   // así renderLoteLayers() (re-render por finca/tab) los conserva y quedan offline.
   if(_geoDirty){ d.geo=geo; AppData.save(d); }
 
-  // Pivotes dibujados (geometría en AppData; metadata en Supabase _pivotes)
+  // Pivotes: geo desde Supabase (fuente de verdad) + caché AppData
+  try{
+    if(window.DB && typeof window.DB.getPivotes==='function'){
+      var rp=await window.DB.getPivotes(_fincaUuid());
+      if(rp && !rp.error && Array.isArray(rp.data)){
+        window._pivotes=rp.data;
+        var _pd=false;
+        rp.data.forEach(function(p){
+          if(!p.geojson) return;
+          var gj=(typeof p.geojson==='string')?(function(){try{return JSON.parse(p.geojson);}catch(e){return null;}})():p.geojson;
+          if(gj && gj.coordinates){
+            geo['pivote_'+p.id]=gj; _pd=true;
+          }
+        });
+        if(_pd){ d.geo=geo; AppData.save(d); }
+      }
+    }
+  }catch(e){ /* offline */ }
   if(typeof renderPivotesOnMap==='function') renderPivotesOnMap();
 
   // Al terminar de cargar todas las geometrías, si hay polígonos con bounds,
@@ -1261,10 +1318,19 @@ function renderFincaLayer(fincaId, geojson){
     dashArray:isActive?null:'8,4'
   }).addTo(MAP);
 
-  // Click: si ya es activa → abrir panel edición; si no → seleccionar
+  // Click: VISTA → zoom/highlight; EDITAR → panel de vértices (si activa)
   poly.on('click',function(e){
-    if(drawMode==='lote'||drawMode==='pivote'){addDrawPoint(e.latlng);return;}
+    if(mapMode==='editar' && (drawMode==='lote'||drawMode==='pivote')){addDrawPoint(e.latlng);return;}
     L.DomEvent.stopPropagation(e);
+    if(mapMode==='vista'){
+      if(fincaId!==activeFincaMap) setMapFinca(fincaId);
+      else {
+        try{ MAP.fitBounds(poly.getBounds(),{padding:[48,48],maxZoom:18}); }catch(_){}
+        showMapStatus('📍 Finca · solo vista. Activá <b>✎ Editar</b> para modificar el perímetro.');
+        setTimeout(function(){ var s=document.getElementById('map-status'); if(s) s.style.display='none'; },3200);
+      }
+      return;
+    }
     if(fincaId===activeFincaMap){
       abrirEdicionPoligono('finca', fincaId, poly, geojson);
     } else {
@@ -1280,12 +1346,13 @@ function renderFincaLayer(fincaId, geojson){
   var areaHa=calcAreaHa(coords.map(function(c){return {lat:c[0],lng:c[1]};}));
   var finca=getFincaById(fincaId);
   var center=poly.getBounds().getCenter();
+  var hintVista = (typeof mapMode!=='undefined' && mapMode==='editar') ? 'clic para editar' : 'clic para acercar';
   var label=L.marker(center,{
     icon:L.divIcon({
       html:'<div style="font-family:Changa,sans-serif;text-align:center;pointer-events:none">'
         +'<div style="font-size:13px;font-weight:700;color:#4eeef5;text-shadow:0 1px 6px rgba(0,0,0,1),0 0 16px rgba(0,0,0,.9)">'+finca.nombre+'</div>'
         +'<div style="font-size:12px;color:#fff;text-shadow:0 1px 5px rgba(0,0,0,1),0 0 12px rgba(0,0,0,.9);font-weight:600;margin-top:2px">'+areaHa.toFixed(1)+' ha</div>'
-        +'<div style="font-size:9px;color:rgba(100,230,240,.8);margin-top:2px;text-shadow:0 1px 4px rgba(0,0,0,1)">clic para editar</div>'
+        +'<div style="font-size:9px;color:rgba(100,230,240,.8);margin-top:2px;text-shadow:0 1px 4px rgba(0,0,0,1)">'+hintVista+'</div>'
         +'</div>',
       className:'', iconAnchor:[40,20]
     }), zIndexOffset:5, interactive:false
@@ -1354,8 +1421,8 @@ function renderLoteLayer(loteId, lote, geojson){
     +'</div>';
   poly.bindPopup(popupContent,{maxWidth:240,minWidth:200});
   poly.on('click',function(e){
-    // Doble click abre panel edición directo
-    if(e.originalEvent && e.originalEvent.detail===2){
+    // Edición de vértices solo en modo EDITAR + doble click
+    if(mapMode==='editar' && e.originalEvent && e.originalEvent.detail===2){
       L.DomEvent.stopPropagation(e);
       MAP.closePopup();
       abrirEdicionPoligono('lote', loteId, poly, geojson);
@@ -1383,6 +1450,11 @@ function renderLoteLayer(loteId, lote, geojson){
 // el usuario hace clic sobre un perímetro o lote para abrirlo.
 // El botón toolbar ahora abre edición del perímetro de la finca activa.
 function toggleEditMode(){
+  if(mapMode!=='editar'){
+    setMapMode('editar');
+    toast('Modo editar activo · clic en perímetro o usá las herramientas');
+    return;
+  }
   var d=AppData.get();
   var geo=d.geo||{};
   var key='finca_'+activeFincaMap;
@@ -1396,6 +1468,110 @@ function toggleEditMode(){
   }
   abrirEdicionPoligono('finca', activeFincaMap, fincaLayers[activeFincaMap], geo[key]);
 }
+
+// ── Modo VISTA vs EDITAR ─────────────────────────────
+window.setMapMode=function(mode){
+  mapMode=(mode==='editar')?'editar':'vista';
+  var tb=document.getElementById('map-toolbar-edit');
+  if(tb) tb.style.display=mapMode==='editar'?'':'none';
+  var bv=document.getElementById('btn-mode-vista');
+  var be=document.getElementById('btn-mode-editar');
+  if(bv){ bv.classList.toggle('active', mapMode==='vista'); bv.classList.toggle('btn-ghost', mapMode!=='vista'); }
+  if(be){ be.classList.toggle('active', mapMode==='editar'); be.classList.toggle('btn-ghost', mapMode!=='editar'); }
+  if(mapMode==='vista'){
+    if(typeof cancelDraw==='function') try{ cancelDraw(); }catch(_){}
+    if(typeof cancelarEdicionPoligono==='function' && editingPolyId) try{ cancelarEdicionPoligono(); }catch(_){}
+    if(MAP) MAP.getContainer().style.cursor='';
+  } else {
+    showMapStatus('✎ <b>Modo editar</b> — dibujá o tocá un perímetro. Volvé a <b>Vista</b> para bloquear.');
+    setTimeout(function(){ var s=document.getElementById('map-status'); if(s&&mapMode==='editar') s.style.display='none'; },4000);
+  }
+};
+
+// ── Ortomosaico dron (listo para activar en 2–3 semanas) ──
+async function loadCapaMapaFinca(){
+  try{
+    if(!(window.DB&&window.DB.getCapaMapa)) return;
+    var r=await window.DB.getCapaMapa(_fincaUuid());
+    if(r&&r.error) return;
+    window._capaMapaConfig=r.data||null;
+    aplicarCapaBaseMapa();
+  }catch(e){ console.warn('[Mapa] capa:', e&&e.message); }
+}
+function aplicarCapaBaseMapa(){
+  var cfg=window._capaMapaConfig;
+  var banner=document.getElementById('map-orto-banner');
+  if(!MAP) return;
+  // Quitar orto previa
+  if(GORTO){ try{ MAP.removeLayer(GORTO); }catch(_){} GORTO=null; }
+  var orto=cfg&&cfg.ortomosaico;
+  var base=(cfg&&cfg.base)||'google_sat';
+  var activo=orto&&(orto.activo===true||base==='orthomosaic');
+  if(activo&&orto){
+    try{
+      if(orto.tipo==='image_overlay' && orto.image_url && orto.bounds){
+        var b=orto.bounds;
+        // bounds: [[latS,lngW],[latN,lngE]]
+        GORTO=L.imageOverlay(orto.image_url, b, {opacity:orto.opacity!=null?orto.opacity:0.95, interactive:false});
+        GORTO.addTo(MAP);
+      } else if(orto.url_template){
+        GORTO=L.tileLayer(orto.url_template, {
+          maxZoom:22,
+          opacity:orto.opacity!=null?orto.opacity:1,
+          attribution:'Ortomosaico dron LAAAMB'+(orto.survey_date?(' · '+orto.survey_date):'')
+        });
+        GORTO.addTo(MAP);
+        // Opcional: bajar opacidad del satélite o quitarlo para medición exacta
+        if(base==='orthomosaic' && GSAT && MAP.hasLayer(GSAT)){
+          // mantener sat bajo el orto como referencia tenue no — orto encima
+        }
+      }
+    }catch(e){ console.warn('[Mapa] orto layer:', e); }
+  }
+  if(banner){
+    if(activo&&orto&&(orto.url_template||orto.image_url)){
+      banner.style.display='';
+      banner.innerHTML='🛰 <b>Ortomosaico dron activo</b>'
+        +(orto.survey_date?(' · vuelo '+orto.survey_date):'')
+        +(orto.rmse_m!=null?(' · RMSE ~'+orto.rmse_m+' m'):'')
+        +' · mediciones sobre esta capa (no Google)';
+    } else {
+      banner.style.display='';
+      banner.innerHTML='🛰 Base actual: <b>Google satélite</b> (referencia). En 2–3 semanas el ortomosaico del dron (GeoTIFF) reemplazará esta capa para medir potreros con precisión. Ver docs/MAPA_DRON_ORTOMOSAICO.md';
+    }
+  }
+  var btn=document.getElementById('btn-capa-base');
+  if(btn) btn.textContent=activo?'🛰 Orto':'🗺 Sat';
+}
+window.toggleBaseMapCapa=async function(){
+  var cfg=window._capaMapaConfig||{capa_mapa:{},base:'google_sat',ortomosaico:null};
+  var orto=cfg.ortomosaico||(cfg.capa_mapa&&cfg.capa_mapa.ortomosaico)||{};
+  var tiene=!!(orto.url_template||orto.image_url);
+  if(!tiene){
+    toast('Ortomosaico aún no cargado. Cuando el dron entregue, se activa con SQL/config (ver docs).','info');
+    // Muestra banner de preparación
+    var banner=document.getElementById('map-orto-banner');
+    if(banner){
+      banner.style.display='';
+      banner.innerHTML='📦 <b>Pendiente vuelo dron</b>: GeoTIFF ortomosaico + bounds → tiles XYZ o image overlay. La app ya soporta fincas.capa_mapa.ortomosaico (migración 0065).';
+    }
+    return;
+  }
+  var base=cfg.base||'google_sat';
+  var next=base==='orthomosaic'?'google_sat':'orthomosaic';
+  try{
+    var capa=Object.assign({}, cfg.capa_mapa||{}, {
+      base: next,
+      ortomosaico: Object.assign({}, orto, { activo: next==='orthomosaic' })
+    });
+    if(window.DB&&window.DB.saveCapaMapa){
+      await window.DB.saveCapaMapa(_fincaUuid(), capa);
+    }
+    window._capaMapaConfig=Object.assign({}, cfg, { base:next, capa_mapa:capa, ortomosaico:capa.ortomosaico });
+    aplicarCapaBaseMapa();
+    toast(next==='orthomosaic'?'Ortomosaico como base de medición':'Google satélite');
+  }catch(e){ toast('No se pudo cambiar capa: '+(e.message||e),'err'); }
+};
 
 // ── Panel de edición ─────────────────────────────────
 var midpointHandles=[]; // handles de punto medio para insertar vértices
@@ -2974,10 +3150,27 @@ async function loadPivotes(){
       if(re && !re.error && Array.isArray(re.data)) window._pivotesEliminados = re.data;
     }
   }catch(e){}
+  // Migración one-shot: AppData local → Supabase geojson (mobile verá lo mismo)
+  try{
+    var geo=(AppData.get().geo)||{};
+    var ups=[];
+    (window._pivotes||[]).forEach(function(p){
+      if(p.geojson) return;
+      var g=geo['pivote_'+p.id];
+      if(!g) return;
+      if(window.DB&&window.DB.savePivoteGeo){
+        ups.push(window.DB.savePivoteGeo(p.id, g, p.area_ha).then(function(res){
+          if(res&&res.data) p.geojson=res.data.geojson||g;
+        }).catch(function(){}));
+      }
+    });
+    if(ups.length) await Promise.all(ups);
+  }catch(e){}
   fillPivoteSelect();
   var pane=document.getElementById('t-pivotes');
   if(pane && pane.classList.contains('active')) renderPivotesTab();
-  if(typeof renderLotesTab==='function') renderLotesTab(); // re-agrupar potreros por pivote
+  if(typeof renderLotesTab==='function') renderLotesTab();
+  if(typeof renderPivotesOnMap==='function' && MAP) renderPivotesOnMap();
 }
 
 function _lotesDeFinca(){
@@ -3116,6 +3309,7 @@ var COLORES_POTRERO = ['#00AFB6','#F18F22','#22C55E','#9C3F66','#3B82F6','#EAB30
 
 // ── PARTE 1: dibujar pivote ──
 function startDrawPivote(){
+  if(mapMode!=='editar'){ setMapMode('editar'); }
   if(!fincaLayers[activeFincaMap]){ toast('Primero dibuja el perímetro de la finca','err'); return; }
   if(drawMode==='pivote'){ cancelDraw(); return; }
   cancelDraw();
@@ -3145,13 +3339,27 @@ async function guardarPivoteGeo(){
   if(!nombre){ toast('El nombre del pivote es obligatorio','err'); return; }
   try{
     if(!(window.DB&&window.DB.savePivote)) throw new Error('DB no disponible');
-    var r=await window.DB.savePivote({ finca_id:_pivoteFinca(), nombre:nombre, area_ha:Math.round(pend.areaHa*100)/100 });
+    var r=await window.DB.savePivote({
+      finca_id:_pivoteFinca(),
+      nombre:nombre,
+      area_ha:Math.round(pend.areaHa*100)/100,
+      geojson: pend.geojson
+    });
     if(r.error) throw r.error;
     var piv=r.data;
+    // Asegurar geo en Supabase (columna geojson 0065)
+    if(window.DB.savePivoteGeo){
+      try{
+        var rg=await window.DB.savePivoteGeo(piv.id, pend.geojson, pend.areaHa);
+        if(rg&&rg.data) piv=rg.data;
+      }catch(ge){ console.warn('[Pivote] geo Supabase (¿0065?):', ge&&ge.message); }
+    }
     var d=AppData.get(); d.geo=d.geo||{}; d.geo['pivote_'+piv.id]=pend.geojson; AppData.save(d);
-    window._pivotes=window._pivotes||[]; window._pivotes.push(piv);
+    window._pivotes=window._pivotes||[];
+    window._pivotes=window._pivotes.filter(function(x){return x.id!==piv.id;});
+    window._pivotes.push(piv);
     renderPivoteLayer(piv, pend.geojson);
-    toast('Pivote “'+nombre+'” guardado ('+Math.round(pend.areaHa*10)/10+' ha)');
+    toast('Pivote “'+nombre+'” guardado ('+Math.round(pend.areaHa*10)/10+' ha) · sync multi-dispositivo');
   }catch(e){ toast('Error guardando pivote: '+(e.message||e),'err'); }
   cancelarPivoteGeo();
   if(typeof renderPivotesTab==='function') renderPivotesTab();
@@ -3159,37 +3367,44 @@ async function guardarPivoteGeo(){
 
 // ── Render de pivotes ──
 function renderPivotesOnMap(){
+  if(!MAP) return;
   var geo=(AppData.get().geo)||{};
-  (window._pivotes||[]).forEach(function(p){ var g=geo['pivote_'+p.id]; if(g) renderPivoteLayer(p, g); });
+  (window._pivotes||[]).forEach(function(p){
+    var g=geo['pivote_'+p.id];
+    if(!g && p.geojson){
+      g=(typeof p.geojson==='string')?(function(){try{return JSON.parse(p.geojson);}catch(e){return null;}})():p.geojson;
+    }
+    if(g) renderPivoteLayer(p, g);
+  });
 }
 function renderPivoteLayer(pivote, geojson){
+  if(!MAP||!geojson||!geojson.coordinates) return;
   var ex=window.pivoteLayers[pivote.id];
   if(ex){ if(ex.poly)MAP.removeLayer(ex.poly); if(ex.label)MAP.removeLayer(ex.label); }
   var coords=geojson.coordinates[0].map(function(c){return [c[1],c[0]];});
-  var poly=L.polygon(coords,{color:'#16A34A',weight:2.5,opacity:0.9,fillColor:'#22C55E',fillOpacity:0.2,dashArray:'6,3'}).addTo(MAP);
+  // stroke más grueso en mobile para que se vea
+  var isMobile=window.matchMedia&&window.matchMedia('(max-width:768px)').matches;
+  var poly=L.polygon(coords,{
+    color:'#16A34A',weight:isMobile?3.5:2.5,opacity:0.95,
+    fillColor:'#22C55E',fillOpacity:isMobile?0.28:0.2,dashArray:'6,3'
+  }).addTo(MAP);
   poly.on('click',function(e){
-    if(drawMode){ if(drawMode==='lote'||drawMode==='pivote') addDrawPoint(e.latlng); return; }
+    if(mapMode==='editar' && drawMode){ if(drawMode==='lote'||drawMode==='pivote') addDrawPoint(e.latlng); return; }
     if(window._subdiv && window._subdiv.pivoteId===pivote.id && window._subdiv.awaitingDescanso){
       L.DomEvent.stopPropagation(e); _setDescansoSubdiv(e.latlng); return;
     }
     L.DomEvent.stopPropagation(e);
-    abrirPopupPivote(pivote, poly);
+    // Siempre ficha operativa; en editar también se puede gestionar desde la ficha
+    abrirFichaPivote(pivote.id);
   });
   var center=poly.getBounds().getCenter();
-  var label=L.marker(center,{icon:L.divIcon({html:'<div style="font-family:Changa,sans-serif;font-size:12px;font-weight:700;color:#22C55E;text-shadow:0 1px 4px rgba(0,0,0,.9);white-space:nowrap;pointer-events:none">⊞ '+_escPv(pivote.nombre)+'</div>',className:'',iconAnchor:[30,8]}),zIndexOffset:8,interactive:false}).addTo(MAP);
+  var label=L.marker(center,{icon:L.divIcon({html:'<div style="font-family:Changa,sans-serif;font-size:12px;font-weight:700;color:#22C55E;text-shadow:0 1px 4px rgba(0,0,0,.9),0 0 8px rgba(0,0,0,.8);white-space:nowrap;pointer-events:none">⊞ '+_escPv(pivote.nombre)+'</div>',className:'',iconAnchor:[30,8]}),zIndexOffset:800,interactive:false}).addTo(MAP);
   window.pivoteLayers[pivote.id]={poly:poly,label:label};
+  try{ poly.bringToFront(); }catch(_){}
 }
 function abrirPopupPivote(pivote, poly){
-  var tienePotreros=(AppData.get().lotes||[]).some(function(l){ return l.pivote_id===pivote.id; });
-  var subLabel = tienePotreros ? '☀ Reconfigurar potreros' : '⊞ Subdividir en potreros';
-  var html='<div style="font-family:Changa,sans-serif;min-width:160px">'
-    +'<div style="font-weight:700;color:#22C55E;margin-bottom:6px">⊞ '+_escPv(pivote.nombre)+'</div>'
-    +'<div style="display:flex;flex-direction:column;gap:4px">'
-    +'<button onclick="renombrarPivote(\''+pivote.id+'\')" style="font-size:12px;padding:5px 8px;border-radius:6px;background:rgba(0,175,182,.12);border:1px solid rgba(0,175,182,.3);color:#00AFB6;cursor:pointer;font-family:inherit;text-align:left">✎ Renombrar</button>'
-    +'<button onclick="iniciarSubdivision(\''+pivote.id+'\')" style="font-size:12px;padding:5px 8px;border-radius:6px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.35);color:#22C55E;cursor:pointer;font-family:inherit;text-align:left">'+subLabel+'</button>'
-    +'<button onclick="eliminarPivote(\''+pivote.id+'\')" style="font-size:12px;padding:5px 8px;border-radius:6px;background:rgba(224,82,82,.12);border:1px solid rgba(224,82,82,.3);color:#e05252;cursor:pointer;font-family:inherit;text-align:left">🗑 Eliminar</button>'
-    +'</div></div>';
-  poly.bindPopup(html,{maxWidth:220,minWidth:170}).openPopup();
+  // Compat: redirige a ficha
+  abrirFichaPivote(pivote.id||pivote);
 }
 // Borra los potreros de un pivote (AppData + Supabase + capas). Devuelve snapshot.
 function _borrarPotreros(pivoteId){
@@ -3259,9 +3474,214 @@ function verPivoteEnMapa(id){
   setTimeout(function(){
     if(MAP) MAP.invalidateSize();
     var pl=window.pivoteLayers[id];
-    if(pl&&pl.poly){ try{ MAP.fitBounds(pl.poly.getBounds(),{padding:[60,60]}); pl.poly.openPopup&&pl.poly.openPopup(); }catch(e){} }
+    if(pl&&pl.poly){ try{ MAP.fitBounds(pl.poly.getBounds(),{padding:[60,60]}); }catch(e){} }
+    abrirFichaPivote(id);
   },140);
 }
+
+// ═══ FICHA PIVOTE + RIEGO ═══════════════════════════════════
+window._fichaPivoteId=null;
+function cerrarFichaPivote(){
+  var ov=document.getElementById('ficha-pivote-ov');
+  if(ov) ov.classList.remove('open');
+  window._fichaPivoteId=null;
+}
+window.cerrarFichaPivote=cerrarFichaPivote;
+
+function _diasDesdeISO(iso){
+  if(!iso) return null;
+  try{
+    var a=new Date(String(iso).slice(0,10)+'T12:00:00');
+    var b=new Date(); b.setHours(12,0,0,0);
+    return Math.max(0, Math.round((b-a)/86400000));
+  }catch(e){ return null; }
+}
+function _animalesEnPivote(pivoteId){
+  var lotes=_lotesDeFinca().filter(function(l){ return l.pivote_id===pivoteId; });
+  var ids={}; lotes.forEach(function(l){ ids[l.id]=l; });
+  var anim=[];
+  if(window.AppState&&Array.isArray(window.AppState.animales)){
+    anim=window.AppState.animales.filter(function(a){
+      return a.estado==='activo' && a.lote_actual_id && ids[a.lote_actual_id];
+    });
+  }
+  return { lotes:lotes, animales:anim, nAnim:anim.length };
+}
+async function _estadoDescansoPivote(pivoteId, lotes){
+  // Mejor esfuerzo: movimientos_potrero del pivote
+  var enDescanso=0, ocupados=0, maxDias=null;
+  try{
+    if(window.DB&&window.DB.getHistorialRotacion){
+      var r=await window.DB.getHistorialRotacion(_pivoteFinca());
+      var rows=(r&&r.data)||[];
+      var byLote={};
+      rows.forEach(function(m){
+        if(m.pivote_id!==pivoteId && !(lotes.some(function(l){return String(l.id)===String(m.lote_id);}))) return;
+        var k=m.lote_id||m.id;
+        if(!byLote[k]) byLote[k]=m; // ya ordenado desc por fecha_entrada
+      });
+      Object.keys(byLote).forEach(function(k){
+        var m=byLote[k];
+        if(m.estado==='en_descanso'){
+          enDescanso++;
+          var d=m.dias_descanso_real!=null?m.dias_descanso_real:_diasDesdeISO(m.fecha_inicio_descanso||m.fecha_salida);
+          if(d!=null && (maxDias==null||d>maxDias)) maxDias=d;
+        } else if(m.estado==='ocupado') ocupados++;
+      });
+    }
+  }catch(e){}
+  if(!ocupados && !enDescanso){
+    // fallback: con animales = ocupado
+    var st=_animalesEnPivote(pivoteId);
+    if(st.nAnim>0) ocupados=st.lotes.length||1;
+    else enDescanso=st.lotes.length||0;
+  }
+  return { ocupados:ocupados, enDescanso:enDescanso, diasDescanso:maxDias };
+}
+
+window.abrirFichaPivote=async function(pivoteId){
+  var p=(window._pivotes||[]).find(function(x){return x.id===pivoteId;});
+  if(!p && window.DB&&window.DB.getPivote){
+    try{ var rp=await window.DB.getPivote(pivoteId); if(rp&&rp.data) p=rp.data; }catch(e){}
+  }
+  if(!p){ toast('Pivote no encontrado','err'); return; }
+  window._fichaPivoteId=pivoteId;
+  var ov=document.getElementById('ficha-pivote-ov');
+  var body=document.getElementById('ficha-pivote-body');
+  if(!ov||!body) return;
+  ov.classList.add('open');
+  body.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3)">Cargando ficha…</div>';
+
+  // Zoom suave al pivote
+  try{
+    var pl=window.pivoteLayers[pivoteId];
+    if(pl&&pl.poly&&MAP) MAP.fitBounds(pl.poly.getBounds(),{padding:[50,50],maxZoom:18});
+  }catch(e){}
+
+  var st=_animalesEnPivote(pivoteId);
+  var desc=await _estadoDescansoPivote(pivoteId, st.lotes);
+  var area=p.area_ha!=null?p.area_ha:(p.area_ha_calc!=null?p.area_ha_calc:null);
+  // Área desde polígono si falta
+  if(area==null){
+    try{
+      var g=(AppData.get().geo||{})['pivote_'+pivoteId]||p.geojson;
+      if(typeof g==='string') g=JSON.parse(g);
+      if(g&&g.coordinates){
+        var coords=g.coordinates[0].map(function(c){return {lat:c[1],lng:c[0]};});
+        area=Math.round(calcAreaHa(coords)*10)/10;
+      }
+    }catch(e){}
+  }
+
+  var ultimoRiego=null, riegos=[];
+  try{
+    if(window.DB&&window.DB.getUltimoRiego){
+      var ur=await window.DB.getUltimoRiego(pivoteId);
+      if(ur&&ur.data) ultimoRiego=ur.data;
+    }
+    if(window.DB&&window.DB.getRiegos){
+      var rr=await window.DB.getRiegos({ pivote_id:pivoteId, limit:8 });
+      riegos=(rr&&rr.data)||[];
+    }
+  }catch(e){ /* tabla 0065 puede no existir aún */ }
+
+  var diasRiego=_diasDesdeISO(ultimoRiego&&ultimoRiego.fecha);
+  var estadoTxt=st.nAnim>0
+    ?('Ocupado · '+st.nAnim+' animales')
+    :(desc.enDescanso
+      ?('Descanso'+(desc.diasDescanso!=null?(' · '+desc.diasDescanso+' d'):''))
+      :'Sin animales');
+
+  var potList=st.lotes.length
+    ? st.lotes.map(function(l){
+        var n=st.animales.filter(function(a){return a.lote_actual_id===l.id;}).length;
+        return '<div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">'
+          +'<span>'+_escPv(l.nombre||l.id)+'</span><b>'+n+' an.</b></div>';
+      }).join('')
+    : '<div style="font-size:12px;color:var(--text3)">Sin potreros vinculados</div>';
+
+  var riegoHist=riegos.length
+    ? riegos.map(function(r){
+        var h=Math.floor((r.duracion_min||0)/60), m=(r.duracion_min||0)%60;
+        var dur=(h?h+' h ':'')+(m?m+' min':'')|| (r.duracion_min+' min');
+        return '<div style="font-size:12px;padding:7px 0;border-bottom:1px solid var(--border)">'
+          +'<b>'+_escPv(String(r.fecha).slice(0,10))+'</b> · '+dur
+          +(r.metodo?(' · '+_escPv(r.metodo)):'')
+          +(r.notas?('<div style="color:var(--text3);font-size:11px">'+_escPv(r.notas)+'</div>'):'')
+          +'</div>';
+      }).join('')
+    : '<div style="font-size:12px;color:var(--text3);padding:8px 0">Sin riegos registrados. Corré SQL 0065 si el guardado falla.</div>';
+
+  var hoy=new Date(); var isoHoy=hoy.getFullYear()+'-'+('0'+(hoy.getMonth()+1)).slice(-2)+'-'+('0'+hoy.getDate()).slice(-2);
+
+  body.innerHTML=''
+    +'<div style="padding:4px 16px 0">'
+    +  '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">'
+    +    '<div><div style="font-family:Sigmar,cursive;font-size:18px;color:var(--text)">⊞ '+_escPv(p.nombre)+'</div>'
+    +    '<div style="font-size:12px;color:var(--text3);margin-top:2px">'+_escPv(estadoTxt)+'</div></div>'
+    +    '<button type="button" class="btn btn-ghost btn-sm" onclick="cerrarFichaPivote()" style="min-height:36px">✕</button>'
+    +  '</div>'
+    +  '<div class="ficha-piv-kpis">'
+    +    '<div class="ficha-piv-kpi"><div class="k">Área</div><div class="v">'+(area!=null?(area+' ha'):'—')+'</div></div>'
+    +    '<div class="ficha-piv-kpi"><div class="k">Pasto</div><div class="v" style="font-size:13px">'+_escPv(p.tipo_pasto||'—')+'</div></div>'
+    +    '<div class="ficha-piv-kpi"><div class="k">Animales</div><div class="v">'+st.nAnim+'</div></div>'
+    +    '<div class="ficha-piv-kpi"><div class="k">Potreros</div><div class="v">'+st.lotes.length+'</div></div>'
+    +    '<div class="ficha-piv-kpi"><div class="k">Último riego</div><div class="v" style="font-size:13px">'
+    +      (diasRiego==null?'—':(diasRiego===0?'Hoy':('Hace '+diasRiego+' d')))
+    +    '</div></div>'
+    +    '<div class="ficha-piv-kpi"><div class="k">Descanso</div><div class="v" style="font-size:13px">'
+    +      (desc.diasDescanso!=null?(desc.diasDescanso+' d'):(st.nAnim>0?'Ocupado':'—'))
+    +    '</div></div>'
+    +  '</div>'
+    +  '<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin:8px 0 4px">Potreros · animales</div>'
+    +  potList
+    +  '<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin:14px 0 6px">💧 Registrar riego</div>'
+    +  '<div class="lluvia-reg-grid" style="margin-bottom:8px">'
+    +    '<div class="lluvia-fld"><label>Fecha</label><input type="date" id="rg-fecha" class="lluvia-inp" value="'+isoHoy+'"></div>'
+    +    '<div class="lluvia-fld"><label>Duración (min)</label><input type="number" id="rg-min" class="lluvia-inp" value="120" min="1" step="15"></div>'
+    +    '<div class="lluvia-fld"><label>Método</label><select id="rg-metodo" class="lluvia-inp">'
+    +      '<option value="aspersión">Aspersión</option><option value="pivote_central">Pivote central</option>'
+    +      '<option value="manguera">Manguera</option><option value="cinta">Cinta</option>'
+    +      '<option value="cañón">Cañón</option><option value="otro">Otro</option></select></div>'
+    +    '<div class="lluvia-fld"><label>Notas</label><input type="text" id="rg-notas" class="lluvia-inp" placeholder="Opcional"></div>'
+    +  '</div>'
+    +  '<button type="button" class="btn btn-primary" style="width:100%;min-height:44px;margin-bottom:12px" onclick="guardarRiegoPivote(\''+pivoteId+'\')">💧 Guardar riego</button>'
+    +  '<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin:4px 0 4px">Historial riego</div>'
+    +  '<div id="rg-hist">'+riegoHist+'</div>'
+    +  '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:14px">'
+    +(mapMode==='editar'
+      ? '<button type="button" class="btn btn-ghost btn-sm" onclick="cerrarFichaPivote();iniciarSubdivision(\''+pivoteId+'\')">⊞ Subdividir</button>'
+        +'<button type="button" class="btn btn-ghost btn-sm" onclick="cerrarFichaPivote();renombrarPivote(\''+pivoteId+'\')">✎ Renombrar</button>'
+        +'<button type="button" class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="cerrarFichaPivote();eliminarPivote(\''+pivoteId+'\')">🗑 Eliminar</button>'
+      : '<button type="button" class="btn btn-ghost btn-sm" onclick="setMapMode(\'editar\');toast(\'Modo editar · podés subdividir o renombrar\')">✎ Activar editar</button>')
+    +  '</div>'
+    +'</div>';
+};
+
+window.guardarRiegoPivote=async function(pivoteId){
+  if(!window.DB||!window.DB.saveRiego){ toast('Capa de datos no lista','err'); return; }
+  var min=parseInt((document.getElementById('rg-min')||{}).value,10);
+  if(!min||min<=0){ toast('Indicá duración en minutos','err'); return; }
+  var fecha=(document.getElementById('rg-fecha')||{}).value||new Date().toISOString().slice(0,10);
+  var metodo=(document.getElementById('rg-metodo')||{}).value||'aspersión';
+  var notas=((document.getElementById('rg-notas')||{}).value||'').trim()||null;
+  try{
+    var r=await window.DB.saveRiego({
+      finca_id:_pivoteFinca(),
+      pivote_id:pivoteId,
+      fecha:fecha,
+      duracion_min:min,
+      metodo:metodo,
+      notas:notas,
+      registrado_por:(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'campo'
+    });
+    if(r&&r.error) throw r.error;
+    toast('💧 Riego guardado · '+min+' min');
+    await abrirFichaPivote(pivoteId);
+  }catch(e){
+    toast('Error riego: '+(e.message||e)+' · ¿SQL 0065?','err');
+  }
+};
 
 // ── PARTE 2: subdivisión pie-slice ──
 function _pivotePtsLatLng(geojson){

@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v46: tabs solo horizontal; lluvia con día elegible + fechas mobile.
-const CACHE_NAME = 'laaambapp-v46';
-const CACHE_SHELL = 'laaambapp-shell-v46';
+// v47: mapa Vista/Editar, ficha pivote+riego, geo pivotes Supabase, orto dron-ready.
+const CACHE_NAME = 'laaambapp-v47';
+const CACHE_SHELL = 'laaambapp-shell-v47';
 
 const STATIC_ASSETS = [
   './manifest.json',

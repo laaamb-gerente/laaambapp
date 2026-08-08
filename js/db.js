@@ -116,6 +116,117 @@ window.DB = {
       activo: false
     }).eq('id', id);
   },
+  /** Persiste contorno del pivote (GeoJSON) — fuente de verdad multi-dispositivo. */
+  async savePivoteGeo(pivote_id, geojson, area_ha) {
+    const patch = {
+      geojson: geojson,
+      updated_at: new Date().toISOString()
+    };
+    if (area_ha != null && !isNaN(area_ha)) {
+      patch.area_ha = Math.round(Number(area_ha) * 100) / 100;
+      patch.area_ha_calc = patch.area_ha;
+    }
+    return await window._sb.from('pivotes')
+      .update(patch).eq('id', pivote_id).select().single();
+  },
+  async getPivote(id) {
+    return await window._sb.from('pivotes').select('*').eq('id', id).maybeSingle();
+  },
+
+  // ── RIEGO (0065) ──
+  async getRiegos(filtros = {}) {
+    let q = window._sb.from('registros_riego')
+      .select('*, pivotes(nombre, area_ha, tipo_pasto)')
+      .order('fecha', { ascending: false });
+    if (filtros.finca_id) q = q.eq('finca_id', filtros.finca_id);
+    if (filtros.pivote_id) q = q.eq('pivote_id', filtros.pivote_id);
+    if (filtros.desde) q = q.gte('fecha', filtros.desde);
+    if (filtros.hasta) q = q.lte('fecha', filtros.hasta);
+    if (filtros.limit) q = q.limit(filtros.limit);
+    else q = q.limit(50);
+    return await q;
+  },
+  async getUltimoRiego(pivote_id) {
+    return await window._sb.from('registros_riego')
+      .select('*')
+      .eq('pivote_id', pivote_id)
+      .order('fecha', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+  },
+  async saveRiego(data) {
+    const finca_id = data.finca_id || 'a1b2c3d4-0000-0000-0000-000000000001';
+    const dur = parseInt(data.duracion_min, 10);
+    if (!dur || dur <= 0) return { data: null, error: { message: 'Duración inválida' } };
+    const payload = {
+      finca_id,
+      pivote_id: data.pivote_id || null,
+      lote_id: data.lote_id || null,
+      fecha: data.fecha || new Date().toISOString().slice(0, 10),
+      hora_inicio: data.hora_inicio || null,
+      duracion_min: dur,
+      metodo: data.metodo || 'aspersión',
+      mm_estimados: data.mm_estimados != null ? Number(data.mm_estimados) : null,
+      caudal_lpm: data.caudal_lpm != null ? Number(data.caudal_lpm) : null,
+      volumen_m3: data.volumen_m3 != null ? Number(data.volumen_m3) : null,
+      registrado_por: data.registrado_por || null,
+      notas: data.notas || null
+    };
+    return await window._sb.from('registros_riego').insert(payload).select().single();
+  },
+  async deleteRiego(id) {
+    return await window._sb.from('registros_riego').delete().eq('id', id);
+  },
+
+  // ── CAPA MAPA / ORTOMOSAICO DRON (0065) ──
+  async getCapaMapa(finca_id) {
+    const r = await window._sb.from('fincas')
+      .select('id, capa_mapa, perimetro_geojson, perimetro_area_ha')
+      .eq('id', finca_id).maybeSingle();
+    if (r.error) return r;
+    const capa = (r.data && r.data.capa_mapa) || {};
+    return {
+      data: {
+        finca_id,
+        capa_mapa: capa,
+        base: capa.base || 'google_sat',
+        ortomosaico: capa.ortomosaico || null,
+        perimetro_geojson: r.data && r.data.perimetro_geojson,
+        perimetro_area_ha: r.data && r.data.perimetro_area_ha
+      },
+      error: null
+    };
+  },
+  async saveCapaMapa(finca_id, capa_mapa) {
+    return await window._sb.from('fincas')
+      .update({ capa_mapa: capa_mapa })
+      .eq('id', finca_id)
+      .select('id, capa_mapa')
+      .single();
+  },
+  /** Activa ortomosaico como base y guarda metadatos del vuelo. */
+  async activarOrtomosaico(finca_id, ortoConfig) {
+    const cur = await this.getCapaMapa(finca_id);
+    const prev = (cur.data && cur.data.capa_mapa) || {};
+    const capa = Object.assign({}, prev, {
+      base: 'orthomosaic',
+      ortomosaico: Object.assign({}, prev.ortomosaico || {}, ortoConfig || {}, { activo: true })
+    });
+    return await this.saveCapaMapa(finca_id, capa);
+  },
+  async getLevantamientosDron(finca_id) {
+    return await window._sb.from('levantamientos_dron')
+      .select('*')
+      .eq('finca_id', finca_id)
+      .order('fecha_vuelo', { ascending: false });
+  },
+  async saveLevantamientoDron(data) {
+    if (data.id) {
+      return await window._sb.from('levantamientos_dron')
+        .update(data).eq('id', data.id).select().single();
+    }
+    return await window._sb.from('levantamientos_dron').insert(data).select().single();
+  },
 
   // ── MOVIMIENTOS DE POTRERO (rotación: ocupación + descanso) (0036) ──
   async saveMovimientoPotrero(data) {
