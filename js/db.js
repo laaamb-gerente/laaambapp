@@ -125,13 +125,40 @@ window.DB = {
     return await window._sb.from('lotes').delete().eq('pivote_id', pivote_id);
   },
   async savePivote(pivote) {
-    // No mandar geojson en el insert genérico si la columna aún no existe en prod
-    const row = { ...pivote };
-    const geo = row.geojson; delete row.geojson;
+    // Solo columnas conocidas (evita fallos si el payload trae basura)
+    const id = pivote.id || null;
+    const geo = pivote.geojson;
+    const row = {
+      finca_id: pivote.finca_id || null,
+      nombre: pivote.nombre,
+      area_ha: pivote.area_ha != null && pivote.area_ha !== '' ? Number(pivote.area_ha) : null,
+      tipo_pasto: pivote.tipo_pasto != null && pivote.tipo_pasto !== '' ? String(pivote.tipo_pasto) : null,
+      capacidad_animales: pivote.capacidad_animales != null && pivote.capacidad_animales !== ''
+        ? parseInt(pivote.capacidad_animales, 10) : null,
+      notas: pivote.notas != null && pivote.notas !== '' ? String(pivote.notas) : null,
+      updated_at: new Date().toISOString()
+    };
+    // limpiar NaN
+    if (row.area_ha != null && isNaN(row.area_ha)) row.area_ha = null;
+    if (row.capacidad_animales != null && isNaN(row.capacidad_animales)) row.capacidad_animales = null;
+    if (!id) {
+      // insert: no mandar updated_at si la col no existe en prod vieja
+      delete row.updated_at;
+      if (!row.finca_id) row.finca_id = 'a1b2c3d4-0000-0000-0000-000000000001';
+      if (row.activo == null) row.activo = true;
+    }
     let res;
-    if (row.id) {
+    if (id) {
+      // update: no reescribir finca_id a null
+      if (!row.finca_id) delete row.finca_id;
       res = await window._sb.from('pivotes')
-        .update(row).eq('id', row.id).select().single();
+        .update(row).eq('id', id).select().single();
+      // fallback si updated_at no existe
+      if (res.error && /updated_at|column/i.test(String(res.error.message || res.error))) {
+        const { updated_at, ...row2 } = row;
+        res = await window._sb.from('pivotes')
+          .update(row2).eq('id', id).select().single();
+      }
     } else {
       res = await window._sb.from('pivotes').insert(row).select().single();
     }
@@ -355,10 +382,34 @@ window.DB = {
     return await window._sb.from('lotes').select('*').eq('finca_id', finca_id).order('nombre');
   },
   async saveLote(lote) {
-    if (lote.id) {
-      return await window._sb.from('lotes').update({...lote, updated_at: new Date()}).eq('id', lote.id).select().single();
+    const id = lote.id || null;
+    // Campos permitidos (no esparcir basura / ids locales)
+    const row = {};
+    if (lote.finca_id != null) row.finca_id = lote.finca_id;
+    if (lote.nombre != null) row.nombre = lote.nombre;
+    if (lote.hectareas != null) row.hectareas = lote.hectareas;
+    if (lote.area_ha != null && row.hectareas == null) row.hectareas = lote.area_ha;
+    if (lote.capacidad_animal != null) row.capacidad_animal = lote.capacidad_animal;
+    if (lote.tipo_pastura != null) row.tipo_pastura = lote.tipo_pastura;
+    if (lote.tipo_pasto != null && row.tipo_pastura == null) row.tipo_pastura = lote.tipo_pasto;
+    if (lote.dias_descanso_objetivo != null) row.dias_descanso_objetivo = lote.dias_descanso_objetivo;
+    if (lote.dias_pastoreo_objetivo != null) row.dias_pastoreo_objetivo = lote.dias_pastoreo_objetivo;
+    if (lote.pivote_id != null && lote.pivote_id !== '') row.pivote_id = lote.pivote_id;
+    if (lote.poligono != null) row.poligono = lote.poligono;
+    if (lote.color != null) row.color = lote.color;
+    if (lote.tipo != null) row.tipo = lote.tipo;
+    row.updated_at = new Date().toISOString();
+
+    if (id) {
+      let res = await window._sb.from('lotes').update(row).eq('id', id).select().single();
+      if (res.error && /updated_at|column/i.test(String(res.error.message || res.error))) {
+        const { updated_at, ...row2 } = row;
+        res = await window._sb.from('lotes').update(row2).eq('id', id).select().single();
+      }
+      return res;
     }
-    return await window._sb.from('lotes').insert(lote).select().single();
+    const { updated_at, ...ins } = row;
+    return await window._sb.from('lotes').insert(ins).select().single();
   },
 
   // ── EVENTOS ──────────────────────────────────────────

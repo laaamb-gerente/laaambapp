@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v55: mesa de decisión riego (agua + descanso) + chips en potreros.
-const CACHE_NAME = 'laaambapp-v55';
-const CACHE_SHELL = 'laaambapp-shell-v55';
+// v56: fix guardar pivote/potrero (modal pivote + pasto + Supabase).
+const CACHE_NAME = 'laaambapp-v56';
+const CACHE_SHELL = 'laaambapp-shell-v56';
 
 const STATIC_ASSETS = [
   './manifest.json',

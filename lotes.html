@@ -37,7 +37,7 @@
 <script src="js/approval.js?v=39"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=49"></script>
+<script src="js/db.js?v=56"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
@@ -740,8 +740,18 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
       <div class="fg"><label class="fl">Capacidad máx. animales</label><input class="fi" type="number" id="lf-cap" placeholder="160"></div>
       <div class="fg"><label class="fl">Tipo de pasto</label>
         <select class="fi" id="lf-pasto">
-          <option>Mulato II</option><option>Cayman</option><option>Mavuno</option><option>Camello</option><option>Nativos</option>
-          <option>Kikuyo</option><option>Brachiaria</option><option>Estrella</option><option>Ryegrass</option><option>Mixto</option><option>Otro</option>
+          <option value="Mulato 2">Mulato 2</option>
+          <option value="Mulato II">Mulato II</option>
+          <option value="Cayman">Cayman</option>
+          <option value="Mavuno">Mavuno</option>
+          <option value="Camello">Camello</option>
+          <option value="Nativos">Nativos</option>
+          <option value="Kikuyo">Kikuyo</option>
+          <option value="Brachiaria">Brachiaria</option>
+          <option value="Estrella">Estrella</option>
+          <option value="Ryegrass">Ryegrass</option>
+          <option value="Mixto">Mixto</option>
+          <option value="Otro">Otro</option>
         </select>
       </div>
       <div class="fg"><label class="fl">Condición pasto (0-100)</label><input class="fi" type="number" id="lf-condicion" placeholder="75" min="0" max="100"></div>
@@ -757,7 +767,43 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
   <div class="modal-foot">
     <button class="btn btn-ghost" id="lote-modal-delete-btn" style="display:none;color:var(--red)" onclick="eliminarLoteActual()">Eliminar lote</button>
     <button class="btn btn-ghost" onclick="closeModal('modal-nuevo-lote')">Cancelar</button>
-    <button class="btn btn-primary" onclick="guardarLote()">Guardar</button>
+    <button class="btn btn-primary" id="btn-guardar-lote" onclick="guardarLote()">Guardar</button>
+  </div>
+</div>
+</div>
+
+<!-- ═══ MODAL NUEVO / EDITAR PIVOTE ═══ -->
+<div class="overlay" id="modal-nuevo-pivote" onclick="if(event.target===this)closeModal('modal-nuevo-pivote')">
+<div class="modal">
+  <div class="modal-head"><div class="modal-title" id="pivote-modal-title">Nuevo pivote</div><button class="modal-close" onclick="closeModal('modal-nuevo-pivote')">✕</button></div>
+  <div class="modal-body">
+    <div class="fgrid">
+      <div class="fg" style="grid-column:1/-1"><label class="fl">Nombre *</label><input class="fi" id="pv-nombre" placeholder="P1 · Bajos"></div>
+      <div class="fg"><label class="fl">Área (ha)</label><input class="fi" type="number" id="pv-area" placeholder="12.5" step="0.1" min="0" inputmode="decimal"></div>
+      <div class="fg"><label class="fl">Capacidad máx. animales</label><input class="fi" type="number" id="pv-cap" placeholder="200" min="0" inputmode="numeric"></div>
+      <div class="fg" style="grid-column:1/-1"><label class="fl">Tipo de pasto</label>
+        <select class="fi" id="pv-pasto">
+          <option value="Mulato 2">Mulato 2</option>
+          <option value="Mulato II">Mulato II</option>
+          <option value="Cayman">Cayman</option>
+          <option value="Mavuno">Mavuno</option>
+          <option value="Camello">Camello</option>
+          <option value="Nativos">Nativos</option>
+          <option value="Kikuyo">Kikuyo</option>
+          <option value="Brachiaria">Brachiaria</option>
+          <option value="Estrella">Estrella</option>
+          <option value="Ryegrass">Ryegrass</option>
+          <option value="Mixto">Mixto</option>
+          <option value="Otro">Otro</option>
+        </select>
+      </div>
+      <div class="fg" style="grid-column:1/-1"><label class="fl">Notas</label><input class="fi" id="pv-notas" placeholder="Opcional · riego, suelos, acceso…"></div>
+    </div>
+    <p style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.4">El contorno del pivote se dibuja en el <b>Mapa</b>. Aquí editás nombre, área, pasto y capacidad. Los potreros pueden tener su propio pasto si hace falta.</p>
+  </div>
+  <div class="modal-foot">
+    <button class="btn btn-ghost" onclick="closeModal('modal-nuevo-pivote')">Cancelar</button>
+    <button class="btn btn-primary" id="btn-guardar-pivote" onclick="guardarPivote()">Guardar</button>
   </div>
 </div>
 </div>
@@ -2272,6 +2318,30 @@ async function eliminarLoteDefinitivo(loteId, loteNombre){
   if(typeof renderLotes==='function') renderLotes();
 }
 
+/** Asigna valor a un <select> de pasto aunque el dato venga en otra capitalización (KIKUYO vs Kikuyo). */
+function setSelectPasto(selectId, raw){
+  var sel=document.getElementById(selectId); if(!sel) return;
+  var want=String(raw||'').trim();
+  if(!want){ sel.selectedIndex=0; return; }
+  // match exacto
+  var opts=Array.prototype.slice.call(sel.options||[]);
+  var hit=opts.find(function(o){ return o.value===want || o.text===want; });
+  if(hit){ sel.value=hit.value; return; }
+  // case-insensitive + alias Mulato
+  var norm=want.toLowerCase().replace(/\s+/g,' ');
+  if(norm==='mulato ii'||norm==='mulatoii'||norm==='mulato 2'||norm==='mulato2'){
+    hit=opts.find(function(o){ return /mulato\s*2/i.test(o.value)||/mulato\s*ii/i.test(o.value); });
+    if(hit){ sel.value=hit.value; return; }
+  }
+  hit=opts.find(function(o){ return o.value.toLowerCase()===norm || o.text.toLowerCase()===norm; });
+  if(hit){ sel.value=hit.value; return; }
+  // si no existe, crear opción temporal para no perder el valor al guardar sin tocar
+  var o=document.createElement('option');
+  o.value=want; o.textContent=want;
+  sel.appendChild(o);
+  sel.value=want;
+}
+
 function abrirEditarLotePorId(id){
   var lote=(AppData.get().lotes||[]).find(function(x){return x.id===id;});
   if(!lote && window.AppState && Array.isArray(window.AppState.lotes)){
@@ -2279,8 +2349,10 @@ function abrirEditarLotePorId(id){
     if(al){
       lote={
         id:al.id, nombre:al.nombre, finca_id:al.finca_id,
-        area_ha:al.hectareas, capacidad_max:al.capacidad_animal,
-        tipo_pasto:al.tipo_pastura,
+        pivote_id:al.pivote_id||null,
+        area_ha:al.hectareas!=null?al.hectareas:al.area_ha,
+        capacidad_max:al.capacidad_animal,
+        tipo_pasto:al.tipo_pastura||al.tipo_pasto,
         dias_descanso_obj:al.dias_descanso_objetivo, dias_pastoreo_obj:al.dias_pastoreo_objetivo,
         activo:true
       };
@@ -2292,30 +2364,44 @@ function abrirEditarLote(lote){
   if(!lote) return;
   _editingLoteId=lote.id;
   setEl('lote-modal-title','Editar '+lote.nombre);
-  document.getElementById('lote-modal-delete-btn').style.display='inline-flex';
+  var delBtn=document.getElementById('lote-modal-delete-btn');
+  if(delBtn) delBtn.style.display='inline-flex';
   document.getElementById('lf-nombre').value=lote.nombre||'';
-  document.getElementById('lf-finca').value=lote.finca_id||'default';
-  document.getElementById('lf-area').value=lote.area_ha||'';
-  document.getElementById('lf-cap').value=lote.capacidad_max||'';
-  document.getElementById('lf-pasto').value=lote.tipo_pasto||'Kikuyo';
-  document.getElementById('lf-condicion').value=lote.condicion_pasto||75;
+  var lfFinca=document.getElementById('lf-finca');
+  if(lfFinca){
+    try{ lfFinca.value=lote.finca_id||'default'; }catch(e){}
+  }
+  document.getElementById('lf-area').value=lote.area_ha!=null?lote.area_ha:'';
+  document.getElementById('lf-cap').value=lote.capacidad_max!=null?lote.capacidad_max:'';
+  setSelectPasto('lf-pasto', lote.tipo_pasto||'Mulato 2');
+  document.getElementById('lf-condicion').value=lote.condicion_pasto!=null?lote.condicion_pasto:75;
   document.getElementById('lf-agua').value=lote.fuente_agua||'Bebedero';
   document.getElementById('lf-desc').value=lote.descripcion||'';
-  // Pivote: se asigna por subdivisión en el mapa, no manualmente. Se conserva.
-  window._editingLotePivoteId=lote.pivote_id||null;
-  // MEJORA 3 — poblar días de descanso/pastoreo (disponibles para el save futuro a Supabase)
+  // Conservar pivote_id (también si solo estaba en AppState)
+  var pivId=lote.pivote_id||null;
+  if(!pivId && window.AppState && Array.isArray(window.AppState.lotes)){
+    var as=window.AppState.lotes.find(function(x){return x.id===lote.id;});
+    if(as&&as.pivote_id) pivId=as.pivote_id;
+  }
+  window._editingLotePivoteId=pivId;
   var dd=document.getElementById('lf-dias-descanso');
   if(dd) dd.value=(lote.dias_descanso_obj!=null?lote.dias_descanso_obj:30);
   var dp=document.getElementById('lf-dias-pastoreo');
   if(dp) dp.value=(lote.dias_pastoreo_obj!=null?lote.dias_pastoreo_obj:7);
   openModal('modal-nuevo-lote');
 }
-function guardarLote(){
-  var nombre=document.getElementById('lf-nombre').value.trim();
+async function guardarLote(){
+  var nombre=(document.getElementById('lf-nombre').value||'').trim();
   if(!nombre){toast('Nombre requerido','err');return;}
+  var btn=document.getElementById('btn-guardar-lote');
+  if(btn){ btn.disabled=true; btn.textContent='Guardando…'; }
   // El pivote NO se asigna manualmente: lo fija la subdivisión en el mapa.
-  // Al editar un potrero existente se conserva su pivote_id.
   var pivoteId=window._editingLotePivoteId||null;
+  // Si se perdió, no borrar el de Supabase
+  if(!pivoteId && _editingLoteId && window.AppState && Array.isArray(window.AppState.lotes)){
+    var prev=window.AppState.lotes.find(function(x){return x.id===_editingLoteId;});
+    if(prev&&prev.pivote_id) pivoteId=prev.pivote_id;
+  }
   var d=AppData.get();
   d.lotes=d.lotes||[];
   var _pg=window._pendingLoteGeo||null;
@@ -2329,57 +2415,87 @@ function guardarLote(){
     fuente_agua:document.getElementById('lf-agua').value,
     dias_descanso_obj:parseInt(document.getElementById('lf-dias-descanso').value)||30,
     dias_pastoreo_obj:parseInt(document.getElementById('lf-dias-pastoreo').value)||7,
-    descripcion:document.getElementById('lf-desc').value.trim(),
+    descripcion:(document.getElementById('lf-desc').value||'').trim(),
     activo:true
   };
   if(_pg){data.geometry=_pg.points.map(function(p){return{lat:p.lat,lng:p.lng};});data.area_ha=parseFloat(_pg.area);}
-  if(_editingLoteId){
-    var idx=d.lotes.findIndex(function(l){return l.id===_editingLoteId;});
-    if(idx>=0) d.lotes[idx]=Object.assign({},d.lotes[idx],data);
-    // Re-render map layer
-    var geo=d.geo||{};
-    var key='lote_'+_editingLoteId;
-    if(geo[key]&&loteLayers[_editingLoteId]){
-      if(loteLayers[_editingLoteId].poly) MAP.removeLayer(loteLayers[_editingLoteId].poly);
-      if(loteLayers[_editingLoteId].label) MAP.removeLayer(loteLayers[_editingLoteId].label);
-      renderLoteLayer(_editingLoteId, d.lotes[idx], geo[key]);
-    }
-    toast(nombre+' actualizado');
-  } else {
-    var newId='L-'+Date.now().toString(36).toUpperCase();
-    d.lotes.push(Object.assign({id:newId,created_at:new Date().toISOString()},data));
-    toast(nombre+' creado — dibuja su polígono en el mapa para visualizarlo');
-  }
-  AppData.save(d);
-  // ── Upsert a Supabase (tabla lotes) con pivote_id incluido ──
-  if(window.DB && typeof window.DB.saveLote==='function'){
-    var _isUuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(_editingLoteId||'');
-    var _fincaUuid=(window.AppState && window.AppState.finca && window.AppState.finca.id) || 'a1b2c3d4-0000-0000-0000-000000000001';
-    var _payload={
-      finca_id:_fincaUuid,
-      nombre:data.nombre,
-      hectareas:data.area_ha||null,
-      capacidad_animal:data.capacidad_max||null,
-      tipo_pastura:data.tipo_pasto||null,
-      dias_descanso_objetivo:data.dias_descanso_obj||null,
-      dias_pastoreo_objetivo:data.dias_pastoreo_obj||null,
-      pivote_id:data.pivote_id||null
-    };
-    if(_isUuid) _payload.id=_editingLoteId; // editar lote existente de Supabase
-    try{
-      window.DB.saveLote(_payload).then(function(res){
-        if(res && res.error){ console.warn('[Lotes] saveLote Supabase:', res.error.message); return; }
-        if(res && res.data && window.AppState && Array.isArray(window.AppState.lotes)){
-          var ex=window.AppState.lotes.find(function(x){ return x.id===res.data.id; });
-          if(ex){ Object.assign(ex,res.data); } else { window.AppState.lotes.push(res.data); }
-          renderLotesTab();
+  try{
+    if(_editingLoteId){
+      var idx=d.lotes.findIndex(function(l){return l.id===_editingLoteId;});
+      if(idx>=0) d.lotes[idx]=Object.assign({},d.lotes[idx],data);
+      else d.lotes.push(Object.assign({id:_editingLoteId,created_at:new Date().toISOString()},data));
+      // Re-render map layer (solo si el mapa ya está listo)
+      try{
+        var geo=d.geo||{};
+        var key='lote_'+_editingLoteId;
+        if(typeof MAP!=='undefined' && MAP && geo[key] && loteLayers[_editingLoteId]){
+          if(loteLayers[_editingLoteId].poly) MAP.removeLayer(loteLayers[_editingLoteId].poly);
+          if(loteLayers[_editingLoteId].label) MAP.removeLayer(loteLayers[_editingLoteId].label);
+          var loteMap=d.lotes.find(function(l){return l.id===_editingLoteId;})||Object.assign({id:_editingLoteId},data);
+          renderLoteLayer(_editingLoteId, loteMap, geo[key]);
         }
-      }).catch(function(e){ console.warn('[Lotes] saveLote:', e&&e.message); });
-    }catch(e){ console.warn('[Lotes] saveLote:', e&&e.message); }
+      }catch(mapE){ console.warn('[Lotes] re-render mapa:', mapE&&mapE.message); }
+    } else {
+      var newId='L-'+Date.now().toString(36).toUpperCase();
+      d.lotes.push(Object.assign({id:newId,created_at:new Date().toISOString()},data));
+      _editingLoteId=newId;
+    }
+    AppData.save(d);
+
+    // Upsert Supabase (fuente de verdad multi-dispositivo)
+    if(window.DB && typeof window.DB.saveLote==='function'){
+      var _isUuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(_editingLoteId||'');
+      var _fincaUuid=(window.AppState && window.AppState.finca && window.AppState.finca.id) || 'a1b2c3d4-0000-0000-0000-000000000001';
+      var _payload={
+        finca_id:_fincaUuid,
+        nombre:data.nombre,
+        hectareas:data.area_ha||null,
+        capacidad_animal:data.capacidad_max||null,
+        tipo_pastura:data.tipo_pasto||null,
+        dias_descanso_objetivo:data.dias_descanso_obj||null,
+        dias_pastoreo_objetivo:data.dias_pastoreo_obj||null
+      };
+      // Solo mandar pivote_id si lo tenemos (no borrar vínculo por null accidental)
+      if(data.pivote_id) _payload.pivote_id=data.pivote_id;
+      if(_isUuid) _payload.id=_editingLoteId;
+      var res=await window.DB.saveLote(_payload);
+      if(res && res.error) throw res.error;
+      if(res && res.data && window.AppState && Array.isArray(window.AppState.lotes)){
+        var ex=window.AppState.lotes.find(function(x){ return x.id===res.data.id; });
+        if(ex){ Object.assign(ex,res.data); }
+        else { window.AppState.lotes.push(res.data); }
+        // Si el id local era L-xxx y Supabase devolvió uuid, alinear AppData
+        if(!_isUuid && res.data.id){
+          var li=d.lotes.findIndex(function(l){return l.id===_editingLoteId;});
+          if(li>=0){ d.lotes[li].id=res.data.id; AppData.save(d); }
+          _editingLoteId=res.data.id;
+        }
+      }
+    } else if(window.AppState && Array.isArray(window.AppState.lotes) && _editingLoteId){
+      // Offline: al menos actualizar cache en memoria
+      var ex2=window.AppState.lotes.find(function(x){ return x.id===_editingLoteId; });
+      if(ex2){
+        ex2.nombre=data.nombre;
+        ex2.hectareas=data.area_ha;
+        ex2.capacidad_animal=data.capacidad_max;
+        ex2.tipo_pastura=data.tipo_pasto;
+        ex2.dias_descanso_objetivo=data.dias_descanso_obj;
+        ex2.dias_pastoreo_objetivo=data.dias_pastoreo_obj;
+        if(data.pivote_id) ex2.pivote_id=data.pivote_id;
+      }
+    }
+
+    toast(nombre+' · pasto '+data.tipo_pasto+' guardado');
+    closeModal('modal-nuevo-lote');
+    renderLotesTab();
+    _editingLoteId=null;
+    window._editingLotePivoteId=null;
+  }catch(e){
+    console.error('[Lotes] guardarLote', e);
+    toast('No se guardó: '+(e.message||e||'error'),'err');
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='Guardar'; }
   }
-  closeModal('modal-nuevo-lote');
-  renderLotesTab();
-  _editingLoteId=null;
 }
 function eliminarLoteActual(){
   if(!_editingLoteId) return;
@@ -3154,9 +3270,15 @@ function renderPivotesTab(){
     grid.innerHTML=pivs.map(function(p){
       var nPot=_countPotreros(p.id);
       return '<div class="lote-card" onclick="verPivoteEnMapa(\''+p.id+'\')">'
-        +'<div class="lc-header"><div><div class="lc-name">'+_escPv(p.nombre)+'</div><div class="lc-finca">'+nPot+' potrero'+(nPot===1?'':'s')+'</div></div>'
+        +'<div class="lc-header"><div><div class="lc-name">'+_escPv(p.nombre)+'</div>'
+        +'<div class="lc-finca">'+nPot+' potrero'+(nPot===1?'':'s')
+        +(p.tipo_pasto?(' · '+_escPv(p.tipo_pasto)):'')
+        +'</div></div>'
         +'<span class="badge b-teal">'+(p.area_ha!=null?p.area_ha+' ha':'— ha')+'</span></div>'
-        +'<div class="lc-actions" style="margin-top:8px"><button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();verPivoteEnMapa(\''+p.id+'\')">Ver en mapa</button></div>'
+        +'<div class="lc-actions" style="margin-top:8px">'
+        +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();editarPivote(\''+p.id+'\')">✎ Editar</button>'
+        +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();verPivoteEnMapa(\''+p.id+'\')">Ver en mapa</button>'
+        +'</div>'
         +'</div>';
     }).join('');
   }
@@ -3217,41 +3339,77 @@ function openNuevoPivote(){
   _editingPivoteId=null;
   setEl('pivote-modal-title','Nuevo pivote');
   ['pv-nombre','pv-area','pv-cap','pv-notas'].forEach(function(i){ var e=document.getElementById(i); if(e) e.value=''; });
-  document.getElementById('pv-pasto').value='Brachiaria';
+  setSelectPasto('pv-pasto','Mulato 2');
   openModal('modal-nuevo-pivote');
 }
 function editarPivote(id){
-  var p=(window._pivotes||[]).find(function(x){ return x.id===id; }); if(!p) return;
-  _editingPivoteId=id;
+  var p=(window._pivotes||[]).find(function(x){ return String(x.id)===String(id); });
+  if(!p){ toast('Pivote no encontrado','err'); return; }
+  _editingPivoteId=p.id;
   setEl('pivote-modal-title','Editar '+p.nombre);
-  document.getElementById('pv-nombre').value=p.nombre||'';
-  document.getElementById('pv-area').value=p.area_ha!=null?p.area_ha:'';
-  document.getElementById('pv-pasto').value=p.tipo_pasto||'Brachiaria';
-  document.getElementById('pv-cap').value=p.capacidad_animales!=null?p.capacidad_animales:'';
-  document.getElementById('pv-notas').value=p.notas||'';
+  var n=document.getElementById('pv-nombre');
+  var a=document.getElementById('pv-area');
+  var c=document.getElementById('pv-cap');
+  var no=document.getElementById('pv-notas');
+  if(!n||!document.getElementById('pv-pasto')){
+    toast('Formulario de pivote no cargó. Actualizá la app (SW).','err');
+    return;
+  }
+  n.value=p.nombre||'';
+  if(a) a.value=p.area_ha!=null?p.area_ha:(p.area_ha_calc!=null?p.area_ha_calc:'');
+  setSelectPasto('pv-pasto', p.tipo_pasto||'Mulato 2');
+  if(c) c.value=p.capacidad_animales!=null?p.capacidad_animales:'';
+  if(no) no.value=p.notas||'';
   openModal('modal-nuevo-pivote');
 }
+window.editarPivote=editarPivote;
 async function guardarPivote(){
-  var nombre=(document.getElementById('pv-nombre').value||'').trim();
+  var nombreEl=document.getElementById('pv-nombre');
+  var pastoEl=document.getElementById('pv-pasto');
+  if(!nombreEl||!pastoEl){ toast('Formulario de pivote incompleto. Actualizá la app.','err'); return; }
+  var nombre=(nombreEl.value||'').trim();
   if(!nombre){ toast('Nombre del pivote requerido','err'); return; }
+  var areaRaw=document.getElementById('pv-area')&&document.getElementById('pv-area').value;
+  var capRaw=document.getElementById('pv-cap')&&document.getElementById('pv-cap').value;
   var payload={
     finca_id:_pivoteFinca(),
     nombre:nombre,
-    area_ha:parseFloat(document.getElementById('pv-area').value)||null,
-    tipo_pasto:document.getElementById('pv-pasto').value,
-    capacidad_animales:parseInt(document.getElementById('pv-cap').value)||null,
-    notas:(document.getElementById('pv-notas').value||'').trim()||null
+    area_ha:areaRaw!==''&&areaRaw!=null?parseFloat(areaRaw):null,
+    tipo_pasto:pastoEl.value||null,
+    capacidad_animales:capRaw!==''&&capRaw!=null?parseInt(capRaw,10):null,
+    notas:((document.getElementById('pv-notas')&&document.getElementById('pv-notas').value)||'').trim()||null
   };
   if(_editingPivoteId) payload.id=_editingPivoteId;
+  var btn=document.getElementById('btn-guardar-pivote');
+  if(btn){ btn.disabled=true; btn.textContent='Guardando…'; }
   try{
-    if(!(window.DB && typeof window.DB.savePivote==='function')) throw new Error('DB no disponible');
+    if(!(window.DB && typeof window.DB.savePivote==='function')) throw new Error('DB no disponible · ¿sesión?');
     var r=await window.DB.savePivote(payload);
-    if(r.error) throw r.error;
-    toast(_editingPivoteId?'Pivote actualizado':'Pivote creado');
+    if(r&&r.error) throw r.error;
+    var saved=(r&&r.data)||payload;
+    // Actualizar cache local ya
+    window._pivotes=window._pivotes||[];
+    if(saved.id){
+      var ix=window._pivotes.findIndex(function(x){return String(x.id)===String(saved.id);});
+      if(ix>=0) window._pivotes[ix]=Object.assign({},window._pivotes[ix],saved);
+      else window._pivotes.push(saved);
+    }
+    toast((_editingPivoteId?'Pivote actualizado':'Pivote creado')+' · '+(payload.tipo_pasto||''));
     closeModal('modal-nuevo-pivote');
+    _editingPivoteId=null;
     await loadPivotes();
-  }catch(e){ toast('Error: '+(e.message||e),'err'); }
+    if(typeof renderPivotesTab==='function') renderPivotesTab();
+    if(window._fichaPivoteId && typeof abrirFichaPivote==='function'){
+      try{ await abrirFichaPivote(window._fichaPivoteId); }catch(e){}
+    }
+  }catch(e){
+    console.error('[Pivotes] guardarPivote', e);
+    toast('No se guardó el pivote: '+(e.message||e||'error'),'err');
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent='Guardar'; }
+  }
 }
+window.guardarPivote=guardarPivote;
 
 document.addEventListener('DOMContentLoaded', function(){ loadPivotes(); });
 document.addEventListener('appstate:ready', function(){
@@ -3694,6 +3852,7 @@ window.abrirFichaPivote=async function(pivoteId){
     +      '<div style="font-size:10px;color:var(--text3);margin-top:2px">'+st.lotes.length+' potrero(s)</div></div>'
     +  '</div>'
     +  '<div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px">'
+    +    '<button type="button" class="btn btn-primary btn-sm" onclick="cerrarFichaPivote();editarPivote(\''+pivoteId+'\')">✎ Editar datos (pasto, área…)</button>'
     +    '<a href="lluvia-riego.html#riego" class="btn btn-ghost btn-sm" style="text-decoration:none">💧 Registrar riego</a>'
     +    '<a href="lluvia-riego.html#lluvia" class="btn btn-ghost btn-sm" style="text-decoration:none">🌧 Registrar lluvia</a>'
     +  '</div>'
