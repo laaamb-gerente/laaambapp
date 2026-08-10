@@ -23,10 +23,9 @@ window.SIDEBAR = [
     { t: 'Medicamentos',           href: 'medicamentos.html', ico: 'medicamentos' },
   ]},
   { grupo: 'Finca', items: [
-    { t: 'Lotes & Potreros',       href: 'lotes.html',        ico: 'lotes' },
-    { t: 'Lluvia',                 href: 'lluvia.html',       ico: 'lluvia' },
-    { t: 'Riego',                  href: 'riego.html',        ico: 'riego' },
-    { t: 'Nutrición',              href: 'nutricion.html',    ico: 'nutricion' },
+    { t: 'Lotes & Potreros',       href: 'lotes.html',           ico: 'lotes' },
+    { t: 'Lluvia & Riego',         href: 'lluvia-riego.html',    ico: 'clima' },
+    { t: 'Nutrición',              href: 'nutricion.html',       ico: 'nutricion' },
   ]},
   { grupo: 'Producción', items: [
     { t: 'Leche',                  href: 'leche.html',        ico: 'leche' },
@@ -73,8 +72,7 @@ window.SIDEBAR_ICONS = {
   auditoria:    '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h12v14H4z"/><path d="M7 8h6M7 11h6M7 14h4"/><path d="M14 2v4"/></svg>',
   medicamentos: '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>',
   lotes:        '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>',
-  lluvia:       '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9a4 4 0 0 1 7.5-1.8A3.5 3.5 0 1 1 14 15H7a3 3 0 0 1-1-5.8"/><path d="M8 16v2M11 16v3M14 16v2"/></svg>',
-  riego:        '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3c-2.5 3.5-5 6.2-5 9a5 5 0 0 0 10 0c0-2.8-2.5-5.5-5-9z"/><path d="M10 14v3"/></svg>',
+  clima:        '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5.5 10a3.5 3.5 0 0 1 6.7-1.4A3 3 0 1 1 13 15H6.5a2.5 2.5 0 0 1-1-4.8"/><path d="M8 16.5v1.5M11 16.5V19M14 16.5v1.5"/></svg>',
   nutricion:    '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 17c4-1 7-4 7-9V4l-4 1c-3 .8-5 3-5 6v6z"/><path d="M10 17c-3-1-5-3-5-6"/></svg>',
   leche:        '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2h8M7 2l-.5 4.5a4 4 0 0 0-.5 2V16a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V8.5a4 4 0 0 0-.5-2L13 2"/><line x1="6.2" y1="10" x2="13.8" y2="10"/></svg>',
   lacteo:       '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h14v3H3zM4 8l1 9a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-9"/><path d="M8 12h4"/></svg>',
@@ -119,6 +117,35 @@ window.SIDEBAR_ICONS = {
     '  overscroll-behavior: contain;',
     '  touch-action: pan-y;',
     '}',
+    /* Layout quirúrgico de links: icono fijo + label que no desborda */
+    '.sidebar .nav-link, #sidebar .nav-link {',
+    '  display: flex !important;',
+    '  align-items: center !important;',
+    '  gap: 9px !important;',
+    '  min-width: 0 !important;',
+    '  max-width: 100% !important;',
+    '  overflow: hidden !important;',
+    '  white-space: nowrap !important;',
+    '  text-overflow: ellipsis !important;',
+    '  line-height: 1.25 !important;',
+    '}',
+    '.sidebar .nav-link .nav-ico, #sidebar .nav-link .nav-ico {',
+    '  flex-shrink: 0 !important;',
+    '  width: 15px !important;',
+    '  height: 15px !important;',
+    '}',
+    '.sidebar .nav-link .nav-label, #sidebar .nav-link .nav-label {',
+    '  flex: 1 1 auto !important;',
+    '  min-width: 0 !important;',
+    '  overflow: hidden !important;',
+    '  text-overflow: ellipsis !important;',
+    '  white-space: nowrap !important;',
+    '}',
+    '.sidebar .nav-link .nav-badge, #sidebar .nav-link .nav-badge,',
+    '.sidebar .nav-link #alertas-badge, #sidebar .nav-link #alertas-badge {',
+    '  flex-shrink: 0 !important;',
+    '  margin-left: auto !important;',
+    '}',
     '@media (max-width: 768px) {',
     '  .sidebar, #sidebar {',
     '    height: 100vh !important;',
@@ -136,24 +163,37 @@ window.SIDEBAR_ICONS = {
   (document.head || document.documentElement).appendChild(s);
 })();
 
+// Alias: URLs viejas / redirecciones que deben marcar el mismo ítem activo.
+var SIDEBAR_ACTIVE_ALIASES = {
+  'lluvia.html': 'lluvia-riego.html',
+  'riego.html': 'lluvia-riego.html',
+  'lluvia-riego.html': 'lluvia-riego.html'
+};
+
 function renderSidebar(){
   var el = document.getElementById('nav-scroll');
   if(!el) return;
   var here = (location.pathname.split('/').pop() || 'index.html');
   if(!here) here = 'index.html';
+  here = (SIDEBAR_ACTIVE_ALIASES[here] || here);
   var ICON = window.SIDEBAR_ICONS || {};
   var html = '';
   (window.SIDEBAR || []).forEach(function(g){
     html += '<div class="nav-group">' + g.grupo + '</div>';
     (g.items || []).forEach(function(it){
-      var active = (it.href === here) ? ' active' : '';
+      var hrefCanon = SIDEBAR_ACTIVE_ALIASES[it.href] || it.href;
+      var active = (hrefCanon === here || it.href === here) ? ' active' : '';
       var badge = '';
       if(it.badge === 'count') {
         badge = '<span class="nav-badge" id="sb-count">—</span>';
       } else if(it.badge === 'alertas') {
         badge = '<span id="alertas-badge" style="display:none;background:#F18F22;color:white;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px;font-weight:700"></span>';
       }
-      html += '<a class="nav-link' + active + '" href="' + it.href + '">' + (ICON[it.ico] || '') + it.t + badge + '</a>';
+      // Texto e icono en spans para no romper layout con labels largos
+      html += '<a class="nav-link' + active + '" href="' + it.href + '">'
+        + (ICON[it.ico] || '')
+        + '<span class="nav-label">' + it.t + '</span>'
+        + badge + '</a>';
     });
   });
   el.innerHTML = html;

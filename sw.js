@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v50: módulos menú Lluvia + Riego; ficha pivote con último riego/lluvia.
-const CACHE_NAME = 'laaambapp-v50';
-const CACHE_SHELL = 'laaambapp-shell-v50';
+// v51: Lluvia & Riego unificado; menú limpio; sin duplicados en Lotes.
+const CACHE_NAME = 'laaambapp-v51';
+const CACHE_SHELL = 'laaambapp-shell-v51';
 
 const STATIC_ASSETS = [
   './manifest.json',

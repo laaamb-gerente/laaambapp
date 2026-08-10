@@ -17,7 +17,7 @@
     gerente: '*',
     administrador: '*',
     veterinario: [
-      'animales', 'reproduccion', 'salud', 'lotes', 'lluvia', 'riego', 'hoy', 'copiloto',
+      'animales', 'reproduccion', 'salud', 'lotes', 'lluvia-riego', 'lluvia', 'riego', 'hoy', 'copiloto',
       'reportes', 'sala-cuna', 'medicamentos', 'bajas', 'auditoria'
     ],
     // Auxiliar de finca (sin estudios): menú mínimo. Escribe solo vía aprobación.
