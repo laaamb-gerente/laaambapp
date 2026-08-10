@@ -583,6 +583,13 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
   <!-- ═══ TAB POTREROS ═══ -->
   <div class="tab-content" id="t-lotes">
     <div class="lotes-scroll">
+      <div id="potreros-agua-bar" style="margin:0 0 12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
+        <div style="font-size:12px;color:var(--text2);line-height:1.4;max-width:520px">
+          <b style="color:var(--text)">Agua y descanso</b> · cada tarjeta muestra último riego, días sin agua y descanso.
+          Mesa completa (reuniones) en Lluvia &amp; Riego.
+        </div>
+        <a class="btn btn-ghost btn-sm" href="lluvia-riego.html#riego" style="text-decoration:none;flex-shrink:0">📋 Mesa de riego</a>
+      </div>
       <div class="lote-grid" id="lote-grid"></div>
       <!-- #5 · Historial de rotación / descanso -->
       <div id="historial-rotacion" style="margin-top:24px"></div>
@@ -2128,7 +2135,7 @@ function renderLotesTab(){
     var pctBar=Math.min(100,objetivoKgHa>0?Math.round(kgHa/objetivoKgHa*100):0);
     var kgHaTxt=kgHa.toLocaleString('es-CO');
     var finca=getFincaById(l.finca_id||'default');
-    return '<div class="lote-card '+status+'" onclick="abrirEditarLotePorId(\''+l.id+'\')">'
+    return '<div class="lote-card '+status+'" data-lote-id="'+l.id+'" onclick="abrirEditarLotePorId(\''+l.id+'\')">'
       +'<div class="lc-header">'
         +'<div><div class="lc-name">'+l.nombre+'</div><div class="lc-finca">'+(l.finca||finca.nombre)+'</div></div>'
         +'<span class="badge '+(status==='crit'?'b-red':status==='warn'?'b-amber':'b-teal')+'">'+kgHaTxt+' kg/ha</span>'
@@ -2139,6 +2146,9 @@ function renderLotesTab(){
       +'</div>'
       +'<div class="lc-bar"><div class="lc-bar-fill" style="width:'+pctBar+'%;background:'+color+'"></div></div>'
       +'<div style="font-size:11px;color:var(--text3);margin-bottom:8px">'+kgHaTxt+' kg/ha · ('+animales.length+' animales)'+(l.tipo_pasto&&l.tipo_pasto!=='—'?' · '+l.tipo_pasto:'')+'</div>'
+      +'<div class="lc-agua" data-agua-lote="'+l.id+'" style="display:flex;flex-wrap:wrap;gap:5px;margin:0 0 10px;min-height:22px">'
+        +'<span style="font-size:10px;color:var(--text3)">Agua…</span>'
+      +'</div>'
       +'<div class="lc-actions">'
         +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirMoverDesde(\''+l.id+'\')">↔ Mover</button>'
         +'<button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();abrirEditarLotePorId(\''+l.id+'\')">Editar</button>'
@@ -2161,6 +2171,71 @@ function renderLotesTab(){
   var rest=[]; Object.keys(byPiv).forEach(function(k){ rest=rest.concat(byPiv[k]); });
   if(rest.length){ if(grouped) html+=head('Sin pivote asignado',''); html+=rest.map(card).join(''); }
   grid.innerHTML=html;
+  // Chips de agua / descanso (async, no bloquea el render)
+  if(typeof enrichPotrerosAgua==='function') setTimeout(enrichPotrerosAgua, 40);
+}
+
+/** Chips en tarjetas de potrero: últ. riego, días s/ agua, descanso. Fuente: registros_riego + lluvia + rotación. */
+async function enrichPotrerosAgua(){
+  var nodes=document.querySelectorAll('[data-agua-lote]');
+  if(!nodes.length||!window.DB) return;
+  function _iso(d){var x=d instanceof Date?d:new Date(d);return x.getFullYear()+'-'+('0'+(x.getMonth()+1)).slice(-2)+'-'+('0'+x.getDate()).slice(-2);}
+  function _dias(f){if(!f)return null;return Math.max(0,Math.round((new Date(_iso(new Date())+'T12:00:00')-new Date(String(f).slice(0,10)+'T12:00:00'))/86400000));}
+  function _fmt(f){if(!f)return'—';var p=String(f).slice(0,10).split('-');return p[2]+'/'+p[1];}
+  function chip(txt, bg, bd, col){
+    return '<span style="font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;background:'+bg+';border:1px solid '+bd+';color:'+col+'">'+txt+'</span>';
+  }
+  var fincaId=(window.AppState&&window.AppState._finca_id)||'a1b2c3d4-0000-0000-0000-000000000001';
+  var ultRiego={}, dLluvia=null, fLluvia=null, movBy={};
+  try{
+    var rr=await DB.getRiegos({finca_id:fincaId,limit:300});
+    ((rr&&rr.data)||[]).forEach(function(r){
+      if(r.lote_id && !ultRiego[r.lote_id]) ultRiego[r.lote_id]=r;
+    });
+  }catch(e){}
+  try{
+    if(DB.getUltimaLluvia){
+      var ul=await DB.getUltimaLluvia(fincaId);
+      if(ul&&ul.data&&ul.data.fecha){ fLluvia=ul.data.fecha; dLluvia=_dias(fLluvia); }
+    }
+  }catch(e){}
+  try{
+    if(DB.getHistorialRotacion){
+      var rm=await DB.getHistorialRotacion(fincaId);
+      ((rm&&rm.data)||[]).forEach(function(m){
+        if(!m||!m.lote_id) return;
+        var k=String(m.lote_id);
+        if(!movBy[k]) movBy[k]=m; // ya viene fecha_entrada desc
+      });
+    }
+  }catch(e){}
+  nodes.forEach(function(el){
+    var id=el.getAttribute('data-agua-lote');
+    var ur=ultRiego[id];
+    var dR=ur?_dias(ur.fecha):null;
+    var dAgua=null, fuente='';
+    if(dR!=null && dLluvia!=null){ if(dR<=dLluvia){ dAgua=dR; fuente='riego'; } else { dAgua=dLluvia; fuente='lluvia'; } }
+    else if(dR!=null){ dAgua=dR; fuente='riego'; }
+    else if(dLluvia!=null){ dAgua=dLluvia; fuente='lluvia'; }
+    var aguaBg, aguaBd, aguaCol, aguaTxt;
+    if(dAgua==null){ aguaBg='rgba(239,68,68,.1)'; aguaBd='rgba(239,68,68,.3)'; aguaCol='var(--red)'; aguaTxt='Sin agua reg.'; }
+    else if(dAgua>=10){ aguaBg='rgba(239,68,68,.1)'; aguaBd='rgba(239,68,68,.3)'; aguaCol='var(--red)'; aguaTxt=dAgua+' d s/ agua'; }
+    else if(dAgua>=4){ aguaBg='rgba(245,158,11,.12)'; aguaBd='rgba(245,158,11,.3)'; aguaCol='var(--amber)'; aguaTxt=dAgua+' d s/ agua'; }
+    else { aguaBg='rgba(16,185,129,.1)'; aguaBd='rgba(16,185,129,.28)'; aguaCol='var(--green)'; aguaTxt=dAgua+' d s/ agua'; }
+    var riegoTxt=ur?('💧 '+_fmt(ur.fecha)):'💧 Sin riego';
+    var mov=movBy[String(id)];
+    var descTxt='🌿 —';
+    if(mov){
+      if(mov.estado==='ocupado') descTxt='🐑 Pastoreo';
+      else if(mov.estado==='en_descanso'){
+        var dd=mov.dias_descanso_real!=null?mov.dias_descanso_real:_dias(mov.fecha_inicio_descanso||mov.fecha_salida);
+        descTxt='🌿 '+(dd!=null?dd+' d desc.':'Descanso');
+      }
+    }
+    el.innerHTML=chip(aguaTxt,aguaBg,aguaBd,aguaCol)
+      +chip(riegoTxt,'var(--bg2)','var(--border)','var(--text2)')
+      +chip(descTxt,'var(--bg2)','var(--border)','var(--text2)');
+  });
 }
 
 // ── Guardar lote (modal nuevo/editar) ──────────────

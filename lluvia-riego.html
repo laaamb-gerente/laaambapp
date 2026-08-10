@@ -10,7 +10,7 @@
 <title>LAAAMBAPP · Lluvia &amp; Riego</title>
 <script>(function(){var t=localStorage.getItem('laaamb-theme');document.documentElement.setAttribute('data-theme',t==='dark'||t==='light'?t:'light');})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/laaamb.css?v=54">
+<link rel="stylesheet" href="css/laaamb.css?v=55">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js" crossorigin="anonymous"></script>
@@ -20,12 +20,12 @@
 <script>window._sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);</script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/sidebar.js?v=54"></script>
+<script src="js/sidebar.js?v=55"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=54"></script>
+<script src="js/db.js?v=55"></script>
 <script src="js/app-state.js"></script>
-<script src="js/app-update.js?v=54"></script>
+<script src="js/app-update.js?v=55"></script>
 <script src="AppData.js"></script>
 <style>
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.12);
@@ -124,6 +124,51 @@ html[data-theme="dark"] .riego-legend{background:rgba(30,41,59,.94);color:var(--
 .kpi-mini .kpi{padding:10px}
 .kpi-mini .v{font-size:18px}
 .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;background:var(--bg2);border:1px solid var(--border)}
+/* Mesa de decisión · agua + descanso */
+.board{margin-top:18px;background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 8px 28px rgba(0,0,0,.06)}
+.board-head{padding:14px 16px 12px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;justify-content:space-between}
+.board-head h3{margin:0;font-size:15px;font-weight:700;letter-spacing:.2px}
+.board-head .sub{font-size:12px;color:var(--text3);margin-top:3px;line-height:1.4;max-width:560px}
+.board-tools{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.board-tools .btn{min-height:36px;padding:7px 12px;font-size:12px}
+.board-tools select{padding:8px 10px;font-size:13px;border-radius:9px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-family:inherit;min-height:36px}
+.board-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.board-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:780px}
+.board-table th{text-align:left;padding:10px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--text3);background:var(--bg3);border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;cursor:pointer;user-select:none}
+.board-table th:hover{color:var(--teal)}
+.board-table th .sort-ind{opacity:.45;margin-left:3px;font-size:9px}
+.board-table td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+.board-table tr:last-child td{border-bottom:none}
+.board-table tr:hover td{background:var(--teal-bg)}
+.board-table tr.pri-crit td:first-child,.board-table tr.pri-hot td:first-child{box-shadow:inset 3px 0 0 var(--red)}
+.board-table tr.pri-watch td:first-child{box-shadow:inset 3px 0 0 var(--amber)}
+.board-table tr.pri-ok td:first-child{box-shadow:inset 3px 0 0 var(--green)}
+.board-name{font-weight:700;color:var(--text);line-height:1.25}
+.board-piv{font-size:11px;color:var(--text3);margin-top:2px}
+.pri-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:800;padding:4px 8px;border-radius:99px;letter-spacing:.3px;text-transform:uppercase}
+.pri-pill.crit,.pri-pill.hot{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.28)}
+.pri-pill.watch{background:rgba(245,158,11,.12);color:#b45309;border:1px solid rgba(245,158,11,.3)}
+.pri-pill.ok{background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.28)}
+.num-big{font-family:'Sigmar',cursive;font-size:18px;line-height:1;letter-spacing:.5px}
+.num-big.crit,.num-big.hot{color:var(--red)}.num-big.watch{color:var(--amber)}.num-big.ok{color:var(--green)}.num-big.muted{color:var(--text3)}
+.board-muted{color:var(--text3);font-size:11px}
+.board-act{display:flex;gap:4px;flex-wrap:wrap}
+.board-act .btn{min-height:34px;padding:6px 10px;font-size:11px}
+.board-feed{padding:14px 16px 18px;border-top:1px solid var(--border)}
+.board-feed h4{margin:0 0 10px;font-size:13px;font-weight:700;color:var(--text2)}
+.feed-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;align-items:flex-start}
+.feed-item:last-child{border-bottom:none}
+.feed-dot{width:8px;height:8px;border-radius:50%;background:var(--sky);margin-top:6px;flex-shrink:0}
+.board-empty{padding:28px 16px;text-align:center;color:var(--text3);font-size:13px;line-height:1.5}
+.board-cards{display:none;padding:10px;gap:8px;flex-direction:column}
+.bcard{border:1px solid var(--border);border-radius:12px;padding:12px;background:var(--bg3)}
+.bcard.pri-crit,.bcard.pri-hot{border-left:3px solid var(--red)}
+.bcard.pri-watch{border-left:3px solid var(--amber)}
+.bcard.pri-ok{border-left:3px solid var(--green)}
+.bcard-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:8px}
+.bcard-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px}
+.bcard-grid .k{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase}
+.bcard-grid .v{font-weight:600;margin-top:1px}
 #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:11px 18px;border-radius:99px;font-size:13px;font-weight:600;z-index:10000;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.on{opacity:1}#toast.err{background:var(--red);color:#fff}
 @media(max-width:768px){
@@ -136,12 +181,22 @@ html[data-theme="dark"] .riego-legend{background:rgba(30,41,59,.94);color:var(--
   .ph-title{font-size:22px}
   .riego-map-shell{height:min(52vh,420px);min-height:300px}
   .kpi-mini{grid-template-columns:repeat(2,1fr)}
+  .board-table-wrap{display:none}
+  .board-cards{display:flex}
 }
 @media(min-width:900px){
   .kpi-grid{grid-template-columns:repeat(4,1fr)}
   .rg-sheet{left:50%;right:auto;width:min(480px,100%);transform:translate(-50%,110%);border-radius:18px 18px 0 0}
   .rg-sheet.open{transform:translate(-50%,0)}
   .riego-map-shell{height:min(62vh,560px)}
+}
+@media print{
+  .sidebar,#lham,.tabs,.riego-map-shell,.rg-sheet,.rg-sheet-backdrop,#toast,.board-tools{display:none!important}
+  .pane{display:block!important;overflow:visible!important}
+  .board{box-shadow:none;break-inside:avoid}
+  .board-table-wrap{display:block!important}
+  .board-cards{display:none!important}
+  body{overflow:visible;background:#fff}
 }
 </style>
 </head>
@@ -163,7 +218,7 @@ html[data-theme="dark"] .riego-legend{background:rgba(30,41,59,.94);color:var(--
   <div class="head">
     <div class="ph-eyebrow">Finca · clima y pastoreo</div>
     <div class="ph-title">Lluvia &amp; Riego</div>
-    <div class="ph-sub">Lluvia de finca y riego por <b>potrero</b> (subdivisiones del pivote). Tocá el potrero exacto en el mapa satelital.</div>
+    <div class="ph-sub">Registro en el mapa + <b>mesa de decisión</b> para reuniones: cuándo y dónde regar de nuevo (agua + pastoreo + descanso).</div>
     <div class="tabs" role="tablist">
       <button type="button" class="tab on" id="tab-lluvia" role="tab" aria-selected="true" onclick="showPane('lluvia')">🌧 Lluvia</button>
       <button type="button" class="tab" id="tab-riego" role="tab" aria-selected="false" onclick="showPane('riego')">💧 Riego</button>
@@ -241,6 +296,56 @@ html[data-theme="dark"] .riego-legend{background:rgba(30,41,59,.94);color:var(--
       <p style="font-size:12px;color:var(--text3);margin:10px 4px 0;line-height:1.45" id="riego-map-foot">
         Cada color = un <b>potrero</b>. El trazo discontinuo es el pivote. Tocá el potrero exacto que regaste.
       </p>
+
+      <!-- Mesa de decisión · reuniones -->
+      <div class="board" id="riego-board-card">
+        <div class="board-head">
+          <div>
+            <h3>📋 Mesa de decisión · agua y descanso</h3>
+            <div class="sub">Para reuniones de riego: potrero, última lluvia, último riego, días sin agua (lluvia o riego), último pastoreo y días de descanso. Ordená por urgencia.</div>
+          </div>
+          <div class="board-tools">
+            <select id="board-filtro" onchange="renderBoardRiego()" aria-label="Filtrar">
+              <option value="todos">Todos</option>
+              <option value="urgentes" selected>Urgentes (sin agua ≥4 d)</option>
+              <option value="criticos">Críticos (sin agua ≥10 d o sin riego)</option>
+              <option value="ok">OK (0–3 d)</option>
+              <option value="pastoreo">En pastoreo</option>
+              <option value="descanso">En descanso</option>
+            </select>
+            <select id="board-sort" onchange="renderBoardRiego()" aria-label="Ordenar">
+              <option value="agua" selected>Orden: días sin agua</option>
+              <option value="riego">Orden: último riego</option>
+              <option value="descanso">Orden: descanso</option>
+              <option value="nombre">Orden: nombre</option>
+            </select>
+            <button type="button" class="btn btn-ghost" onclick="window.print()" title="Imprimir / PDF">🖨</button>
+            <button type="button" class="btn btn-ghost" onclick="exportBoardCSV()" title="Exportar CSV">↓ CSV</button>
+          </div>
+        </div>
+        <div class="board-table-wrap">
+          <table class="board-table" id="board-table">
+            <thead>
+              <tr>
+                <th data-k="prio" onclick="boardSortClick('agua')">Prioridad <span class="sort-ind">▾</span></th>
+                <th data-k="nombre" onclick="boardSortClick('nombre')">Potrero</th>
+                <th data-k="lluvia">Últ. lluvia</th>
+                <th data-k="riego" onclick="boardSortClick('riego')">Últ. riego</th>
+                <th data-k="agua" onclick="boardSortClick('agua')">Días s/ agua</th>
+                <th data-k="pastoreo">Últ. pastoreo</th>
+                <th data-k="descanso" onclick="boardSortClick('descanso')">Descanso</th>
+                <th>Acción</th>
+              </tr>
+            </thead>
+            <tbody id="board-tbody"></tbody>
+          </table>
+        </div>
+        <div class="board-cards" id="board-cards"></div>
+        <div class="board-feed">
+          <h4>💧 Últimos riegos registrados</h4>
+          <div id="board-feed"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -302,6 +407,7 @@ html[data-theme="dark"] .riego-legend{background:rgba(30,41,59,.94);color:var(--
 
 var FINCA='a1b2c3d4-0000-0000-0000-000000000001';
 var _pivotes=[], _potreros=[], _ultRiegoLote={}, _ultRiegoPiv={}, _ultLluvia=null;
+var _riegosAll=[], _movRotacion=[], _boardRows=[];
 /** Selección actual: { kind:'potrero'|'pivote', id, lote_id, pivote_id, nombre, pivNombre, ha, pasto } */
 var _sel=null;
 var RMAP=null, _pivLayers={}, _loteLayers={}, _mapReady=false;
@@ -823,6 +929,332 @@ function histRowHtml(x){
     +'</div></div>';
 }
 
+/* ── Mesa de decisión (reuniones) ── */
+function indexMovimientosPorLote(rows){
+  var by={};
+  (rows||[]).forEach(function(m){
+    if(!m||!m.lote_id) return;
+    var k=String(m.lote_id);
+    if(!by[k]) by[k]=[];
+    by[k].push(m);
+  });
+  // ya vienen por fecha_entrada desc desde API; reordenar por fecha más reciente de actividad
+  Object.keys(by).forEach(function(k){
+    by[k].sort(function(a,b){
+      var fa=a.fecha_entrada||a.fecha_salida||a.fecha_inicio_descanso||'';
+      var fb=b.fecha_entrada||b.fecha_salida||b.fecha_inicio_descanso||'';
+      return String(fb).localeCompare(String(fa));
+    });
+  });
+  return by;
+}
+function estadoPastoreoLote(loteId, movByLote){
+  var list=(movByLote&&movByLote[String(loteId)])||[];
+  var cur=list.find(function(m){return m.estado==='ocupado'||m.estado==='en_descanso';})||list[0]||null;
+  // fallback AppData local
+  if(!cur){
+    try{
+      if(window.AppData&&AppData.get){
+        var l=(AppData.get().lotes||[]).find(function(x){return String(x.id)===String(loteId);});
+        if(l){
+          if(l.fecha_inicio_pastoreo){
+            return {
+              estado:'ocupado',
+              ultPastoreo:l.fecha_inicio_pastoreo,
+              diasPastoreo:diasDesde(l.fecha_inicio_pastoreo),
+              diasDescanso:null,
+              metaDescanso:l.dias_descanso_obj||45,
+              labelPastoreo:fmt(l.fecha_inicio_pastoreo),
+              labelDescanso:'En pastoreo'
+            };
+          }
+          if(l.fecha_inicio_descanso){
+            var dd=diasDesde(l.fecha_inicio_descanso);
+            return {
+              estado:'en_descanso',
+              ultPastoreo:l.fecha_inicio_descanso,
+              diasPastoreo:null,
+              diasDescanso:dd,
+              metaDescanso:l.dias_descanso_obj||45,
+              labelPastoreo:fmt(l.fecha_inicio_descanso)+' (salida)',
+              labelDescanso:dd+' d'
+            };
+          }
+        }
+      }
+    }catch(e){}
+    return {
+      estado:'sin_dato', ultPastoreo:null, diasPastoreo:null, diasDescanso:null,
+      metaDescanso:45, labelPastoreo:'—', labelDescanso:'—'
+    };
+  }
+  var meta=cur.dias_descanso_proyectado||45;
+  if(cur.estado==='ocupado'){
+    var dp=diasDesde(cur.fecha_entrada);
+    return {
+      estado:'ocupado',
+      ultPastoreo:cur.fecha_entrada,
+      diasPastoreo:dp,
+      diasDescanso:0,
+      metaDescanso:meta,
+      labelPastoreo:fmt(cur.fecha_entrada)+(dp!=null?(' · '+dp+' d'):''),
+      labelDescanso:'En pastoreo'
+    };
+  }
+  if(cur.estado==='en_descanso'){
+    var fin=cur.fecha_inicio_descanso||cur.fecha_salida;
+    var ddes=cur.dias_descanso_real!=null?cur.dias_descanso_real:diasDesde(fin);
+    return {
+      estado:'en_descanso',
+      ultPastoreo:cur.fecha_salida||cur.fecha_entrada,
+      diasPastoreo:cur.dias_ocupacion!=null?cur.dias_ocupacion:null,
+      diasDescanso:ddes,
+      metaDescanso:meta,
+      labelPastoreo:fmt(cur.fecha_salida||cur.fecha_entrada),
+      labelDescanso:(ddes!=null?ddes+' d':'—')+' / '+meta
+    };
+  }
+  // completado: último ciclo cerrado
+  var dReal=cur.dias_descanso_real!=null?cur.dias_descanso_real:null;
+  return {
+    estado:'completado',
+    ultPastoreo:cur.fecha_entrada,
+    diasPastoreo:cur.dias_ocupacion,
+    diasDescanso:dReal,
+    metaDescanso:meta,
+    labelPastoreo:fmt(cur.fecha_entrada),
+    labelDescanso:dReal!=null?(dReal+' d (ciclo)'):'—'
+  };
+}
+function prioridadAgua(diasSinAgua, tieneRiego){
+  if(diasSinAgua==null && !tieneRiego) return { key:'crit', label:'Crítico', score:1000 };
+  if(diasSinAgua==null) return { key:'hot', label:'Sin dato', score:900 };
+  if(diasSinAgua>=10) return { key:'hot', label:'Urgente', score:800+diasSinAgua };
+  if(diasSinAgua>=4) return { key:'watch', label:'Atención', score:400+diasSinAgua };
+  return { key:'ok', label:'OK', score:diasSinAgua };
+}
+function buildBoardRows(){
+  var movBy=indexMovimientosPorLote(_movRotacion);
+  var dLluvia=_ultLluvia?diasDesde(_ultLluvia.fecha):null;
+  var fLluvia=_ultLluvia?_ultLluvia.fecha:null;
+  var rows=[];
+
+  function pushRow(opts){
+    var ur=opts.ur; // registro riego
+    var dRiego=ur?diasDesde(ur.fecha):null;
+    // Días sin agua = lo más reciente entre lluvia de finca y riego del potrero
+    var diasSinAgua=null;
+    var fuenteAgua=null;
+    if(dRiego!=null && dLluvia!=null){
+      if(dRiego<=dLluvia){ diasSinAgua=dRiego; fuenteAgua='riego'; }
+      else { diasSinAgua=dLluvia; fuenteAgua='lluvia'; }
+    } else if(dRiego!=null){ diasSinAgua=dRiego; fuenteAgua='riego'; }
+    else if(dLluvia!=null){ diasSinAgua=dLluvia; fuenteAgua='lluvia'; }
+    var pr=prioridadAgua(diasSinAgua, !!ur);
+    var past=opts.past||estadoPastoreoLote(opts.lote_id, movBy);
+    rows.push({
+      kind:opts.kind,
+      lote_id:opts.lote_id||null,
+      pivote_id:opts.pivote_id||null,
+      nombre:opts.nombre,
+      pivNombre:opts.pivNombre||null,
+      ha:opts.ha,
+      ur:ur,
+      dRiego:dRiego,
+      fRiego:ur?ur.fecha:null,
+      minRiego:ur?ur.duracion_min:null,
+      fLluvia:fLluvia,
+      dLluvia:dLluvia,
+      diasSinAgua:diasSinAgua,
+      fuenteAgua:fuenteAgua,
+      pr:pr,
+      past:past
+    });
+  }
+
+  if(_potreros.length){
+    _potreros.forEach(function(l){
+      var piv=l.pivote_id?pivoteById(l.pivote_id):null;
+      var ur=_ultRiegoLote[l.id]||null;
+      // si no hay riego del potrero, no heredar del pivote en "días sin agua"
+      // (sí mostramos nota si el pivote tiene riego viejo a nivel pivote)
+      pushRow({
+        kind:'potrero',
+        lote_id:l.id,
+        pivote_id:l.pivote_id||null,
+        nombre:l.nombre||'Potrero',
+        pivNombre:piv?(piv.nombre||null):null,
+        ha:haOf(l),
+        ur:ur
+      });
+    });
+  } else {
+    // fallback: pivotes sin subdivisiones
+    _pivotes.forEach(function(p){
+      pushRow({
+        kind:'pivote',
+        lote_id:null,
+        pivote_id:p.id,
+        nombre:p.nombre||'Pivote',
+        pivNombre:null,
+        ha:haOf(p),
+        ur:_ultRiegoPiv[p.id]||null,
+        past:{ estado:'sin_dato', labelPastoreo:'—', labelDescanso:'—', diasDescanso:null, metaDescanso:45 }
+      });
+    });
+  }
+  _boardRows=rows;
+  return rows;
+}
+function boardFilteredSorted(){
+  var filtro=(document.getElementById('board-filtro')||{}).value||'todos';
+  var sort=(document.getElementById('board-sort')||{}).value||'agua';
+  var rows=_boardRows.slice();
+  rows=rows.filter(function(r){
+    if(filtro==='urgentes') return r.diasSinAgua==null||r.diasSinAgua>=4;
+    if(filtro==='criticos') return r.pr.key==='crit'||r.pr.key==='hot'||(r.diasSinAgua!=null&&r.diasSinAgua>=10)||!r.ur;
+    if(filtro==='ok') return r.diasSinAgua!=null&&r.diasSinAgua<=3;
+    if(filtro==='pastoreo') return r.past&&r.past.estado==='ocupado';
+    if(filtro==='descanso') return r.past&&r.past.estado==='en_descanso';
+    return true;
+  });
+  rows.sort(function(a,b){
+    if(sort==='nombre') return String(a.nombre).localeCompare(String(b.nombre),'es');
+    if(sort==='riego'){
+      var ar=a.dRiego==null?9999:a.dRiego, br=b.dRiego==null?9999:b.dRiego;
+      return br-ar || String(a.nombre).localeCompare(String(b.nombre),'es');
+    }
+    if(sort==='descanso'){
+      var ad=a.past&&a.past.diasDescanso!=null?a.past.diasDescanso:-1;
+      var bd=b.past&&b.past.diasDescanso!=null?b.past.diasDescanso:-1;
+      if(a.past&&a.past.estado==='ocupado') ad=-2;
+      if(b.past&&b.past.estado==='ocupado') bd=-2;
+      return bd-ad || String(a.nombre).localeCompare(String(b.nombre),'es');
+    }
+    // agua (default): score prioridad desc
+    return (b.pr.score-a.pr.score) || String(a.nombre).localeCompare(String(b.nombre),'es');
+  });
+  return rows;
+}
+window.boardSortClick=function(k){
+  var sel=document.getElementById('board-sort');
+  if(sel){ sel.value=k; }
+  renderBoardRiego();
+};
+function renderBoardRiego(){
+  var tbody=document.getElementById('board-tbody');
+  var cards=document.getElementById('board-cards');
+  var feed=document.getElementById('board-feed');
+  if(!tbody) return;
+  var rows=boardFilteredSorted();
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="8"><div class="board-empty">Sin filas con este filtro. Cambiá el filtro o registrá riegos en el mapa.</div></td></tr>';
+    if(cards) cards.innerHTML='<div class="board-empty">Sin filas con este filtro.</div>';
+  } else {
+    tbody.innerHTML=rows.map(function(r){
+      var aguaCls=r.pr.key;
+      var aguaTxt=r.diasSinAgua==null?'—':String(r.diasSinAgua);
+      var aguaSub=r.fuenteAgua?(r.fuenteAgua==='riego'?'vía riego':'vía lluvia'):'sin dato';
+      var riegoTxt=r.fRiego?(fmt(r.fRiego)+(r.minRiego!=null?(' · '+durLabel(r.minRiego)):'')):'Sin riego';
+      var lluviaTxt=r.fLluvia?(fmt(r.fLluvia)+(r.dLluvia!=null?(' · '+r.dLluvia+' d'):'')):'—';
+      var descCls='';
+      if(r.past&&r.past.estado==='en_descanso'&&r.past.diasDescanso!=null&&r.past.metaDescanso&&r.past.diasDescanso>=r.past.metaDescanso) descCls=' style="color:var(--green);font-weight:700"';
+      else if(r.past&&r.past.estado==='en_descanso'&&r.past.diasDescanso!=null&&r.past.metaDescanso&&r.past.diasDescanso<r.past.metaDescanso*0.6) descCls=' style="color:var(--amber);font-weight:700"';
+      var act=r.kind==='potrero'
+        ? '<button type="button" class="btn btn-primary" onclick="selectPotrero(\''+String(r.lote_id).replace(/'/g,'')+'\')">Regar</button>'
+        : '<button type="button" class="btn btn-primary" onclick="selectPivoteSolo(\''+String(r.pivote_id).replace(/'/g,'')+'\')">Regar</button>';
+      return '<tr class="pri-'+esc(r.pr.key)+'">'
+        +'<td><span class="pri-pill '+esc(r.pr.key)+'">'+esc(r.pr.label)+'</span></td>'
+        +'<td><div class="board-name">'+esc(r.nombre)+'</div>'
+          +(r.pivNombre?('<div class="board-piv">⊞ '+esc(r.pivNombre)+(r.ha!=null?(' · '+r.ha+' ha'):'')+'</div>')
+            :(r.ha!=null?('<div class="board-piv">'+r.ha+' ha</div>'):''))
+        +'</td>'
+        +'<td>'+esc(lluviaTxt)+'</td>'
+        +'<td>'+esc(riegoTxt)+(!r.ur&&r.kind==='potrero'&&r.pivote_id&&_ultRiegoPiv[r.pivote_id]
+          ?('<div class="board-muted">Pivote: '+fmt(_ultRiegoPiv[r.pivote_id].fecha)+'</div>'):'')+'</td>'
+        +'<td><div class="num-big '+esc(aguaCls)+'">'+aguaTxt+'</div><div class="board-muted">'+esc(aguaSub)+'</div></td>'
+        +'<td>'+esc(r.past.labelPastoreo)+'</td>'
+        +'<td'+descCls+'>'+esc(r.past.labelDescanso)+'</td>'
+        +'<td><div class="board-act">'+act+'</div></td>'
+        +'</tr>';
+    }).join('');
+
+    if(cards){
+      cards.innerHTML=rows.map(function(r){
+        var aguaTxt=r.diasSinAgua==null?'—':String(r.diasSinAgua);
+        var act=r.kind==='potrero'
+          ? 'selectPotrero(\''+String(r.lote_id).replace(/'/g,'')+'\')'
+          : 'selectPivoteSolo(\''+String(r.pivote_id).replace(/'/g,'')+'\')';
+        return '<div class="bcard pri-'+esc(r.pr.key)+'">'
+          +'<div class="bcard-top">'
+            +'<div><div class="board-name">'+esc(r.nombre)+'</div>'
+            +(r.pivNombre?('<div class="board-piv">⊞ '+esc(r.pivNombre)+'</div>'):'')+'</div>'
+            +'<span class="pri-pill '+esc(r.pr.key)+'">'+esc(r.pr.label)+'</span>'
+          +'</div>'
+          +'<div class="bcard-grid">'
+            +'<div><div class="k">Días s/ agua</div><div class="v num-big '+esc(r.pr.key)+'" style="font-size:16px">'+aguaTxt+'</div></div>'
+            +'<div><div class="k">Últ. riego</div><div class="v">'+(r.fRiego?fmt(r.fRiego):'Sin riego')+'</div></div>'
+            +'<div><div class="k">Últ. lluvia</div><div class="v">'+(r.fLluvia?fmt(r.fLluvia):'—')+'</div></div>'
+            +'<div><div class="k">Descanso</div><div class="v">'+esc(r.past.labelDescanso)+'</div></div>'
+            +'<div style="grid-column:1/-1"><div class="k">Últ. pastoreo</div><div class="v">'+esc(r.past.labelPastoreo)+'</div></div>'
+          +'</div>'
+          +'<div class="board-act" style="margin-top:10px"><button type="button" class="btn btn-primary" style="flex:1" onclick="'+act+'">💧 Regar</button></div>'
+          +'</div>';
+      }).join('');
+    }
+  }
+
+  // Feed últimos riegos
+  if(feed){
+    var recent=(_riegosAll||[]).slice(0,12);
+    if(!recent.length){
+      feed.innerHTML='<div class="board-muted" style="padding:6px 0">Aún no hay riegos guardados. Tocá un potrero en el mapa.</div>';
+    } else {
+      var nameByLote={}, nameByPiv={};
+      _potreros.forEach(function(l){ nameByLote[String(l.id)]=l.nombre; });
+      _pivotes.forEach(function(p){ nameByPiv[String(p.id)]=p.nombre; });
+      feed.innerHTML=recent.map(function(x){
+        var donde=x.lote_id
+          ? (nameByLote[String(x.lote_id)]||('Potrero '+String(x.lote_id).slice(0,8)))
+          : (x.pivote_id?(nameByPiv[String(x.pivote_id)]||'Pivote'):'—');
+        var piv=x.pivote_id&&x.lote_id?(nameByPiv[String(x.pivote_id)]||''):'';
+        return '<div class="feed-item"><span class="feed-dot"></span><div>'
+          +'<b>'+fmt(x.fecha)+'</b> · '+esc(donde)
+          +(piv?(' <span class="board-muted">· '+esc(piv)+'</span>'):'')
+          +'<div class="board-muted">'+durLabel(x.duracion_min)
+          +(x.metodo?(' · '+esc(x.metodo)):'')
+          +(x.registrado_por?(' · '+esc(x.registrado_por)):'')
+          +(x.notas?(' · '+esc(x.notas)):'')
+          +'</div></div></div>';
+      }).join('');
+    }
+  }
+}
+window.exportBoardCSV=function(){
+  var rows=boardFilteredSorted();
+  if(!rows.length){ toast('Nada para exportar',true); return; }
+  var head=['prioridad','potrero','pivote','ha','ult_lluvia','dias_sin_lluvia','ult_riego','dias_sin_riego','dias_sin_agua','fuente_agua','ult_pastoreo','estado_pastoreo','dias_descanso','meta_descanso'];
+  var lines=[head.join(',')];
+  rows.forEach(function(r){
+    function q(v){ v=v==null?'':String(v); if(/[",\n]/.test(v)) return '"'+v.replace(/"/g,'""')+'"'; return v; }
+    lines.push([
+      r.pr.label, r.nombre, r.pivNombre||'', r.ha!=null?r.ha:'',
+      r.fLluvia?String(r.fLluvia).slice(0,10):'', r.dLluvia!=null?r.dLluvia:'',
+      r.fRiego?String(r.fRiego).slice(0,10):'', r.dRiego!=null?r.dRiego:'',
+      r.diasSinAgua!=null?r.diasSinAgua:'', r.fuenteAgua||'',
+      r.past.ultPastoreo?String(r.past.ultPastoreo).slice(0,10):'', r.past.estado||'',
+      r.past.diasDescanso!=null?r.past.diasDescanso:'', r.past.metaDescanso!=null?r.past.metaDescanso:''
+    ].map(q).join(','));
+  });
+  var blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='laaamb-mesa-riego-'+iso(new Date())+'.csv';
+  a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1500);
+  toast('CSV exportado · '+rows.length+' filas');
+};
+
 async function cargarRiego(){
   document.getElementById('rg-fecha').value=iso(new Date());
   document.getElementById('rg-fecha').max=iso(new Date());
@@ -885,34 +1317,42 @@ async function cargarRiego(){
     }
   }catch(e){}
 
-  // Últimos riegos indexados
-  _ultRiegoLote={}; _ultRiegoPiv={};
+  // Últimos riegos indexados + feed
+  _ultRiegoLote={}; _ultRiegoPiv={}; _riegosAll=[];
   try{
     var rr=await DB.getRiegos({finca_id:fincaId(),limit:400});
-    ((rr&&rr.data)||[]).forEach(function(r){
+    _riegosAll=((rr&&rr.data)||[]).slice();
+    _riegosAll.forEach(function(r){
       if(r.lote_id && !_ultRiegoLote[r.lote_id]) _ultRiegoLote[r.lote_id]=r;
       if(r.pivote_id && !_ultRiegoPiv[r.pivote_id]) _ultRiegoPiv[r.pivote_id]=r;
     });
   }catch(e){}
   try{var ul=await DB.getUltimaLluvia(fincaId());_ultLluvia=(ul&&ul.data)||null;}catch(e){_ultLluvia=null;}
 
-  // KPIs: prioridad potreros; si no hay, pivotes
-  var units=_potreros.length?_potreros:_pivotes;
-  var n=units.length, reg=0, sin=0;
-  if(_potreros.length){
-    _potreros.forEach(function(l){ if(_ultRiegoLote[l.id]) reg++; else sin++; });
-  } else {
-    _pivotes.forEach(function(p){ if(_ultRiegoPiv[p.id]) reg++; else sin++; });
-  }
+  // Rotación / pastoreo (para descanso y último pastoreo)
+  _movRotacion=[];
+  try{
+    if(DB.getHistorialRotacion){
+      var rm=await DB.getHistorialRotacion(fincaId());
+      if(rm&&!rm.error) _movRotacion=rm.data||[];
+    }
+  }catch(e){}
+
+  // KPIs: mesa de decisión
+  buildBoardRows();
+  var urg=_boardRows.filter(function(r){return r.diasSinAgua==null||r.diasSinAgua>=4;}).length;
+  var crit=_boardRows.filter(function(r){return r.pr.key==='crit'||r.pr.key==='hot'||(r.diasSinAgua!=null&&r.diasSinAgua>=10);}).length;
+  var n=_boardRows.length;
+  var reg=_boardRows.filter(function(r){return !!r.ur;}).length;
   var dLl=_ultLluvia?diasDesde(_ultLluvia.fecha):null;
-  var unitLabel=_potreros.length?'Potreros':'Pivotes';
   document.getElementById('kpi-riego').innerHTML=
-    '<div class="kpi"><div class="v">'+n+'</div><div class="l">'+unitLabel+'</div><div class="s">'+(_potreros.length?(_pivotes.length+' pivotes'):'Forraje')+'</div></div>'
-    +'<div class="kpi"><div class="v">'+reg+'</div><div class="l">Con riego</div><div class="s">Historial</div></div>'
-    +'<div class="kpi"><div class="v">'+sin+'</div><div class="l">Sin riego</div><div class="s">Urgente</div></div>'
+    '<div class="kpi"><div class="v">'+n+'</div><div class="l">Potreros</div><div class="s">En mesa</div></div>'
+    +'<div class="kpi"><div class="v" style="color:var(--amber)">'+urg+'</div><div class="l">Sin agua ≥4 d</div><div class="s">Atención</div></div>'
+    +'<div class="kpi"><div class="v" style="color:var(--red)">'+crit+'</div><div class="l">Urgentes</div><div class="s">'+reg+' con riego</div></div>'
     +'<div class="kpi"><div class="v" style="color:var(--sky)">'+(dLl==null?'—':dLl)+'</div><div class="l">Sin lluvia</div><div class="s">'+(_ultLluvia?fmt(_ultLluvia.fecha):'—')+'</div></div>';
 
   paintRiegoMap();
+  renderBoardRiego();
   setTimeout(function(){ if(RMAP){ RMAP.invalidateSize(); fitRiegoMap(); } }, 100);
 }
 
