@@ -10,7 +10,9 @@
 <title>LAAAMBAPP · Lluvia &amp; Riego</title>
 <script>(function(){var t=localStorage.getItem('laaamb-theme');document.documentElement.setAttribute('data-theme',t==='dark'||t==='light'?t:'light');})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/laaamb.css?v=51">
+<link rel="stylesheet" href="css/laaamb.css?v=53">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js" crossorigin="anonymous"></script>
 <script src="js/error-handler.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -18,12 +20,12 @@
 <script>window._sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);</script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/sidebar.js?v=52"></script>
+<script src="js/sidebar.js?v=53"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=52"></script>
+<script src="js/db.js?v=53"></script>
 <script src="js/app-state.js"></script>
-<script src="js/app-update.js?v=52"></script>
+<script src="js/app-update.js?v=53"></script>
 <style>
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.12);
   --bg:#F8F9FA;--bg2:#fff;--bg3:#F3F4F6;--border:#E5E7EB;--border2:#D1D5DB;
@@ -80,15 +82,42 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .range-btns .btn{min-height:36px;padding:7px 12px;font-size:12px}
 .strip{display:flex;flex-wrap:wrap;gap:4px;padding:12px;background:var(--bg3);border-radius:10px;min-height:44px}
 .hist-item{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);font-size:13px}
-.piv-grid{display:grid;grid-template-columns:1fr;gap:10px}
-.piv-card{border:1.5px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;background:var(--bg3);transition:border-color .15s,box-shadow .15s}
-.piv-card.sel,.piv-card:hover{border-color:var(--teal);box-shadow:0 0 0 3px rgba(0,175,182,.12)}
-.piv-card.sel{background:var(--teal-bg)}
-.piv-name{font-size:15px;font-weight:700}
-.piv-meta{font-size:12px;color:var(--text2);margin-top:4px;line-height:1.4}
-.piv-badges{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+/* Mapa de riego */
+.riego-layout{display:flex;flex-direction:column;gap:0;max-width:1100px;margin:0 auto}
+.riego-map-shell{position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--border);box-shadow:0 12px 40px rgba(0,0,0,.12);background:#0c1517;min-height:380px;height:min(58vh,520px)}
+#riego-map{position:absolute;inset:0;z-index:1}
+.riego-map-hint{position:absolute;top:12px;left:12px;right:12px;z-index:500;pointer-events:none;display:flex;justify-content:center}
+.riego-map-hint span{pointer-events:none;background:rgba(8,15,16,.82);color:#e8f7f8;font-size:12px;font-weight:600;padding:8px 14px;border-radius:99px;border:1px solid rgba(0,175,182,.35);backdrop-filter:blur(8px);line-height:1.3;text-align:center;max-width:100%}
+.riego-legend{position:absolute;bottom:12px;left:12px;z-index:500;background:rgba(255,255,255,.94);border:1px solid var(--border);border-radius:12px;padding:10px 12px;font-size:11px;color:var(--text2);box-shadow:0 4px 16px rgba(0,0,0,.12);line-height:1.55}
+html[data-theme="dark"] .riego-legend{background:rgba(30,41,59,.94);color:var(--text2)}
+.riego-legend b{display:block;color:var(--text);margin-bottom:4px;font-size:11px}
+.leg-row{display:flex;align-items:center;gap:7px}
+.leg-sw{width:12px;height:12px;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.12)}
+.leaflet-container{font-family:'Changa',sans-serif;background:#1a2c2e}
+.leaflet-control-zoom a{background:var(--bg2)!important;color:var(--text2)!important;border-color:var(--border2)!important}
+.piv-label{font-family:'Changa',sans-serif;font-weight:800;font-size:12px;color:#ecfdf5;background:rgba(0,0,0,.5);padding:3px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.2);white-space:nowrap;text-shadow:0 1px 3px #000;pointer-events:none}
+/* Bottom sheet */
+.rg-sheet-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:8000}
+.rg-sheet-backdrop.on{display:block}
+.rg-sheet{position:fixed;left:0;right:0;bottom:0;z-index:8010;max-height:88vh;background:var(--bg2);border-radius:20px 20px 0 0;border:1px solid var(--border);box-shadow:0 -12px 48px rgba(0,0,0,.28);transform:translateY(110%);transition:transform .32s cubic-bezier(.32,.72,0,1);display:flex;flex-direction:column;overflow:hidden}
+.rg-sheet.open{transform:translateY(0)}
+.rg-sheet-handle{width:40px;height:4px;border-radius:2px;background:var(--border2);margin:10px auto 4px;flex-shrink:0}
+.rg-sheet-head{padding:4px 18px 12px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.rg-sheet-head h2{font-family:'Sigmar',cursive;font-size:18px;line-height:1.15;margin:0}
+.rg-sheet-head .meta{font-size:12px;color:var(--text3);margin-top:4px;line-height:1.4}
+.rg-sheet-body{padding:14px 18px 28px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1;min-height:0}
+.rg-chip-row{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 14px}
+.rg-chip{font-size:11px;font-weight:700;padding:5px 10px;border-radius:99px;background:var(--bg3);border:1px solid var(--border);color:var(--text2)}
+.rg-chip.hot{background:rgba(239,68,68,.1);border-color:rgba(239,68,68,.3);color:var(--red)}
+.rg-chip.ok{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.3);color:var(--green)}
+.rg-chip.sky{background:var(--sky-bg);border-color:rgba(56,176,216,.35);color:var(--sky)}
+.rg-empty-map{position:absolute;inset:0;z-index:400;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;background:rgba(12,21,23,.55);color:#e8f7f8;font-size:14px;line-height:1.5;display:none}
+.rg-empty-map.on{display:flex}
+.rg-empty-map a{color:#5eead4;font-weight:700}
+.kpi-mini{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.kpi-mini .kpi{padding:10px}
+.kpi-mini .v{font-size:18px}
 .badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:99px;background:var(--bg2);border:1px solid var(--border)}
-.badge.ok{color:var(--green)}.badge.warn{color:var(--amber)}.badge.sky{color:var(--sky)}
 #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:11px 18px;border-radius:99px;font-size:13px;font-weight:600;z-index:10000;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.on{opacity:1}#toast.err{background:var(--red);color:#fff}
 @media(max-width:768px){
@@ -99,10 +128,14 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
   .pane{padding:12px 12px 40px}
   .grid2{grid-template-columns:1fr}
   .ph-title{font-size:22px}
+  .riego-map-shell{height:min(52vh,420px);min-height:300px}
+  .kpi-mini{grid-template-columns:repeat(2,1fr)}
 }
-@media(min-width:700px){
+@media(min-width:900px){
   .kpi-grid{grid-template-columns:repeat(4,1fr)}
-  .piv-grid{grid-template-columns:1fr 1fr}
+  .rg-sheet{left:50%;right:auto;width:min(480px,100%);transform:translate(-50%,110%);border-radius:18px 18px 0 0}
+  .rg-sheet.open{transform:translate(-50%,0)}
+  .riego-map-shell{height:min(62vh,560px)}
 }
 </style>
 </head>
@@ -177,45 +210,71 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
     </div>
   </div>
 
-  <!-- ═══ RIEGO ═══ -->
+  <!-- ═══ RIEGO · mapa interactivo ═══ -->
   <div class="pane" id="pane-riego" role="tabpanel">
-    <div class="wrap">
-      <div class="kpi-grid" id="kpi-riego"></div>
-      <div class="card">
-        <h3>1 · Elegir pivote</h3>
-        <div id="piv-empty" style="display:none;padding:12px;text-align:center;color:var(--text3);font-size:13px;line-height:1.5">
-          No hay pivotes de pastoreo. Los <b>establos</b> no se riegan (van en Lotes → Establos). Creá pivotes en <a href="lotes.html" style="color:var(--teal);font-weight:700">Mapa</a> (modo Editar · herramienta ⊞).
+    <div class="riego-layout">
+      <div class="kpi-mini" id="kpi-riego"></div>
+      <div class="riego-map-shell" id="riego-map-shell">
+        <div id="riego-map"></div>
+        <div class="riego-map-hint"><span id="riego-hint">Tocá un pivote en el mapa para registrar el riego</span></div>
+        <div class="riego-legend">
+          <b>Estado de riego</b>
+          <div class="leg-row"><span class="leg-sw" style="background:#14b8a6"></span> 0–3 días</div>
+          <div class="leg-row"><span class="leg-sw" style="background:#f59e0b"></span> 4–9 días</div>
+          <div class="leg-row"><span class="leg-sw" style="background:#f97316"></span> 10+ días</div>
+          <div class="leg-row"><span class="leg-sw" style="background:#ef4444"></span> Sin riego</div>
         </div>
-        <div class="piv-grid" id="piv-list"></div>
-        <p style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.4">Solo aparecen <b>pivotes de forraje</b>. Establos y cubículos quedan fuera del riego.</p>
-      </div>
-      <div class="card" id="form-riego" style="opacity:.5">
-        <h3>2 · Registrar riego <span id="sel-name" style="color:var(--teal)"></span></h3>
-        <div class="grid2">
-          <div class="fld"><label>Fecha</label><input type="date" id="rg-fecha"></div>
-          <div class="fld"><label>Duración (min)</label><input type="number" id="rg-min" min="1" step="15" value="120"></div>
-          <div class="fld"><label>Método</label>
-            <select id="rg-metodo">
-              <option value="aspersión">Aspersión</option>
-              <option value="pivote_central">Pivote central</option>
-              <option value="manguera">Manguera</option>
-              <option value="cinta">Cinta</option>
-              <option value="cañón">Cañón</option>
-              <option value="otro">Otro</option>
-            </select>
+        <div class="rg-empty-map" id="rg-empty-map">
+          <div>No hay pivotes de pastoreo con contorno en el mapa.<br>
+            Dibujalos en <a href="lotes.html">Lotes → Mapa</a> (modo Editar · ⊞).<br>
+            <span style="opacity:.85;font-size:12px">Los establos no se riegan y no aparecen aquí.</span>
           </div>
-          <div class="fld"><label>Notas</label><input type="text" id="rg-notas" placeholder="Opcional"></div>
         </div>
-        <button type="button" class="btn btn-primary" style="width:100%;margin-top:12px" id="btn-rg" disabled onclick="guardarRiego()">💧 Guardar riego</button>
-        <p style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.4">Queda en <b>registros_riego</b> y en la ficha del pivote (mapa). Requiere SQL 0065.</p>
       </div>
-      <div class="card">
-        <h3>Historial riego <span id="hist-rg-title" style="font-weight:500;color:var(--text3);font-size:12px"></span></h3>
-        <div id="rg-hist"></div>
-      </div>
+      <p style="font-size:12px;color:var(--text3);margin:10px 4px 0;line-height:1.45" id="riego-map-foot">
+        Color = urgencia de riego. Solo pivotes de forraje (no establos).
+      </p>
     </div>
   </div>
 </div>
+</div>
+
+<!-- Sheet de riego al tocar pivote -->
+<div class="rg-sheet-backdrop" id="rg-backdrop" onclick="cerrarSheetRiego()"></div>
+<div class="rg-sheet" id="rg-sheet" role="dialog" aria-modal="true" aria-labelledby="rg-sheet-title">
+  <div class="rg-sheet-handle"></div>
+  <div class="rg-sheet-head">
+    <div>
+      <h2 id="rg-sheet-title">Pivote</h2>
+      <div class="meta" id="rg-sheet-meta">—</div>
+      <div class="rg-chip-row" id="rg-chips"></div>
+    </div>
+    <button type="button" class="btn btn-ghost" style="min-height:40px;padding:8px 12px" onclick="cerrarSheetRiego()" aria-label="Cerrar">✕</button>
+  </div>
+  <div class="rg-sheet-body">
+    <h3 style="font-size:13px;font-weight:700;margin:0 0 10px;color:var(--text2)">💧 Registrar riego</h3>
+    <div class="grid2">
+      <div class="fld"><label>Fecha</label><input type="date" id="rg-fecha"></div>
+      <div class="fld"><label>Duración (min)</label><input type="number" id="rg-min" min="1" step="15" value="120" inputmode="numeric"></div>
+      <div class="fld"><label>Método</label>
+        <select id="rg-metodo">
+          <option value="aspersión">Aspersión</option>
+          <option value="pivote_central">Pivote central</option>
+          <option value="manguera">Manguera</option>
+          <option value="cinta">Cinta</option>
+          <option value="cañón">Cañón</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+      <div class="fld"><label>Notas</label><input type="text" id="rg-notas" placeholder="Opcional"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin:14px 0 18px">
+      <button type="button" class="btn btn-ghost" style="flex:0 0 auto;min-width:90px" onclick="cerrarSheetRiego()">Cerrar</button>
+      <button type="button" class="btn btn-primary" style="flex:1" id="btn-rg" onclick="guardarRiego()">💧 Guardar riego</button>
+    </div>
+    <h3 style="font-size:13px;font-weight:700;margin:0 0 8px;color:var(--text2)">Historial de este pivote</h3>
+    <div id="rg-hist"></div>
+  </div>
 </div>
 <div id="toast"></div>
 <script>
@@ -231,6 +290,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 
 var FINCA='a1b2c3d4-0000-0000-0000-000000000001';
 var _pivotes=[], _sel=null, _ultRiego={}, _ultLluvia=null;
+var RMAP=null, _pivLayers={}, _mapReady=false;
 
 function toast(m,e){var t=document.getElementById('toast');t.textContent=m;t.className=e?'on err':'on';clearTimeout(t._tm);t._tm=setTimeout(function(){t.className='';},2800);}
 function iso(d){var x=d instanceof Date?d:new Date(d);return x.getFullYear()+'-'+('0'+(x.getMonth()+1)).slice(-2)+'-'+('0'+x.getDate()).slice(-2);}
@@ -249,7 +309,11 @@ window.showPane=function(which){
   document.getElementById('tab-lluvia').setAttribute('aria-selected',ll?'true':'false');
   document.getElementById('tab-riego').setAttribute('aria-selected',!ll?'true':'false');
   try{history.replaceState(null,'','#'+(ll?'lluvia':'riego'));}catch(e){}
-  if(!ll) cargarRiego();
+  if(!ll){
+    cargarRiego().then(function(){
+      setTimeout(function(){ if(RMAP) RMAP.invalidateSize(); fitRiegoMap(); }, 80);
+    });
+  }
 };
 
 /* ── LLUVIA ── */
@@ -338,24 +402,143 @@ async function cargarHistLluvia(){
   }catch(e){strip.innerHTML='';hist.innerHTML='<div style="color:var(--amber);padding:12px">'+esc(e&&e.message)+'</div>';}
 }
 
-/* ── RIEGO ── */
+/* ── RIEGO · mapa satelital + sheet ── */
+function colorRiego(pivId){
+  var ur=_ultRiego[pivId];
+  if(!ur) return { fill:'#ef4444', stroke:'#b91c1c', label:'Sin riego' };
+  var d=diasDesde(ur.fecha);
+  if(d==null||d<=3) return { fill:'#14b8a6', stroke:'#0f766e', label:d===0?'Hoy':('Hace '+d+' d') };
+  if(d<=9) return { fill:'#f59e0b', stroke:'#b45309', label:'Hace '+d+' d' };
+  return { fill:'#f97316', stroke:'#c2410c', label:'Hace '+d+' d' };
+}
+function parseGeo(g){
+  if(!g) return null;
+  if(typeof g==='string'){ try{ g=JSON.parse(g); }catch(e){ return null; } }
+  if(!g.coordinates||!g.coordinates[0]) return null;
+  return g;
+}
+function geoFromLocal(id){
+  try{
+    if(window.AppData&&AppData.get){
+      var geo=(AppData.get().geo)||{};
+      return parseGeo(geo['pivote_'+id]);
+    }
+  }catch(e){}
+  return null;
+}
+function initRiegoMap(){
+  if(RMAP||typeof L==='undefined') return;
+  var el=document.getElementById('riego-map');
+  if(!el) return;
+  RMAP=L.map('riego-map',{ zoomControl:true, attributionControl:false, tap:true });
+  L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{
+    subdomains:['mt0','mt1','mt2','mt3'], maxZoom:21, attribution:'© Google'
+  }).addTo(RMAP);
+  // San Bernardo / La Marinilla por defecto
+  RMAP.setView([4.3574,-75.0822],16);
+  _mapReady=true;
+}
+function clearPivLayers(){
+  Object.keys(_pivLayers).forEach(function(id){
+    var Lyr=_pivLayers[id];
+    try{ if(Lyr.poly) RMAP.removeLayer(Lyr.poly); if(Lyr.label) RMAP.removeLayer(Lyr.label); }catch(e){}
+  });
+  _pivLayers={};
+}
+function fitRiegoMap(){
+  if(!RMAP) return;
+  var bounds=[];
+  Object.keys(_pivLayers).forEach(function(id){
+    try{ bounds.push(_pivLayers[id].poly.getBounds()); }catch(e){}
+  });
+  if(!bounds.length) return;
+  var b=bounds[0];
+  bounds.forEach(function(x){ b.extend(x); });
+  try{ RMAP.fitBounds(b,{ padding:[36,36], maxZoom:18 }); }catch(e){}
+}
+function paintPivotesOnMap(){
+  if(!RMAP) initRiegoMap();
+  if(!RMAP) return;
+  clearPivLayers();
+  var nGeo=0;
+  _pivotes.forEach(function(p){
+    var gj=parseGeo(p.geojson)||geoFromLocal(p.id);
+    if(!gj) return;
+    nGeo++;
+    var ring=gj.coordinates[0].map(function(c){ return [c[1],c[0]]; });
+    var col=colorRiego(p.id);
+    var selected=(_sel===p.id);
+    var poly=L.polygon(ring,{
+      color: selected ? '#00AFB6' : col.stroke,
+      weight: selected ? 4 : 2.5,
+      fillColor: col.fill,
+      fillOpacity: selected ? 0.55 : 0.38,
+      opacity: 1,
+      className: 'piv-poly'
+    }).addTo(RMAP);
+    poly.on('click', function(e){
+      L.DomEvent.stopPropagation(e);
+      selectPivote(p.id);
+    });
+    var center=poly.getBounds().getCenter();
+    var label=L.marker(center,{
+      interactive:false,
+      zIndexOffset:800,
+      icon:L.divIcon({
+        className:'',
+        html:'<div class="piv-label">'+esc(p.nombre)+'</div>',
+        iconAnchor:[30,10]
+      })
+    }).addTo(RMAP);
+    _pivLayers[p.id]={ poly:poly, label:label };
+  });
+  var empty=document.getElementById('rg-empty-map');
+  var hint=document.getElementById('riego-hint');
+  if(!_pivotes.length){
+    if(empty) empty.classList.add('on');
+    if(hint) hint.textContent='Sin pivotes de pastoreo';
+  } else if(!nGeo){
+    if(empty) empty.classList.add('on');
+    if(hint) hint.textContent='Pivotes sin contorno en el mapa';
+  } else {
+    if(empty) empty.classList.remove('on');
+    if(hint) hint.textContent='Tocá un pivote para registrar el riego';
+    fitRiegoMap();
+  }
+  // Perímetro finca (contexto suave)
+  try{
+    if(window.DB&&DB.getFincaPerimetro){
+      DB.getFincaPerimetro(fincaId()).then(function(r){
+        var g=r&&r.data&&r.data.perimetro_geojson;
+        g=parseGeo(g);
+        if(!g||!RMAP) return;
+        var ring=g.coordinates[0].map(function(c){return [c[1],c[0]];});
+        if(window._fincaRing) try{ RMAP.removeLayer(window._fincaRing); }catch(e){}
+        window._fincaRing=L.polygon(ring,{
+          color:'#00AFB6', weight:1.5, opacity:.7, fillOpacity:0.04, dashArray:'6,4', interactive:false
+        }).addTo(RMAP);
+        try{ window._fincaRing.bringToBack(); }catch(e){}
+      }).catch(function(){});
+    }
+  }catch(e){}
+}
+
 async function cargarRiego(){
   document.getElementById('rg-fecha').value=iso(new Date());
   document.getElementById('rg-fecha').max=iso(new Date());
+  initRiegoMap();
   try{
     var rp=await DB.getPivotes(fincaId());
     if(rp&&rp.error)throw rp.error;
-    // Solo pivotes de pastoreo (nunca establos / cubículos)
     _pivotes=((rp&&rp.data)||[]).filter(function(p){
       if(window.DB&&typeof window.DB._esEstabloPivote==='function') return !DB._esEstabloPivote(p);
       var t=String(p.tipo||'').toLowerCase();
       if(t==='establo') return false;
-      var n=String(p.nombre||'').toLowerCase();
-      return !(/\bestablo\b/.test(n));
+      return !(/\bestablo\b/.test(String(p.nombre||'').toLowerCase()));
     });
   }catch(e){
-    document.getElementById('piv-list').innerHTML='<div style="color:var(--amber)">'+esc(e&&e.message)+'</div>';
-    return;
+    toast('Error pivotes: '+(e&&e.message), true);
+    _pivotes=[];
   }
   _ultRiego={};
   try{
@@ -365,69 +548,75 @@ async function cargarRiego(){
   try{var ul=await DB.getUltimaLluvia(fincaId());_ultLluvia=(ul&&ul.data)||null;}catch(e){_ultLluvia=null;}
   var n=_pivotes.length,reg=Object.keys(_ultRiego).length,dLl=_ultLluvia?diasDesde(_ultLluvia.fecha):null;
   document.getElementById('kpi-riego').innerHTML=
-    '<div class="kpi"><div class="v">'+n+'</div><div class="l">Pivotes</div><div class="s">Activos</div></div>'
-    +'<div class="kpi"><div class="v">'+reg+'</div><div class="l">Con riego</div><div class="s">En historial</div></div>'
-    +'<div class="kpi"><div class="v">'+(n-reg>0?n-reg:0)+'</div><div class="l">Sin riego</div><div class="s">Aún no cargados</div></div>'
-    +'<div class="kpi"><div class="v" style="color:var(--sky)">'+(dLl==null?'—':dLl)+'</div><div class="l">Días sin lluvia</div><div class="s">'+(_ultLluvia?('Última '+fmt(_ultLluvia.fecha)):'—')+'</div></div>';
-  renderPivotes();
-  if(_sel)selectPivote(_sel);else cargarHistGlobal();
+    '<div class="kpi"><div class="v">'+n+'</div><div class="l">Pivotes</div><div class="s">Forraje</div></div>'
+    +'<div class="kpi"><div class="v">'+reg+'</div><div class="l">Con riego</div><div class="s">Historial</div></div>'
+    +'<div class="kpi"><div class="v">'+(n-reg>0?n-reg:0)+'</div><div class="l">Sin riego</div><div class="s">Urgente</div></div>'
+    +'<div class="kpi"><div class="v" style="color:var(--sky)">'+(dLl==null?'—':dLl)+'</div><div class="l">Sin lluvia</div><div class="s">'+(_ultLluvia?fmt(_ultLluvia.fecha):'—')+'</div></div>';
+  paintPivotesOnMap();
+  setTimeout(function(){ if(RMAP){ RMAP.invalidateSize(); fitRiegoMap(); } }, 100);
 }
-function renderPivotes(){
-  var list=document.getElementById('piv-list'),empty=document.getElementById('piv-empty');
-  if(!_pivotes.length){list.innerHTML='';empty.style.display='';return;}
-  empty.style.display='none';
-  list.innerHTML=_pivotes.map(function(p){
-    var ur=_ultRiego[p.id],d=ur?diasDesde(ur.fecha):null;
-    var bR=ur?('<span class="badge '+(d!=null&&d>=10?'warn':'ok')+'">💧 '+(d===0?'Hoy':('Hace '+d+' d'))+'</span>'):'<span class="badge">💧 Sin riego</span>';
-    var dL=_ultLluvia?diasDesde(_ultLluvia.fecha):null;
-    var bL=_ultLluvia?('<span class="badge sky">🌧 '+(dL===0?'hoy':('hace '+dL+' d'))+'</span>'):'';
-    return '<div class="piv-card'+(_sel===p.id?' sel':'')+'" data-id="'+p.id+'" onclick="selectPivote(\''+p.id+'\')">'
-      +'<div class="piv-name">⊞ '+esc(p.nombre)+'</div>'
-      +'<div class="piv-meta">'+(p.area_ha!=null?p.area_ha+' ha':'Área —')+(p.tipo_pasto?(' · '+esc(p.tipo_pasto)):'')
-      +(ur?('<br>Último riego: '+fmt(ur.fecha)+' · '+durLabel(ur.duracion_min)):'')+'</div>'
-      +'<div class="piv-badges">'+bR+bL+'</div></div>';
-  }).join('');
-}
+
 window.selectPivote=function(id){
   _sel=id;
   var p=_pivotes.find(function(x){return x.id===id;});
-  document.querySelectorAll('.piv-card').forEach(function(c){c.classList.toggle('sel',c.getAttribute('data-id')===id);});
-  document.getElementById('form-riego').style.opacity='1';
-  document.getElementById('btn-rg').disabled=false;
-  document.getElementById('sel-name').textContent=p?('· '+p.nombre):'';
-  document.getElementById('hist-rg-title').textContent=p?('· '+p.nombre):'';
+  paintPivotesOnMap(); // resalta selección
+  if(p && _pivLayers[id]){
+    try{ RMAP.fitBounds(_pivLayers[id].poly.getBounds(),{ padding:[50,50], maxZoom:18 }); }catch(e){}
+  }
+  abrirSheetRiego(p);
   cargarHistPiv(id);
 };
+function abrirSheetRiego(p){
+  if(!p) return;
+  var ur=_ultRiego[p.id];
+  var col=colorRiego(p.id);
+  document.getElementById('rg-sheet-title').textContent='⊞ '+(p.nombre||'Pivote');
+  document.getElementById('rg-sheet-meta').textContent=
+    (p.area_ha!=null?(p.area_ha+' ha'):'Área —')+(p.tipo_pasto?(' · '+p.tipo_pasto):'');
+  var chips=[];
+  chips.push('<span class="rg-chip '+(ur?(diasDesde(ur.fecha)>=10?'hot':'ok'):'hot')+'">💧 '+(ur?col.label:'Sin riego')+'</span>');
+  if(ur) chips.push('<span class="rg-chip">'+fmt(ur.fecha)+' · '+durLabel(ur.duracion_min)+'</span>');
+  if(_ultLluvia){
+    var dl=diasDesde(_ultLluvia.fecha);
+    chips.push('<span class="rg-chip sky">🌧 '+(dl===0?'lluvia hoy':('hace '+dl+' d'))+'</span>');
+  }
+  document.getElementById('rg-chips').innerHTML=chips.join('');
+  document.getElementById('rg-fecha').value=iso(new Date());
+  document.getElementById('rg-backdrop').classList.add('on');
+  document.getElementById('rg-sheet').classList.add('open');
+  document.getElementById('btn-rg').disabled=false;
+  setTimeout(function(){ try{ document.getElementById('rg-min').focus(); }catch(e){} }, 350);
+}
+window.cerrarSheetRiego=function(){
+  document.getElementById('rg-backdrop').classList.remove('on');
+  document.getElementById('rg-sheet').classList.remove('open');
+};
 async function cargarHistPiv(id){
-  var host=document.getElementById('rg-hist');host.innerHTML='Cargando…';
+  var host=document.getElementById('rg-hist');
+  if(!host) return;
+  host.innerHTML='Cargando…';
   try{
-    var r=await DB.getRiegos({pivote_id:id,limit:25});
+    var r=await DB.getRiegos({pivote_id:id,limit:20});
     if(r&&r.error)throw r.error;
     var rows=(r&&r.data)||[];
-    if(!rows.length){host.innerHTML='<div style="color:var(--text3);font-size:13px">Sin riegos. Registrá el primero arriba.</div>';return;}
+    if(!rows.length){
+      host.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">Sin riegos previos. Este será el primero.</div>';
+      return;
+    }
     host.innerHTML=rows.map(function(x){
-      return '<div class="hist-item"><div><b>'+fmt(x.fecha)+'</b> · '+durLabel(x.duracion_min)+(x.metodo?(' · '+esc(x.metodo)):'')
-        +(x.notas?('<div style="font-size:11px;color:var(--text3)">'+esc(x.notas)+'</div>'):'')+'</div></div>';
+      return '<div class="hist-item"><div><b>'+fmt(x.fecha)+'</b> · '+durLabel(x.duracion_min)
+        +(x.metodo?(' · '+esc(x.metodo)):'')
+        +(x.notas?('<div style="font-size:11px;color:var(--text3)">'+esc(x.notas)+'</div>'):'')
+        +'</div></div>';
     }).join('');
-  }catch(e){host.innerHTML='<div style="color:var(--amber)">¿SQL 0065? '+esc(e&&e.message)+'</div>';}
-}
-async function cargarHistGlobal(){
-  document.getElementById('hist-rg-title').textContent='· todos';
-  var host=document.getElementById('rg-hist');
-  try{
-    var r=await DB.getRiegos({finca_id:fincaId(),limit:20});
-    var rows=(r&&r.data)||[];
-    if(!rows.length){host.innerHTML='<div style="color:var(--text3);font-size:13px">Elegí un pivote y guardá el primer riego.</div>';return;}
-    host.innerHTML=rows.map(function(x){
-      var nom=(x.pivotes&&x.pivotes.nombre)||'Pivote';
-      return '<div class="hist-item"><div><b>'+fmt(x.fecha)+'</b> · ⊞ '+esc(nom)+' · '+durLabel(x.duracion_min)+'</div></div>';
-    }).join('');
-  }catch(e){host.innerHTML='<div style="color:var(--amber)">¿SQL 0065?</div>';}
+  }catch(e){
+    host.innerHTML='<div style="color:var(--amber);font-size:13px">¿SQL 0065? '+esc(e&&e.message)+'</div>';
+  }
 }
 window.guardarRiego=async function(){
-  if(!_sel){toast('Elegí un pivote',true);return;}
+  if(!_sel){toast('Tocá un pivote en el mapa',true);return;}
   var min=parseInt(document.getElementById('rg-min').value,10);
-  if(!min||min<=0){toast('Duración en minutos',true);return;}
+  if(!min||min<=0){toast('Indicá duración en minutos',true);return;}
   var fecha=document.getElementById('rg-fecha').value||iso(new Date());
   var btn=document.getElementById('btn-rg');btn.disabled=true;btn.textContent='Guardando…';
   try{
@@ -444,10 +633,12 @@ window.guardarRiego=async function(){
       var base=p&&p.notas&&!/Último riego app:/.test(p.notas)?p.notas:null;
       await DB.savePivote({id:_sel,notas:base?(base+'\n'+tag):tag});
     }catch(e2){}
-    toast('💧 Riego · '+fmt(fecha)+' · '+durLabel(min));
+    toast('💧 Riego guardado · '+fmt(fecha)+' · '+durLabel(min));
     document.getElementById('rg-notas').value='';
-    await cargarRiego();selectPivote(_sel);
-  }catch(e){toast((e&&e.message)||'Error 0065',true);}
+    var keep=_sel;
+    await cargarRiego();
+    selectPivote(keep);
+  }catch(e){toast((e&&e.message)||'Error · SQL 0065',true);}
   finally{btn.disabled=false;btn.textContent='💧 Guardar riego';}
 };
 
@@ -461,6 +652,10 @@ function boot(){
   cargarEstadoLluvia();
   var hash=(location.hash||'').replace('#','').toLowerCase();
   if(hash==='riego') showPane('riego');
+  // Escape cierra sheet
+  document.addEventListener('keydown',function(e){
+    if(e.key==='Escape') cerrarSheetRiego();
+  });
 }
 document.addEventListener('DOMContentLoaded',function(){
   var n=0,iv=setInterval(function(){if(window.AUTH_ROL||n++>40){clearInterval(iv);boot();}},100);

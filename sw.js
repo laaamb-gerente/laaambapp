@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v52: menú con estilos en Lluvia&Riego; riego excluye establos; secos SQL 0067.
-const CACHE_NAME = 'laaambapp-v52';
-const CACHE_SHELL = 'laaambapp-shell-v52';
+// v53: riego con mapa satelital de pivotes + sheet al toque.
+const CACHE_NAME = 'laaambapp-v53';
+const CACHE_SHELL = 'laaambapp-shell-v53';
 
 const STATIC_ASSETS = [
   './manifest.json',
