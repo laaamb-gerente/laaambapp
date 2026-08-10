@@ -461,14 +461,15 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
       <div class="dash-actions">
         <button type="button" class="btn btn-primary btn-sm" onclick="goTab('t-mapa')">🗺 Abrir mapa</button>
         <button type="button" class="btn btn-ghost btn-sm" onclick="openModal('modal-mover')">↔ Mover animales</button>
-        <button type="button" class="btn btn-ghost btn-sm" onclick="goTab('t-lluvia')">Historial lluvia</button>
+        <a class="btn btn-ghost btn-sm" href="lluvia.html" style="text-decoration:none">🌧 Módulo Lluvia</a>
+        <a class="btn btn-ghost btn-sm" href="riego.html" style="text-decoration:none">💧 Módulo Riego</a>
       </div>
 
-      <!-- Registro de lluvia: debajo de las cards (ya no encima de los tabs) -->
+      <!-- Atajo de lluvia (módulo completo en lluvia.html) -->
       <div id="lluvia-card" class="lluvia-card-dash">
         <div class="lluvia-card-head">
-          <div style="font-size:14px;font-weight:700;color:var(--text)">🌧 Registrar lluvia</div>
-          <button type="button" class="btn btn-sm btn-ghost" style="font-size:11px;font-weight:700;color:var(--sky,#38B0D8);min-height:36px" onclick="goTab('t-lluvia')">Ver historial →</button>
+          <div style="font-size:14px;font-weight:700;color:var(--text)">🌧 Registrar lluvia (atajo)</div>
+          <a class="btn btn-sm btn-ghost" href="lluvia.html" style="font-size:11px;font-weight:700;color:var(--sky,#38B0D8);min-height:36px;text-decoration:none">Módulo completo →</a>
         </div>
         <div id="lluvia-estado" style="font-size:12px;color:var(--text3);margin-bottom:10px;line-height:1.4">Cargando…</div>
         <div class="lluvia-reg-grid">
@@ -3856,7 +3857,7 @@ window.abrirFichaPivote=async function(pivoteId){
     }catch(e){}
   }
 
-  var ultimoRiego=null, riegos=[];
+  var ultimoRiego=null, riegos=[], ultimaLluvia=null;
   try{
     if(window.DB&&window.DB.getUltimoRiego){
       var ur=await window.DB.getUltimoRiego(pivoteId);
@@ -3867,8 +3868,21 @@ window.abrirFichaPivote=async function(pivoteId){
       riegos=(rr&&rr.data)||[];
     }
   }catch(e){ /* tabla 0065 puede no existir aún */ }
+  try{
+    if(window.DB&&window.DB.getUltimaLluvia){
+      var ul=await window.DB.getUltimaLluvia(_pivoteFinca());
+      if(ul&&ul.data) ultimaLluvia=ul.data;
+    }
+  }catch(e){}
 
   var diasRiego=_diasDesdeISO(ultimoRiego&&ultimoRiego.fecha);
+  var diasLluvia=_diasDesdeISO(ultimaLluvia&&ultimaLluvia.fecha);
+  var riegoSub=ultimoRiego
+    ? (String(ultimoRiego.fecha).slice(0,10)+(ultimoRiego.duracion_min!=null?(' · '+ultimoRiego.duracion_min+' min'):''))
+    : 'Sin riego en app';
+  var lluviaSub=ultimaLluvia
+    ? (String(ultimaLluvia.fecha).slice(0,10)+(ultimaLluvia.intensidad?(' · '+ultimaLluvia.intensidad):''))
+    : 'Sin lluvia en app';
   var estadoTxt=st.nAnim>0
     ?('Ocupado · '+st.nAnim+' animales')
     :(desc.enDescanso
@@ -3893,7 +3907,7 @@ window.abrirFichaPivote=async function(pivoteId){
           +(r.notas?('<div style="color:var(--text3);font-size:11px">'+_escPv(r.notas)+'</div>'):'')
           +'</div>';
       }).join('')
-    : '<div style="font-size:12px;color:var(--text3);padding:8px 0">Sin riegos registrados. Corré SQL 0065 si el guardado falla.</div>';
+    : '<div style="font-size:12px;color:var(--text3);padding:8px 0">Sin riegos. Usá el módulo <a href="riego.html" style="color:var(--teal);font-weight:700">Riego</a> o registrá abajo.</div>';
 
   var hoy=new Date(); var isoHoy=hoy.getFullYear()+'-'+('0'+(hoy.getMonth()+1)).slice(-2)+'-'+('0'+hoy.getDate()).slice(-2);
 
@@ -3909,16 +3923,25 @@ window.abrirFichaPivote=async function(pivoteId){
     +    '<div class="ficha-piv-kpi"><div class="k">Pasto</div><div class="v" style="font-size:13px">'+_escPv(p.tipo_pasto||'—')+'</div></div>'
     +    '<div class="ficha-piv-kpi"><div class="k">Animales</div><div class="v">'+st.nAnim+'</div></div>'
     +    '<div class="ficha-piv-kpi"><div class="k">Potreros</div><div class="v">'+st.lotes.length+'</div></div>'
-    +    '<div class="ficha-piv-kpi"><div class="k">Último riego</div><div class="v" style="font-size:13px">'
+    +    '<div class="ficha-piv-kpi"><div class="k">💧 Último riego</div><div class="v" style="font-size:13px">'
     +      (diasRiego==null?'—':(diasRiego===0?'Hoy':('Hace '+diasRiego+' d')))
-    +    '</div></div>'
+    +    '</div><div style="font-size:10px;color:var(--text3);margin-top:2px">'+_escPv(riegoSub)+'</div></div>'
+    +    '<div class="ficha-piv-kpi"><div class="k">🌧 Última lluvia</div><div class="v" style="font-size:13px">'
+    +      (diasLluvia==null?'—':(diasLluvia===0?'Hoy':('Hace '+diasLluvia+' d')))
+    +    '</div><div style="font-size:10px;color:var(--text3);margin-top:2px">'+_escPv(lluviaSub)+' · finca</div></div>'
     +    '<div class="ficha-piv-kpi"><div class="k">Descanso</div><div class="v" style="font-size:13px">'
     +      (desc.diasDescanso!=null?(desc.diasDescanso+' d'):(st.nAnim>0?'Ocupado':'—'))
     +    '</div></div>'
+    +    '<div class="ficha-piv-kpi"><div class="k">Carga</div><div class="v" style="font-size:13px">'+st.nAnim+' an.</div>'
+    +      '<div style="font-size:10px;color:var(--text3);margin-top:2px">'+st.lotes.length+' potrero(s)</div></div>'
+    +  '</div>'
+    +  '<div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 4px">'
+    +    '<a href="riego.html" class="btn btn-ghost btn-sm" style="text-decoration:none">💧 Módulo Riego</a>'
+    +    '<a href="lluvia.html" class="btn btn-ghost btn-sm" style="text-decoration:none">🌧 Módulo Lluvia</a>'
     +  '</div>'
     +  '<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin:8px 0 4px">Potreros · animales</div>'
     +  potList
-    +  '<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin:14px 0 6px">💧 Registrar riego</div>'
+    +  '<div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin:14px 0 6px">💧 Registrar riego (rápido)</div>'
     +  '<div class="lluvia-reg-grid" style="margin-bottom:8px">'
     +    '<div class="lluvia-fld"><label>Fecha</label><input type="date" id="rg-fecha" class="lluvia-inp" value="'+isoHoy+'"></div>'
     +    '<div class="lluvia-fld"><label>Duración (min)</label><input type="number" id="rg-min" class="lluvia-inp" value="120" min="1" step="15"></div>'
@@ -3959,6 +3982,14 @@ window.guardarRiegoPivote=async function(pivoteId){
       registrado_por:(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'campo'
     });
     if(r&&r.error) throw r.error;
+    // Marca resumen en pivote (visible en listados / notas)
+    try{
+      var tag='Último riego app: '+fecha+' · '+min+' min';
+      var piv=(window._pivotes||[]).find(function(x){return x.id===pivoteId;});
+      var baseNotas=(piv&&piv.notas&&!/Último riego app:/.test(piv.notas))?piv.notas:null;
+      await window.DB.savePivote({ id:pivoteId, notas: baseNotas?(baseNotas+'\n'+tag):tag });
+      if(piv) piv.notas=baseNotas?(baseNotas+'\n'+tag):tag;
+    }catch(e2){}
     toast('💧 Riego guardado · '+min+' min');
     await abrirFichaPivote(pivoteId);
   }catch(e){

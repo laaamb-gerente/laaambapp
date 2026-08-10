@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v49: Establos scroll; pivotes/potreros visibles en mobile (geo sync + Leaflet panes).
-const CACHE_NAME = 'laaambapp-v49';
-const CACHE_SHELL = 'laaambapp-shell-v49';
+// v50: módulos menú Lluvia + Riego; ficha pivote con último riego/lluvia.
+const CACHE_NAME = 'laaambapp-v50';
+const CACHE_SHELL = 'laaambapp-shell-v50';
 
 const STATIC_ASSETS = [
   './manifest.json',

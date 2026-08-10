@@ -24,6 +24,8 @@ window.SIDEBAR = [
   ]},
   { grupo: 'Finca', items: [
     { t: 'Lotes & Potreros',       href: 'lotes.html',        ico: 'lotes' },
+    { t: 'Lluvia',                 href: 'lluvia.html',       ico: 'lluvia' },
+    { t: 'Riego',                  href: 'riego.html',        ico: 'riego' },
     { t: 'Nutrición',              href: 'nutricion.html',    ico: 'nutricion' },
   ]},
   { grupo: 'Producción', items: [
@@ -71,6 +73,8 @@ window.SIDEBAR_ICONS = {
   auditoria:    '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h12v14H4z"/><path d="M7 8h6M7 11h6M7 14h4"/><path d="M14 2v4"/></svg>',
   medicamentos: '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="3" width="12" height="14" rx="2"/><path d="M7 8h6M7 11h4"/></svg>',
   lotes:        '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 7l7-4 7 4v9l-7 4-7-4z"/></svg>',
+  lluvia:       '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 9a4 4 0 0 1 7.5-1.8A3.5 3.5 0 1 1 14 15H7a3 3 0 0 1-1-5.8"/><path d="M8 16v2M11 16v3M14 16v2"/></svg>',
+  riego:        '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 3c-2.5 3.5-5 6.2-5 9a5 5 0 0 0 10 0c0-2.8-2.5-5.5-5-9z"/><path d="M10 14v3"/></svg>',
   nutricion:    '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 17c4-1 7-4 7-9V4l-4 1c-3 .8-5 3-5 6v6z"/><path d="M10 17c-3-1-5-3-5-6"/></svg>',
   leche:        '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2h8M7 2l-.5 4.5a4 4 0 0 0-.5 2V16a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V8.5a4 4 0 0 0-.5-2L13 2"/><line x1="6.2" y1="10" x2="13.8" y2="10"/></svg>',
   lacteo:       '<svg class="nav-ico" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 5h14v3H3zM4 8l1 9a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-9"/><path d="M8 12h4"/></svg>',
