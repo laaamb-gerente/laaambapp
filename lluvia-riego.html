@@ -18,12 +18,12 @@
 <script>window._sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);</script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/sidebar.js?v=51"></script>
+<script src="js/sidebar.js?v=52"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=51"></script>
+<script src="js/db.js?v=52"></script>
 <script src="js/app-state.js"></script>
-<script src="js/app-update.js?v=51"></script>
+<script src="js/app-update.js?v=52"></script>
 <style>
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.12);
   --bg:#F8F9FA;--bg2:#fff;--bg3:#F3F4F6;--border:#E5E7EB;--border2:#D1D5DB;
@@ -32,15 +32,24 @@ html[data-theme="dark"]{--bg:#0F172A;--bg2:#1E293B;--bg3:#162032;--border:#33415
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa',sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
 .app{display:flex;height:100vh;width:100vw}
-.sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.sidebar{width:var(--sidebar);min-width:var(--sidebar);background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0;position:relative;z-index:10}
+.sidebar::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--teal),transparent);opacity:.5}
 .sb-head{padding:20px 16px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
-.sb-logo{display:flex;align-items:center;gap:10px;text-decoration:none}.sb-logo-img{height:40px;width:40px;border-radius:9px}
-.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;color:var(--teal)}.sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase}
+.sb-logo{display:flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:4px}.sb-logo-img{height:40px;width:40px;border-radius:9px;flex-shrink:0}
+.sb-logo-text{font-family:'Sigmar',cursive;font-size:17px;letter-spacing:.5px;color:var(--teal)}.sb-logo-sub{font-size:9px;font-weight:600;color:var(--teal-d);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
 .nav-scroll{flex:1;min-height:0;overflow-y:auto;padding:8px 0}
-.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border)}
+.nav-group{padding:14px 14px 4px;font-size:9px;font-weight:700;color:var(--text3);letter-spacing:1.2px;text-transform:uppercase;opacity:.85}
+.nav-link{display:flex;align-items:center;gap:9px;padding:8px 10px;margin:1px 8px;border-radius:8px;cursor:pointer;color:var(--text2);font-size:13px;font-weight:500;text-decoration:none;transition:all .15s;position:relative;min-width:0;overflow:hidden;white-space:nowrap}
+.nav-link:hover{background:var(--bg3);color:var(--text)}
+.nav-link.active{background:var(--teal-bg);color:var(--teal);border:1px solid rgba(0,175,182,.25);font-weight:600}
+.nav-link.active::before{content:'';position:absolute;left:0;top:5px;bottom:5px;width:2px;background:var(--teal);border-radius:2px}
+.nav-ico{width:15px;height:15px;flex-shrink:0;opacity:.6}.nav-link.active .nav-ico,.nav-link:hover .nav-ico{opacity:1}
+.nav-label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.nav-badge{margin-left:auto;font-size:10px;font-weight:600;background:var(--bg3);color:var(--teal);padding:1px 7px;border-radius:10px;border:1px solid var(--border2);flex-shrink:0}
+.sb-foot{flex-shrink:0;padding:12px;border-top:1px solid var(--border);background:var(--bg2)}
 .user-row{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--bg3);border-radius:8px;border:1px solid var(--border)}
-.avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal)}
-.user-name{font-size:12px;font-weight:600}.user-role{font-size:10px;color:var(--text3)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--teal-bg);border:1.5px solid var(--teal-d);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--teal);flex-shrink:0}
+.user-name{font-size:12px;font-weight:600;color:var(--text)}.user-role{font-size:10px;color:var(--text3)}
 #lham{display:none;position:fixed;top:12px;left:12px;z-index:9999;background:var(--bg2);border:1.5px solid var(--border2);border-radius:8px;width:46px;height:46px;align-items:center;justify-content:center;cursor:pointer}
 #lham svg{width:22px;height:22px;stroke:var(--text);stroke-width:2;fill:none}
 #lov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9990}#lov.on{display:block}
@@ -175,9 +184,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
       <div class="card">
         <h3>1 · Elegir pivote</h3>
         <div id="piv-empty" style="display:none;padding:12px;text-align:center;color:var(--text3);font-size:13px;line-height:1.5">
-          No hay pivotes. Creá contornos en <a href="lotes.html" style="color:var(--teal);font-weight:700">Lotes &amp; Potreros → Mapa</a> (modo Editar).
+          No hay pivotes de pastoreo. Los <b>establos</b> no se riegan (van en Lotes → Establos). Creá pivotes en <a href="lotes.html" style="color:var(--teal);font-weight:700">Mapa</a> (modo Editar · herramienta ⊞).
         </div>
         <div class="piv-grid" id="piv-list"></div>
+        <p style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.4">Solo aparecen <b>pivotes de forraje</b>. Establos y cubículos quedan fuera del riego.</p>
       </div>
       <div class="card" id="form-riego" style="opacity:.5">
         <h3>2 · Registrar riego <span id="sel-name" style="color:var(--teal)"></span></h3>
@@ -335,7 +345,14 @@ async function cargarRiego(){
   try{
     var rp=await DB.getPivotes(fincaId());
     if(rp&&rp.error)throw rp.error;
-    _pivotes=(rp&&rp.data)||[];
+    // Solo pivotes de pastoreo (nunca establos / cubículos)
+    _pivotes=((rp&&rp.data)||[]).filter(function(p){
+      if(window.DB&&typeof window.DB._esEstabloPivote==='function') return !DB._esEstabloPivote(p);
+      var t=String(p.tipo||'').toLowerCase();
+      if(t==='establo') return false;
+      var n=String(p.nombre||'').toLowerCase();
+      return !(/\bestablo\b/.test(n));
+    });
   }catch(e){
     document.getElementById('piv-list').innerHTML='<div style="color:var(--amber)">'+esc(e&&e.message)+'</div>';
     return;

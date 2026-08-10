@@ -82,15 +82,36 @@ window.DB = {
       .order('nombre');
   },
 
-  // ── PIVOTES (división física permanente; nivel superior del potrero) ──
+  // ── PIVOTES (pastoreo) vs ESTABLOS ────────────────────
+  // Misma tabla `pivotes`, discriminados por columna `tipo`:
+  //   · pivote de pastoreo: tipo IS NULL | 'pivote' | ''  → riego, potreros, mapa de carga
+  //   · establo:            tipo = 'establo'             → cubículos (lotes tipo cubiculo), NO se riega
+  // getPivotes() NUNCA devuelve establos. getEstablos() solo establos.
+  _esEstabloPivote(p) {
+    if (!p) return false;
+    const t = String(p.tipo || '').toLowerCase().trim();
+    if (t === 'establo' || t === 'estabulacion' || t === 'estabulación') return true;
+    // Heurística de nombre (datos viejos sin tipo)
+    const n = String(p.nombre || '').toLowerCase();
+    if (/\bestablo\b|\bcub[ií]culo\b|\bcobertizo\b/.test(n) && t !== 'pivote') return true;
+    return false;
+  },
+  _filtrarSoloPivotesPastoreo(rows) {
+    return (rows || []).filter((p) => !this._esEstabloPivote(p));
+  },
+
   async getPivotes(finca_id) {
-    // Preferir columnas con geo (0065); si la columna no existe, fallback sin geojson.
+    // Preferir columnas con geo (0065) + tipo; fallback si faltan columnas.
     let r = await window._sb.from('pivotes')
-      .select('id,finca_id,nombre,area_ha,area_ha_calc,tipo_pasto,capacidad_animales,notas,activo,geojson,created_at,updated_at')
+      .select('id,finca_id,nombre,area_ha,area_ha_calc,tipo_pasto,capacidad_animales,notas,activo,geojson,tipo,created_at,updated_at')
       .eq('finca_id', finca_id).eq('activo', true).order('nombre');
-    if (r.error && /geojson|area_ha_calc|column/i.test(String(r.error.message || r.error))) {
+    if (r.error && /geojson|area_ha_calc|column|tipo/i.test(String(r.error.message || r.error))) {
       r = await window._sb.from('pivotes')
         .select('*').eq('finca_id', finca_id).eq('activo', true).order('nombre');
+    }
+    if (r && !r.error && Array.isArray(r.data)) {
+      // Excluir establos siempre (riego / pastoreo / mapa de pivotes de forraje)
+      r = { data: this._filtrarSoloPivotesPastoreo(r.data), error: null };
     }
     return r;
   },
