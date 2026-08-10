@@ -171,13 +171,14 @@ window.DB = {
     return await window._sb.from('pivotes').select('*').eq('id', id).maybeSingle();
   },
 
-  // ── RIEGO (0065) ──
+  // ── RIEGO (0065) · pivote y/o potrero (lote_id) ──
   async getRiegos(filtros = {}) {
     let q = window._sb.from('registros_riego')
       .select('*, pivotes(nombre, area_ha, tipo_pasto)')
       .order('fecha', { ascending: false });
     if (filtros.finca_id) q = q.eq('finca_id', filtros.finca_id);
     if (filtros.pivote_id) q = q.eq('pivote_id', filtros.pivote_id);
+    if (filtros.lote_id) q = q.eq('lote_id', filtros.lote_id);
     if (filtros.desde) q = q.gte('fecha', filtros.desde);
     if (filtros.hasta) q = q.lte('fecha', filtros.hasta);
     if (filtros.limit) q = q.limit(filtros.limit);
@@ -192,6 +193,34 @@ window.DB = {
       .limit(1)
       .maybeSingle();
   },
+  /** Último riego de un potrero concreto (lote_id). */
+  async getUltimoRiegoLote(lote_id) {
+    if (!lote_id) return { data: null, error: null };
+    return await window._sb.from('registros_riego')
+      .select('*')
+      .eq('lote_id', String(lote_id))
+      .order('fecha', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+  },
+  /**
+   * Potreros de pastoreo (excluye cubículos de establo) con polígono.
+   * Para mapa de riego por potrero.
+   */
+  async getPotrerosRiego(finca_id) {
+    const r = await window._sb.from('lotes')
+      .select('id,nombre,hectareas,area_ha,pivote_id,poligono,tipo,tipo_pastura,capacidad_animal')
+      .eq('finca_id', finca_id)
+      .order('nombre');
+    if (r.error) return r;
+    const rows = (r.data || []).filter((l) => {
+      const t = String(l.tipo || '').toLowerCase();
+      if (t === 'cubiculo' || t === 'cubículo' || t === 'establo') return false;
+      // Debe pertenecer a un pivote de pastoreo (no establo) — se filtra en UI con lista de pivotes
+      return true;
+    });
+    return { data: rows, error: null };
+  },
   async saveRiego(data) {
     const finca_id = data.finca_id || 'a1b2c3d4-0000-0000-0000-000000000001';
     const dur = parseInt(data.duracion_min, 10);
@@ -199,7 +228,7 @@ window.DB = {
     const payload = {
       finca_id,
       pivote_id: data.pivote_id || null,
-      lote_id: data.lote_id || null,
+      lote_id: data.lote_id != null && data.lote_id !== '' ? String(data.lote_id) : null,
       fecha: data.fecha || new Date().toISOString().slice(0, 10),
       hora_inicio: data.hora_inicio || null,
       duracion_min: dur,

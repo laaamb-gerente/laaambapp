@@ -10,7 +10,7 @@
 <title>LAAAMBAPP · Lluvia &amp; Riego</title>
 <script>(function(){var t=localStorage.getItem('laaamb-theme');document.documentElement.setAttribute('data-theme',t==='dark'||t==='light'?t:'light');})();</script>
 <link href="https://fonts.googleapis.com/css2?family=Sigmar&family=Changa:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/laaamb.css?v=53">
+<link rel="stylesheet" href="css/laaamb.css?v=54">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://js.sentry-cdn.com/16a09522e75d0a3fe4cec3bb077c1c32.min.js" crossorigin="anonymous"></script>
@@ -20,12 +20,13 @@
 <script>window._sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);</script>
 <script src="js/auth.js"></script>
 <script src="js/roles.js"></script>
-<script src="js/sidebar.js?v=53"></script>
+<script src="js/sidebar.js?v=54"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=53"></script>
+<script src="js/db.js?v=54"></script>
 <script src="js/app-state.js"></script>
-<script src="js/app-update.js?v=53"></script>
+<script src="js/app-update.js?v=54"></script>
+<script src="AppData.js"></script>
 <style>
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--sky:#38B0D8;--sky-bg:rgba(56,176,216,.12);
   --bg:#F8F9FA;--bg2:#fff;--bg3:#F3F4F6;--border:#E5E7EB;--border2:#D1D5DB;
@@ -95,7 +96,12 @@ html[data-theme="dark"] .riego-legend{background:rgba(30,41,59,.94);color:var(--
 .leg-sw{width:12px;height:12px;border-radius:3px;flex-shrink:0;border:1px solid rgba(0,0,0,.12)}
 .leaflet-container{font-family:'Changa',sans-serif;background:#1a2c2e}
 .leaflet-control-zoom a{background:var(--bg2)!important;color:var(--text2)!important;border-color:var(--border2)!important}
-.piv-label{font-family:'Changa',sans-serif;font-weight:800;font-size:12px;color:#ecfdf5;background:rgba(0,0,0,.5);padding:3px 8px;border-radius:8px;border:1px solid rgba(255,255,255,.2);white-space:nowrap;text-shadow:0 1px 3px #000;pointer-events:none}
+.piv-label{font-family:'Changa',sans-serif;font-weight:800;font-size:11px;color:#ecfdf5;background:rgba(0,0,0,.48);padding:2px 7px;border-radius:7px;border:1px solid rgba(255,255,255,.18);white-space:nowrap;text-shadow:0 1px 3px #000;pointer-events:none}
+.pot-label{font-family:'Changa',sans-serif;font-weight:800;font-size:10px;color:#fff;background:rgba(0,0,0,.55);padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,.22);white-space:nowrap;text-shadow:0 1px 2px #000;pointer-events:none;letter-spacing:.2px}
+.pot-label.sel{background:rgba(0,175,182,.85);border-color:rgba(255,255,255,.45)}
+.rg-sib-btn{font:inherit;font-size:11px;font-weight:700;padding:6px 10px;border-radius:99px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;min-height:36px}
+.rg-sib-btn:hover,.rg-sib-btn.on{background:var(--teal-bg);border-color:rgba(0,175,182,.4);color:var(--teal)}
+.rg-sib-btn.hot{border-color:rgba(239,68,68,.35);color:var(--red)}
 /* Bottom sheet */
 .rg-sheet-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:8000}
 .rg-sheet-backdrop.on{display:block}
@@ -155,9 +161,9 @@ html[data-theme="dark"] .riego-legend{background:rgba(30,41,59,.94);color:var(--
 </aside>
 <div class="main">
   <div class="head">
-    <div class="ph-eyebrow">Finca · clima y pivotes</div>
+    <div class="ph-eyebrow">Finca · clima y pastoreo</div>
     <div class="ph-title">Lluvia &amp; Riego</div>
-    <div class="ph-sub">Un solo módulo: lluvia de finca y riego por pivote. Los datos alimentan las fichas de pivote en el mapa.</div>
+    <div class="ph-sub">Lluvia de finca y riego por <b>potrero</b> (subdivisiones del pivote). Tocá el potrero exacto en el mapa satelital.</div>
     <div class="tabs" role="tablist">
       <button type="button" class="tab on" id="tab-lluvia" role="tab" aria-selected="true" onclick="showPane('lluvia')">🌧 Lluvia</button>
       <button type="button" class="tab" id="tab-riego" role="tab" aria-selected="false" onclick="showPane('riego')">💧 Riego</button>
@@ -216,23 +222,24 @@ html[data-theme="dark"] .riego-legend{background:rgba(30,41,59,.94);color:var(--
       <div class="kpi-mini" id="kpi-riego"></div>
       <div class="riego-map-shell" id="riego-map-shell">
         <div id="riego-map"></div>
-        <div class="riego-map-hint"><span id="riego-hint">Tocá un pivote en el mapa para registrar el riego</span></div>
+        <div class="riego-map-hint"><span id="riego-hint">Tocá un <b>potrero</b> (o el pivote si aún no tiene divisiones) para regar</span></div>
         <div class="riego-legend">
-          <b>Estado de riego</b>
+          <b>Riego por potrero</b>
           <div class="leg-row"><span class="leg-sw" style="background:#14b8a6"></span> 0–3 días</div>
           <div class="leg-row"><span class="leg-sw" style="background:#f59e0b"></span> 4–9 días</div>
           <div class="leg-row"><span class="leg-sw" style="background:#f97316"></span> 10+ días</div>
           <div class="leg-row"><span class="leg-sw" style="background:#ef4444"></span> Sin riego</div>
+          <div class="leg-row" style="margin-top:4px;opacity:.85"><span class="leg-sw" style="background:transparent;border:2px dashed #00AFB6"></span> Contorno pivote</div>
         </div>
         <div class="rg-empty-map" id="rg-empty-map">
-          <div>No hay pivotes de pastoreo con contorno en el mapa.<br>
-            Dibujalos en <a href="lotes.html">Lotes → Mapa</a> (modo Editar · ⊞).<br>
-            <span style="opacity:.85;font-size:12px">Los establos no se riegan y no aparecen aquí.</span>
+          <div>No hay potreros ni pivotes con contorno en el mapa.<br>
+            Subdividí pivotes en <a href="lotes.html">Lotes → Mapa</a> (Editar · ⊞ → subdividir).<br>
+            <span style="opacity:.85;font-size:12px">Establos no se riegan.</span>
           </div>
         </div>
       </div>
       <p style="font-size:12px;color:var(--text3);margin:10px 4px 0;line-height:1.45" id="riego-map-foot">
-        Color = urgencia de riego. Solo pivotes de forraje (no establos).
+        Cada color = un <b>potrero</b>. El trazo discontinuo es el pivote. Tocá el potrero exacto que regaste.
       </p>
     </div>
   </div>
@@ -245,13 +252,14 @@ html[data-theme="dark"] .riego-legend{background:rgba(30,41,59,.94);color:var(--
   <div class="rg-sheet-handle"></div>
   <div class="rg-sheet-head">
     <div>
-      <h2 id="rg-sheet-title">Pivote</h2>
+      <h2 id="rg-sheet-title">Potrero</h2>
       <div class="meta" id="rg-sheet-meta">—</div>
       <div class="rg-chip-row" id="rg-chips"></div>
     </div>
     <button type="button" class="btn btn-ghost" style="min-height:40px;padding:8px 12px" onclick="cerrarSheetRiego()" aria-label="Cerrar">✕</button>
   </div>
   <div class="rg-sheet-body">
+    <div id="rg-scope" style="font-size:12px;color:var(--text2);margin:0 0 12px;padding:10px 12px;background:var(--bg3);border-radius:10px;border:1px solid var(--border);line-height:1.4"></div>
     <h3 style="font-size:13px;font-weight:700;margin:0 0 10px;color:var(--text2)">💧 Registrar riego</h3>
     <div class="grid2">
       <div class="fld"><label>Fecha</label><input type="date" id="rg-fecha"></div>
@@ -268,11 +276,15 @@ html[data-theme="dark"] .riego-legend{background:rgba(30,41,59,.94);color:var(--
       </div>
       <div class="fld"><label>Notas</label><input type="text" id="rg-notas" placeholder="Opcional"></div>
     </div>
-    <div style="display:flex;gap:8px;margin:14px 0 18px">
+    <div style="display:flex;gap:8px;margin:14px 0 18px;flex-wrap:wrap">
       <button type="button" class="btn btn-ghost" style="flex:0 0 auto;min-width:90px" onclick="cerrarSheetRiego()">Cerrar</button>
-      <button type="button" class="btn btn-primary" style="flex:1" id="btn-rg" onclick="guardarRiego()">💧 Guardar riego</button>
+      <button type="button" class="btn btn-primary" style="flex:1;min-width:140px" id="btn-rg" onclick="guardarRiego()">💧 Guardar riego</button>
     </div>
-    <h3 style="font-size:13px;font-weight:700;margin:0 0 8px;color:var(--text2)">Historial de este pivote</h3>
+    <div id="rg-siblings" style="display:none;margin-bottom:16px">
+      <h3 style="font-size:13px;font-weight:700;margin:0 0 8px;color:var(--text2)">Otros potreros del pivote</h3>
+      <div id="rg-siblings-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    </div>
+    <h3 style="font-size:13px;font-weight:700;margin:0 0 8px;color:var(--text2)">Historial <span id="rg-hist-scope" style="font-weight:500;color:var(--text3)"></span></h3>
     <div id="rg-hist"></div>
   </div>
 </div>
@@ -289,8 +301,10 @@ html[data-theme="dark"] .riego-legend{background:rgba(30,41,59,.94);color:var(--
 })();
 
 var FINCA='a1b2c3d4-0000-0000-0000-000000000001';
-var _pivotes=[], _sel=null, _ultRiego={}, _ultLluvia=null;
-var RMAP=null, _pivLayers={}, _mapReady=false;
+var _pivotes=[], _potreros=[], _ultRiegoLote={}, _ultRiegoPiv={}, _ultLluvia=null;
+/** Selección actual: { kind:'potrero'|'pivote', id, lote_id, pivote_id, nombre, pivNombre, ha, pasto } */
+var _sel=null;
+var RMAP=null, _pivLayers={}, _loteLayers={}, _mapReady=false;
 
 function toast(m,e){var t=document.getElementById('toast');t.textContent=m;t.className=e?'on err':'on';clearTimeout(t._tm);t._tm=setTimeout(function(){t.className='';},2800);}
 function iso(d){var x=d instanceof Date?d:new Date(d);return x.getFullYear()+'-'+('0'+(x.getMonth()+1)).slice(-2)+'-'+('0'+x.getDate()).slice(-2);}
@@ -299,6 +313,16 @@ function diasDesde(f){if(!f)return null;return Math.max(0,Math.round((new Date(i
 function esc(s){return(s==null?'':String(s)).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function fincaId(){return(window.AppState&&window.AppState._finca_id)||FINCA;}
 function durLabel(min){min=Number(min)||0;var h=Math.floor(min/60),m=min%60;if(h&&m)return h+' h '+m+' min';if(h)return h+' h';return min+' min';}
+function haOf(x){
+  if(!x) return null;
+  var v=x.hectareas!=null?x.hectareas:(x.area_ha!=null?x.area_ha:null);
+  return v!=null&&v!==''?Number(v):null;
+}
+function shortName(n,max){
+  n=String(n||''); max=max||14;
+  if(n.length<=max) return n;
+  return n.slice(0,max-1)+'…';
+}
 
 window.showPane=function(which){
   var ll=which==='lluvia';
@@ -402,22 +426,39 @@ async function cargarHistLluvia(){
   }catch(e){strip.innerHTML='';hist.innerHTML='<div style="color:var(--amber);padding:12px">'+esc(e&&e.message)+'</div>';}
 }
 
-/* ── RIEGO · mapa satelital + sheet ── */
-function colorRiego(pivId){
-  var ur=_ultRiego[pivId];
-  if(!ur) return { fill:'#ef4444', stroke:'#b91c1c', label:'Sin riego' };
+/* ── RIEGO · mapa por potrero (con contorno de pivote) ── */
+function colorFromUlt(ur){
+  if(!ur) return { fill:'#ef4444', stroke:'#b91c1c', label:'Sin riego', d:null };
   var d=diasDesde(ur.fecha);
-  if(d==null||d<=3) return { fill:'#14b8a6', stroke:'#0f766e', label:d===0?'Hoy':('Hace '+d+' d') };
-  if(d<=9) return { fill:'#f59e0b', stroke:'#b45309', label:'Hace '+d+' d' };
-  return { fill:'#f97316', stroke:'#c2410c', label:'Hace '+d+' d' };
+  if(d==null||d<=3) return { fill:'#14b8a6', stroke:'#0f766e', label:d===0?'Hoy':('Hace '+d+' d'), d:d };
+  if(d<=9) return { fill:'#f59e0b', stroke:'#b45309', label:'Hace '+d+' d', d:d };
+  return { fill:'#f97316', stroke:'#c2410c', label:'Hace '+d+' d', d:d };
+}
+function ultRiegoDe(sel){
+  if(!sel) return null;
+  if(sel.kind==='potrero'&&sel.lote_id) return _ultRiegoLote[sel.lote_id]||null;
+  if(sel.pivote_id) return _ultRiegoPiv[sel.pivote_id]||null;
+  return null;
 }
 function parseGeo(g){
   if(!g) return null;
   if(typeof g==='string'){ try{ g=JSON.parse(g); }catch(e){ return null; } }
-  if(!g.coordinates||!g.coordinates[0]) return null;
+  if(g.type==='Feature'&&g.geometry) g=g.geometry;
+  if(g.type==='FeatureCollection'&&g.features&&g.features[0]) g=g.features[0].geometry||g.features[0];
+  if(!g||!g.coordinates||!g.coordinates[0]) return null;
   return g;
 }
-function geoFromLocal(id){
+function ringFromGeo(gj){
+  gj=parseGeo(gj);
+  if(!gj) return null;
+  var coords=gj.coordinates[0];
+  if(!coords||coords.length<3) return null;
+  return coords.map(function(c){ return [c[1],c[0]]; });
+}
+function geoPivote(id){
+  var p=_pivotes.find(function(x){return String(x.id)===String(id);});
+  var g=parseGeo(p&&p.geojson);
+  if(g) return g;
   try{
     if(window.AppData&&AppData.get){
       var geo=(AppData.get().geo)||{};
@@ -425,6 +466,25 @@ function geoFromLocal(id){
     }
   }catch(e){}
   return null;
+}
+function geoLote(lote){
+  if(!lote) return null;
+  var g=parseGeo(lote.poligono);
+  if(g) return g;
+  try{
+    if(window.AppData&&AppData.get){
+      var geo=(AppData.get().geo)||{};
+      g=parseGeo(geo['lote_'+lote.id]);
+      if(g) return g;
+    }
+  }catch(e){}
+  return null;
+}
+function pivoteById(id){
+  return _pivotes.find(function(x){return String(x.id)===String(id);})||null;
+}
+function potrerosDePivote(pivId){
+  return _potreros.filter(function(l){return l.pivote_id&&String(l.pivote_id)===String(pivId);});
 }
 function initRiegoMap(){
   if(RMAP||typeof L==='undefined') return;
@@ -434,20 +494,26 @@ function initRiegoMap(){
   L.tileLayer('https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{
     subdomains:['mt0','mt1','mt2','mt3'], maxZoom:21, attribution:'© Google'
   }).addTo(RMAP);
-  // San Bernardo / La Marinilla por defecto
   RMAP.setView([4.3574,-75.0822],16);
   _mapReady=true;
 }
-function clearPivLayers(){
+function clearMapLayers(){
   Object.keys(_pivLayers).forEach(function(id){
     var Lyr=_pivLayers[id];
     try{ if(Lyr.poly) RMAP.removeLayer(Lyr.poly); if(Lyr.label) RMAP.removeLayer(Lyr.label); }catch(e){}
   });
-  _pivLayers={};
+  Object.keys(_loteLayers).forEach(function(id){
+    var Lyr=_loteLayers[id];
+    try{ if(Lyr.poly) RMAP.removeLayer(Lyr.poly); if(Lyr.label) RMAP.removeLayer(Lyr.label); }catch(e){}
+  });
+  _pivLayers={}; _loteLayers={};
 }
 function fitRiegoMap(){
   if(!RMAP) return;
   var bounds=[];
+  Object.keys(_loteLayers).forEach(function(id){
+    try{ bounds.push(_loteLayers[id].poly.getBounds()); }catch(e){}
+  });
   Object.keys(_pivLayers).forEach(function(id){
     try{ bounds.push(_pivLayers[id].poly.getBounds()); }catch(e){}
   });
@@ -456,66 +522,128 @@ function fitRiegoMap(){
   bounds.forEach(function(x){ b.extend(x); });
   try{ RMAP.fitBounds(b,{ padding:[36,36], maxZoom:18 }); }catch(e){}
 }
-function paintPivotesOnMap(){
+function paintRiegoMap(){
   if(!RMAP) initRiegoMap();
   if(!RMAP) return;
-  clearPivLayers();
+  clearMapLayers();
   var nGeo=0;
-  _pivotes.forEach(function(p){
-    var gj=parseGeo(p.geojson)||geoFromLocal(p.id);
-    if(!gj) return;
+  var pivIds={};
+  _pivotes.forEach(function(p){ pivIds[String(p.id)]=true; });
+
+  // 1) Potreros con polígono (capa principal de color)
+  _potreros.forEach(function(l){
+    if(l.pivote_id && !pivIds[String(l.pivote_id)]) return; // no riega establos
+    var ring=ringFromGeo(geoLote(l));
+    if(!ring) return;
     nGeo++;
-    var ring=gj.coordinates[0].map(function(c){ return [c[1],c[0]]; });
-    var col=colorRiego(p.id);
-    var selected=(_sel===p.id);
+    var ur=_ultRiegoLote[l.id];
+    var col=colorFromUlt(ur);
+    var selected=_sel&&_sel.kind==='potrero'&&String(_sel.lote_id)===String(l.id);
     var poly=L.polygon(ring,{
-      color: selected ? '#00AFB6' : col.stroke,
-      weight: selected ? 4 : 2.5,
+      color: selected ? '#f0fdfa' : col.stroke,
+      weight: selected ? 3.5 : 1.8,
       fillColor: col.fill,
-      fillOpacity: selected ? 0.55 : 0.38,
+      fillOpacity: selected ? 0.62 : 0.42,
       opacity: 1,
-      className: 'piv-poly'
+      className: 'pot-poly'
     }).addTo(RMAP);
     poly.on('click', function(e){
       L.DomEvent.stopPropagation(e);
-      selectPivote(p.id);
+      selectPotrero(l.id);
     });
     var center=poly.getBounds().getCenter();
     var label=L.marker(center,{
       interactive:false,
-      zIndexOffset:800,
+      zIndexOffset:900,
       icon:L.divIcon({
         className:'',
-        html:'<div class="piv-label">'+esc(p.nombre)+'</div>',
-        iconAnchor:[30,10]
+        html:'<div class="pot-label'+(selected?' sel':'')+'">'+esc(shortName(l.nombre,16))+'</div>',
+        iconAnchor:[28,8]
       })
     }).addTo(RMAP);
-    _pivLayers[p.id]={ poly:poly, label:label };
+    _loteLayers[l.id]={ poly:poly, label:label, lote:l };
   });
+
+  // 2) Contorno de cada pivote (discontinuo). Si NO tiene potreros dibujados → relleno clicable (fallback)
+  _pivotes.forEach(function(p){
+    var ring=ringFromGeo(geoPivote(p.id));
+    if(!ring) return;
+    nGeo++;
+    var pots=potrerosDePivote(p.id).filter(function(l){ return !!_loteLayers[l.id]; });
+    var hasPots=pots.length>0;
+    var selected=_sel&&_sel.kind==='pivote'&&String(_sel.pivote_id)===String(p.id);
+    var ur=_ultRiegoPiv[p.id];
+    var col=colorFromUlt(ur);
+    var poly=L.polygon(ring,{
+      color: selected ? '#5eead4' : '#00AFB6',
+      weight: selected ? 3.5 : 2.2,
+      dashArray: hasPots ? '8,6' : null,
+      fillColor: hasPots ? 'transparent' : col.fill,
+      fillOpacity: hasPots ? 0 : (selected ? 0.5 : 0.36),
+      opacity: 1,
+      interactive: !hasPots, // si hay potreros, el click va al potrero
+      className: 'piv-outline'
+    }).addTo(RMAP);
+    if(!hasPots){
+      poly.on('click', function(e){
+        L.DomEvent.stopPropagation(e);
+        selectPivoteSolo(p.id);
+      });
+    }
+    try{ poly.bringToBack(); }catch(e){}
+    var center=poly.getBounds().getCenter();
+    var labelHtml=hasPots
+      ? '<div class="piv-label" style="opacity:.85;font-size:10px">⊞ '+esc(shortName(p.nombre,18))+'</div>'
+      : '<div class="piv-label">'+esc(p.nombre)+'</div>';
+    var label=L.marker(center,{
+      interactive:false,
+      zIndexOffset: hasPots ? 400 : 800,
+      icon:L.divIcon({ className:'', html:labelHtml, iconAnchor:[32,10] })
+    }).addTo(RMAP);
+    // Si hay potreros, el label del pivote se coloca un poco “arriba” del contorno no estorba el centro
+    if(hasPots){
+      try{
+        var b=poly.getBounds();
+        var top=L.latLng(b.getNorth(), b.getCenter().lng);
+        label.setLatLng(top);
+      }catch(e){}
+    }
+    _pivLayers[p.id]={ poly:poly, label:label, hasPots:hasPots };
+  });
+
+  // 3) Empty / hint
   var empty=document.getElementById('rg-empty-map');
   var hint=document.getElementById('riego-hint');
-  if(!_pivotes.length){
+  var nPot=Object.keys(_loteLayers).length;
+  var nPiv=Object.keys(_pivLayers).length;
+  if(!_pivotes.length && !_potreros.length){
     if(empty) empty.classList.add('on');
     if(hint) hint.textContent='Sin pivotes de pastoreo';
   } else if(!nGeo){
     if(empty) empty.classList.add('on');
-    if(hint) hint.textContent='Pivotes sin contorno en el mapa';
+    if(hint) hint.textContent='Sin contornos en el mapa · dibujá en Lotes';
   } else {
     if(empty) empty.classList.remove('on');
-    if(hint) hint.textContent='Tocá un pivote para registrar el riego';
+    if(hint){
+      hint.innerHTML=nPot
+        ? 'Tocá un <b>potrero</b> para registrar el riego'
+        : 'Tocá un <b>pivote</b> (aún sin subdivisiones)';
+    }
     fitRiegoMap();
   }
-  // Perímetro finca (contexto suave)
+
+  // Perímetro finca (contexto)
   try{
     if(window.DB&&DB.getFincaPerimetro){
       DB.getFincaPerimetro(fincaId()).then(function(r){
         var g=r&&r.data&&r.data.perimetro_geojson;
         g=parseGeo(g);
         if(!g||!RMAP) return;
-        var ring=g.coordinates[0].map(function(c){return [c[1],c[0]];});
+        var ring=ringFromGeo(g);
+        if(!ring) return;
         if(window._fincaRing) try{ RMAP.removeLayer(window._fincaRing); }catch(e){}
         window._fincaRing=L.polygon(ring,{
-          color:'#00AFB6', weight:1.5, opacity:.7, fillOpacity:0.04, dashArray:'6,4', interactive:false
+          color:'#94a3b8', weight:1.2, opacity:.55, fillOpacity:0.02, dashArray:'4,6', interactive:false
         }).addTo(RMAP);
         try{ window._fincaRing.bringToBack(); }catch(e){}
       }).catch(function(){});
@@ -523,10 +651,184 @@ function paintPivotesOnMap(){
   }catch(e){}
 }
 
+function buildSelFromPotrero(loteId){
+  var l=_potreros.find(function(x){return String(x.id)===String(loteId);});
+  if(!l) return null;
+  var piv=l.pivote_id?pivoteById(l.pivote_id):null;
+  var ha=haOf(l);
+  return {
+    kind:'potrero',
+    id:l.id,
+    lote_id:l.id,
+    pivote_id:l.pivote_id||null,
+    nombre:l.nombre||'Potrero',
+    pivNombre:piv?(piv.nombre||'Pivote'):null,
+    ha:ha,
+    pasto:l.tipo_pastura||l.tipo_pasto||(piv&&piv.tipo_pasto)||null
+  };
+}
+function buildSelFromPivote(pivId){
+  var p=pivoteById(pivId);
+  if(!p) return null;
+  return {
+    kind:'pivote',
+    id:p.id,
+    lote_id:null,
+    pivote_id:p.id,
+    nombre:p.nombre||'Pivote',
+    pivNombre:null,
+    ha:haOf(p),
+    pasto:p.tipo_pasto||null
+  };
+}
+
+window.selectPotrero=function(loteId){
+  var sel=buildSelFromPotrero(loteId);
+  if(!sel){ toast('Potrero no encontrado',true); return; }
+  _sel=sel;
+  paintRiegoMap();
+  if(_loteLayers[loteId]){
+    try{ RMAP.fitBounds(_loteLayers[loteId].poly.getBounds(),{ padding:[48,48], maxZoom:19 }); }catch(e){}
+  }
+  abrirSheetRiego(sel);
+  cargarHistRiego(sel);
+};
+/** Fallback: pivote sin potreros dibujados */
+window.selectPivoteSolo=function(pivId){
+  var pots=potrerosDePivote(pivId);
+  // Si hay potreros pero sin geo, preferir listar en sheet del primero? No: regar el pivote entero.
+  var sel=buildSelFromPivote(pivId);
+  if(!sel) return;
+  _sel=sel;
+  paintRiegoMap();
+  if(_pivLayers[pivId]){
+    try{ RMAP.fitBounds(_pivLayers[pivId].poly.getBounds(),{ padding:[48,48], maxZoom:18 }); }catch(e){}
+  }
+  abrirSheetRiego(sel);
+  cargarHistRiego(sel);
+};
+// alias retrocompat
+window.selectPivote=window.selectPivoteSolo;
+
+function abrirSheetRiego(sel){
+  if(!sel) return;
+  var ur=ultRiegoDe(sel);
+  var col=colorFromUlt(ur);
+  var title=sel.kind==='potrero'
+    ? ('🌿 '+(sel.nombre||'Potrero'))
+    : ('⊞ '+(sel.nombre||'Pivote'));
+  document.getElementById('rg-sheet-title').textContent=title;
+  var metaParts=[];
+  if(sel.kind==='potrero'&&sel.pivNombre) metaParts.push('Pivote · '+sel.pivNombre);
+  if(sel.ha!=null&&!isNaN(sel.ha)) metaParts.push(sel.ha+' ha');
+  if(sel.pasto) metaParts.push(sel.pasto);
+  document.getElementById('rg-sheet-meta').textContent=metaParts.join(' · ')||'—';
+
+  var chips=[];
+  chips.push('<span class="rg-chip '+(ur?(col.d!=null&&col.d>=10?'hot':'ok'):'hot')+'">💧 '+(ur?col.label:'Sin riego')+'</span>');
+  if(ur) chips.push('<span class="rg-chip">'+fmt(ur.fecha)+' · '+durLabel(ur.duracion_min)+'</span>');
+  if(_ultLluvia){
+    var dl=diasDesde(_ultLluvia.fecha);
+    chips.push('<span class="rg-chip sky">🌧 '+(dl===0?'lluvia hoy':('hace '+dl+' d'))+'</span>');
+  }
+  document.getElementById('rg-chips').innerHTML=chips.join('');
+
+  var scope=document.getElementById('rg-scope');
+  if(scope){
+    if(sel.kind==='potrero'){
+      scope.innerHTML='Vas a registrar riego del <b>potrero '+esc(sel.nombre)+'</b>'
+        +(sel.pivNombre?(' dentro del pivote <b>'+esc(sel.pivNombre)+'</b>'):'')
+        +'. El color del mapa se actualiza solo para este potrero.';
+    } else {
+      var nPots=potrerosDePivote(sel.pivote_id).length;
+      scope.innerHTML=nPots
+        ? ('Este pivote tiene <b>'+nPots+' potreros</b> sin contorno dibujado. El riego se guarda a nivel de <b>pivote</b>. Mejor: dibujá los potreros en Lotes → Mapa.')
+        : ('Este pivote aún no está subdividido. El riego se guarda a nivel de <b>pivote completo</b>.');
+    }
+  }
+
+  // Hermanos (otros potreros del mismo pivote)
+  var sibBox=document.getElementById('rg-siblings');
+  var sibList=document.getElementById('rg-siblings-list');
+  if(sibBox&&sibList&&sel.pivote_id){
+    var sibs=potrerosDePivote(sel.pivote_id).filter(function(x){
+      return sel.kind!=='potrero'||String(x.id)!==String(sel.lote_id);
+    });
+    if(sibs.length){
+      sibBox.style.display='block';
+      sibList.innerHTML=sibs.map(function(s){
+        var u=_ultRiegoLote[s.id];
+        var c=colorFromUlt(u);
+        var hot=!u||(c.d!=null&&c.d>=10);
+        return '<button type="button" class="rg-sib-btn'+(hot?' hot':'')+'" onclick="selectPotrero(\''+String(s.id).replace(/'/g,'')+'\')">'
+          +esc(shortName(s.nombre,18))+' · '+esc(c.label)+'</button>';
+      }).join('');
+    } else {
+      sibBox.style.display='none';
+      sibList.innerHTML='';
+    }
+  } else if(sibBox){
+    sibBox.style.display='none';
+  }
+
+  var histScope=document.getElementById('rg-hist-scope');
+  if(histScope) histScope.textContent=sel.kind==='potrero'?'· este potrero':'· este pivote';
+
+  document.getElementById('rg-fecha').value=iso(new Date());
+  document.getElementById('rg-backdrop').classList.add('on');
+  document.getElementById('rg-sheet').classList.add('open');
+  document.getElementById('btn-rg').disabled=false;
+  setTimeout(function(){ try{ document.getElementById('rg-min').focus(); }catch(e){} }, 350);
+}
+window.cerrarSheetRiego=function(){
+  document.getElementById('rg-backdrop').classList.remove('on');
+  document.getElementById('rg-sheet').classList.remove('open');
+};
+async function cargarHistRiego(sel){
+  var host=document.getElementById('rg-hist');
+  if(!host||!sel) return;
+  host.innerHTML='Cargando…';
+  try{
+    var filtros={ limit:25 };
+    if(sel.kind==='potrero'&&sel.lote_id) filtros.lote_id=sel.lote_id;
+    else if(sel.pivote_id) filtros.pivote_id=sel.pivote_id;
+    var r=await DB.getRiegos(filtros);
+    if(r&&r.error)throw r.error;
+    var rows=(r&&r.data)||[];
+    // Si filtramos por lote y no hay, mostrar también riegos viejos del pivote (sin lote)
+    if(sel.kind==='potrero'&&!rows.length&&sel.pivote_id){
+      var rp=await DB.getRiegos({ pivote_id:sel.pivote_id, limit:15 });
+      var all=(rp&&rp.data)||[];
+      var soloPiv=all.filter(function(x){ return !x.lote_id; });
+      if(soloPiv.length){
+        host.innerHTML='<div style="font-size:11px;color:var(--text3);margin-bottom:8px">Sin riegos de este potrero. Histórico del pivote (antes de subdividir):</div>'
+          +soloPiv.map(histRowHtml).join('');
+        return;
+      }
+    }
+    if(!rows.length){
+      host.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">Sin riegos previos. Este será el primero.</div>';
+      return;
+    }
+    host.innerHTML=rows.map(histRowHtml).join('');
+  }catch(e){
+    host.innerHTML='<div style="color:var(--amber);font-size:13px">¿SQL 0065? '+esc(e&&e.message)+'</div>';
+  }
+}
+function histRowHtml(x){
+  return '<div class="hist-item"><div><b>'+fmt(x.fecha)+'</b> · '+durLabel(x.duracion_min)
+    +(x.metodo?(' · '+esc(x.metodo)):'')
+    +(x.lote_id?'':' <span class="badge" style="margin-left:4px">pivote</span>')
+    +(x.notas?('<div style="font-size:11px;color:var(--text3)">'+esc(x.notas)+'</div>'):'')
+    +'</div></div>';
+}
+
 async function cargarRiego(){
   document.getElementById('rg-fecha').value=iso(new Date());
   document.getElementById('rg-fecha').max=iso(new Date());
   initRiegoMap();
+
+  // Pivotes de pastoreo (sin establos)
   try{
     var rp=await DB.getPivotes(fincaId());
     if(rp&&rp.error)throw rp.error;
@@ -540,104 +842,115 @@ async function cargarRiego(){
     toast('Error pivotes: '+(e&&e.message), true);
     _pivotes=[];
   }
-  _ultRiego={};
+  var pivSet={};
+  _pivotes.forEach(function(p){ pivSet[String(p.id)]=true; });
+
+  // Potreros (lotes de pastoreo)
+  _potreros=[];
   try{
-    var rr=await DB.getRiegos({finca_id:fincaId(),limit:200});
-    ((rr&&rr.data)||[]).forEach(function(r){if(r.pivote_id&&!_ultRiego[r.pivote_id])_ultRiego[r.pivote_id]=r;});
+    if(DB.getPotrerosRiego){
+      var rl=await DB.getPotrerosRiego(fincaId());
+      if(rl&&rl.error)throw rl.error;
+      _potreros=((rl&&rl.data)||[]).filter(function(l){
+        // Solo lotes bajo pivotes de pastoreo (o sin pivote_id pero con polígono — raros)
+        if(l.pivote_id && !pivSet[String(l.pivote_id)]) return false;
+        return true;
+      });
+    }
+  }catch(e){
+    console.warn('[riego] getPotrerosRiego', e);
+  }
+  // Merge poligonos locales AppData si faltan en server
+  try{
+    if(window.AppData&&AppData.get){
+      var geo=(AppData.get().geo)||{};
+      var localLotes=(AppData.get().lotes)||[];
+      var byId={};
+      _potreros.forEach(function(l){ byId[String(l.id)]=l; });
+      localLotes.forEach(function(l){
+        if(!l||!l.id) return;
+        var t=String(l.tipo||'').toLowerCase();
+        if(t==='cubiculo'||t==='cubículo'||t==='establo') return;
+        if(l.pivote_id && !pivSet[String(l.pivote_id)]) return;
+        if(!byId[String(l.id)]){
+          _potreros.push(l);
+          byId[String(l.id)]=l;
+        }
+      });
+      _potreros.forEach(function(l){
+        if(!parseGeo(l.poligono) && geo['lote_'+l.id]){
+          l.poligono=geo['lote_'+l.id];
+        }
+      });
+    }
+  }catch(e){}
+
+  // Últimos riegos indexados
+  _ultRiegoLote={}; _ultRiegoPiv={};
+  try{
+    var rr=await DB.getRiegos({finca_id:fincaId(),limit:400});
+    ((rr&&rr.data)||[]).forEach(function(r){
+      if(r.lote_id && !_ultRiegoLote[r.lote_id]) _ultRiegoLote[r.lote_id]=r;
+      if(r.pivote_id && !_ultRiegoPiv[r.pivote_id]) _ultRiegoPiv[r.pivote_id]=r;
+    });
   }catch(e){}
   try{var ul=await DB.getUltimaLluvia(fincaId());_ultLluvia=(ul&&ul.data)||null;}catch(e){_ultLluvia=null;}
-  var n=_pivotes.length,reg=Object.keys(_ultRiego).length,dLl=_ultLluvia?diasDesde(_ultLluvia.fecha):null;
+
+  // KPIs: prioridad potreros; si no hay, pivotes
+  var units=_potreros.length?_potreros:_pivotes;
+  var n=units.length, reg=0, sin=0;
+  if(_potreros.length){
+    _potreros.forEach(function(l){ if(_ultRiegoLote[l.id]) reg++; else sin++; });
+  } else {
+    _pivotes.forEach(function(p){ if(_ultRiegoPiv[p.id]) reg++; else sin++; });
+  }
+  var dLl=_ultLluvia?diasDesde(_ultLluvia.fecha):null;
+  var unitLabel=_potreros.length?'Potreros':'Pivotes';
   document.getElementById('kpi-riego').innerHTML=
-    '<div class="kpi"><div class="v">'+n+'</div><div class="l">Pivotes</div><div class="s">Forraje</div></div>'
+    '<div class="kpi"><div class="v">'+n+'</div><div class="l">'+unitLabel+'</div><div class="s">'+(_potreros.length?(_pivotes.length+' pivotes'):'Forraje')+'</div></div>'
     +'<div class="kpi"><div class="v">'+reg+'</div><div class="l">Con riego</div><div class="s">Historial</div></div>'
-    +'<div class="kpi"><div class="v">'+(n-reg>0?n-reg:0)+'</div><div class="l">Sin riego</div><div class="s">Urgente</div></div>'
+    +'<div class="kpi"><div class="v">'+sin+'</div><div class="l">Sin riego</div><div class="s">Urgente</div></div>'
     +'<div class="kpi"><div class="v" style="color:var(--sky)">'+(dLl==null?'—':dLl)+'</div><div class="l">Sin lluvia</div><div class="s">'+(_ultLluvia?fmt(_ultLluvia.fecha):'—')+'</div></div>';
-  paintPivotesOnMap();
+
+  paintRiegoMap();
   setTimeout(function(){ if(RMAP){ RMAP.invalidateSize(); fitRiegoMap(); } }, 100);
 }
 
-window.selectPivote=function(id){
-  _sel=id;
-  var p=_pivotes.find(function(x){return x.id===id;});
-  paintPivotesOnMap(); // resalta selección
-  if(p && _pivLayers[id]){
-    try{ RMAP.fitBounds(_pivLayers[id].poly.getBounds(),{ padding:[50,50], maxZoom:18 }); }catch(e){}
-  }
-  abrirSheetRiego(p);
-  cargarHistPiv(id);
-};
-function abrirSheetRiego(p){
-  if(!p) return;
-  var ur=_ultRiego[p.id];
-  var col=colorRiego(p.id);
-  document.getElementById('rg-sheet-title').textContent='⊞ '+(p.nombre||'Pivote');
-  document.getElementById('rg-sheet-meta').textContent=
-    (p.area_ha!=null?(p.area_ha+' ha'):'Área —')+(p.tipo_pasto?(' · '+p.tipo_pasto):'');
-  var chips=[];
-  chips.push('<span class="rg-chip '+(ur?(diasDesde(ur.fecha)>=10?'hot':'ok'):'hot')+'">💧 '+(ur?col.label:'Sin riego')+'</span>');
-  if(ur) chips.push('<span class="rg-chip">'+fmt(ur.fecha)+' · '+durLabel(ur.duracion_min)+'</span>');
-  if(_ultLluvia){
-    var dl=diasDesde(_ultLluvia.fecha);
-    chips.push('<span class="rg-chip sky">🌧 '+(dl===0?'lluvia hoy':('hace '+dl+' d'))+'</span>');
-  }
-  document.getElementById('rg-chips').innerHTML=chips.join('');
-  document.getElementById('rg-fecha').value=iso(new Date());
-  document.getElementById('rg-backdrop').classList.add('on');
-  document.getElementById('rg-sheet').classList.add('open');
-  document.getElementById('btn-rg').disabled=false;
-  setTimeout(function(){ try{ document.getElementById('rg-min').focus(); }catch(e){} }, 350);
-}
-window.cerrarSheetRiego=function(){
-  document.getElementById('rg-backdrop').classList.remove('on');
-  document.getElementById('rg-sheet').classList.remove('open');
-};
-async function cargarHistPiv(id){
-  var host=document.getElementById('rg-hist');
-  if(!host) return;
-  host.innerHTML='Cargando…';
-  try{
-    var r=await DB.getRiegos({pivote_id:id,limit:20});
-    if(r&&r.error)throw r.error;
-    var rows=(r&&r.data)||[];
-    if(!rows.length){
-      host.innerHTML='<div style="color:var(--text3);font-size:13px;padding:8px 0">Sin riegos previos. Este será el primero.</div>';
-      return;
-    }
-    host.innerHTML=rows.map(function(x){
-      return '<div class="hist-item"><div><b>'+fmt(x.fecha)+'</b> · '+durLabel(x.duracion_min)
-        +(x.metodo?(' · '+esc(x.metodo)):'')
-        +(x.notas?('<div style="font-size:11px;color:var(--text3)">'+esc(x.notas)+'</div>'):'')
-        +'</div></div>';
-    }).join('');
-  }catch(e){
-    host.innerHTML='<div style="color:var(--amber);font-size:13px">¿SQL 0065? '+esc(e&&e.message)+'</div>';
-  }
-}
 window.guardarRiego=async function(){
-  if(!_sel){toast('Tocá un pivote en el mapa',true);return;}
+  if(!_sel){toast('Tocá un potrero (o pivote) en el mapa',true);return;}
   var min=parseInt(document.getElementById('rg-min').value,10);
   if(!min||min<=0){toast('Indicá duración en minutos',true);return;}
   var fecha=document.getElementById('rg-fecha').value||iso(new Date());
   var btn=document.getElementById('btn-rg');btn.disabled=true;btn.textContent='Guardando…';
+  var keep={ kind:_sel.kind, id:_sel.id, lote_id:_sel.lote_id, pivote_id:_sel.pivote_id };
   try{
     var r=await DB.saveRiego({
-      finca_id:fincaId(),pivote_id:_sel,fecha:fecha,duracion_min:min,
+      finca_id:fincaId(),
+      pivote_id:_sel.pivote_id||null,
+      lote_id:_sel.lote_id||null,
+      fecha:fecha,
+      duracion_min:min,
       metodo:document.getElementById('rg-metodo').value||'aspersión',
       notas:(document.getElementById('rg-notas').value||'').trim()||null,
       registrado_por:(window.AUTH_PERFIL&&window.AUTH_PERFIL.nombre)||'campo'
     });
     if(r&&r.error)throw r.error;
+    // Nota breve en pivote (opcional, no bloquea)
     try{
-      var tag='Último riego app: '+fecha+' · '+durLabel(min);
-      var p=_pivotes.find(function(x){return x.id===_sel;});
-      var base=p&&p.notas&&!/Último riego app:/.test(p.notas)?p.notas:null;
-      await DB.savePivote({id:_sel,notas:base?(base+'\n'+tag):tag});
+      if(_sel.pivote_id){
+        var tag='Último riego app: '+fecha+' · '+durLabel(min)
+          +(_sel.kind==='potrero'?(' · '+(_sel.nombre||'potrero')):'');
+        var p=pivoteById(_sel.pivote_id);
+        var base=p&&p.notas&&!/Último riego app:/.test(p.notas)?p.notas:null;
+        await DB.savePivote({id:_sel.pivote_id,notas:base?(base+'\n'+tag):tag});
+      }
     }catch(e2){}
-    toast('💧 Riego guardado · '+fmt(fecha)+' · '+durLabel(min));
+    var where=_sel.kind==='potrero'?(_sel.nombre||'potrero'):(_sel.nombre||'pivote');
+    toast('💧 Riego · '+where+' · '+fmt(fecha)+' · '+durLabel(min));
     document.getElementById('rg-notas').value='';
-    var keep=_sel;
     await cargarRiego();
-    selectPivote(keep);
+    if(keep.kind==='potrero'&&keep.lote_id) selectPotrero(keep.lote_id);
+    else if(keep.pivote_id) selectPivoteSolo(keep.pivote_id);
   }catch(e){toast((e&&e.message)||'Error · SQL 0065',true);}
   finally{btn.disabled=false;btn.textContent='💧 Guardar riego';}
 };

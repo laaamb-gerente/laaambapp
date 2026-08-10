@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v53: riego con mapa satelital de pivotes + sheet al toque.
-const CACHE_NAME = 'laaambapp-v53';
-const CACHE_SHELL = 'laaambapp-shell-v53';
+// v54: riego por potrero en mapa (subdivisiones del pivote) + sheet.
+const CACHE_NAME = 'laaambapp-v54';
+const CACHE_SHELL = 'laaambapp-shell-v54';
 
 const STATIC_ASSETS = [
   './manifest.json',
