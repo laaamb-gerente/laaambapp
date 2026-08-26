@@ -89,7 +89,7 @@ export default async function handler(req, res) {
     try {
       dosis = await sbGet(
         `dosis_programadas?estado=eq.pendiente&fecha_programada=lte.${hoy}` +
-        `&finca_id=eq.${FINCA_ID}&select=numero_dosis,total_dosis,fecha_programada,animales(codigo,nombre)` +
+        `&finca_id=eq.${FINCA_ID}&select=numero_dosis,total_dosis,fecha_programada,pauta,dia_offset,animales(codigo,nombre)` +
         `&order=fecha_programada.asc&limit=50`
       );
     } catch (e) { }
@@ -285,8 +285,8 @@ export default async function handler(req, res) {
       fila('👁', `${cod(s.animales)} · día ${s.dia_seguimiento} después del tratamiento`,
         `${s.medicamento_nombre || ''}${s.fecha_programada < hoy ? ` · ⚠ atrasado (${s.fecha_programada})` : ''}`)))}
     ${seccion('💉 Dosis de tratamiento pendientes', dosis.map(d =>
-      fila('💉', `${cod(d.animales)} · dosis ${d.numero_dosis}/${d.total_dosis}`,
-        d.fecha_programada < hoy ? `⚠ atrasada (${d.fecha_programada})` : 'aplicar hoy')))}
+      fila('💉', `${cod(d.animales)} · ${d.pauta === 'intervalos' ? `refuerzo a los ${d.dia_offset || 0} días` : `dosis ${d.numero_dosis}/${d.total_dosis}`}`,
+        d.fecha_programada < hoy ? `⚠ atrasada (${d.fecha_programada}) · aplicar u omitir si está bien` : 'aplicar hoy u omitir si está bien')))}
     ${seccion('Retiros sanitarios cumplidos — confirmar apto', retiros.map(g =>
       fila('•', `${g.cod}${g.meds.length > 1 ? ` · ${g.meds.length} medicamentos` : (g.meds.length ? ` · ${g.meds[0]}` : '')}`,
         `carne apta · retiro venció ${g.fechaMax} · confirma en HOY → "Confirmar apto"`)))}

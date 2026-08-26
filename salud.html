@@ -35,7 +35,7 @@
 <script src="js/sidebar.js"></script>
 <script src="js/periodo-kpi.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=41"></script>
+<script src="js/db.js?v=59"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/alertas-motor.js"></script>
@@ -187,6 +187,15 @@ textarea.fi{resize:vertical;min-height:68px}
 .dosis-result{font-size:32px;font-weight:700;color:var(--teal);line-height:1}
 .dosis-unit{font-size:16px;color:var(--text2);font-weight:400;margin-left:4px}
 .dosis-detail{font-size:12px;color:var(--text3);margin-top:4px}
+.pauta-box{grid-column:1/-1;margin-top:4px}
+.pauta-seg{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.pauta-btn{font:inherit;font-size:12px;font-weight:700;padding:8px 11px;border-radius:8px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;min-height:36px}
+.pauta-btn.on{background:var(--teal);color:#04181a;border-color:var(--teal)}
+.pauta-int[hidden],.pauta-dur-wrap[hidden]{display:none!important}
+.pauta-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:4px}
+.pauta-chip{font:inherit;font-size:12px;font-weight:700;padding:6px 11px;border-radius:99px;border:1px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;min-height:32px}
+.pauta-chip.on{background:var(--sky);color:#04181a;border-color:var(--sky)}
+.pauta-prev{font-size:11px;color:var(--text3);margin-top:6px;line-height:1.4}
 
 /* RETIRO CARD */
 .retiro-card{background:var(--amber-bg);border:1px solid rgba(232,160,48,.25);border-left:3px solid var(--amber);border-radius:var(--r2);padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px}
@@ -864,12 +873,35 @@ label.fl + .fi[required]{border-left:2px solid var(--teal-d)}
           <div class="fg"><label class="fl">Dosis sugerida</label>
             <input class="fi tg-dosis-ref" readonly style="background:var(--bg4);color:var(--teal);font-weight:600" placeholder="Selecciona medicamento">
           </div>
-          <div class="fg"><label class="fl">Duración (días)</label>
+          <div class="fg pauta-dur-wrap" hidden><label class="fl">Duración (días)</label>
             <input class="fi tg-dur-input" type="number" min="1" step="1" value="1">
           </div>
           <div class="fg"><label class="fl">Retiro (días)</label>
             <input class="fi tg-retiro-input" readonly style="background:var(--bg4);color:var(--amber);" placeholder="Auto">
           </div>
+        </div>
+        <div class="pauta-box" data-pauta="unica">
+          <label class="fl">Pauta de dosis</label>
+          <div class="pauta-seg">
+            <button type="button" class="pauta-btn on" data-pauta="unica">Única</button>
+            <button type="button" class="pauta-btn" data-pauta="continua">Curso continuo</button>
+            <button type="button" class="pauta-btn" data-pauta="intervalos">A los X días</button>
+          </div>
+          <div class="pauta-int" hidden>
+            <div style="font-size:11px;color:var(--text3);margin:8px 0 6px">La 1.ª es hoy (día 0). Tocá a cuántos días van los refuerzos.</div>
+            <div class="pauta-chips">
+              <button type="button" class="pauta-chip" data-off="7">+7</button>
+              <button type="button" class="pauta-chip" data-off="14">+14</button>
+              <button type="button" class="pauta-chip" data-off="15">+15</button>
+              <button type="button" class="pauta-chip" data-off="21">+21</button>
+              <span style="display:inline-flex;gap:4px;align-items:center">
+                <input class="fi pauta-otro" type="number" min="2" max="180" placeholder="otro" inputmode="numeric" style="width:72px;min-height:32px;padding:4px 8px">
+                <button type="button" class="pauta-chip pauta-add">+</button>
+              </span>
+            </div>
+            <div class="pauta-sel-list" style="margin-top:6px;font-size:12px;font-weight:700;color:var(--teal)"></div>
+          </div>
+          <div class="pauta-prev"></div>
         </div>
       </div>
     </div>
@@ -989,12 +1021,14 @@ async function loadDosisHoy(){
           var an=d.animales||{}; var nombre=an.nombre||an.codigo||'Animal';
           var atrasada=d.fecha_programada<hoy;
           var bc=atrasada?'var(--red)':'var(--amber)';
+          var lab=(window.DB&&window.DB.labelDosis)?window.DB.labelDosis(d):('día '+d.numero_dosis+'/'+d.total_dosis);
+          var med=d.medicamento_nombre||'';
           return '<div style="background:var(--bg2);border:1px solid '+bc+';border-radius:var(--r2,14px);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
             +'<div style="flex:1;min-width:160px"><b style="color:var(--text)">🐑 '+_dEsc(nombre)+'</b>'
-            +' <span style="font-size:12px;color:var(--text2)">· Día '+d.numero_dosis+'/'+d.total_dosis+'</span>'
-            +(atrasada?(' <span class="badge b-red" style="font-size:10px">Atrasada</span>'):' <span class="badge b-amber" style="font-size:10px">Aplicar hoy</span>')
-            +'<div style="font-size:11px;color:var(--text3);margin-top:2px">Programada: '+_dEsc(d.fecha_programada)+'</div></div>'
-            +'<button class="btn btn-primary btn-sm" onclick="abrirRegistroDosis(\''+d.id+'\')">Registrar dosis →</button>'
+            +' <span style="font-size:12px;color:var(--text2)">· '+_dEsc(lab)+'</span>'
+            +(atrasada?(' <span class="badge b-red" style="font-size:10px">Atrasada</span>'):' <span class="badge b-amber" style="font-size:10px">Hoy</span>')
+            +'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+_dEsc(med)+(med?' · ':'')+'programada '+_dEsc(d.fecha_programada)+'</div></div>'
+            +'<button class="btn btn-primary btn-sm" onclick="abrirRegistroDosis(\''+d.id+'\')">Registrar →</button>'
             +'</div>';
         }).join('');
   }catch(e){ console.warn('[Salud] loadDosisHoy:',e&&e.message); }
@@ -1002,15 +1036,20 @@ async function loadDosisHoy(){
 function abrirRegistroDosis(dosisId){
   var d=_DOSIS_HOY.filter(function(x){return x.id===dosisId;})[0];
   var an=d&&d.animales||{}; var nombre=an.nombre||an.codigo||'Animal';
-  document.getElementById('dosis-title').textContent='Registrar dosis — '+nombre;
+  var lab=(window.DB&&window.DB.labelDosis&&d)?window.DB.labelDosis(d):('día '+(d?d.numero_dosis:'?')+'/'+(d?d.total_dosis:'?'));
+  var med=d&&d.medicamento_nombre||'';
+  document.getElementById('dosis-title').textContent='Dosis — '+nombre;
   document.getElementById('dosis-body').innerHTML=
-      '<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Día '+(d?d.numero_dosis:'?')+'/'+(d?d.total_dosis:'?')+' del protocolo</div>'
-    + '<div class="fg"><label class="fl">Dosis aplicada</label><input class="fi" id="dz-dosis" placeholder="ej. 21 mL"></div>'
-    + '<div class="fg"><label class="fl">Observación (opcional)</label><textarea class="fi" id="dz-obs" rows="2"></textarea></div>'
+      '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">'+_dEsc(lab)+'</div>'
+    + '<div style="font-size:12px;color:var(--text2);margin-bottom:12px">'+_dEsc(med)+(d&&d.fecha_programada?(' · '+_dEsc(d.fecha_programada)):'')+'</div>'
+    + '<div class="fg"><label class="fl">Si se aplicó · cantidad</label><input class="fi" id="dz-dosis" placeholder="ej. 21 mL"></div>'
+    + '<div class="fg"><label class="fl">Nota (opcional)</label><textarea class="fi" id="dz-obs" rows="2" placeholder="Cómo está el animal, sitio de aplicación…"></textarea></div>'
     + '<div class="fg"><label class="fl">Foto evidencia (opcional)</label><input class="fi" id="dz-foto" type="file" accept="image/*" capture="camera"></div>'
     + '<div id="dz-msg" style="font-size:12px;min-height:16px;color:var(--red)"></div>'
-    + '<button class="btn btn-primary btn-sm" style="width:100%;margin-top:4px" id="dz-save" onclick="guardarDosis(\''+dosisId+'\')">Aplicada ✓</button>'
-    + '<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px;color:var(--red);border-color:var(--red)" onclick="saltarDosisUI(\''+dosisId+'\')">Saltar dosis</button>';
+    + '<button class="btn btn-primary btn-sm" style="width:100%;margin-top:4px" id="dz-save" onclick="guardarDosis(\''+dosisId+'\')">✓ Se aplicó</button>'
+    + '<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px;border-color:var(--teal);color:var(--teal)" onclick="omitirDosisUI(\''+dosisId+'\')">Omitir · animal está bien</button>'
+    + '<button class="btn btn-ghost btn-sm" style="width:100%;margin-top:6px;font-size:12px;color:var(--text3)" onclick="saltarDosisUI(\''+dosisId+'\')">Otro motivo (no encontrado, sin medicamento…)</button>'
+    + '<div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.4">La omisión por buen estado queda en el historial. Si después decae o muere, lo vas a ver en la ficha.</div>';
   openModal('modal-dosis');
 }
 function _miColabId(){ return (window.AUTH_PERFIL && window.AUTH_PERFIL.id) || null; }
@@ -1036,10 +1075,20 @@ async function guardarDosis(dosisId){
     closeModal('modal-dosis'); toast('Dosis registrada ✓','ok'); loadDosisHoy();
   }catch(e){ if(btn){ btn.disabled=false; btn.textContent='Aplicada ✓'; } var m=document.getElementById('dz-msg'); if(m) m.textContent='Error al guardar.'; }
 }
-async function saltarDosisUI(dosisId){
-  var obs=prompt('Motivo para saltar la dosis (opcional):')||'Saltada';
+async function omitirDosisUI(dosisId){
+  var nota=((document.getElementById('dz-obs')||{}).value||'').trim();
+  if(!confirm('¿Omitir esta dosis porque el animal está BIEN?\n\nQueda en su historial. Si después decae o muere, la ficha lo va a mostrar para no omitir a ciegas.')) return;
   try{
-    var res=await window.DB.saltarDosis(dosisId,obs);
+    var res=await window.DB.omitirDosis(dosisId,{ observacion:nota||null, colaborador:_miColabId() });
+    if(res && res.error) throw res.error;
+    closeModal('modal-dosis'); toast('Omitida · animal bien · historial actualizado','ok'); loadDosisHoy();
+  }catch(e){ toast((e&&e.message)||'No se pudo omitir','err'); }
+}
+async function saltarDosisUI(dosisId){
+  var obs=prompt('Motivo (no encontrado, sin medicamento, otro):')||'';
+  if(obs===null) return;
+  try{
+    var res=await window.DB.saltarDosis(dosisId,obs||'Saltada');
     if(res && res.error) throw res.error;
     closeModal('modal-dosis'); toast('Dosis saltada'); loadDosisHoy();
   }catch(e){ toast('No se pudo saltar la dosis','err'); }
@@ -1157,10 +1206,14 @@ async function editarTrat(grupoId, id){
             if(opt){ sel.value=opt.value; if(typeof onTiMedRowChange==='function') onTiMedRowChange(sel); }
           }
           var din=row.querySelector('.ti-dosis-in'); if(din) din.value=(f.dosis!=null?(f.dosis+(f.unidad?' '+f.unidad:'')):'');
-          // duración = fecha_fin - fecha_inicio (días); si no hay, 1.
           var durDias=1;
           if(f.fecha_fin && f.fecha_inicio){ durDias=Math.max(1, Math.round((new Date(f.fecha_fin)-new Date(f.fecha_inicio))/86400000)); }
           var dur=row.querySelector('.ti-dur-in'); if(dur) dur.value=durDias;
+          if(window.DB && typeof window.DB.getDosisPorTratamiento==='function'){
+            window.DB.getDosisPorTratamiento(f.id).then(function(dr){
+              aplicarPautaDesdeDosis(row, (dr&&dr.data)||[], durDias);
+            }).catch(function(){ aplicarPautaDesdeDosis(row, [], durDias); });
+          } else { aplicarPautaDesdeDosis(row, [], durDias); }
         });
       }, 250);
     }
@@ -1333,6 +1386,28 @@ function getTiDx(){
 }
 
 // ── Múltiples medicamentos por tratamiento individual (mismo patrón que grupal) ──
+function pautaBlockHTML(){
+  return '<div class="pauta-box" data-pauta="unica">'
+    + '<label class="fl">Pauta de dosis</label>'
+    + '<div class="pauta-seg">'
+    + '<button type="button" class="pauta-btn on" data-pauta="unica">Única</button>'
+    + '<button type="button" class="pauta-btn" data-pauta="continua">Curso continuo</button>'
+    + '<button type="button" class="pauta-btn" data-pauta="intervalos">A los X días</button>'
+    + '</div>'
+    + '<div class="pauta-int" hidden>'
+    + '<div style="font-size:11px;color:var(--text3);margin:8px 0 6px">La 1.ª es hoy (día 0). Tocá a cuántos días van los refuerzos.</div>'
+    + '<div class="pauta-chips">'
+    + '<button type="button" class="pauta-chip" data-off="7">+7</button>'
+    + '<button type="button" class="pauta-chip" data-off="14">+14</button>'
+    + '<button type="button" class="pauta-chip" data-off="15">+15</button>'
+    + '<button type="button" class="pauta-chip" data-off="21">+21</button>'
+    + '<span style="display:inline-flex;gap:4px;align-items:center"><input class="fi pauta-otro" type="number" min="2" max="180" placeholder="otro" inputmode="numeric" style="width:72px;min-height:32px;padding:4px 8px"><button type="button" class="pauta-chip pauta-add">+</button></span>'
+    + '</div>'
+    + '<div class="pauta-sel-list" style="margin-top:6px;font-size:12px;font-weight:700;color:var(--teal)"></div>'
+    + '</div>'
+    + '<div class="pauta-prev"></div>'
+    + '</div>';
+}
 function _tiMedRowHTML(){
   return '<div class="ti-med-row" style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px;margin-bottom:8px;position:relative">'
     + '<button type="button" onclick="quitarMedRowIndividual(this)" title="Quitar" style="position:absolute;top:6px;right:6px;background:none;border:none;color:var(--red);cursor:pointer;font-size:14px">✕</button>'
@@ -1342,10 +1417,160 @@ function _tiMedRowHTML(){
     + '<div class="fg"><label class="fl">Dosis sugerida</label>'
     + '<input class="fi ti-dosis-sug-in" readonly style="background:var(--bg4);color:var(--teal);font-weight:700" placeholder="Ingresa peso"></div>'
     + '<div class="fg"><label class="fl">Dosis aplicada (confirmar) *</label><input class="fi ti-dosis-in" placeholder="21 mL"></div>'
-    + '<div class="fg"><label class="fl">Duración (días) *</label><input class="fi ti-dur-in" type="number" min="1" step="1" placeholder="5"></div>'
+    + '<div class="fg pauta-dur-wrap" hidden><label class="fl">Duración (días) *</label><input class="fi ti-dur-in" type="number" min="1" step="1" value="1" placeholder="5"></div>'
     + '<div class="fg"><label class="fl">Período retiro (días)</label><input class="fi ti-retiro-in" readonly style="background:var(--bg4);color:var(--amber)" placeholder="Auto"></div>'
-    + '</div></div>';
+    + '</div>' + pautaBlockHTML() + '</div>';
 }
+function _fechaPautaRef(){
+  return (document.getElementById('ti-fecha')||{}).value
+    || (document.getElementById('tg-fecha')||{}).value
+    || new Date().toISOString().slice(0,10);
+}
+function _offsFromRow(row){
+  var chips=row.querySelectorAll('.pauta-chip.on[data-off]');
+  var out=[];
+  chips.forEach(function(c){ var n=parseInt(c.getAttribute('data-off'),10); if(n>0) out.push(n); });
+  out.sort(function(a,b){ return a-b; });
+  var u=[]; out.forEach(function(n){ if(u.indexOf(n)<0) u.push(n); });
+  return u;
+}
+function leerPautaRow(row){
+  var box=row.querySelector('.pauta-box');
+  var pauta=(box && box.getAttribute('data-pauta')) || 'unica';
+  var durEl=row.querySelector('.ti-dur-in, .tg-dur-input');
+  var dur=parseInt(durEl && durEl.value, 10) || 1;
+  var offsets=[0];
+  if(pauta==='continua'){
+    if(dur<1) dur=1;
+    offsets=[];
+    for(var i=0;i<dur;i++) offsets.push(i);
+  } else if(pauta==='intervalos'){
+    offsets=[0].concat(_offsFromRow(row));
+    var u=[]; offsets.forEach(function(n){ if(u.indexOf(n)<0) u.push(n); });
+    u.sort(function(a,b){ return a-b; });
+    offsets=u;
+  } else {
+    offsets=[0]; dur=1;
+  }
+  if(offsets.length<=1) pauta='unica';
+  return { pauta:pauta, offsets:offsets, lastOffset:offsets[offsets.length-1]||0, total:offsets.length, durDias: pauta==='continua'?dur:1 };
+}
+function refreshPautaPreview(row){
+  if(!row) return;
+  var p=leerPautaRow(row);
+  var fi=_fechaPautaRef();
+  var prev=row.querySelector('.pauta-prev');
+  var list=row.querySelector('.pauta-sel-list');
+  var add=window.DB && typeof window.DB._addDaysISO==='function'
+    ? function(n){ return window.DB._addDaysISO(fi,n); }
+    : function(n){ var d=new Date(fi+'T12:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+  var fmt=function(iso){ var x=String(iso).slice(0,10).split('-'); return x[2]+'/'+x[1]; };
+  if(list){
+    list.textContent = p.pauta==='intervalos'
+      ? ('Refuerzos: día 0' + p.offsets.slice(1).map(function(n){ return ', +'+n; }).join(''))
+      : '';
+  }
+  if(!prev) return;
+  if(p.pauta==='unica') prev.textContent='Una sola aplicación el '+fmt(fi)+'.';
+  else if(p.pauta==='continua') prev.textContent=p.total+' días seguidos: '+p.offsets.map(function(n){ return fmt(add(n)); }).join(' · ');
+  else prev.textContent='Agenda: '+p.offsets.map(function(n){ return fmt(add(n))+(n===0?' (hoy)':' (+'+n+')'); }).join(' · ');
+}
+function setPautaRow(row, pauta){
+  var box=row.querySelector('.pauta-box'); if(!box) return;
+  box.setAttribute('data-pauta', pauta);
+  box.querySelectorAll('.pauta-btn').forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-pauta')===pauta); });
+  var durWrap=row.querySelector('.pauta-dur-wrap');
+  var intBox=row.querySelector('.pauta-int');
+  if(durWrap){ if(pauta==='continua') durWrap.removeAttribute('hidden'); else durWrap.setAttribute('hidden',''); }
+  if(intBox){ if(pauta==='intervalos') intBox.removeAttribute('hidden'); else intBox.setAttribute('hidden',''); }
+  var durEl=row.querySelector('.ti-dur-in, .tg-dur-input');
+  if(pauta==='unica' && durEl) durEl.value='1';
+  if(pauta==='continua' && durEl && !(parseInt(durEl.value,10)>1)) durEl.value='3';
+  refreshPautaPreview(row);
+}
+function aplicarPautaDesdeDosis(row, dosis, durDias){
+  if(!row) return;
+  var rows=dosis||[];
+  if(!rows.length){
+    var n=parseInt(durDias,10)||1;
+    setPautaRow(row, n>1?'continua':'unica');
+    var durEl=row.querySelector('.ti-dur-in, .tg-dur-input');
+    if(durEl) durEl.value=String(n);
+    return;
+  }
+  var pauta=rows[0].pauta;
+  var offs=rows.map(function(d,i){ return d.dia_offset!=null?d.dia_offset:Math.max(0,(d.numero_dosis||i+1)-1); });
+  var continua=offs.every(function(n,i){ return n===i; });
+  if(!pauta) pauta = continua ? (offs.length>1?'continua':'unica') : 'intervalos';
+  setPautaRow(row, pauta);
+  if(pauta==='continua'){
+    var durEl=row.querySelector('.ti-dur-in, .tg-dur-input');
+    if(durEl) durEl.value=String(offs.length);
+  }
+  if(pauta==='intervalos'){
+    row.querySelectorAll('.pauta-chip[data-off]').forEach(function(c){
+      var n=parseInt(c.getAttribute('data-off'),10);
+      c.classList.toggle('on', offs.indexOf(n)>=0);
+    });
+    offs.filter(function(n){ return n>0 && !row.querySelector('.pauta-chip[data-off="'+n+'"]'); }).forEach(function(n){
+      var chips=row.querySelector('.pauta-chips');
+      if(!chips) return;
+      var b=document.createElement('button');
+      b.type='button'; b.className='pauta-chip on'; b.setAttribute('data-off', String(n)); b.textContent='+'+n;
+      chips.insertBefore(b, chips.querySelector('span'));
+    });
+  }
+  refreshPautaPreview(row);
+}
+function bindPautaUi(){
+  if(window._pautaBound) return;
+  window._pautaBound=true;
+  document.addEventListener('click', function(e){
+    var btn=e.target.closest('.pauta-btn');
+    if(btn){
+      e.preventDefault();
+      var row=btn.closest('.ti-med-row, .tg-med-row');
+      if(row) setPautaRow(row, btn.getAttribute('data-pauta'));
+      return;
+    }
+    var chip=e.target.closest('.pauta-chip[data-off]');
+    if(chip && !chip.classList.contains('pauta-add')){
+      e.preventDefault();
+      chip.classList.toggle('on');
+      var row=chip.closest('.ti-med-row, .tg-med-row');
+      if(row) refreshPautaPreview(row);
+      return;
+    }
+    var add=e.target.closest('.pauta-add');
+    if(add){
+      e.preventDefault();
+      var row=add.closest('.ti-med-row, .tg-med-row');
+      var inp=row && row.querySelector('.pauta-otro');
+      var n=parseInt(inp && inp.value, 10);
+      if(!(n>=2 && n<=180)){ toast('Indicá a cuántos días (2–180)','info'); return; }
+      var chips=row.querySelector('.pauta-chips');
+      var exist=row.querySelector('.pauta-chip[data-off="'+n+'"]');
+      if(exist) exist.classList.add('on');
+      else if(chips){
+        var b=document.createElement('button');
+        b.type='button'; b.className='pauta-chip on'; b.setAttribute('data-off', String(n)); b.textContent='+'+n;
+        chips.insertBefore(b, chips.querySelector('span'));
+      }
+      if(inp) inp.value='';
+      refreshPautaPreview(row);
+    }
+  });
+  document.addEventListener('input', function(e){
+    if(!e.target.closest) return;
+    if(e.target.classList.contains('ti-dur-in') || e.target.classList.contains('tg-dur-input') || e.target.id==='ti-fecha' || e.target.id==='tg-fecha'){
+      var row=e.target.closest('.ti-med-row, .tg-med-row');
+      if(row) refreshPautaPreview(row);
+      else document.querySelectorAll('.ti-med-row, .tg-med-row').forEach(refreshPautaPreview);
+    }
+  });
+}
+document.addEventListener('DOMContentLoaded', bindPautaUi);
+if(document.readyState!=='loading') bindPautaUi();
 function agregarMedIndividual(){
   var cont=document.getElementById('ti-meds-container'); if(!cont) return null;
   var wrap=document.createElement('div'); wrap.innerHTML=_tiMedRowHTML();
@@ -1635,11 +1860,14 @@ function agregarMedGrupal(){
     +'<select class="fi tg-med-sel"><option value="">— Seleccionar —</option></select>'
     +'</div><div class="fg"><label class="fl">Dosis sugerida</label>'
     +'<input class="fi tg-dosis-ref" readonly style="background:var(--bg4);color:var(--teal);font-weight:600" placeholder="Selecciona"></div>'
-    +'<div class="fg"><label class="fl">Duración (días)</label>'
+    +'<div class="fg pauta-dur-wrap" hidden><label class="fl">Duración (días)</label>'
     +'<input class="fi tg-dur-input" type="number" min="1" step="1" value="1"></div>'
     +'<div class="fg"><label class="fl">Retiro (días)</label>'
     +'<input class="fi tg-retiro-input" readonly style="background:var(--bg4);color:var(--amber);" placeholder="Auto"></div>';
   div.appendChild(_closeBtn); div.appendChild(_grid);
+  var _pauta=document.createElement('div');
+  _pauta.innerHTML=pautaBlockHTML();
+  div.appendChild(_pauta.firstChild);
   container.appendChild(div);
   // Populate the new med select
   var newSel = div.querySelector('.tg-med-sel');
@@ -1981,6 +2209,7 @@ function saveTratamiento(tipo){
       var sel = row.querySelector('.ti-med-sel');
       var parts = (sel && sel.value || '').split('|');
       var dosisTxt = (row.querySelector('.ti-dosis-in')?.value||'').trim();
+      var p = typeof leerPautaRow==='function' ? leerPautaRow(row) : { pauta:'unica', offsets:[0], lastOffset:0, total:1, durDias: parseInt(row.querySelector('.ti-dur-in')?.value)||1 };
       return {
         medId: parts[4]||'',
         medNombre: parts[5] || (sel && sel.options[sel.selectedIndex] && sel.options[sel.selectedIndex].text) || '—',
@@ -1988,14 +2217,18 @@ function saveTratamiento(tipo){
         retiroDias: parseInt(parts[2])||0,
         dosisTxt: dosisTxt,
         dosisNum: parseFloat(dosisTxt)||0,
-        durDias: parseInt(row.querySelector('.ti-dur-in')?.value)||0
+        durDias: p.durDias,
+        pauta: p.pauta,
+        offsets: p.offsets,
+        lastOffset: p.lastOffset
       };
     }).filter(function(m){ return m.medId; });
 
     if(!_meds.length){ toast('Selecciona al menos un medicamento de la lista','err'); return; }
     for(var _i=0;_i<_meds.length;_i++){
       if(!_meds[_i].dosisTxt){ toast('Falta la dosis de un medicamento','err'); return; }
-      if(_meds[_i].durDias<1){ toast('Indica la duración (días) de cada medicamento','err'); return; }
+      if(_meds[_i].pauta==='continua' && (_meds[_i].offsets||[]).length<2){ toast('En curso continuo indicá cuántos días seguidos','err'); return; }
+      if(_meds[_i].pauta==='intervalos' && (_meds[_i].offsets||[]).length<2){ toast('En “a los X días” elegí al menos un refuerzo (7, 14, 21…)','err'); return; }
     }
 
     // Descuento de stock local solo si NO requiere aprobación (uno por medicamento).
@@ -2022,11 +2255,12 @@ function saveTratamiento(tipo){
       if(_a){
         const _grupoId='ti-'+Date.now().toString(36);
         _meds.forEach(function(m){
-          // fecha_fin = fin de la aplicación (inicio + duración); el retiro corre DESPUÉS.
+          // fecha_fin = última dosis; el retiro corre DESPUÉS de esa.
           var _ff=_fi;
-          if(m.durDias>0){ var _df=new Date(_fi); _df.setDate(_df.getDate()+m.durDias); _ff=_df.toISOString().slice(0,10); }
+          var _span = (m.pauta==='intervalos') ? (m.lastOffset||0) : (m.durDias>0?m.durDias:0);
+          if(_span>0){ var _df=new Date(_fi+'T12:00:00'); _df.setDate(_df.getDate()+_span); _ff=_df.toISOString().slice(0,10); }
           var _ffr=_ff;
-          if(m.retiroDias>0){ var _dr=new Date(_ff); _dr.setDate(_dr.getDate()+m.retiroDias); _ffr=_dr.toISOString().slice(0,10); }
+          if(m.retiroDias>0){ var _dr=new Date(_ff+'T12:00:00'); _dr.setDate(_dr.getDate()+m.retiroDias); _ffr=_dr.toISOString().slice(0,10); }
           var _medRow=(window.AppState.medicamentos||[]).find(function(x){return x.nombre===m.medNombre;});
           var _payload={
             finca_id:'a1b2c3d4-0000-0000-0000-000000000001',
@@ -2050,10 +2284,13 @@ function saveTratamiento(tipo){
           window.DB.saveTratamiento(_payload).then(function(res){
             if(res && !res.error && res.data){
               window.DB.logAudit(_payload.finca_id,'INSERT','tratamientos',res.data.id,null,_payload,null);
-              if(m.durDias>1 && typeof window.DB.crearDosisProgramadas==='function'){
-                window.DB.crearDosisProgramadas(res.data.id,_a.id,_fi,m.durDias,_payload.finca_id)
+              if((m.pauta==='continua'||m.pauta==='intervalos') && (m.offsets||[]).length>1 && typeof window.DB.crearDosisProgramadas==='function'){
+                window.DB.crearDosisProgramadas(res.data.id,_a.id,_fi,m.durDias,_payload.finca_id,{
+                  pauta:m.pauta, offsets:m.offsets, primeraAplicada:true,
+                  dosisAplicada:m.dosisTxt, colaborador:_miColabId()
+                })
                   .then(function(dr){
-                    if(dr && !dr.error && dr.data && dr.data.length){ toast('+ '+dr.data.length+' dosis programadas','ok'); }
+                    if(dr && !dr.error && dr.data && dr.data.length){ toast('+ '+(dr.data.length-1)+' dosis a futuro en HOY','ok'); }
                     if(typeof loadDosisHoy==='function') loadDosisHoy();
                   }).catch(function(e){ console.warn('[Salud] crearDosisProgramadas:',e&&e.message); });
               }
@@ -2103,8 +2340,11 @@ function saveTratamiento(tipo){
     window._tgMedicamentos = _medRows.map(function(row){
       var sel=row.querySelector('.tg-med-sel');
       var parts=(sel?.value||'').split('|');
-      return {medId:parts[4]||'',medNombre:parts[5]||sel?.options[sel.selectedIndex]?.text||'—',retiroDias:parseInt(parts[2])||0,durDias:parseInt(row.querySelector('.tg-dur-input')?.value)||1,dosisTotal:parseFloat(document.getElementById('tg-dosis-total')?.value)||0};
+      var p=typeof leerPautaRow==='function'?leerPautaRow(row):{pauta:'unica',offsets:[0],lastOffset:0,durDias:parseInt(row.querySelector('.tg-dur-input')?.value)||1};
+      if(p.pauta==='intervalos' && p.offsets.length<2){ toast('En “a los X días” elegí al menos un refuerzo','err'); }
+      return {medId:parts[4]||'',medNombre:parts[5]||sel?.options[sel.selectedIndex]?.text||'—',retiroDias:parseInt(parts[2])||0,durDias:p.durDias,pauta:p.pauta,offsets:p.offsets,lastOffset:p.lastOffset,dosisTotal:parseFloat(document.getElementById('tg-dosis-total')?.value)||0};
     }).filter(function(m){return m.medId;});
+    if(window._tgMedicamentos.some(function(m){ return m.pauta==='intervalos' && (m.offsets||[]).length<2; })) return;
     // Compat: use first med for legacy fields
     var _firstMed=window._tgMedicamentos[0]||{};
     const medId=_firstMed.medId||'';
@@ -2147,7 +2387,8 @@ function saveTratamiento(tipo){
             // Igual que el individual: fecha_fin = inicio + duración; el retiro corre DESPUÉS.
             var _durDias = parseInt(med.durDias)||1;
             var _ff = _fechaStr;
-            if(_durDias>0){ var _df=new Date(_fechaStr+'T00:00:00'); _df.setDate(_df.getDate()+_durDias); _ff=_df.toISOString().slice(0,10); }
+            var _spanG = (med.pauta==='intervalos') ? (med.lastOffset||0) : (_durDias>0?_durDias:0);
+            if(_spanG>0){ var _df=new Date(_fechaStr+'T12:00:00'); _df.setDate(_df.getDate()+_spanG); _ff=_df.toISOString().slice(0,10); }
             var _ffr = _ff;
             if(med.retiroDias>0){ var _dr=new Date(_ff+'T00:00:00'); _dr.setDate(_dr.getDate()+med.retiroDias); _ffr=_dr.toISOString().slice(0,10); }
             var _payloadG = {
@@ -2184,9 +2425,12 @@ function saveTratamiento(tipo){
             };
             return window.DB.saveTratamiento(_payloadG).then(function(res){
               // Dosis programadas por medicamento (>1 día), por cada animal del grupo.
-              if(res && !res.error && res.data && _durDias>1 && typeof window.DB.crearDosisProgramadas==='function'){
-                return window.DB.crearDosisProgramadas(res.data.id, animalUuid, _fechaStr, _durDias, _payloadG.finca_id)
-                  .then(function(){ return res; }).catch(function(){ return res; });
+              if(res && !res.error && res.data && (med.pauta==='continua'||med.pauta==='intervalos') && (med.offsets||[]).length>1 && typeof window.DB.crearDosisProgramadas==='function'){
+                var _dosisTxt = (_payloadG.dosis!=null?String(_payloadG.dosis)+' mL':null);
+                return window.DB.crearDosisProgramadas(res.data.id, animalUuid, _fechaStr, _durDias, _payloadG.finca_id,{
+                  pauta:med.pauta, offsets:med.offsets, primeraAplicada:true,
+                  dosisAplicada:_dosisTxt, colaborador:_miColabId()
+                }).then(function(){ return res; }).catch(function(){ return res; });
               }
               return res;
             }).then(function(res){

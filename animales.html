@@ -35,7 +35,7 @@
 <script src="js/approval.js?v=42"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=42"></script>
+<script src="js/db.js?v=59"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
@@ -1705,7 +1705,63 @@ async function _fichaLoadTratamientos(a){
       +'<td class="td-m">'+_escF(retiro)+'</td><td><span class="badge '+eb+'">'+_escF(estado)+'</span></td>'
       +'<td class="td-m">'+_escF(t.notas||'--')+'</td></tr>';
   }).join('');
-  cont.innerHTML='<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);overflow:auto;margin-bottom:12px"><table><thead><tr><th>Fecha</th><th>Medicamento</th><th>Dosis</th><th>Vía</th><th>Retiro (días)</th><th>Estado</th><th>Notas</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+linkBtn;
+  var agenda='';
+  var insights='';
+  try{
+    if(a._uuid && window.DB && typeof window.DB.getDosisPorAnimal==='function'){
+      var dr=await window.DB.getDosisPorAnimal(a._uuid);
+      var dosisRows=(dr&&!dr.error&&dr.data)||[];
+      if(dosisRows.length){
+        var medByTrat={};
+        trts.forEach(function(t){ medByTrat[t.id]=(t.medicamentos&&t.medicamentos.nombre)||t.medicamento_nombre||'med'; });
+        agenda='<div style="font-size:12px;font-weight:700;margin:0 0 8px;color:var(--text2)">Agenda de dosis (aplicación / omisión)</div>'
+          +'<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);overflow:auto;margin-bottom:12px"><table><thead><tr><th>Fecha</th><th>Medicamento</th><th>Pauta</th><th>Resultado</th><th>Nota</th></tr></thead><tbody>'
+          +dosisRows.map(function(d){
+            var lab=(window.DB.labelDosis)?window.DB.labelDosis(d):('día '+d.numero_dosis+'/'+d.total_dosis);
+            var omit=window.DB.esDosisOmitidaPorBien && window.DB.esDosisOmitidaPorBien(d);
+            var res,eb;
+            if(d.estado==='aplicada'){ res='✓ Aplicada'+(d.dosis_aplicada?(' · '+d.dosis_aplicada):''); eb='b-green'; }
+            else if(omit){ res='○ Omitida · buen estado'; eb='b-sky'; }
+            else if(d.estado==='saltada'){ res='Saltada'; eb='b-gray'; }
+            else if(d.estado==='pendiente'){ res='Pendiente'; eb='b-amber'; }
+            else { res=d.estado||'—'; eb='b-gray'; }
+            return '<tr><td class="td-m">'+_fmtF(d.fecha_programada)+'</td><td>'+_escF(medByTrat[d.tratamiento_id]||'—')+'</td>'
+              +'<td class="td-m">'+_escF(lab)+'</td><td><span class="badge '+eb+'">'+_escF(res)+'</span></td>'
+              +'<td class="td-m">'+_escF(d.observacion||'—')+'</td></tr>';
+          }).join('')
+          +'</tbody></table></div>';
+        var omitidas=dosisRows.filter(function(d){ return window.DB.esDosisOmitidaPorBien && window.DB.esDosisOmitidaPorBien(d); });
+        var muerto=/muerto|baja/i.test(String(a.estado||''));
+        var notes=[];
+        if(omitidas.length && muerto){
+          notes.push('Se omitieron '+omitidas.length+' dosis por buen estado y el animal figura como baja. Revisá si el protocolo no debió omitirse.');
+        }
+        var hechos=dosisRows.filter(function(d){ return d.estado==='aplicada' || (window.DB.esDosisOmitidaPorBien && window.DB.esDosisOmitidaPorBien(d)); })
+          .map(function(d){ return { fecha:String(d.fecha_programada||'').slice(0,10), omit:window.DB.esDosisOmitidaPorBien && window.DB.esDosisOmitidaPorBien(d), aplicada:d.estado==='aplicada', med:medByTrat[d.tratamiento_id]||'med', trat:d.tratamiento_id }; })
+          .sort(function(x,y){ return x.fecha.localeCompare(y.fecha); });
+        if(hechos.length){
+          var last=hechos[hechos.length-1];
+          var later=trts.filter(function(t){
+            var fi=String(t.fecha_inicio||'').slice(0,10);
+            return fi>last.fecha && String(t.id)!==String(last.trat);
+          }).sort(function(x,y){ return String(x.fecha_inicio).localeCompare(String(y.fecha_inicio)); });
+          if(later.length){
+            var nxt=later[0];
+            var medN=(nxt.medicamentos&&nxt.medicamentos.nombre)||nxt.medicamento_nombre||'otro tratamiento';
+            if(last.omit) notes.push('Tras omitir '+last.med+' ('+_fmtF(last.fecha)+') hubo otro tratamiento el '+_fmtF(nxt.fecha_inicio)+' ('+medN+'). Puede que el animal no estuviera tan bien.');
+            else notes.push('Tras aplicar '+last.med+' ('+_fmtF(last.fecha)+') hubo otro tratamiento el '+_fmtF(nxt.fecha_inicio)+' ('+medN+'). Revisá si conviene cambiar de medicamento.');
+          }
+        }
+        if(notes.length){
+          insights='<div style="margin:0 0 12px;padding:12px 14px;border-radius:12px;border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.08);font-size:13px;line-height:1.45;color:var(--text)">'
+            +'<div style="font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--amber);margin-bottom:6px">Insights de dosis</div>'
+            +notes.map(function(n){ return '<div style="margin-top:4px">'+_escF(n)+'</div>'; }).join('')
+            +'</div>';
+        }
+      }
+    }
+  }catch(e){ console.warn('[Ficha] dosis:', e&&e.message); }
+  cont.innerHTML=insights+'<div style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);overflow:auto;margin-bottom:12px"><table><thead><tr><th>Fecha</th><th>Medicamento</th><th>Dosis</th><th>Vía</th><th>Retiro (días)</th><th>Estado</th><th>Notas</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+agenda+linkBtn;
 }
 async function _fichaLoadGenealogía(a){
   var cont=document.getElementById('ficha-genealogia'); if(!cont) return;

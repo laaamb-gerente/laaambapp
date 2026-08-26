@@ -415,13 +415,18 @@ window.AlertasMotor = {
       const sb = window._sb;
       if (!sb) return;
       const hoyStr = hoy.toISOString().slice(0, 10);
-      const { data: dosis } = await sb.from('dosis_programadas')
-        .select('id, tratamiento_id, numero_dosis, total_dosis, fecha_programada, animales(codigo, nombre)')
+      let qDosis = await sb.from('dosis_programadas')
+        .select('id, tratamiento_id, numero_dosis, total_dosis, fecha_programada, pauta, dia_offset, animales(codigo, nombre)')
         .eq('estado', 'pendiente')
         .lte('fecha_programada', hoyStr);
-      const rows = dosis || [];
+      if (qDosis.error && /pauta|dia_offset|column/i.test(String(qDosis.error.message || qDosis.error))) {
+        qDosis = await sb.from('dosis_programadas')
+          .select('id, tratamiento_id, numero_dosis, total_dosis, fecha_programada, animales(codigo, nombre)')
+          .eq('estado', 'pendiente')
+          .lte('fecha_programada', hoyStr);
+      }
+      const rows = qDosis.data || [];
       if (!rows.length) return;
-      // Nombre del medicamento (best-effort): tratamiento_id suele ser el uuid del tratamiento.
       const ids = Array.from(new Set(rows.map(d => d.tratamiento_id).filter(Boolean)));
       const medMap = {};
       try {
@@ -432,20 +437,21 @@ window.AlertasMotor = {
         const an = d.animales || {};
         const nombre = an.nombre || an.codigo || 'animal';
         const med = medMap[d.tratamiento_id] || 'tratamiento';
+        const lab = (window.DB && window.DB.labelDosis) ? window.DB.labelDosis(d) : (`día ${d.numero_dosis}/${d.total_dosis}`);
         if (d.fecha_programada < hoyStr) {
           const ret = Math.max(1, Math.round((new Date(hoyStr) - new Date(d.fecha_programada)) / 86400000));
           alertas.push({
             tipo: 'dosis_atrasada', prioridad: 'critica',
-            mensaje: `⚠️ Dosis atrasada — ${nombre}: lleva ${ret} día${ret > 1 ? 's' : ''} de retraso (${med}, día ${d.numero_dosis}/${d.total_dosis})`,
-            accion_sugerida: 'Aplicar la dosis pendiente o saltarla',
-            accion_url: 'salud.html', datos: { dosis_id: d.id }
+            mensaje: `⚠️ Dosis atrasada — ${nombre}: ${lab} · ${med} (${ret} d de retraso)`,
+            accion_sugerida: 'Aplicar, u omitir si el animal está bien (queda en historial)',
+            accion_url: 'hoy.html', datos: { dosis_id: d.id }
           });
         } else {
           alertas.push({
             tipo: 'dosis_pendiente_hoy', prioridad: 'alta',
-            mensaje: `💉 Dosis pendiente — ${nombre}: ${med} · día ${d.numero_dosis}/${d.total_dosis}`,
-            accion_sugerida: 'Registrar la dosis de hoy',
-            accion_url: 'salud.html', datos: { dosis_id: d.id }
+            mensaje: `💉 Dosis hoy — ${nombre}: ${lab} · ${med}`,
+            accion_sugerida: 'Aplicar, u omitir si el animal está bien',
+            accion_url: 'hoy.html', datos: { dosis_id: d.id }
           });
         }
       });

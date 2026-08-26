@@ -2434,27 +2434,87 @@ window.DB = {
     return upd;
   },
 
-  // ── DOSIS PROGRAMADAS (tratamientos multi-dosis · migración 0048) ────
-  async crearDosisProgramadas(tratamientoId, animalId, fechaInicio, totalDias, fincaId) {
-    var total = parseInt(totalDias, 10) || 1;
-    if (total <= 1) return { data: [], error: null };   // dosis única → sin agenda
+  // ── DOSIS PROGRAMADAS (tratamientos multi-dosis · 0048 + pauta 0068) ────
+  _addDaysISO(fecha, n) {
+    var d = new Date(String(fecha || '').slice(0, 10) + 'T12:00:00');
+    if (isNaN(d.getTime())) d = new Date();
+    d.setDate(d.getDate() + (parseInt(n, 10) || 0));
+    return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
+  },
+  _normalizarOffsets(pauta, totalDias, offsets) {
+    var out = [];
+    if (pauta === 'intervalos' && Array.isArray(offsets) && offsets.length) {
+      offsets.forEach(function (x) {
+        var n = parseInt(x, 10);
+        if (isFinite(n) && n >= 0) out.push(n);
+      });
+    } else {
+      var total = parseInt(totalDias, 10) || 1;
+      for (var i = 0; i < total; i++) out.push(i);
+    }
+    if (out.indexOf(0) < 0) out.unshift(0);
+    out.sort(function (a, b) { return a - b; });
+    var uniq = [];
+    out.forEach(function (n) { if (uniq.indexOf(n) < 0) uniq.push(n); });
+    return uniq;
+  },
+  labelDosis(d) {
+    if (!d) return 'dosis';
+    var n = d.numero_dosis, t = d.total_dosis;
+    var off = d.dia_offset;
+    if (off == null && n != null) off = Math.max(0, n - 1);
+    if (d.pauta === 'intervalos' || (off != null && off > 0 && d.pauta !== 'continua')) {
+      if (n === 1 || off === 0) return '1.ª dosis · día 0';
+      return 'refuerzo ' + n + '/' + t + ' · a los ' + off + ' días';
+    }
+    return 'día ' + (n || '?') + '/' + (t || '?');
+  },
+  esDosisOmitidaPorBien(d) {
+    if (!d) return false;
+    if (d.estado === 'omitida') return true;
+    if (d.motivo === 'buen_estado') return true;
+    return d.estado === 'saltada' && /buen_estado/i.test(String(d.observacion || ''));
+  },
+  async crearDosisProgramadas(tratamientoId, animalId, fechaInicio, totalDias, fincaId, opts) {
+    opts = opts || {};
+    var offsets = this._normalizarOffsets(opts.pauta, totalDias, opts.offsets);
+    if (offsets.length <= 1) return { data: [], error: null };
+    var continua = offsets.every(function (n, i) { return n === i; });
+    var pauta = opts.pauta || (continua ? 'continua' : 'intervalos');
+    if (pauta === 'unica') return { data: [], error: null };
     var FINCA = fincaId || 'a1b2c3d4-0000-0000-0000-000000000001';
-    var base = new Date((fechaInicio || new Date().toISOString().slice(0,10)) + 'T00:00:00');
-    var filas = [];
-    for (var i = 1; i <= total; i++) {
-      var d = new Date(base.getTime() + (i - 1) * 86400000);
-      filas.push({
+    var base = fechaInicio || new Date().toISOString().slice(0, 10);
+    var now = new Date().toISOString();
+    var primera = opts.primeraAplicada !== false;
+    var filas = offsets.map(function (off, i) {
+      var row = {
         tratamiento_id: String(tratamientoId),
         animal_id: animalId || null,
-        numero_dosis: i,
-        total_dosis: total,
-        fecha_programada: d.toISOString().slice(0, 10),
+        numero_dosis: i + 1,
+        total_dosis: offsets.length,
+        fecha_programada: this._addDaysISO(base, off),
         hora_objetivo: '08:00',
-        estado: 'pendiente',
-        finca_id: FINCA
-      });
+        estado: (primera && i === 0) ? 'aplicada' : 'pendiente',
+        finca_id: FINCA,
+        pauta: pauta,
+        dia_offset: off
+      };
+      if (primera && i === 0) {
+        row.fecha_hora_aplicacion = now;
+        row.dosis_aplicada = opts.dosisAplicada || null;
+        row.observacion = 'Aplicada al registrar el tratamiento';
+        if (opts.colaborador && /^[0-9a-f-]{36}$/i.test(String(opts.colaborador))) {
+          row.colaborador = opts.colaborador;
+        }
+      }
+      return row;
+    }, this);
+    var ins = await window._sb.from('dosis_programadas').insert(filas).select();
+    if (ins.error && /pauta|dia_offset|column|schema cache/i.test(String(ins.error.message || ins.error))) {
+      filas.forEach(function (f) { delete f.pauta; delete f.dia_offset; });
+      ins = await window._sb.from('dosis_programadas').insert(filas).select();
     }
-    return await window._sb.from('dosis_programadas').insert(filas).select();
+    return ins;
   },
   // ── SEGUIMIENTOS POST-TRATAMIENTO (migración 0053) ────────────────────
   // Días configurables en fincas.config.dias_seguimiento_tratamiento
@@ -2574,11 +2634,42 @@ window.DB = {
       updated_at: new Date()
     }).eq('id', dosisId).select().single();
   },
+  async omitirDosis(dosisId, datos) {
+    datos = datos || {};
+    var nota = (datos.observacion || '').trim();
+    var patch = {
+      estado: 'omitida',
+      motivo: 'buen_estado',
+      observacion: nota ? ('Animal en buen estado. ' + nota) : 'Omitida · animal en buen estado',
+      fecha_hora_aplicacion: new Date().toISOString(),
+      colaborador: datos.colaborador || null,
+      updated_at: new Date()
+    };
+    var r = await window._sb.from('dosis_programadas').update(patch).eq('id', dosisId).select().single();
+    if (r.error && /colaborador|foreign key/i.test(String(r.error.message || r.error))) {
+      delete patch.colaborador;
+      r = await window._sb.from('dosis_programadas').update(patch).eq('id', dosisId).select().single();
+    }
+    if (r.error && /omitida|motivo|check|constraint|column|schema cache/i.test(String(r.error.message || r.error))) {
+      delete patch.motivo;
+      delete patch.colaborador;
+      patch.estado = 'saltada';
+      patch.observacion = '[buen_estado] ' + (nota || 'Animal en buen estado — dosis no aplicada');
+      r = await window._sb.from('dosis_programadas').update(patch).eq('id', dosisId).select().single();
+    }
+    return r;
+  },
   async getDosisPorTratamiento(tratamientoId) {
     return await window._sb.from('dosis_programadas')
       .select('*')
       .eq('tratamiento_id', String(tratamientoId))
       .order('numero_dosis', { ascending: true });
+  },
+  async getDosisPorAnimal(animal_id) {
+    return await window._sb.from('dosis_programadas')
+      .select('*')
+      .eq('animal_id', animal_id)
+      .order('fecha_programada', { ascending: true });
   },
 
   // Tratamientos cuya última dosis se aplicó HOY (medicamento recién terminado).
