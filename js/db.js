@@ -99,6 +99,57 @@ window.DB = {
   _filtrarSoloPivotesPastoreo(rows) {
     return (rows || []).filter((p) => !this._esEstabloPivote(p));
   },
+  /** Orden 1, 2, 11 (no 1, 11, 2). */
+  _cmpNombreNatural(a, b) {
+    return String(a == null ? '' : a).localeCompare(String(b == null ? '' : b), 'es', {
+      numeric: true,
+      sensitivity: 'base'
+    });
+  },
+  _ordenarPorNombreNatural(rows, key) {
+    const k = key || 'nombre';
+    return (rows || []).slice().sort((a, b) => this._cmpNombreNatural(a && a[k], b && b[k]));
+  },
+  /**
+   * Cubículo / lote de establo (no es potrero de pastoreo).
+   * establoPivoteIds: Set, mapa {id:true} o array de ids de pivotes tipo establo.
+   */
+  _esLoteEstablo(l, establoPivoteIds) {
+    if (!l) return false;
+    const t = String(l.tipo || '').toLowerCase().trim();
+    if (t === 'cubiculo' || t === 'cubículo' || t === 'establo'
+        || t === 'estabulacion' || t === 'estabulación') return true;
+    if (l.pivote_id && establoPivoteIds) {
+      const id = String(l.pivote_id);
+      if (typeof establoPivoteIds.has === 'function') {
+        if (establoPivoteIds.has(id)) return true;
+      } else if (Array.isArray(establoPivoteIds)) {
+        if (establoPivoteIds.map(String).indexOf(id) >= 0) return true;
+      } else if (establoPivoteIds[id]) return true;
+    }
+    const n = String(l.nombre || '').toLowerCase().trim();
+    if (/^(establo|cub[ií]culo|cobertizo)\b/.test(n) && t !== 'potrero') return true;
+    return false;
+  },
+  _isoLocal(d) {
+    const x = d instanceof Date ? d : new Date(d);
+    return x.getFullYear() + '-' + ('0' + (x.getMonth() + 1)).slice(-2) + '-' + ('0' + x.getDate()).slice(-2);
+  },
+  /** Ids de pivotes-establo (tipo o nombre), para excluir cubículos del tab Potreros. */
+  async getIdsPivotesEstablo(finca_id) {
+    const ids = {};
+    let r = await window._sb.from('pivotes')
+      .select('id,nombre,tipo')
+      .eq('finca_id', finca_id);
+    if (r.error && /column|tipo/i.test(String(r.error.message || r.error))) {
+      r = await window._sb.from('pivotes').select('id,nombre').eq('finca_id', finca_id);
+    }
+    if (r.error) return { data: ids, error: r.error };
+    (r.data || []).forEach((p) => {
+      if (this._esEstabloPivote(p)) ids[String(p.id)] = true;
+    });
+    return { data: ids, error: null };
+  },
 
   async getPivotes(finca_id) {
     // Preferir columnas con geo (0065) + tipo; fallback si faltan columnas.
@@ -111,7 +162,7 @@ window.DB = {
     }
     if (r && !r.error && Array.isArray(r.data)) {
       // Excluir establos siempre (riego / pastoreo / mapa de pivotes de forraje)
-      r = { data: this._filtrarSoloPivotesPastoreo(r.data), error: null };
+      r = { data: this._ordenarPorNombreNatural(this._filtrarSoloPivotesPastoreo(r.data)), error: null };
     }
     return r;
   },
@@ -240,13 +291,13 @@ window.DB = {
       .eq('finca_id', finca_id)
       .order('nombre');
     if (r.error) return r;
-    const rows = (r.data || []).filter((l) => {
-      const t = String(l.tipo || '').toLowerCase();
-      if (t === 'cubiculo' || t === 'cubículo' || t === 'establo') return false;
-      // Debe pertenecer a un pivote de pastoreo (no establo) — se filtra en UI con lista de pivotes
-      return true;
-    });
-    return { data: rows, error: null };
+    let estIds = {};
+    try {
+      const er = await this.getIdsPivotesEstablo(finca_id);
+      if (er && er.data) estIds = er.data;
+    } catch (_) {}
+    const rows = (r.data || []).filter((l) => !this._esLoteEstablo(l, estIds));
+    return { data: this._ordenarPorNombreNatural(rows), error: null };
   },
   async saveRiego(data) {
     const finca_id = data.finca_id || 'a1b2c3d4-0000-0000-0000-000000000001';
@@ -344,14 +395,25 @@ window.DB = {
 
   // ── ESTABULACIÓN (establos = pivotes tipo='establo'; cubículos = lotes tipo='cubiculo') ──
   async getEstablos(finca_id) {
-    return await window._sb.from('pivotes')
+    const r = await window._sb.from('pivotes')
       .select('id,nombre,capacidad_animales')
       .eq('finca_id', finca_id).eq('tipo','establo').order('nombre');
+    if (r.error || !Array.isArray(r.data)) return r;
+    return { data: this._ordenarPorNombreNatural(r.data), error: null };
   },
   async getCubiculos(finca_id) {
-    return await window._sb.from('lotes')
-      .select('id,nombre,pivote_id')
-      .eq('finca_id', finca_id).eq('tipo','cubiculo').order('nombre');
+    const r = await window._sb.from('lotes')
+      .select('id,nombre,pivote_id,tipo')
+      .eq('finca_id', finca_id)
+      .order('nombre');
+    if (r.error) return r;
+    let estIds = {};
+    try {
+      const er = await this.getIdsPivotesEstablo(finca_id);
+      if (er && er.data) estIds = er.data;
+    } catch (_) {}
+    const rows = (r.data || []).filter((l) => this._esLoteEstablo(l, estIds));
+    return { data: this._ordenarPorNombreNatural(rows), error: null };
   },
   // Cuántos animales activos hay en cada lote (cubículo o potrero)
   async getConteoPorLote(finca_id) {
@@ -379,7 +441,9 @@ window.DB = {
 
   // ── LOTES ────────────────────────────────────────────
   async getLotes(finca_id) {
-    return await window._sb.from('lotes').select('*').eq('finca_id', finca_id).order('nombre');
+    const r = await window._sb.from('lotes').select('*').eq('finca_id', finca_id).order('nombre');
+    if (r.error || !Array.isArray(r.data)) return r;
+    return { data: this._ordenarPorNombreNatural(r.data), error: null };
   },
   async saveLote(lote) {
     const id = lote.id || null;
@@ -3002,6 +3066,67 @@ window.DB = {
     }
     return await window._sb.from('registros_lluvia')
       .insert(payload).select().single();
+  },
+  /**
+   * Marca SECO (sequía) todos los días SIN registro a nivel finca
+   * entre `desde` y `hasta` (inclusive, no futuro). No pisa lluvia ni secos ya guardados.
+   */
+  async rellenarSecosHastaHoy(finca_id, opts) {
+    const o = opts || {};
+    const fid = finca_id || 'a1b2c3d4-0000-0000-0000-000000000001';
+    const hoy = this._isoLocal(new Date());
+    let desde = o.desde;
+    if (!desde) {
+      const d = new Date();
+      d.setDate(d.getDate() - 89);
+      desde = this._isoLocal(d);
+    }
+    let hasta = o.hasta || hoy;
+    if (hasta > hoy) hasta = hoy;
+    if (desde > hasta) return { data: { inserted: 0 }, error: null };
+
+    const exist = await this.getLluvias(fid, { desde, hasta, limit: 500 });
+    if (exist.error) return { data: null, error: exist.error };
+    const have = {};
+    (exist.data || []).forEach((row) => {
+      const k = String(row.fecha).slice(0, 10);
+      if (!have[k] || !row.lote_id) have[k] = true;
+    });
+    const missing = [];
+    const cur = new Date(desde + 'T12:00:00');
+    const end = new Date(hasta + 'T12:00:00');
+    while (cur <= end) {
+      const f = this._isoLocal(cur);
+      if (!have[f]) missing.push(f);
+      cur.setDate(cur.getDate() + 1);
+    }
+    if (!missing.length) return { data: { inserted: 0 }, error: null };
+
+    const who = o.registrado_por || 'campo/seco';
+    const rows = missing.map((fecha) => ({
+      finca_id: fid,
+      fecha,
+      llovio: false,
+      intensidad: null,
+      duracion_texto: null,
+      lote_id: null,
+      notas: 'Sequía · día vacío hasta hoy',
+      registrado_por: who
+    }));
+    let inserted = 0;
+    for (let i = 0; i < rows.length; i += 80) {
+      const chunk = rows.slice(i, i + 80);
+      const ins = await window._sb.from('registros_lluvia').insert(chunk).select('id');
+      if (ins.error) {
+        for (const row of chunk) {
+          const one = await this.saveLluvia(Object.assign({}, row, { llovio: false }));
+          if (!one.error) inserted += 1;
+        }
+      } else {
+        inserted += (ins.data || []).length;
+      }
+    }
+    return { data: { inserted }, error: null };
   },
 
   // ── UTILIDADES ───────────────────────────────────────

@@ -37,7 +37,7 @@
 <script src="js/approval.js?v=39"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=56"></script>
+<script src="js/db.js?v=58"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/app-state.js"></script>
@@ -574,7 +574,10 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
   <div class="tab-content" id="t-pivotes">
     <div class="lotes-scroll">
       <div style="margin-bottom:14px">
-        <div style="font-size:12px;color:var(--text3)">Divisiones físicas permanentes de la finca. Los pivotes se crean dibujándolos en el <strong>Mapa</strong> (herramienta ⊞), y se subdividen en potreros desde ahí.</div>
+        <div style="font-size:12px;color:var(--text3);line-height:1.45">
+          <b>Pivote</b> = unidad forrajera (pasto, área total, capacidad). Se dibuja en el <strong>Mapa</strong> (⊞) y se subdivide en potreros.
+          Editá pasto aquí o en la ficha del mapa — <b>no</b> en cada potrero.
+        </div>
       </div>
       <div class="lote-grid" id="pivote-grid"></div>
     </div>
@@ -584,11 +587,14 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
   <div class="tab-content" id="t-lotes">
     <div class="lotes-scroll">
       <div id="potreros-agua-bar" style="margin:0 0 12px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
-        <div style="font-size:12px;color:var(--text2);line-height:1.4;max-width:520px">
-          <b style="color:var(--text)">Agua y descanso</b> · cada tarjeta muestra último riego, días sin agua y descanso.
-          Mesa completa (reuniones) en Lluvia &amp; Riego.
+        <div style="font-size:12px;color:var(--text2);line-height:1.4;max-width:560px">
+          <b style="color:var(--text)">Potrero = subdivisión</b> · hereda pasto del pivote. Aquí ves <b>área</b>, <b>carga animal</b>, <b>riego</b> y <b>descanso</b>.
+          El pasto se cambia en <b>Pivotes</b> (no en la tarjeta del potrero).
         </div>
-        <a class="btn btn-ghost btn-sm" href="lluvia-riego.html#riego" style="text-decoration:none;flex-shrink:0">📋 Mesa de riego</a>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          <a class="btn btn-ghost btn-sm" href="#t-pivotes" onclick="try{switchTab(document.querySelector('[onclick*=t-pivotes]'),'t-pivotes')}catch(e){}" style="text-decoration:none;flex-shrink:0">⊞ Pivotes</a>
+          <a class="btn btn-ghost btn-sm" href="lluvia-riego.html#riego" style="text-decoration:none;flex-shrink:0">📋 Mesa de riego</a>
+        </div>
       </div>
       <div class="lote-grid" id="lote-grid"></div>
       <!-- #5 · Historial de rotación / descanso -->
@@ -728,44 +734,38 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
 </div>
 </div>
 
-<!-- ═══ MODAL NUEVO / EDITAR LOTE ═══ -->
+<!-- ═══ MODAL NUEVO / EDITAR POTRERO ═══
+     Dominio: el PIVOTE manda (pasto, capacidad base, etc.).
+     El POTRERO es subdivisión: nombre, área y operación (rotación).
+     Independientes del pivote: animales presentes, carga kg/ha, riego. -->
 <div class="overlay" id="modal-nuevo-lote" onclick="if(event.target===this)closeModal('modal-nuevo-lote')">
 <div class="modal">
-  <div class="modal-head"><div class="modal-title" id="lote-modal-title">Nuevo lote</div><button class="modal-close" onclick="closeModal('modal-nuevo-lote')">✕</button></div>
+  <div class="modal-head"><div class="modal-title" id="lote-modal-title">Potrero</div><button class="modal-close" onclick="closeModal('modal-nuevo-lote')">✕</button></div>
   <div class="modal-body">
-    <div class="fgrid">
-      <div class="fg"><label class="fl">Nombre *</label><input class="fi" id="lf-nombre" placeholder="Potrero A"></div>
-      <div class="fg"><label class="fl">Finca</label><select class="fi" id="lf-finca"></select></div>
-      <div class="fg"><label class="fl">Área (ha)</label><input class="fi" type="number" id="lf-area" placeholder="20.5" step="0.1"></div>
-      <div class="fg"><label class="fl">Capacidad máx. animales</label><input class="fi" type="number" id="lf-cap" placeholder="160"></div>
-      <div class="fg"><label class="fl">Tipo de pasto</label>
-        <select class="fi" id="lf-pasto">
-          <option value="Mulato 2">Mulato 2</option>
-          <option value="Mulato II">Mulato II</option>
-          <option value="Cayman">Cayman</option>
-          <option value="Mavuno">Mavuno</option>
-          <option value="Camello">Camello</option>
-          <option value="Nativos">Nativos</option>
-          <option value="Kikuyo">Kikuyo</option>
-          <option value="Brachiaria">Brachiaria</option>
-          <option value="Estrella">Estrella</option>
-          <option value="Ryegrass">Ryegrass</option>
-          <option value="Mixto">Mixto</option>
-          <option value="Otro">Otro</option>
-        </select>
-      </div>
-      <div class="fg"><label class="fl">Condición pasto (0-100)</label><input class="fi" type="number" id="lf-condicion" placeholder="75" min="0" max="100"></div>
-      <div class="fg2"><div class="fg"><label class="fl">Dias descanso objetivo</label><input class="fi" type="number" id="lf-dias-descanso" placeholder="30" min="1" max="365"></div><div class="fg"><label class="fl">Dias pastoreo objetivo</label><input class="fi" type="number" id="lf-dias-pastoreo" placeholder="7" min="1" max="60"></div></div>
-      <div class="fg"><label class="fl">Fuente de agua</label>
-        <select class="fi" id="lf-agua">
-          <option>Bebedero</option><option>Nacimiento</option><option>Quebrada</option><option>Reservorio</option>
-        </select>
-      </div>
+    <div id="lf-herencia" style="display:none;margin:0 0 14px;padding:12px 14px;background:var(--teal-bg);border:1px solid rgba(0,175,182,.28);border-radius:12px;line-height:1.45">
+      <div style="font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--teal-d);margin-bottom:4px">Hereda del pivote</div>
+      <div id="lf-herencia-txt" style="font-size:13px;font-weight:600;color:var(--text)">—</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">Pasto y atributos forrajeros se editan en el <b>pivote</b>, no aquí. En este potrero solo área y rotación; carga y riego son por ocupación real.</div>
     </div>
-    <div class="fg"><label class="fl">Descripción</label><input class="fi" id="lf-desc" placeholder="Zona norte, acceso por camino principal…"></div>
+    <div class="fgrid">
+      <div class="fg" style="grid-column:1/-1"><label class="fl">Nombre *</label><input class="fi" id="lf-nombre" placeholder="P1 · Bajos"></div>
+      <div class="fg"><label class="fl">Área (ha) *</label><input class="fi" type="number" id="lf-area" placeholder="2.5" step="0.01" min="0" inputmode="decimal"></div>
+      <div class="fg"><label class="fl">Finca</label><select class="fi" id="lf-finca"></select></div>
+      <div class="fg"><label class="fl">Días descanso objetivo</label><input class="fi" type="number" id="lf-dias-descanso" placeholder="45" min="1" max="365" inputmode="numeric"></div>
+      <div class="fg"><label class="fl">Días pastoreo objetivo</label><input class="fi" type="number" id="lf-dias-pastoreo" placeholder="3" min="1" max="60" inputmode="numeric"></div>
+      <div class="fg" style="grid-column:1/-1"><label class="fl">Notas del potrero</label><input class="fi" id="lf-desc" placeholder="Opcional · acceso, bebedero, observación…"></div>
+    </div>
+    <!-- Campos legacy ocultos: ya no se editan en potrero (el pivote manda) -->
+    <input type="hidden" id="lf-pasto" value="">
+    <input type="hidden" id="lf-cap" value="">
+    <input type="hidden" id="lf-condicion" value="75">
+    <input type="hidden" id="lf-agua" value="Bebedero">
+    <div id="lf-ops-hint" style="margin-top:12px;font-size:11px;color:var(--text3);line-height:1.45">
+      <b style="color:var(--text2)">Independiente del pivote:</b> animales que pastorean aquí, carga (kg/ha) y riego se ven en tarjetas / mapa / mesa de riego — no se “configuran” como pasto.
+    </div>
   </div>
   <div class="modal-foot">
-    <button class="btn btn-ghost" id="lote-modal-delete-btn" style="display:none;color:var(--red)" onclick="eliminarLoteActual()">Eliminar lote</button>
+    <button class="btn btn-ghost" id="lote-modal-delete-btn" style="display:none;color:var(--red)" onclick="eliminarLoteActual()">Eliminar</button>
     <button class="btn btn-ghost" onclick="closeModal('modal-nuevo-lote')">Cancelar</button>
     <button class="btn btn-primary" id="btn-guardar-lote" onclick="guardarLote()">Guardar</button>
   </div>
@@ -799,7 +799,7 @@ tbody td{padding:10px 12px;color:var(--text);vertical-align:middle}
       </div>
       <div class="fg" style="grid-column:1/-1"><label class="fl">Notas</label><input class="fi" id="pv-notas" placeholder="Opcional · riego, suelos, acceso…"></div>
     </div>
-    <p style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.4">El contorno del pivote se dibuja en el <b>Mapa</b>. Aquí editás nombre, área, pasto y capacidad. Los potreros pueden tener su propio pasto si hace falta.</p>
+    <p style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.4">El contorno se dibuja en el <b>Mapa</b>. <b>El pivote manda</b>: un solo tipo de pasto y capacidad base para todo el pivote. Los potreros solo subdividen área; heredan el pasto. Carga animal y riego van por potrero (ocupación real).</p>
   </div>
   <div class="modal-foot">
     <button class="btn btn-ghost" onclick="closeModal('modal-nuevo-pivote')">Cancelar</button>
@@ -844,8 +844,10 @@ function switchTab(btn, tabId){
   },100);
   if(tabId==='t-pivotes' && typeof renderPivotesTab==='function') renderPivotesTab();
   if(tabId==='t-lotes'){
-    if(typeof renderLotesTab==='function') renderLotesTab();
-    if(typeof renderHistorialRotacion==='function') renderHistorialRotacion();
+    Promise.resolve(typeof loadEstabloIds==='function'?loadEstabloIds():null).then(function(){
+      if(typeof renderLotesTab==='function') renderLotesTab();
+      if(typeof renderHistorialRotacion==='function') renderHistorialRotacion();
+    });
   }
   if(tabId==='t-establos'){ if(typeof cargarEstablos==='function') cargarEstablos(); if(typeof llenarSelectsEncerrar==='function') llenarSelectsEncerrar(); }
 }
@@ -885,6 +887,38 @@ function getLotesForFinca(fincaId){
     if(fincaId==='default') return !l.finca_id||l.finca_id==='default';
     return l.finca_id===fincaId;
   });
+}
+function _cmpNomPot(a,b){
+  if(window.DB && typeof DB._cmpNombreNatural==='function') return DB._cmpNombreNatural(a,b);
+  return String(a||'').localeCompare(String(b||''),'es',{numeric:true,sensitivity:'base'});
+}
+function _esLoteDeEstablo(l){
+  if(!l) return false;
+  if(window.DB && typeof DB._esLoteEstablo==='function') return DB._esLoteEstablo(l, window._establoIds);
+  var t=String(l.tipo||'').toLowerCase();
+  if(t==='cubiculo'||t==='cubículo'||t==='establo') return true;
+  if(l.pivote_id && window._establoIds && window._establoIds[String(l.pivote_id)]) return true;
+  var n=String(l.nombre||'').toLowerCase().trim();
+  return /^(establo|cub[ií]culo|cobertizo)\b/.test(n) && t!=='potrero';
+}
+function _soloPotreros(list){
+  return (list||[]).filter(function(l){ return !_esLoteDeEstablo(l); })
+    .slice().sort(function(a,b){ return _cmpNomPot(a.nombre, b.nombre); });
+}
+async function loadEstabloIds(){
+  window._establoIds = window._establoIds || {};
+  try{
+    var fid = (typeof _fincaUuid==='function') ? _fincaUuid() : ((window.AppState&&window.AppState._finca_id)||'a1b2c3d4-0000-0000-0000-000000000001');
+    if(window.DB && typeof DB.getIdsPivotesEstablo==='function'){
+      var r=await DB.getIdsPivotesEstablo(fid);
+      if(r && r.data) window._establoIds = r.data;
+    } else if(window.DB && typeof DB.getEstablos==='function'){
+      var er=await DB.getEstablos(fid);
+      var ids={};
+      ((er&&er.data)||[]).forEach(function(e){ ids[String(e.id)]=true; });
+      window._establoIds=ids;
+    }
+  }catch(e){}
 }
 function getAnimalesForLote(loteName, fincaId){
   var d=AppData.get();
@@ -1275,6 +1309,7 @@ async function loadGeometries(){
   // ── Lotes: unir AppData local + AppState/Supabase (mobile ve lo del servidor) ──
   var _poligonoById = {};
   var _lotesById = {};
+  try{ await loadEstabloIds(); }catch(e){}
   try{
     if(window.DB && typeof window.DB.getLotes==='function'){
       var _resLotes = await window.DB.getLotes(_fincaUuid());
@@ -1282,7 +1317,7 @@ async function loadGeometries(){
         if(!sl || sl.id==null) return;
         _lotesById[sl.id] = {
           id: sl.id, nombre: sl.nombre, finca_id: sl.finca_id || 'default',
-          pivote_id: sl.pivote_id || null,
+          pivote_id: sl.pivote_id || null, tipo: sl.tipo || null,
           area_ha: sl.hectareas != null ? sl.hectareas : sl.area_ha,
           capacidad_max: sl.capacidad_animal, tipo_pasto: sl.tipo_pastura,
           color: sl.color, activo: true
@@ -1299,11 +1334,13 @@ async function loadGeometries(){
       if(!_lotesById[sl.id]){
         _lotesById[sl.id] = {
           id: sl.id, nombre: sl.nombre, finca_id: sl.finca_id || 'default',
-          pivote_id: sl.pivote_id || null,
+          pivote_id: sl.pivote_id || null, tipo: sl.tipo || null,
           area_ha: sl.hectareas != null ? sl.hectareas : sl.area_ha,
           capacidad_max: sl.capacidad_animal, tipo_pasto: sl.tipo_pastura,
           activo: true
         };
+      } else if(sl.tipo && !_lotesById[sl.id].tipo){
+        _lotesById[sl.id].tipo = sl.tipo;
       }
       if(sl.poligono) _poligonoById[sl.id] = sl.poligono;
     });
@@ -1318,6 +1355,7 @@ async function loadGeometries(){
   Object.keys(_lotesById).forEach(function(id){
     var l = _lotesById[id];
     if(l.activo===false) return;
+    if(_esLoteDeEstablo(l)) return; // cubículos / establos: solo tab Establos
     var key='lote_'+id;
     var _rawPoly = l.poligono || _poligonoById[id] || geo[key];
     if(_rawPoly){
@@ -1339,6 +1377,7 @@ async function loadGeometries(){
     var id=k.slice(5);
     if(loteLayers[id]) return;
     var stub=_lotesById[id]||{ id:id, nombre:id, finca_id:activeFincaMap, activo:true };
+    if(_esLoteDeEstablo(stub)) return;
     try{ renderLoteLayer(id, stub, geo[k]); }catch(e){}
   });
   if(_geoDirty){ d.geo=geo; AppData.save(d); }
@@ -1433,7 +1472,7 @@ function renderLoteLayers(){
   var d=AppData.get();
   var geo=d.geo||{};
   var lotes=d.lotes||[];
-  lotes.filter(function(l){return l.activo;}).forEach(function(l,i){
+  lotes.filter(function(l){return l.activo && !_esLoteDeEstablo(l);}).forEach(function(l,i){
     var key='lote_'+l.id;
     if(geo[key]) renderLoteLayer(l.id, l, geo[key]);
   });
@@ -2144,7 +2183,7 @@ function renderLotesTab(){
     ? window.AppState.lotes.map(function(l){
         return {
           id: l.id, nombre: l.nombre, finca_id: l.finca_id,
-          pivote_id: l.pivote_id || null,
+          pivote_id: l.pivote_id || null, tipo: l.tipo || null,
           area_ha: l.hectareas, capacidad_max: l.capacidad_animal,
           tipo_pasto: l.tipo_pastura, condicion_pasto: '—', fuente_agua: '—',
           dias_descanso_obj: l.dias_descanso_objetivo, dias_pastoreo_obj: l.dias_pastoreo_objetivo,
@@ -2154,6 +2193,7 @@ function renderLotesTab(){
         };
       })
     : (d.lotes||[]).filter(function(l){return l.activo;});
+  lotes = _soloPotreros(lotes);
   var grid=document.getElementById('lote-grid');
   if(!lotes.length){
     grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text3)"><div style="font-size:36px;margin-bottom:12px;opacity:.4">🗺️</div><div>Sin lotes registrados — dibuja el primero en el Mapa satelital</div></div>';
@@ -2207,14 +2247,16 @@ function renderLotesTab(){
   lotes.forEach(function(l){ var k=l.pivote_id||'__none__'; (byPiv[k]=byPiv[k]||[]).push(l); });
   function head(txt,sub){ return '<div style="grid-column:1/-1;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--teal);margin:6px 0 2px;display:flex;align-items:center;gap:8px">▸ '+txt+(sub?' <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">· '+sub+'</span>':'')+'</div>'; }
   var html='', grouped=false;
-  (window._pivotes||[]).forEach(function(pv){
+  (window._pivotes||[]).slice().sort(function(a,b){ return _cmpNomPot(a.nombre,b.nombre); }).forEach(function(pv){
     var arr=byPiv[pv.id]; if(!arr||!arr.length) return;
+    arr.sort(function(a,b){ return _cmpNomPot(a.nombre,b.nombre); });
     grouped=true;
     html+=head(pv.nombre, (pv.area_ha!=null?pv.area_ha+' ha':'')+(pv.tipo_pasto?(pv.area_ha!=null?' · ':'')+pv.tipo_pasto:''));
     html+=arr.map(card).join('');
     delete byPiv[pv.id];
   });
   var rest=[]; Object.keys(byPiv).forEach(function(k){ rest=rest.concat(byPiv[k]); });
+  rest.sort(function(a,b){ return _cmpNomPot(a.nombre,b.nombre); });
   if(rest.length){ if(grouped) html+=head('Sin pivote asignado',''); html+=rest.map(card).join(''); }
   grid.innerHTML=html;
   // Chips de agua / descanso (async, no bloquea el render)
@@ -2796,12 +2838,13 @@ async function cargarEstablos(){
     var er = await window.DB.getEstablos(fid);
     var cr = await window.DB.getCubiculos(fid);
     var nr = await window.DB.getConteoPorLote(fid);
-    _estData.establos = (er&&er.data)||[];
-    _estData.cubiculos = (cr&&cr.data)||[];
+    _estData.establos = ((er&&er.data)||[]).slice().sort(function(a,b){ return _cmpNomPot(a.nombre,b.nombre); });
+    _estData.cubiculos = ((cr&&cr.data)||[]).slice().sort(function(a,b){ return _cmpNomPot(a.nombre,b.nombre); });
     _estData.conteo = (nr&&nr.conteo)||{};
     if(!_estData.establos.length){ cont.innerHTML='<div style="padding:24px;text-align:center;color:var(--text3)">No hay establos registrados.</div>'; return; }
     cont.innerHTML = _estData.establos.map(function(e){
-      var cubs = _estData.cubiculos.filter(function(c){return c.pivote_id===e.id;});
+      var cubs = _estData.cubiculos.filter(function(c){return c.pivote_id===e.id;})
+        .slice().sort(function(a,b){ return _cmpNomPot(a.nombre,b.nombre); });
       var cards = cubs.map(function(c){
         var n = _estData.conteo[c.id]||0;
         return '<div class="lb-card" style="padding:12px;display:flex;justify-content:space-between;align-items:center;gap:10px">'
@@ -2829,13 +2872,13 @@ async function llenarSelectsEncerrar(){
     var conteo = (nr&&nr.conteo)||{};
     var lotesR = await window.DB.getLotes(fid);
     var lotes = (lotesR&&lotesR.data)||[];
-    // Origen: potreros (tipo='potrero' o sin tipo) que tienen animales activos.
-    var potreros = lotes.filter(function(l){ return (l.tipo==='potrero'||!l.tipo) && (conteo[l.id]||0)>0; });
+    // Origen: potreros de pastoreo (nunca cubículos / establos) con animales.
+    var potreros = _soloPotreros(lotes).filter(function(l){ return (conteo[l.id]||0)>0; });
     origen.innerHTML = '<option value="">— Potrero con animales —</option>' + potreros.map(function(l){
       return '<option value="'+l.id+'">'+_escEst(l.nombre)+' ('+(conteo[l.id]||0)+')</option>';
     }).join('');
     // Destino: cubículos (lote_actual_id debe ser un lote; un establo es un pivote, no un lote).
-    var cubs = lotes.filter(function(l){ return l.tipo==='cubiculo'; });
+    var cubs = lotes.filter(function(l){ return _esLoteDeEstablo(l); }).slice().sort(function(a,b){ return _cmpNomPot(a.nombre,b.nombre); });
     destino.innerHTML = '<option value="">— Cubículo destino —</option>' + cubs.map(function(l){
       return '<option value="'+l.id+'">'+_escEst(l.nombre)+'</option>';
     }).join('');
@@ -3079,6 +3122,7 @@ function _dashCard(val, lbl, sub, cls){
 window.renderDashboardLotes=async function(){
   var host=document.getElementById('dash-lotes-kpis');
   if(!host) return;
+  try{ await loadEstabloIds(); }catch(e){}
 
   var useAS=window.AppState&&window.AppState._loaded;
   var animales=useAS
@@ -3086,9 +3130,10 @@ window.renderDashboardLotes=async function(){
     : ((AppData.get().animales||[]).filter(function(a){return a.activo!==false&&a.estado!=='baja'&&a.estado!=='muerto';}));
   var nAnim=animales.length;
 
-  var lotes=useAS&&Array.isArray(window.AppState.lotes)
+  var lotesRaw=useAS&&Array.isArray(window.AppState.lotes)
     ? window.AppState.lotes
     : ((AppData.get().lotes||[]).filter(function(l){return l.activo!==false;}));
+  var lotes=_soloPotreros(lotesRaw);
   var nPot=lotes.length;
 
   var pivs=window._pivotes||[];
@@ -3220,6 +3265,7 @@ async function loadPivotes(){
       var r=await window.DB.getPivotes(_pivoteFinca());
       if(r && !r.error && Array.isArray(r.data)) window._pivotes = r.data;
     }
+    await loadEstabloIds();
   }catch(e){ console.warn('[Pivotes] load:', e&&e.message); }
   try{
     if(window.DB && typeof window.DB.getPivotesEliminados==='function'){
@@ -3257,13 +3303,13 @@ function _lotesDeFinca(){
   return (AppData.get().lotes||[]).filter(function(l){ return l.activo; });
 }
 function _countPotreros(pivoteId){
-  return _lotesDeFinca().filter(function(l){ return l.pivote_id===pivoteId; }).length;
+  return _soloPotreros(_lotesDeFinca()).filter(function(l){ return l.pivote_id===pivoteId; }).length;
 }
 
 // PARTE 3 — Tab Pivotes simplificada + sección de eliminados (historial).
 function renderPivotesTab(){
   var grid=document.getElementById('pivote-grid'); if(!grid) return;
-  var pivs=window._pivotes||[];
+  var pivs=(window._pivotes||[]).slice().sort(function(a,b){ return _cmpNomPot(a.nombre,b.nombre); });
   if(!pivs.length){
     grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--text3)"><div style="font-size:36px;margin-bottom:12px;opacity:.4">▦</div><div>Sin pivotes — dibuja el primero en el <strong>Mapa</strong> con la herramienta de pivote (⊞)</div></div>';
   } else {
@@ -3697,7 +3743,7 @@ function _diasDesdeISO(iso){
   }catch(e){ return null; }
 }
 function _animalesEnPivote(pivoteId){
-  var lotes=_lotesDeFinca().filter(function(l){ return l.pivote_id===pivoteId; });
+  var lotes=_soloPotreros(_lotesDeFinca()).filter(function(l){ return l.pivote_id===pivoteId; });
   var ids={}; lotes.forEach(function(l){ ids[l.id]=l; });
   var anim=[];
   if(window.AppState&&Array.isArray(window.AppState.animales)){
@@ -3806,7 +3852,7 @@ window.abrirFichaPivote=async function(pivoteId){
       :'Sin animales');
 
   var potList=st.lotes.length
-    ? st.lotes.map(function(l){
+    ? st.lotes.slice().sort(function(a,b){ return _cmpNomPot(a.nombre,b.nombre); }).map(function(l){
         var n=st.animales.filter(function(a){return a.lote_actual_id===l.id;}).length;
         return '<div style="font-size:12px;padding:6px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between">'
           +'<span>'+_escPv(l.nombre||l.id)+'</span><b>'+n+' an.</b></div>';

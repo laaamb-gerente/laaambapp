@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v56: fix guardar pivote/potrero (modal pivote + pasto + Supabase).
-const CACHE_NAME = 'laaambapp-v56';
-const CACHE_SHELL = 'laaambapp-shell-v56';
+// v58: calendario lluvia con número + editor al toque; error Copiloto team xAI.
+const CACHE_NAME = 'laaambapp-v58';
+const CACHE_SHELL = 'laaambapp-shell-v58';
 
 const STATIC_ASSETS = [
   './manifest.json',

@@ -139,6 +139,20 @@ const COPILOTO_TOOLS = [
   }
 ];
 
+function explicarErrorGrok(msg) {
+  const s = String(msg || '');
+  if (/newly created team|credits or licenses/i.test(s)) {
+    return 'La clave GROK_API_KEY está en un team nuevo de console.x.ai sin créditos. ' +
+      'Los créditos de grok.com / X Premium no sirven para la API. ' +
+      'En https://console.x.ai cambiá al team que SÍ tiene saldo (casi siempre Personal Team), ' +
+      'creá una API key ahí y reemplazá GROK_API_KEY en Vercel (proyecto laaambapp).';
+  }
+  if (/insufficient.?credit|credit.?balance|spend limit/i.test(s)) {
+    return 'El team de esa API key se quedó sin créditos en console.x.ai. Recargá ahí (no en grok.com) y reintentá.';
+  }
+  return s;
+}
+
 window.Copiloto = {
   _historial: [],
   _enfoquePagina: '',
@@ -549,7 +563,7 @@ window.Copiloto = {
       const data = await res.json();
       if (data && data.error) {
         const msg = (data.error && data.error.message) || data.error || 'Error de la API de Grok';
-        throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+        throw new Error(explicarErrorGrok(typeof msg === 'string' ? msg : JSON.stringify(msg)));
       }
 
       const choice = data && data.choices && data.choices[0];
