@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v59: pauta de dosis (continua / a los X días) + omitir por buen estado.
-const CACHE_NAME = 'laaambapp-v59';
-const CACHE_SHELL = 'laaambapp-shell-v59';
+// v60: dosis auto ml/kg grupal+individual; calendario lluvia+riego T/año.
+const CACHE_NAME = 'laaambapp-v60';
+const CACHE_SHELL = 'laaambapp-shell-v60';
 
 const STATIC_ASSETS = [
   './manifest.json',
