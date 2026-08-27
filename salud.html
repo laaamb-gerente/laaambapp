@@ -35,11 +35,12 @@
 <script src="js/sidebar.js"></script>
 <script src="js/periodo-kpi.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=60"></script>
+<script src="js/dosis.js?v=1"></script>
+<script src="js/db.js?v=61"></script>
 <script src="js/colabs.js"></script>
 <script src="js/offline-db.js"></script>
 <script src="js/alertas-motor.js"></script>
-<script src="js/app-state.js"></script>
+<script src="js/app-state.js?v=62"></script>
 <script src="js/copiloto-prompt-laaamb.js"></script>
 <script src="js/copiloto.js"></script>
 <script src="js/clear-demo-data.js"></script>
@@ -1611,10 +1612,13 @@ function onTiMedRowChange(sel){
     return;
   }
   if(!peso){ if(sug) sug.value='Ingresa peso para calcular'; return; }
-  var dosis=mlDePeso(peso, factorMl);
-  var txt=(dosis!=null?dosis.toFixed(1):'—')+' mL';
-  if(sug) sug.value=txt+(dosisRef?(' · '+dosisRef):'');
-  if(din) din.value=txt;
+  var txt=(window.Dosis && window.Dosis.textoDosisSugerida(peso, dosisRef)) || '';
+  var dosis=window.Dosis && window.Dosis.mlAplicarDePeso
+    ? window.Dosis.mlAplicarDePeso(peso, dosisRef)
+    : mlDePeso(peso, factorMl);
+  if(!txt) txt=(dosis!=null?dosis.toFixed(1):'—')+' mL'+(dosisRef?(' · '+dosisRef):'');
+  if(sug) sug.value=txt;
+  if(din && dosis!=null) din.value=dosis.toFixed(1)+' mL';
 }
 function recalcMedRowsIndividual(){
   document.querySelectorAll('#ti-meds-container .ti-med-sel').forEach(function(sel){ onTiMedRowChange(sel); });
@@ -1676,8 +1680,12 @@ function _parseDosisEstandar(txt){
   if(m){ return { factor:parseFloat(m[1]), unidad:m[2].replace(/\s+/g,'') }; }
   return { factor:NaN, unidad:(String(txt||'').trim()||'según indicación') };
 }
-/** ml por kg desde "1 ml / 4 kg", "1ml x 20kg", "0,5 ml / 10 kg". */
+/** ml por kg desde "1 ml / 4 kg", "1ml x 20kg", "1ml/25-50kg". */
 function parseDosisMlPorKg(txt){
+  if(window.Dosis && typeof window.Dosis.parseDosisMlPorKg==='function'){
+    var f=window.Dosis.parseDosisMlPorKg(txt);
+    if(f>0) return f;
+  }
   var s=String(txt||'').replace(/,/g,'.').replace(/×/g,'x');
   var m=s.match(/([\d.]+)\s*m[lL]\s*(?:\/|x|por|p\/)\s*([\d.]+)\s*kg/i);
   if(!m) m=s.match(/([\d.]+)\s*m[lL]\s*\/\s*([\d.]+)\s*kg/i);
@@ -1693,6 +1701,7 @@ function parseDosisMlPorKg(txt){
   return 0;
 }
 function mlDePeso(peso, factorMl){
+  if(window.Dosis && typeof window.Dosis.mlDePeso==='function') return window.Dosis.mlDePeso(peso, factorMl);
   if(!(peso>0) || !(factorMl>0)) return null;
   return Math.round(factorMl*peso*10)/10;
 }
@@ -1709,8 +1718,7 @@ function _medOptsModal(meds){
     var retiro=parseInt(m.dias_retiro,10)||0;
     var via=m.via_administracion||m.via||'IM';
     var nombre=m.nombre||'Medicamento';
-    // dosis_sugerida = from new column (e.g. "1 ml / 10 kg") | factorMl = ml per kg
-    var dosisRef=m.dosis_sugerida||m.dosis_estandar||'';
+    var dosisRef=(window.Dosis && window.Dosis.dosisRefDeMed(m)) || (m.dosis_sugerida||m.dosis_estandar||'');
     var factorMl=parseDosisMlPorKg(dosisRef);
     var val=[ (isNaN(d.factor)?'':d.factor), d.unidad, retiro, via, (m.id||''), nombre, dosisRef, (factorMl||0).toFixed(4) ].join('|');
     var lbl=nombre+(dosisRef?(' · '+dosisRef):'')+' · ret. '+retiro+'d'+(m.stock_actual!=null?(' · stock '+m.stock_actual):'');
@@ -1720,7 +1728,9 @@ function _medOptsModal(meds){
 // Llena cualquiera de los selects de medicamento según su formato esperado.
 function _llenarMedsSelect(selId, meds){
   var sel=document.getElementById(selId); if(!sel) return;
-  meds=(meds||[]).filter(function(m){ return m && m.activo!==false; });
+  meds=window.Dosis && window.Dosis.medsParaTratamiento
+    ? window.Dosis.medsParaTratamiento(meds)
+    : (meds||[]).filter(function(m){ return m && m.activo!==false; });
   var linkPrev=document.getElementById('medlink-'+selId); if(linkPrev) linkPrev.remove();
   if(!meds.length){
     sel.innerHTML='<option value="">— Sin medicamentos registrados —</option>';
@@ -1753,16 +1763,43 @@ function _llenarMedsSelect(selId, meds){
   // ti-med / tg-med
   sel.innerHTML=_medOptsModal(meds);
 }
-// Obtiene medicamentos (AppState o Supabase) y llena el select indicado.
+function _fincaMedsId(){
+  return (window.AppState && window.AppState._finca_id) || 'a1b2c3d4-0000-0000-0000-000000000001';
+}
+function _fetchMedsLive(cb){
+  var done=typeof cb==='function'?cb:function(){};
+  if(window.AppState && typeof window.AppState.refreshMedicamentos==='function'){
+    window.AppState.refreshMedicamentos().then(function(live){ done(live||[]); }).catch(function(){ done(null); });
+    return;
+  }
+  if(window.DB && typeof window.DB.getMedicamentos==='function'){
+    window.DB.getMedicamentos(_fincaMedsId())
+      .then(function(r){
+        var live=(r&&r.data)||[];
+        if(window.AppState) window.AppState.medicamentos=live;
+        done(live);
+      })
+      .catch(function(){ done(null); });
+    return;
+  }
+  done(null);
+}
+function _restoreMedSel(sel, prev){
+  if(!sel || !prev) return;
+  var prevId=(prev||'').split('|')[4];
+  for(var i=0;i<sel.options.length;i++){
+    var v=sel.options[i].value;
+    if(v===prev || (prevId && (v||'').split('|')[4]===prevId)){ sel.value=v; return; }
+  }
+}
+// Obtiene medicamentos (inventario en vivo) y llena el select indicado.
 function _poblarMed6(selId){
   if(!document.getElementById(selId)) return;
-  var meds=(window.AppState && window.AppState.medicamentos) || [];
-  if(meds.length){ _llenarMedsSelect(selId, meds); return; }
-  if(window.DB && typeof window.DB.getMedicamentos==='function'){
-    window.DB.getMedicamentos('a1b2c3d4-0000-0000-0000-000000000001')
-      .then(function(r){ _llenarMedsSelect(selId, (r&&r.data)||[]); })
-      .catch(function(){ _llenarMedsSelect(selId, []); });
-  } else { _llenarMedsSelect(selId, []); }
+  var cached=(window.AppState && window.AppState.medicamentos) || [];
+  if(cached.length) _llenarMedsSelect(selId, cached);
+  _fetchMedsLive(function(live){
+    _llenarMedsSelect(selId, live || cached);
+  });
 }
 function poblarMedicamentosModal(){            // individual: 1 fila fresca de medicamento + reset diagnóstico
   poblarMedsIndividual();
@@ -1914,14 +1951,20 @@ function agregarMedGrupal(){
 }
 
 // Helper to populate a med select element directly  
-function _llenarMedsSelect_byEl(sel){
+function _llenarMedsSelect_byEl(sel, medsOpt){
   if(!sel) return;
-  var meds=(window.AppState && window.AppState.medicamentos)||[];
-  if(meds.length){ sel.innerHTML='<option value="">— Seleccionar —</option>'+_medOptsModal(meds).replace('<option value="">— Seleccionar medicamento —</option>',''); return; }
-  if(window.DB && typeof window.DB.getMedicamentos==='function'){
-    window.DB.getMedicamentos('a1b2c3d4-0000-0000-0000-000000000001')
-      .then(function(r){ sel.innerHTML='<option value="">— Seleccionar —</option>'+_medOptsModal((r&&r.data)||[]).replace('<option value="">— Seleccionar medicamento —</option>',''); });
-  }
+  var apply=function(meds){
+    var prev=sel.value;
+    var src=window.Dosis && window.Dosis.medsParaTratamiento
+      ? window.Dosis.medsParaTratamiento(meds)
+      : (meds||[]);
+    sel.innerHTML='<option value="">— Seleccionar —</option>'+_medOptsModal(src).replace('<option value="">— Seleccionar medicamento —</option>','');
+    _restoreMedSel(sel, prev);
+  };
+  if(medsOpt){ apply(medsOpt); return; }
+  var cached=(window.AppState && window.AppState.medicamentos)||[];
+  if(cached.length) apply(cached);
+  _fetchMedsLive(function(live){ apply(live || cached); });
 }
 
 function filtrarAnimalesTG(q){

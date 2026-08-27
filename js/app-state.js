@@ -69,6 +69,19 @@ window.AppState = {
     }
   },
 
+  // Inventario de medicamentos fresco (stock y altas nuevas, p.ej. Dilarvon).
+  // El init carga una sola vez; el modal de tratamiento debe pedir esto.
+  async refreshMedicamentos() {
+    if (!window.DB || typeof window.DB.getMedicamentos !== 'function') {
+      return this.medicamentos || [];
+    }
+    try {
+      const r = await window.DB.getMedicamentos(this._finca_id);
+      if (!r.error) this.medicamentos = r.data || [];
+    } catch (e) {}
+    return this.medicamentos || [];
+  },
+
   async _loadFromLocalStorage() {
     // Intentar cargar desde IndexedDB antes que localStorage
     if (window.OfflineDB) {
@@ -222,3 +235,9 @@ if (document.readyState === 'loading') {
 } else {
   initAppWhenReady();
 }
+
+window.addEventListener('pageshow', function (ev) {
+  if (ev.persisted && window.AppState && typeof window.AppState.refreshMedicamentos === 'function') {
+    window.AppState.refreshMedicamentos();
+  }
+});

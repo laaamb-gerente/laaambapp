@@ -240,9 +240,10 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
 <script src="js/approval.js?v=39"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/db.js?v=43"></script>
+<script src="js/dosis.js?v=1"></script>
+<script src="js/db.js?v=61"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/app-state.js"></script>
+<script src="js/app-state.js?v=62"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
 <script src="farm-selector.js"></script>
@@ -411,7 +412,7 @@ select.fi{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns=
         <div class="fg"><label class="fl">Fecha vencimiento *</label><input class="fi fi-full" type="date" id="m-venc"></div>
         <div class="fg"><label class="fl">Tiempo retiro (días) *</label><input class="fi fi-full" type="number" id="m-retiro" placeholder="14"></div>
         <div class="fg"><label class="fl">Costo unitario (COP/mL)</label><input class="fi fi-full" type="number" id="m-costo" placeholder="85000"></div>
-        <div class="fg"><label class="fl">Dosis estándar</label><input class="fi fi-full" id="m-dosis" placeholder="0.2 mL/10kg SC"></div>
+        <div class="fg"><label class="fl">Dosis estándar</label><input class="fi fi-full" id="m-dosis" placeholder="1 ml / 4 kg  ·  1ml/25-50kg"></div>
         <div class="fg"><label class="fl">Temperatura almacenamiento</label><select class="fi fi-full" id="m-temp"><option>Temperatura ambiente</option><option>Refrigeración 2-8°C</option><option>Congelación</option></select></div>
       </div>
       <div class="fg"><label class="fl">Observaciones / Advertencias</label><textarea class="fi fi-full" id="m-obs" placeholder="Contraindicaciones, precauciones…" rows="2" style="resize:vertical"></textarea></div>
@@ -636,15 +637,21 @@ async function loadMedsFromSupabase(){
 function saveMed(){
   const nombre = document.getElementById('m-nombre').value.trim();
   if(!nombre){ toast('El nombre es requerido','err'); return; }
+  var _principio = document.getElementById('m-principio').value.trim();
+  var _dosisRaw = (document.getElementById('m-dosis').value || '').trim();
+  if(!_dosisRaw || _dosisRaw==='—'){
+    _dosisRaw = (window.Dosis && window.Dosis.dosisRefDeMed({ nombre:nombre, principio_activo:_principio })) || '';
+  }
+  if(_dosisRaw==='—') _dosisRaw='';
   const med = {
     nombre,
-    principio: document.getElementById('m-principio').value.trim(),
+    principio: _principio,
     cat: document.getElementById('m-cat').value,
     pres: document.getElementById('m-pres').value,
     lote: document.getElementById('m-lote').value || '—',
     stock: parseInt(document.getElementById('m-stock').value) || 0,
     max: parseInt(document.getElementById('m-max').value) || 100,
-    dosis: document.getElementById('m-dosis').value || '—',
+    dosis: _dosisRaw || '—',
     retiro: parseInt(document.getElementById('m-retiro').value) || 0,
     venc: document.getElementById('m-venc').value || '2026-12-31',
     costo: parseInt(document.getElementById('m-costo').value) || 0,
@@ -663,11 +670,14 @@ function saveMed(){
       dias_retiro:med.retiro,
       precio_unitario:med.costo,
       principio_activo: med.principio || null,
-      dosis_sugerida: med.dosis || null,
+      dosis_sugerida: _dosisRaw || null,
       fecha_vencimiento: med.venc || null,
       notas:document.getElementById('m-obs').value||null
     }).then(function(res){
       if(res && res.error){ console.warn('[Medicamentos] saveMedicamento Supabase:',res.error.message); toast('Error guardando: '+res.error.message,'err'); return; }
+      if(window.AppState && typeof window.AppState.refreshMedicamentos==='function'){
+        window.AppState.refreshMedicamentos();
+      }
       loadMedsFromSupabase();
     }).catch(function(err){console.warn('[Medicamentos] saveMedicamento:',err&&err.message);});
   } else {

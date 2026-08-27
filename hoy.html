@@ -34,12 +34,13 @@
 <script src="js/sidebar.js"></script>
 <script src="js/mobile-nav.js"></script>
 <script src="js/offline-db.js"></script>
-<script src="js/db.js?v=59"></script>
+<script src="js/dosis.js?v=1"></script>
+<script src="js/db.js?v=61"></script>
 <script src="js/alertas-motor.js"></script>
-<script src="js/app-state.js"></script>
+<script src="js/app-state.js?v=62"></script>
 <script src="js/clear-demo-data.js"></script>
 <script src="AppData.js"></script>
-<script src="js/app-update.js?v=59"></script>
+<script src="js/app-update.js?v=62"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);--teal-bg2:rgba(0,175,182,.06);
@@ -808,6 +809,9 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
   // ── Dosis de tratamiento de hoy (multi-dosis) — ACCIONABLE ──
   // Calcula mL sugeridos a partir de "1 ml / 10 kg" y peso del animal.
   function _mlSugeridos(dosisRef, pesoKg){
+    if(window.Dosis && typeof window.Dosis.mlAplicarDePeso==='function'){
+      return window.Dosis.mlAplicarDePeso(pesoKg, dosisRef);
+    }
     if(!dosisRef || pesoKg==null || !(pesoKg>0)) return null;
     var m = String(dosisRef).match(/(\d+[\.,]?\d*)\s*ml?\s*\/\s*(\d+[\.,]?\d*)\s*kg/i);
     if(!m) return null;

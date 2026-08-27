@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v61: calendario sin trimestre (queda 90 d + año).
-const CACHE_NAME = 'laaambapp-v61';
-const CACHE_SHELL = 'laaambapp-shell-v61';
+// v62: dosis rango Dicogan + inventario vivo en tratamiento.
+const CACHE_NAME = 'laaambapp-v62';
+const CACHE_SHELL = 'laaambapp-shell-v62';
 
 const STATIC_ASSETS = [
   './manifest.json',
