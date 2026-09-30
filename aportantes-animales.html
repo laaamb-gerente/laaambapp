@@ -107,6 +107,7 @@ tr.muerto{opacity:.5}
 .bdg{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;border:1px solid;white-space:nowrap}
 .bdg.proy{background:var(--amber-bg);border-color:var(--amber);color:var(--amber)}
 .bdg.real{background:var(--teal-bg);border-color:var(--teal-d);color:var(--teal-d)}
+.bdg.cull{background:var(--amber-bg);border-color:var(--amber);color:var(--amber)}
 .bdg.muerto{background:var(--red-bg);border-color:var(--red);color:var(--red)}
 .bdg.noloc{background:var(--surface2);border-color:var(--border3);color:var(--text2)}
 .bdg.pren{background:var(--green-bg);border-color:var(--green);color:var(--green)}
@@ -217,7 +218,7 @@ tr.muerto{opacity:.5}
       <label for="f-origen">Origen</label>
       <select id="f-origen" onchange="aplicar()">
         <option value="">Todos</option>
-        <option value="real">Solo reales</option>
+        <option value="real">Sin simulados</option>
         <option value="proyectado">Solo proyectados</option>
       </select>
     </div>
@@ -248,10 +249,10 @@ tr.muerto{opacity:.5}
   <div class="tbl-wrap">
     <table>
       <thead><tr>
-        <th>Chapeta</th><th>Origen</th><th>Raza</th><th>Sexo</th><th>Grupo</th>
+        <th>Chapeta</th><th>Selección</th><th>Raza</th><th>Sexo</th>
         <th>Estado</th><th>Reproductivo</th><th>Peso</th><th>Nacimiento</th><th>Madre</th>
       </tr></thead>
-      <tbody id="tbody"><tr><td colspan="10" class="empty-box">Cargando…</td></tr></tbody>
+      <tbody id="tbody"><tr><td colspan="9" class="empty-box">Cargando…</td></tr></tbody>
     </table>
   </div>
 
@@ -344,7 +345,7 @@ tr.muerto{opacity:.5}
   // El peso vigente lo elige APARCERIA.pesoVigente() con la jerarquía
   // sacrificio > real > estimado, para no duplicar esa regla aquí.
   var PESO_TAG = {
-    real:       ['peso-real', 'REAL',  '',  'Pesaje en balanza'],
+    real:       ['peso-real', '',      '',  'Pesaje'],
     sacrificio: ['peso-real', 'SACR.', '',  'Peso al sacrificio'],
     estimado:   ['peso-est',  'EST.',  '~', 'Estimado por modelo lineal — no es un pesaje']
   };
@@ -353,15 +354,22 @@ tr.muerto{opacity:.5}
     if(!p) return '<span style="color:var(--text4)">—</span>';
     var t = PESO_TAG[p.tipo] || PESO_TAG.estimado;
     var n = Number(p.peso_kg).toFixed(1).replace('.', ',');
+    var tag = t[1] ? '<span class="tag">'+t[1]+'</span>' : '';
     return '<span class="'+t[0]+'" title="'+esc(p.nota||t[3])+(p.fecha?' · '+fmtFecha(p.fecha):'')+'">'
-      + t[2] + n + ' kg<span class="tag">'+t[1]+'</span></span>';
+      + t[2] + n + ' kg' + tag + '</span>';
+  }
+  function celdaSeleccion(a){
+    var bits = [];
+    if(a.grupo === 'CULLING') bits.push('<span class="bdg cull">CULLING</span>');
+    if(a.origen === 'proyectado') bits.push('<span class="bdg proy">Simulado</span>');
+    return bits.join(' ');
   }
 
   // Estados vacíos distintos según la causa: "nada cargado" (fase 0, normal)
   // no es lo mismo que "el filtro no devolvió nada". Confundirlos hace que
   // un filtro mal puesto parezca una base de datos vacía.
   function vacio(mensaje, sub){
-    return '<tr><td colspan="10" class="empty-box"><div style="font-size:14px;color:var(--text2)">'
+    return '<tr><td colspan="9" class="empty-box"><div style="font-size:14px;color:var(--text2)">'
       + mensaje + '</div>'
       + (sub ? '<div style="font-size:12px;color:var(--text4);margin-top:6px">'+sub+'</div>' : '')
       + '</td></tr>';
@@ -404,12 +412,9 @@ tr.muerto{opacity:.5}
                 + 'chapeta '+esc(a.codigo_original)+'</div>'
               : '')
         + '</td>'
-        + '<td>'+(a.origen==='proyectado'
-            ? '<span class="bdg proy">⚠ Simulado</span>'
-            : '<span class="bdg real">Real</span>')+'</td>'
+        + '<td>'+celdaSeleccion(a)+'</td>'
         + '<td>'+esc(a.raza||'—')+'</td>'
         + '<td>'+(a.sexo==='hembra'?'♀ Hembra':'♂ Macho')+'</td>'
-        + '<td>'+esc(a.grupo||'—')+'</td>'
         + '<td>'+badgeEstado(a)+(a.estado_salida!=='activo'&&(a.motivo_salida||a.fecha_salida)
             ? '<div style="font-size:10px;color:var(--text3);margin-top:2px">'+esc(a.motivo_salida||'')
               +(a.fecha_salida?(a.motivo_salida?' · ':'')+fmtFecha(a.fecha_salida):'')+'</div>' : '')+'</td>'
@@ -702,7 +707,7 @@ tr.muerto{opacity:.5}
       }
       if(!APORTANTES.length){
         sel.innerHTML = '<option value="">Sin aportantes</option>';
-        $('tbody').innerHTML = '<tr><td colspan="10" class="empty-box">'
+        $('tbody').innerHTML = '<tr><td colspan="9" class="empty-box">'
           + (forceId
             ? 'Tu cuenta no tiene hato de aparcería vinculado. Pide al gerente que asigne tu aportante.'
             : 'No hay aportantes registrados.<br><span style="font-size:12px;color:var(--text4)">'
@@ -731,7 +736,7 @@ tr.muerto{opacity:.5}
       await cargarAportanteSeleccionado();
     }catch(e){
       fallo('Cargar módulo de aparcería', e);
-      $('tbody').innerHTML = '<tr><td colspan="10" class="empty-box" style="color:var(--red)">'
+      $('tbody').innerHTML = '<tr><td colspan="9" class="empty-box" style="color:var(--red)">'
         + esc(e.message) + '</td></tr>';
     }
   }
@@ -1029,6 +1034,26 @@ tr.muerto{opacity:.5}
     return y+'a'+(rm?(' '+rm+'m'):'');
   }
 
+  function notaSinTratamientos(notas){
+    var s = String(notas||'');
+    var i = s.indexOf('\nTratamientos:');
+    if(i < 0 && s.indexOf('Tratamientos:') === 0) return '';
+    if(i < 0) return s.trim();
+    return s.slice(0, i).trim();
+  }
+  function tratamientosDeNotas(notas){
+    var s = String(notas||'');
+    var i = s.indexOf('Tratamientos:');
+    if(i < 0) return [];
+    return s.slice(i + 'Tratamientos:'.length).split('\n').map(function(line){
+      line = line.trim();
+      if(!line) return null;
+      var p = line.split('|').map(function(x){ return x.trim(); });
+      if(p.length < 2) return null;
+      return { fecha: p[0]||'—', med: p[1]||'—', dosis: p[2]||'—', motivo: p[3]||'—' };
+    }).filter(Boolean);
+  }
+
   async function verFichaAportante(id){
     var a = FILAS.find(function(x){ return String(x.id) === String(id); });
     if(!a){ toast('Animal no encontrado', true); return; }
@@ -1071,11 +1096,13 @@ tr.muerto{opacity:.5}
       + '<div style="flex:1">'
       +   '<div style="font-family:Sigmar,cursive;font-size:18px">'+esc(a.codigo)+'</div>'
       +   '<div style="font-size:12px;color:var(--teal);font-weight:600;margin-top:2px">'
-      +     esc(a.raza||'—')+' · '+esc(a.tipo||'—')+' · '+esc(a.origen||'—')
+      +     esc(a.raza||'—')+' · '+esc(a.tipo||'—')
+      +     (a.origen==='real'?'':' · '+esc(a.origen||'—'))
       +   '</div>'
       +   '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'
       +     badgeEstado(a)
-      +     (a.origen==='proyectado'?'<span class="bdg proy">Simulado</span>':'<span class="bdg real">Real</span>')
+      +     (a.grupo==='CULLING'?'<span class="bdg cull">CULLING</span>':'')
+      +     (a.origen==='proyectado'?'<span class="bdg proy">Simulado</span>':'')
       +     (peso!=='—'?'<span class="bdg" style="background:var(--teal-bg);color:var(--teal-d)">'+peso+'</span>':'')
       +     '<span class="bdg" style="background:var(--bg3)">'+calcEdadA(a.fecha_nacimiento)+'</span>'
       +   '</div>'
@@ -1085,6 +1112,9 @@ tr.muerto{opacity:.5}
       +   '<button class="btn btn-ghost btn-sm" type="button" id="ff-baja" style="color:var(--red)">Baja</button>'
       + '</div>'
       + '</div>';
+
+    var tratsF = tratamientosDeNotas(a.notas);
+    var notaLimpia = notaSinTratamientos(a.notas);
 
     var tabs = '<div class="ficha-tabs">'
       + '<button type="button" class="ficha-tab on" data-tab="resumen" onclick="window.__fichaTab(\'resumen\')">Resumen</button>'
@@ -1100,28 +1130,28 @@ tr.muerto{opacity:.5}
       + fichaIc('Sexo', esc(a.sexo||'—'))
       + fichaIc('Raza', esc(a.raza||'—'))
       + fichaIc('Tipo', esc(a.tipo||'—'))
-      + fichaIc('Origen', esc(a.origen||'—'))
+      + (a.origen==='real' ? '' : fichaIc('Origen', esc(a.origen||'—')))
       + fichaIc('Estado', esc(a.estado_salida||'—'))
       + fichaIc('Reproductivo', esc(a.estado_reproductivo||'—'))
       + fichaIc('Nacimiento', a.fecha_nacimiento ? fmtFecha(a.fecha_nacimiento) : '—')
       + fichaIc('Edad', calcEdadA(a.fecha_nacimiento))
       + fichaIc('Peso', peso)
-      + fichaIc('Grupo', esc(a.grupo||'—'))
+      + fichaIc('Selección', a.grupo==='CULLING' ? 'CULLING' : '—')
       + fichaIc('Madre', esc(a.madre_codigo||'—'))
       + fichaIc('Criadero', esc(a.criadero_origen||'—'))
       + '</div>'
-      + (a.notas ? '<div style="margin-top:12px;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);font-size:12px">📝 '+esc(a.notas)+'</div>' : '')
+      + (notaLimpia ? '<div style="margin-top:12px;padding:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);font-size:12px">📝 '+esc(notaLimpia)+'</div>' : '')
       + '</div>';
 
     var rowsP = _fichaPesajes.length
       ? _fichaPesajes.map(function(p){
           return '<tr><td>'+esc(p.fecha||'—')+'</td><td style="font-weight:700;color:var(--teal)">'
-            +esc(p.peso_kg)+' kg</td><td>'+esc(p.tipo||'—')+'</td><td>'+esc(p.nota||'—')+'</td></tr>';
+            +esc(p.peso_kg)+' kg</td><td>'+esc(p.tipo==='real'?'':(p.tipo||'—'))+'</td><td>'+esc(p.nota||'—')+'</td></tr>';
         }).join('')
       : '<tr><td colspan="4" style="color:var(--text3)">Sin pesajes registrados</td></tr>';
     if(a.peso_kg != null && !_fichaPesajes.length){
       rowsP = '<tr><td>'+esc(a.peso_fecha||'—')+'</td><td style="font-weight:700;color:var(--teal)">'
-        +esc(a.peso_kg)+' kg</td><td>'+esc(a.peso_tipo||'en animal')+'</td><td>'+esc(a.peso_nota||'—')+'</td></tr>';
+        +esc(a.peso_kg)+' kg</td><td>'+esc(a.peso_tipo==='real'?'':(a.peso_tipo||''))+'</td><td>'+esc(a.peso_nota||'—')+'</td></tr>';
     }
     var panePes = '<div class="ficha-pane" id="fp-pesajes">'
       + '<table class="rt"><thead><tr><th>Fecha</th><th>Peso</th><th>Tipo</th><th>Nota</th></tr></thead><tbody>'
@@ -1149,13 +1179,14 @@ tr.muerto{opacity:.5}
     var paneGen = '<div class="ficha-pane" id="fp-genealogia">'+gen+'</div>';
 
     var paneTra = '<div class="ficha-pane" id="fp-tratamientos">'
-      + '<div style="padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r2);font-size:13px;line-height:1.5">'
-      + '<b>Tratamientos de aparcería</b><br>'
-      + 'Los tratamientos del hato propio viven en otra tabla (animales de LAAAMB). '
-      + 'Para aparcería habilitaremos <code>aportantes_tratamientos</code> enlazado al botiquín '
-      + '(Ivermectina, Cydectin, Baycox, Fifenicol, etc.). '
-      + 'Esta pestaña quedará lista para el historial por animal.'
-      + '</div></div>';
+      + (tratsF.length
+        ? '<table class="rt"><thead><tr><th>Fecha</th><th>Medicamento</th><th>Dosis</th><th>Motivo</th></tr></thead><tbody>'
+          + tratsF.map(function(t){
+              return '<tr><td>'+esc(t.fecha)+'</td><td>'+esc(t.med)+'</td><td>'+esc(t.dosis)+'</td><td>'+esc(t.motivo)+'</td></tr>';
+            }).join('')
+          + '</tbody></table>'
+        : '<div style="font-size:12px;color:var(--text3)">Sin tratamientos registrados.</div>')
+      + '</div>';
 
     var paneSal = '<div class="ficha-pane" id="fp-salida"><div class="ficha-grid">'
       + fichaIc('Estado salida', esc(a.estado_salida||'—'))

@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v62: dosis rango Dicogan + inventario vivo en tratamiento.
-const CACHE_NAME = 'laaambapp-v62';
-const CACHE_SHELL = 'laaambapp-shell-v62';
+// v63: aparcería muestra CULLING o vacío, sin etiqueta Real.
+const CACHE_NAME = 'laaambapp-v63';
+const CACHE_SHELL = 'laaambapp-shell-v63';
 
 const STATIC_ASSETS = [
   './manifest.json',
