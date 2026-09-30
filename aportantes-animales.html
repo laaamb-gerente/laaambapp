@@ -90,7 +90,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .kpi.red .kpi-n{color:var(--red)}.kpi.gray .kpi-n{color:var(--text2)}
 /* ── TABLA ── */
 .tbl-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);overflow-x:auto}
-table{width:100%;border-collapse:collapse;font-size:13px;min-width:860px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:980px}
 thead th{text-align:left;padding:11px 13px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid var(--border2);white-space:nowrap;background:var(--bg3);position:sticky;top:0}
 tbody td{padding:10px 13px;border-bottom:1px solid var(--border);vertical-align:middle}
 tbody tr:last-child td{border-bottom:none}
@@ -234,7 +234,7 @@ tr.muerto{opacity:.5}
       </select>
     </div>
     <div class="f-item">
-      <label for="f-buscar">Buscar chapeta / grupo</label>
+      <label for="f-buscar">Buscar chapeta / criadero</label>
       <input id="f-buscar" type="text" placeholder="ej. 410, N119, Madres" oninput="aplicar()">
     </div>
   </div>
@@ -249,15 +249,17 @@ tr.muerto{opacity:.5}
   <div class="tbl-wrap">
     <table>
       <thead><tr>
-        <th>Chapeta</th><th>Selección</th><th>Raza</th><th>Sexo</th>
+        <th>Chapeta</th><th>Origen</th><th>Selección</th><th>Raza</th><th>Sexo</th>
         <th>Estado</th><th>Reproductivo</th><th>Peso</th><th>Nacimiento</th><th>Madre</th>
       </tr></thead>
-      <tbody id="tbody"><tr><td colspan="9" class="empty-box">Cargando…</td></tr></tbody>
+      <tbody id="tbody"><tr><td colspan="10" class="empty-box">Cargando…</td></tr></tbody>
     </table>
   </div>
 
+  <div id="sec-cargas" style="display:none">
   <div class="sec-title"><span class="dot" style="background:var(--wine)"></span>Cargas registradas</div>
   <div id="cargas"><div class="empty-box">Cargando…</div></div>
+  </div>
 </div>
 </div>
 
@@ -358,6 +360,11 @@ tr.muerto{opacity:.5}
     return '<span class="'+t[0]+'" title="'+esc(p.nota||t[3])+(p.fecha?' · '+fmtFecha(p.fecha):'')+'">'
       + t[2] + n + ' kg' + tag + '</span>';
   }
+  function celdaOrigen(a){
+    if(a.origen === 'proyectado') return '<span class="bdg proy">Simulado</span>';
+    if(!a.criadero_origen) return '<span style="color:var(--text4)">—</span>';
+    return esc(a.criadero_origen);
+  }
   function celdaSeleccion(a){
     var bits = [];
     if(a.grupo === 'CULLING') bits.push('<span class="bdg cull">CULLING</span>');
@@ -369,7 +376,7 @@ tr.muerto{opacity:.5}
   // no es lo mismo que "el filtro no devolvió nada". Confundirlos hace que
   // un filtro mal puesto parezca una base de datos vacía.
   function vacio(mensaje, sub){
-    return '<tr><td colspan="9" class="empty-box"><div style="font-size:14px;color:var(--text2)">'
+    return '<tr><td colspan="10" class="empty-box"><div style="font-size:14px;color:var(--text2)">'
       + mensaje + '</div>'
       + (sub ? '<div style="font-size:12px;color:var(--text4);margin-top:6px">'+sub+'</div>' : '')
       + '</td></tr>';
@@ -412,6 +419,7 @@ tr.muerto{opacity:.5}
                 + 'chapeta '+esc(a.codigo_original)+'</div>'
               : '')
         + '</td>'
+        + '<td>'+celdaOrigen(a)+'</td>'
         + '<td>'+celdaSeleccion(a)+'</td>'
         + '<td>'+esc(a.raza||'—')+'</td>'
         + '<td>'+(a.sexo==='hembra'?'♀ Hembra':'♂ Macho')+'</td>'
@@ -534,8 +542,21 @@ tr.muerto{opacity:.5}
       + '</div>';
   }
 
+  // En la matriz de roles el gerente es «Gerente / Superadmin». Administrador
+  // ve el resto del sistema, pero este historial (y Borrar carga) no.
+  function esSuperadmin(){
+    return window.AUTH_ROL === 'gerente';
+  }
   function renderCargas(){
+    var sec = $('sec-cargas');
     var el = $('cargas');
+    if(!esSuperadmin()){
+      if(sec) sec.style.display = 'none';
+      if(el) el.innerHTML = '';
+      return;
+    }
+    if(sec) sec.style.display = '';
+    if(!el) return;
     if(!CARGAS.length){
       el.innerHTML = '<div class="empty-box"><div style="font-size:14px;color:var(--text2)">'
         + 'Ninguna carga registrada todavía.</div>'
@@ -670,7 +691,8 @@ tr.muerto{opacity:.5}
       return (a.codigo||'').toLowerCase().indexOf(q) >= 0
           || (a.codigo_original||'').toLowerCase().indexOf(q) >= 0
           || (a.grupo||'').toLowerCase().indexOf(q) >= 0
-          || (a.madre_codigo||'').toLowerCase().indexOf(q) >= 0;
+          || (a.madre_codigo||'').toLowerCase().indexOf(q) >= 0
+          || (a.criadero_origen||'').toLowerCase().indexOf(q) >= 0;
     });
 
     renderTabla(rows);
@@ -707,7 +729,7 @@ tr.muerto{opacity:.5}
       }
       if(!APORTANTES.length){
         sel.innerHTML = '<option value="">Sin aportantes</option>';
-        $('tbody').innerHTML = '<tr><td colspan="9" class="empty-box">'
+        $('tbody').innerHTML = '<tr><td colspan="10" class="empty-box">'
           + (forceId
             ? 'Tu cuenta no tiene hato de aparcería vinculado. Pide al gerente que asigne tu aportante.'
             : 'No hay aportantes registrados.<br><span style="font-size:12px;color:var(--text4)">'
@@ -736,7 +758,7 @@ tr.muerto{opacity:.5}
       await cargarAportanteSeleccionado();
     }catch(e){
       fallo('Cargar módulo de aparcería', e);
-      $('tbody').innerHTML = '<tr><td colspan="9" class="empty-box" style="color:var(--red)">'
+      $('tbody').innerHTML = '<tr><td colspan="10" class="empty-box" style="color:var(--red)">'
         + esc(e.message) + '</td></tr>';
     }
   }
@@ -1097,7 +1119,8 @@ tr.muerto{opacity:.5}
       +   '<div style="font-family:Sigmar,cursive;font-size:18px">'+esc(a.codigo)+'</div>'
       +   '<div style="font-size:12px;color:var(--teal);font-weight:600;margin-top:2px">'
       +     esc(a.raza||'—')+' · '+esc(a.tipo||'—')
-      +     (a.origen==='real'?'':' · '+esc(a.origen||'—'))
+      +     (a.criadero_origen?' · '+esc(a.criadero_origen):'')
+      +     (a.origen==='real'||!a.origen?'':' · '+esc(a.origen))
       +   '</div>'
       +   '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">'
       +     badgeEstado(a)

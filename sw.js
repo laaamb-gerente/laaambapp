@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v63: aparcería muestra CULLING o vacío, sin etiqueta Real.
-const CACHE_NAME = 'laaambapp-v63';
-const CACHE_SHELL = 'laaambapp-shell-v63';
+// v64: aparcería — origen = criadero; cargas solo las ve el gerente.
+const CACHE_NAME = 'laaambapp-v64';
+const CACHE_SHELL = 'laaambapp-shell-v64';
 
 const STATIC_ASSETS = [
   './manifest.json',
