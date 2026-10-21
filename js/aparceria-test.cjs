@@ -209,9 +209,11 @@ ok('muertes SIN fecha expuestas', km.muertesSinFecha === 7, String(km.muertesSin
 ok('muertes CON fecha expuestas', km.muertesConFecha === 3, String(km.muertesConFecha));
 ok('sin_fecha + con_fecha = total', km.muertesSinFecha + km.muertesConFecha === km.muertes);
 
-// ── AÑO DE CONTRATO · promesa × 2,7 vs resultado ─────────────────────
-// Julián arranca el 2025-06-01. Al 2026-10-21 el año 1 ya cerró
-// (31 may 2026) y el año 2 lleva 142 días de 365.
+// ── AÑO DE CONTRATO · vientres del flujo vs hembras ──────────────
+// Flujo 100 hembras: año 1 = hato × 1,255 (mes 6). Año 2 = hato × 1,830025
+// (meses 6, 15, 21 y 24). Julián arranca el 2025-06-01. Al 2026-10-21
+// el año 1 ya cerró (31 may 2026) y el proyecto va en el mes 17:
+// ya entraron las cohortes de los meses 6 y 15.
 console.log('\n· AÑOS DE CONTRATO (Julián, corte 2026-10-21)');
 var filasAnio = [].concat(
   n(40, { tipo: 'madre_lote_inicial' }),
@@ -232,26 +234,27 @@ var apJulian = {
 };
 var an = A.aniosContrato(filasAnio, apJulian, '2026-10-21');
 ok('modelo usable', an.ok === true, an.motivo || '');
-ok('promesa año 1 = meta del contrato', an.promesaAnio1 === 113.4, String(an.promesaAnio1));
-ok('promesa año 2 = 113,4 × 2,7', an.promesaAnio2 === 306.18, String(an.promesaAnio2));
+ok('esquema = Flujo 100 hembras', an.esquema === 'Flujo 100 hembras.xlsx', an.esquema);
+ok('promesa año 1 = 42 × 1,255', an.promesaAnio1 === 52.71, String(an.promesaAnio1));
+ok('promesa año 2 = 42 × 1,830025', an.promesaAnio2 === 76.86, String(an.promesaAnio2));
 ok('año 1 cerrado el 31 may 2026',
   an.anio1.estado === 'cerrado' && an.anio1.fin === '2026-05-31',
   an.anio1.estado + ' ' + an.anio1.fin);
-ok('año 1 esperado = 113,4', an.anio1.esperado === 113.4, String(an.anio1.esperado));
+ok('año 1 esperado = 52,71 vientres', an.anio1.esperado === 52.71, String(an.anio1.esperado));
 // Cierre año 1: 40 vivas + 1 que muere en jul 2026 + 10 crías de dic.
 // Fuera: 2 muertes de marzo, 1 muerte sin fecha, crías de agosto,
 // proyectados, reposición sin entrega, cría sin nacimiento.
-ok('año 1 resultado = 51', an.anio1.resultado === 51, String(an.anio1.resultado));
-ok('año 1 cumplimiento 45%', an.anio1.cumplimientoPct === 45, String(an.anio1.cumplimientoPct));
+ok('año 1 resultado = 51 hembras', an.anio1.resultado === 51, String(an.anio1.resultado));
+ok('año 1 cumplimiento 96,8%', an.anio1.cumplimientoPct === 96.8, String(an.anio1.cumplimientoPct));
 ok('año 2 en curso', an.anio2.estado === 'en_curso' && an.anio2.inicio === '2026-06-01',
   an.anio2.estado + ' ' + an.anio2.inicio);
 ok('año 2 lleva 142 días', an.anio2.diasTranscurridos === 142 && an.anio2.diasTotales === 365,
   an.anio2.diasTranscurridos + '/' + an.anio2.diasTotales);
-// 113,4 + (306,18 − 113,4) × 142/365 = 188,4
-ok('año 2 esperado a hoy = 188,4', an.anio2.esperado === 188.4, String(an.anio2.esperado));
-// Hoy: 40 + 10 crías dic + 5 crías ago + 2 reposición + 1 cría sin fecha.
-ok('año 2 resultado a hoy = 58', an.anio2.resultado === 58, String(an.anio2.resultado));
-ok('año 2 cumplimiento 30,8%', an.anio2.cumplimientoPct === 30.8, String(an.anio2.cumplimientoPct));
+// Mes 17: cohortes de los meses 6 y 15. 42 × 1,51 = 63,42.
+ok('año 2 esperado a hoy = 63,42', an.anio2.esperado === 63.42, String(an.anio2.esperado));
+// Hoy: 40 + 10 crías dic + 5 crías ago + 2 reposición + 1 cría sin fecha. Todas hembras.
+ok('año 2 resultado a hoy = 58 hembras', an.anio2.resultado === 58, String(an.anio2.resultado));
+ok('año 2 cumplimiento 91,5%', an.anio2.cumplimientoPct === 91.5, String(an.anio2.cumplimientoPct));
 ok('salida sin fecha advertida', an.advertencias.salidasSinFecha === 1, String(an.advertencias.salidasSinFecha));
 ok('cría sin nacimiento advertida', an.advertencias.criasSinFecha === 1, String(an.advertencias.criasSinFecha));
 ok('reposición sin entrega advertida', an.advertencias.reposicionSinEntrega === 2,
@@ -266,9 +269,13 @@ ok('septiembre 2025 sigue en el año 1', enAnio1.anio1.estado === 'en_curso', en
 ok('año 2 aún no empieza', enAnio1.anio2.estado === 'no_iniciado'
   && enAnio1.anio2.esperado === null && enAnio1.anio2.resultado === null,
   enAnio1.anio2.estado);
-// 42 + (113,4 − 42) × 92/365 = 60,0
-ok('esperado a los 92 días = 60', enAnio1.anio1.esperado === 60 && enAnio1.anio1.diasTranscurridos === 92,
+// Mes 4: el primer parto del flujo es el mes 6. La promesa sigue en las 42.
+ok('antes del mes 6 el esperado sigue en 42', enAnio1.anio1.esperado === 42 && enAnio1.anio1.diasTranscurridos === 92,
   enAnio1.anio1.esperado + ' en ' + enAnio1.anio1.diasTranscurridos + ' días');
+var antesParto = A.aniosContrato([], apJulian, '2025-10-31');
+var enParto = A.aniosContrato([], apJulian, '2025-11-01');
+ok('el 31 oct la cohorte del mes 6 todavía no entra', antesParto.anio1.esperado === 42, String(antesParto.anio1.esperado));
+ok('el 1 nov entran las 25,5 hijas por cada 100', enParto.anio1.esperado === 52.71, String(enParto.anio1.esperado));
 var antes = A.aniosContrato([], apJulian, '2025-05-01');
 ok('antes del contrato los dos años están sin empezar',
   antes.ok && antes.anio1.estado === 'no_iniciado' && antes.anio2.estado === 'no_iniciado');
@@ -282,10 +289,11 @@ var cierra = A.aniosContrato([], paola, '2026-08-30');
 var abre = A.aniosContrato([], paola, '2026-08-31');
 ok('Paola cierra el año 1 el 30 ago 2026',
   cierra.anio1.estado === 'cerrado' && cierra.anio1.fin === '2026-08-30', cierra.anio1.fin);
-ok('el 31 ago 2026 Paola entra al año 2 en el punto de partida',
-  abre.anio2.estado === 'en_curso' && abre.anio2.esperado === 64.8 && abre.anio2.diasTranscurridos === 0,
+ok('el 31 ago 2026 Paola entra al año 2 en el cierre del año 1',
+  abre.anio2.estado === 'en_curso' && abre.anio2.esperado === 30.12 && abre.anio2.diasTranscurridos === 0,
   abre.anio2.estado + ' esperado ' + abre.anio2.esperado);
-ok('promesa año 2 de Paola = 64,8 × 2,7', abre.promesaAnio2 === 174.96, String(abre.promesaAnio2));
+ok('promesa año 1 de Paola = 24 × 1,255', abre.promesaAnio1 === 30.12, String(abre.promesaAnio1));
+ok('promesa año 2 de Paola = 24 × 1,830025', abre.promesaAnio2 === 43.92, String(abre.promesaAnio2));
 
 var saleEseDia = n(1, { tipo: 'madre_lote_inicial', estado_salida: 'muerte', fecha_salida: '2026-05-31' });
 var saleDespues = n(1, { tipo: 'madre_lote_inicial', estado_salida: 'muerte', fecha_salida: '2026-06-01' });
@@ -297,15 +305,25 @@ ok('quien sale el día del aniversario sí estaba al cierre',
 var soloVivas = [].concat(
   n(42, { tipo: 'madre_lote_inicial' }),
   n(10, { tipo: 'cria', fecha_nacimiento: '2025-12-01' }),
+  n(2,  { tipo: 'cria', sexo: 'macho', fecha_nacimiento: '2025-12-01' }),
   n(4,  { tipo: 'madre_lote_inicial', origen: 'reposicion' })
 );
 var kVivas = A.kpis(soloVivas, apJulian);
 var anVivas = A.aniosContrato(soloVivas, apJulian, '2026-10-21');
-ok('el resultado de hoy coincide con el hato actual',
-  anVivas.anio2.resultado === kVivas.hatoActual,
-  anVivas.anio2.resultado + ' vs ' + kVivas.hatoActual);
+ok('el resultado de hoy cuenta hembras y deja fuera los machos',
+  anVivas.anio2.resultado === 56 && kVivas.hatoActual === 58,
+  anVivas.anio2.resultado + ' hembras, hato ' + kVivas.hatoActual);
 ok('la reposición sin fecha no se retrotrae al año 1',
   anVivas.anio1.resultado === 52, String(anVivas.anio1.resultado));
+
+var mau = { nombre: 'MAURICIO FAJARDO', hato_inicial: 70, meta_anual: 189, fecha_inicio: '2025-10-01' };
+var am = A.aniosContrato([], mau, '2026-10-21');
+ok('Mauricio cierra el año 1 el 30 sep 2026',
+  am.anio1.estado === 'cerrado' && am.anio1.fin === '2026-09-30', am.anio1.fin);
+ok('Mauricio promesa año 1 = 70 × 1,255', am.promesaAnio1 === 87.85, String(am.promesaAnio1));
+ok('Mauricio promesa año 2 = 70 × 1,830025', am.promesaAnio2 === 128.1, String(am.promesaAnio2));
+ok('al 21 oct 2026 Mauricio aún no llega al parto del mes 15',
+  am.anio2.estado === 'en_curso' && am.anio2.esperado === 87.85, String(am.anio2.esperado));
 
 // ══ CAPA 2 ══════════════════════════════════════════════════════════════
 // Se activa solo con --fixture. El fixture lo genera el cargador a partir de

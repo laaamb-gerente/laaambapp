@@ -20,10 +20,29 @@
 
   var FINCA_ID = 'a1b2c3d4-0000-0000-0000-000000000001';
 
-  // Meta de crecimiento = hato_inicial × este multiplicador.
-  // El valor es dato de contrato y vive en la tabla. Si dejan de cuadrar,
-  // es un error de captura y el reporte lo debe avisar en vez de recalcular.
+  // La columna meta_anual se cargó como hato_inicial × 2,7
+  // (madres + un parto de 1,7 contando todas las crías).
+  // La curva año a año NO usa ese número: usa el flujo de vientres.
   var META_MULT = 2.7;
+
+  // Flujo 100 hembras.xlsx (8 ene 2026), hoja «Sencillo flujo 100 hembras».
+  // Base 100 hembras puestas. Cada parto de esas fundadoras retiene
+  // 100 × 1,7 × 0,15 = 25,5 hijas. La cohorte del mes 6 vuelve a parir
+  // en el mes 21 y retiene 25,5 × 1,7 × 0,15 = 6,5025.
+  // El mes es del proyecto: el mes 1 empieza en fecha_inicio.
+  // Flujo Mauricio Fajardo.xlsx (sep 2025) trae el mismo calendario
+  // (meses 6, 15, 21 y 24) y parte sus 70 hembras en 20 Lacaune,
+  // 35 Katahdin y 15 de Guasca, con retención 0,25 en vez de 0,15.
+  // El reporte usa el archivo de enero, que es el posterior, y lo escala
+  // por el hato_inicial de cada aportante.
+  var FLUJO = {
+    fuente: 'Flujo 100 hembras.xlsx',
+    base: 100,
+    criasPorParto: 1.7,
+    retencion: 0.15,
+    entradasFundadoras: [6, 15, 24],
+    entradaHijas: 21
+  };
 
   // Referencias de valor y GDP (declaradas en el reporte como modelo)
   var PRECIO_VIENTRE = 1200000;          // COP Katahdin / otras
@@ -411,13 +430,12 @@
     return { kpis: k, identidades: out, fallan: out.filter(function (r) { return !r.ok; }) };
   }
 
-  // ── AÑO DE CONTRATO · promesa × 2,7 vs resultado ────────────────
-  // El reporte corrido compara el hato de hoy con la meta del año 1.
-  // Aquí el reloj es el de cada contrato: año 1 cierra en el aniversario,
-  // año 2 vuelve a multiplicar esa promesa por 2,7.
-  // En un año en curso, «esperado» es el tramo lineal de esa promesa
-  // hasta la fecha de corte. El resultado cuenta quién estaba en el hato
-  // ese día. No se inventan fechas que el animal no tiene.
+  // ── AÑO DE CONTRATO · vientres del flujo vs hembras registradas ─
+  // El reloj es el del contrato: el año 1 cierra el día antes del
+  // aniversario. La promesa no es una recta. Sube el día en que el flujo
+  // mete una cohorte de hijas y se queda quieta entre partos.
+  // El resultado cuenta hembras (madres y crías hembra). Los machos salen
+  // a venta en el flujo y no entran en esta comparación.
 
   function pad2(n) { return n < 10 ? '0' + n : String(n); }
 
@@ -452,8 +470,56 @@
     return Math.round((Date.UTC(pb.y, pb.m - 1, pb.d) - Date.UTC(pa.y, pa.m - 1, pa.d)) / 86400000);
   }
 
-  function red1(n) { return Math.round(n * 10) / 10; }
   function red2(n) { return Math.round(n * 100) / 100; }
+
+  function sumarMeses(iso, n) {
+    var p = partesFecha(iso);
+    if (!p) return null;
+    var total = (p.y * 12 + (p.m - 1)) + n;
+    var y = Math.floor(total / 12);
+    var m = total % 12;
+    if (m < 0) { m += 12; y -= 1; }
+    return fechaISO(y, m + 1, Math.min(p.d, diasDelMes(y, m + 1)));
+  }
+
+  // Mes 1 = el mes que empieza en fecha_inicio. Mes 6 empieza cinco meses después.
+  function mesProyecto(inicio, fecha) {
+    if (!partesFecha(inicio) || !partesFecha(fecha)) return null;
+    if (fecha < inicio) return 0;
+    var n = 1;
+    while (n < 121 && sumarMeses(inicio, n) <= fecha) n++;
+    return n;
+  }
+
+  function saltosFlujo() {
+    var porParto = FLUJO.base * FLUJO.criasPorParto * FLUJO.retencion;
+    var deHijas = porParto * FLUJO.criasPorParto * FLUJO.retencion;
+    var lista = FLUJO.entradasFundadoras.map(function (mes) {
+      return { mes: mes, hembras: porParto };
+    });
+    lista.push({ mes: FLUJO.entradaHijas, hembras: deHijas });
+    lista.sort(function (a, b) { return a.mes - b.mes; });
+    return lista;
+  }
+
+  function hembrasEnMes(hato, mes) {
+    var acum = FLUJO.base;
+    saltosFlujo().forEach(function (s) {
+      if (s.mes <= mes) acum += s.hembras;
+    });
+    return hato * acum / FLUJO.base;
+  }
+
+  function pasosFlujo(hato) {
+    var pts = [{ mes: 0, hembras: red2(hato) }];
+    var acum = FLUJO.base;
+    saltosFlujo().forEach(function (s) {
+      if (s.mes > 24) return;
+      acum += s.hembras;
+      pts.push({ mes: s.mes, hembras: red2(hato * acum / FLUJO.base) });
+    });
+    return pts;
+  }
 
   // Entrada al proyecto. La fecha de nacimiento de una fundadora es anterior
   // al contrato: entra el día de inicio, no el día en que nació.
@@ -472,6 +538,11 @@
     return { clase: 'fechada', entrada: fechaInicio };
   }
 
+  function esHembraFila(a) {
+    var s = String((a && a.sexo) || '').toLowerCase();
+    return s === 'hembra' || s === 'h' || s === 'f';
+  }
+
   function sigueEnHato(a, D) {
     var activo = a.estado_salida === 'activo' || a.estado_salida == null || a.estado_salida === '';
     if (activo) return true;
@@ -482,9 +553,10 @@
   // modo 'historico': un cierre ya pasado. Sin fecha de entrada no se
   // retrotrae. modo 'corte': la foto de hoy; la reposición y las crías
   // sin fecha entran si siguen activas, porque el hato de hoy sí las tiene.
-  function hatoEnFecha(rows, D, fechaInicio, modo) {
+  function hatoEnFecha(rows, D, fechaInicio, modo, sexo) {
     var n = 0;
     (rows || []).forEach(function (a) {
+      if (sexo === 'hembra' && !esHembraFila(a)) return;
       var e = entradaAnimal(a, fechaInicio);
       if (e.clase === 'fuera') return;
       var entrada = e.entrada;
@@ -516,11 +588,13 @@
     };
   }
 
-  function bloqueAnio(numero, inicioContrato, corte, rows, apertura, cierrePromesa) {
+  function bloqueAnio(numero, inicioContrato, corte, rows, hato) {
     var ini = sumarAnios(inicioContrato, numero - 1);
     var finExcl = sumarAnios(inicioContrato, numero);
     var fin = sumarDias(finExcl, -1);
     var total = diasEntre(ini, finExcl);
+    var apertura = red2(hembrasEnMes(hato, (numero - 1) * 12));
+    var cierrePromesa = red2(hembrasEnMes(hato, numero * 12));
     var estado, esperado, resultado, dias, modo;
     if (corte < ini) {
       estado = 'no_iniciado';
@@ -530,16 +604,15 @@
       modo = null;
     } else if (corte >= fin) {
       estado = 'cerrado';
-      esperado = red1(cierrePromesa);
-      resultado = hatoEnFecha(rows, fin, inicioContrato, 'historico');
+      esperado = cierrePromesa;
+      resultado = hatoEnFecha(rows, fin, inicioContrato, 'historico', 'hembra');
       dias = total;
       modo = 'historico';
     } else {
       estado = 'en_curso';
       dias = diasEntre(ini, corte);
-      var frac = total ? dias / total : 0;
-      esperado = red1(apertura + (cierrePromesa - apertura) * frac);
-      resultado = hatoEnFecha(rows, corte, inicioContrato, 'corte');
+      esperado = red2(hembrasEnMes(hato, mesProyecto(inicioContrato, corte)));
+      resultado = hatoEnFecha(rows, corte, inicioContrato, 'corte', 'hembra');
       modo = 'corte';
     }
     var mes = estado === 'cerrado' ? 12
@@ -554,8 +627,8 @@
       diasTranscurridos: dias,
       diasTotales: total,
       mes: mes,
-      apertura: red1(apertura),
-      promesaCierre: red2(cierrePromesa),
+      apertura: apertura,
+      promesaCierre: cierrePromesa,
       esperado: esperado,
       resultado: resultado,
       cumplimientoPct: (esperado == null || resultado == null) ? null : pct(resultado, esperado)
@@ -566,26 +639,24 @@
     var inicio = aportante && aportante.fecha_inicio;
     var hato = (aportante && aportante.hato_inicial != null)
       ? Number(aportante.hato_inicial) : null;
-    var meta = (aportante && aportante.meta_anual != null)
-      ? Number(aportante.meta_anual) : null;
     if (!partesFecha(inicio)) return { ok: false, motivo: 'sin_fecha_inicio' };
     if (hato == null || !isFinite(hato)) return { ok: false, motivo: 'sin_hato_inicial' };
     if (!partesFecha(corte)) return { ok: false, motivo: 'sin_corte' };
     inicio = String(inicio).slice(0, 10);
     corte = String(corte).slice(0, 10);
-    var esperada = red2(hato * META_MULT);
-    var promesa1 = (meta != null && isFinite(meta)) ? red2(meta) : esperada;
-    var promesa2 = red2(promesa1 * META_MULT);
+    var promesa1 = red2(hembrasEnMes(hato, 12));
+    var promesa2 = red2(hembrasEnMes(hato, 24));
     return {
       ok: true,
       fechaInicio: inicio,
       corte: corte,
       hatoInicial: hato,
+      esquema: FLUJO.fuente,
       promesaAnio1: promesa1,
       promesaAnio2: promesa2,
-      metaCoherente: meta == null || Math.abs(meta - esperada) < 0.01,
-      anio1: bloqueAnio(1, inicio, corte, rows, hato, promesa1),
-      anio2: bloqueAnio(2, inicio, corte, rows, promesa1, promesa2),
+      pasos: pasosFlujo(hato),
+      anio1: bloqueAnio(1, inicio, corte, rows, hato),
+      anio2: bloqueAnio(2, inicio, corte, rows, hato),
       advertencias: advertenciasAnios(rows, inicio)
     };
   }
@@ -600,6 +671,8 @@
     kpis: kpis,
     aniosContrato: aniosContrato,
     hatoEnFecha: hatoEnFecha,
+    mesProyecto: mesProyecto,
+    FLUJO: FLUJO,
     verificarIdentidades: verificarIdentidades,
     pesoVigente: pesoVigente,
     esReal: esReal,

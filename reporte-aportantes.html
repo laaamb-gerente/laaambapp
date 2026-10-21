@@ -25,7 +25,7 @@
 <script src="js/roles.js"></script>
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/aparceria.js?v=12"></script>
+<script src="js/aparceria.js?v=13"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);
@@ -92,7 +92,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Changa
 .rep-titulo .nom{font-family:'Sigmar',cursive;font-size:23px;margin-top:3px;line-height:1.15}
 .rep-body{padding:26px 30px 30px}
 .rep-sec{margin-bottom:26px}
-.rep-sec-t{font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#1AA6A6;padding-bottom:7px;border-bottom:2px solid #1AA6A6;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rep-sec-t{font-size:11px;font-weight:700;letter-spacing:1.3px;text-transform:uppercase;color:#1AA6A6;padding-bottom:7px;border-bottom:2px solid #1AA6A6;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .rep-sec-t .hint{font-size:9.5px;font-weight:600;letter-spacing:.3px;text-transform:none;color:#8A9696}
 /* Historia del crecimiento: 3 líneas en orden */
 .crec{border:1px solid #E0E6E6;border-radius:10px;overflow:hidden}
@@ -295,7 +295,8 @@ table.rt td.num,table.rt th.num{text-align:right}
 
   function svgCurva(m){
     var W=640, H=168, padL=36, padR=18, padT=20, padB=32;
-    var vals=[m.hatoInicial, m.promesaAnio1, m.promesaAnio2];
+    var pasos=m.pasos&&m.pasos.length?m.pasos:[{mes:0,hembras:m.hatoInicial},{mes:12,hembras:m.promesaAnio1},{mes:24,hembras:m.promesaAnio2}];
+    var vals=pasos.map(function(p){ return p.hembras; });
     if(m.anio1.resultado!=null) vals.push(m.anio1.resultado);
     if(m.anio2.resultado!=null) vals.push(m.anio2.resultado);
     var maxV=Math.max.apply(null, vals);
@@ -308,11 +309,15 @@ table.rt td.num,table.rt th.num{text-align:right}
       if(b.estado==='en_curso') return desde+(b.diasTotales?12*b.diasTranscurridos/b.diasTotales:0);
       return null;
     }
-    var pts=[[0, m.hatoInicial],[12, m.promesaAnio1],[24, m.promesaAnio2]];
-    var poly=pts.map(function(p){ return X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1); }).join(' ');
-    var etiquetas=pts.map(function(p){
-      var anchor=p[0]===0?'start':p[0]===24?'end':'middle';
-      return '<text x="'+X(p[0]).toFixed(1)+'" y="'+(Y(p[1])-8).toFixed(1)+'" text-anchor="'+anchor+'" font-size="10" font-weight="700" fill="#1AA6A6">'+numDec(p[1])+'</text>';
+    var polyPts=[];
+    pasos.forEach(function(p, i){
+      if(i>0) polyPts.push([p.mes, pasos[i-1].hembras]);
+      polyPts.push([p.mes, p.hembras]);
+    });
+    var poly=polyPts.map(function(p){ return X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1); }).join(' ');
+    var etiquetas=pasos.map(function(p){
+      var anchor=p.mes===0?'start':p.mes>=21?'end':'middle';
+      return '<text x="'+X(p.mes).toFixed(1)+'" y="'+(Y(p.hembras)-8).toFixed(1)+'" text-anchor="'+anchor+'" font-size="10" font-weight="700" fill="#1AA6A6">'+numDec(p.hembras)+'</text>';
     }).join('');
     function punto(b, desde){
       var mes=mesDe(b, desde);
@@ -348,7 +353,7 @@ table.rt td.num,table.rt th.num{text-align:right}
     if(b.estado==='no_iniciado'){
       return '<div class="anio-card"><div class="anio-t">Año '+b.numero+' <span>'+esc(estadoTxt)+'</span></div>'
         + '<div class="anio-rango">'+esc(rango)+'</div>'
-        + '<div class="crec-nota">La promesa de cierre es <b>'+numDec(b.promesaCierre)+'</b> animales. '
+        + '<div class="crec-nota">La promesa de cierre es <b>'+numDec(b.promesaCierre)+'</b> vientres. '
         + 'El resultado se mide desde el día en que el año empieza.</div></div>';
     }
     var serie=b.estado==='cerrado'
@@ -388,13 +393,15 @@ table.rt td.num,table.rt th.num{text-align:right}
         ? ' reposición no tiene fecha de entrega y sigue la misma regla.'
         : ' reposiciones no tienen fecha de entrega y siguen la misma regla.');
     }
-    var avisoMeta = m.metaCoherente ? ''
-      : ' La meta guardada del contrato no coincide con hato inicial × 2,7; el año 1 usa la meta guardada.';
-    return '<div class="crec-nota">La promesa arranca en las '+numDec(m.hatoInicial)+' madres aportadas y se multiplica '
-      + 'por 2,7 al cierre de cada año de contrato (año 1: <b>'+numDec(m.promesaAnio1)+'</b>, año 2: <b>'+numDec(m.promesaAnio2)+'</b>). '
-      + 'En el año en curso, lo esperado a hoy es el tramo de esa promesa hasta la fecha de corte. '
-      + 'El resultado cuenta fundadoras desde el inicio, crías desde su nacimiento y cada salida desde su fecha. '
-      + 'Los animales simulados no entran.'+extra+avisoMeta+'</div>';
+    return '<div class="crec-nota">La promesa sale de <b>Flujo 100 hembras.xlsx</b> (8 ene 2026), '
+      + 'escalada por las '+numDec(m.hatoInicial)+' hembras puestas y anclada en la fecha de inicio. '
+      + 'Por cada 100 hembras el flujo retiene 25,5 hijas en el mes 6 (1,7 crías por parto × 15% de los nacimientos). '
+      + 'El año 1 cierra en <b>'+numDec(m.promesaAnio1)+'</b> vientres. '
+      + 'El año 2 suma los partos de los meses 15 y 24 y el primer parto de esas hijas en el mes 21, y cierra en <b>'+numDec(m.promesaAnio2)+'</b>. '
+      + 'Entre partos la promesa no sube. '
+      + 'El resultado cuenta hembras vivas: fundadoras desde el inicio, crías hembra desde su nacimiento y cada salida desde su fecha. '
+      + 'Los machos no entran, porque el flujo los vende. Los animales simulados tampoco.'
+      + extra+'</div>';
   }
 
   function seccionAnios(rows, aportante, corte){
@@ -410,7 +417,7 @@ table.rt td.num,table.rt th.num{text-align:right}
     }
     var html = '<div class="curva-box">'
       + svgCurva(m)
-      + '<div class="ley"><span><i class="swatch" style="background:#1AA6A6"></i>Promesa · ×2,7 cada año</span>'
+      + '<div class="ley"><span><i class="swatch" style="background:#1AA6A6"></i>Vientres del flujo · sube en cada parto</span>'
       + '<span><i class="swatch" style="background:#F58220"></i>Resultado en la fecha</span></div></div>'
       + '<div class="anios-grid">'+tarjetaAnio(m.anio1)+tarjetaAnio(m.anio2)+'</div>'
       + notaAnios(m);
@@ -469,10 +476,13 @@ table.rt td.num,table.rt th.num{text-align:right}
       + '</div>';
 
     // Cumplimiento de meta
+    var flujo = window.APARCERIA.aniosContrato(ACTUAL.rows, ap, corte);
+    var flujoOk = flujo && flujo.ok;
+    var flujoCuando = (flujoOk && flujo.anio1.estado==='en_curso') ? 'a hoy' : 'al cierre';
     var meta = '<div class="kg">'
-      + kc('teal', num(k.hatoActual), 'Hato actual', 'estado_salida = activo')
-      + kc('gray', k.meta==null?'—':String(k.meta).replace('.',','), 'Promesa año 1', 'hato inicial × 2,7')
-      + kc('orange', k.cumplimientoPct==null?'—':String(k.cumplimientoPct).replace('.',',')+'%', 'Cumplimiento', 'hato de hoy ÷ promesa del año 1')
+      + kc('teal', flujoOk ? numDec(flujo.anio1.resultado) : '—', 'Hembras '+flujoCuando, 'madres y crías hembra')
+      + kc('gray', flujoOk ? numDec(flujo.promesaAnio1) : '—', 'Promesa año 1', 'vientres del flujo de 100 hembras')
+      + kc('orange', flujoOk ? pctPlano(flujo.anio1.cumplimientoPct) : '—', 'Cumplimiento año 1', 'hembras '+flujoCuando+' ÷ promesa')
       + '</div>';
 
     // Composición del hato
@@ -663,7 +673,7 @@ table.rt td.num,table.rt th.num{text-align:right}
                                     : 'aportaron madres; lo nacido es del proyecto'))
       +   sec('Resumen ejecutivo', ejecutivo)
       +   seccionAnios(ACTUAL.rows, ap, corte)
-      +   sec('Cumplimiento de meta', meta, 'promesa del año 1')
+      +   sec('Cumplimiento de meta', meta, 'vientres del flujo, año 1')
       +   sec('Composición y productividad', comp)
       +   sec('Desempeño por raza', razaHtml, 'dato real + GDP modelo de referencia')
       +   sec('Valor estimado del hato', valorHtml, 'precios de referencia del proyecto')
@@ -774,8 +784,9 @@ table.rt td.num,table.rt th.num{text-align:right}
     }
     return [
       ['Inicio de contrato', m.fechaInicio],
-      ['Promesa año 1', m.promesaAnio1],
-      ['Promesa año 2', m.promesaAnio2]
+      ['Esquema', m.esquema || ''],
+      ['Promesa año 1 · vientres', m.promesaAnio1],
+      ['Promesa año 2 · vientres', m.promesaAnio2]
     ].concat(bloque(m.anio1), bloque(m.anio2), [
       ['Salidas sin fecha (fuera del corte por año)', m.advertencias.salidasSinFecha],
       ['Crías sin fecha de nacimiento', m.advertencias.criasSinFecha],
@@ -800,10 +811,10 @@ table.rt td.num,table.rt th.num{text-align:right}
         ['Hato actual', k.hatoActual],
         ['Crecimiento %', k.crecimientoPct],
         ['Crecimiento neto (animales)', k.crecimientoNeto],
-        ['Meta anual', k.meta],
-        ['Cumplimiento meta %', k.cumplimientoPct],
+        ['Meta guardada (hato × 2,7, no es la curva)', k.meta],
+        ['Cumplimiento de esa meta guardada %', k.cumplimientoPct],
         [],
-        ['AÑO A AÑO · promesa × 2,7 por año de contrato'],
+        ['AÑO A AÑO · vientres de Flujo 100 hembras, escalado por las hembras puestas'],
       ].concat(filasExcelAnios(ACTUAL.anios)).concat([
         [],
         ['COMPOSICIÓN'],
