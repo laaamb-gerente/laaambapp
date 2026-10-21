@@ -209,6 +209,104 @@ ok('muertes SIN fecha expuestas', km.muertesSinFecha === 7, String(km.muertesSin
 ok('muertes CON fecha expuestas', km.muertesConFecha === 3, String(km.muertesConFecha));
 ok('sin_fecha + con_fecha = total', km.muertesSinFecha + km.muertesConFecha === km.muertes);
 
+// ── AÑO DE CONTRATO · promesa × 2,7 vs resultado ─────────────────────
+// Julián arranca el 2025-06-01. Al 2026-10-21 el año 1 ya cerró
+// (31 may 2026) y el año 2 lleva 142 días de 365.
+console.log('\n· AÑOS DE CONTRATO (Julián, corte 2026-10-21)');
+var filasAnio = [].concat(
+  n(40, { tipo: 'madre_lote_inicial' }),
+  n(2,  { tipo: 'madre_lote_inicial', estado_salida: 'muerte', fecha_salida: '2026-03-01' }),
+  n(1,  { tipo: 'madre_lote_inicial', estado_salida: 'muerte', fecha_salida: '2026-07-15' }),
+  n(1,  { tipo: 'madre_lote_inicial', estado_salida: 'muerte', fecha_salida: null }),
+  n(10, { tipo: 'cria', fecha_nacimiento: '2025-12-01' }),
+  n(5,  { tipo: 'cria', fecha_nacimiento: '2026-08-01' }),
+  n(3,  { tipo: 'cria', origen: 'proyectado', fecha_nacimiento: '2025-12-01' }),
+  n(2,  { tipo: 'madre_lote_inicial', origen: 'reposicion', fecha_nacimiento: null }),
+  n(1,  { tipo: 'cria', fecha_nacimiento: null })
+);
+var apJulian = {
+  nombre: 'JULIAN Y SALATIEL MORENO',
+  hato_inicial: 42,
+  meta_anual: 113.4,
+  fecha_inicio: '2025-06-01'
+};
+var an = A.aniosContrato(filasAnio, apJulian, '2026-10-21');
+ok('modelo usable', an.ok === true, an.motivo || '');
+ok('promesa año 1 = meta del contrato', an.promesaAnio1 === 113.4, String(an.promesaAnio1));
+ok('promesa año 2 = 113,4 × 2,7', an.promesaAnio2 === 306.18, String(an.promesaAnio2));
+ok('año 1 cerrado el 31 may 2026',
+  an.anio1.estado === 'cerrado' && an.anio1.fin === '2026-05-31',
+  an.anio1.estado + ' ' + an.anio1.fin);
+ok('año 1 esperado = 113,4', an.anio1.esperado === 113.4, String(an.anio1.esperado));
+// Cierre año 1: 40 vivas + 1 que muere en jul 2026 + 10 crías de dic.
+// Fuera: 2 muertes de marzo, 1 muerte sin fecha, crías de agosto,
+// proyectados, reposición sin entrega, cría sin nacimiento.
+ok('año 1 resultado = 51', an.anio1.resultado === 51, String(an.anio1.resultado));
+ok('año 1 cumplimiento 45%', an.anio1.cumplimientoPct === 45, String(an.anio1.cumplimientoPct));
+ok('año 2 en curso', an.anio2.estado === 'en_curso' && an.anio2.inicio === '2026-06-01',
+  an.anio2.estado + ' ' + an.anio2.inicio);
+ok('año 2 lleva 142 días', an.anio2.diasTranscurridos === 142 && an.anio2.diasTotales === 365,
+  an.anio2.diasTranscurridos + '/' + an.anio2.diasTotales);
+// 113,4 + (306,18 − 113,4) × 142/365 = 188,4
+ok('año 2 esperado a hoy = 188,4', an.anio2.esperado === 188.4, String(an.anio2.esperado));
+// Hoy: 40 + 10 crías dic + 5 crías ago + 2 reposición + 1 cría sin fecha.
+ok('año 2 resultado a hoy = 58', an.anio2.resultado === 58, String(an.anio2.resultado));
+ok('año 2 cumplimiento 30,8%', an.anio2.cumplimientoPct === 30.8, String(an.anio2.cumplimientoPct));
+ok('salida sin fecha advertida', an.advertencias.salidasSinFecha === 1, String(an.advertencias.salidasSinFecha));
+ok('cría sin nacimiento advertida', an.advertencias.criasSinFecha === 1, String(an.advertencias.criasSinFecha));
+ok('reposición sin entrega advertida', an.advertencias.reposicionSinEntrega === 2,
+  String(an.advertencias.reposicionSinEntrega));
+ok('proyectado fuera de ambos cortes',
+  A.hatoEnFecha(n(4, { origen: 'proyectado', tipo: 'cria', fecha_nacimiento: '2025-01-01' }),
+    '2026-10-21', '2025-06-01', 'corte') === 0);
+
+console.log('\n· AÑOS DE CONTRATO (cortes de borde)');
+var enAnio1 = A.aniosContrato(filasAnio, apJulian, '2025-09-01');
+ok('septiembre 2025 sigue en el año 1', enAnio1.anio1.estado === 'en_curso', enAnio1.anio1.estado);
+ok('año 2 aún no empieza', enAnio1.anio2.estado === 'no_iniciado'
+  && enAnio1.anio2.esperado === null && enAnio1.anio2.resultado === null,
+  enAnio1.anio2.estado);
+// 42 + (113,4 − 42) × 92/365 = 60,0
+ok('esperado a los 92 días = 60', enAnio1.anio1.esperado === 60 && enAnio1.anio1.diasTranscurridos === 92,
+  enAnio1.anio1.esperado + ' en ' + enAnio1.anio1.diasTranscurridos + ' días');
+var antes = A.aniosContrato([], apJulian, '2025-05-01');
+ok('antes del contrato los dos años están sin empezar',
+  antes.ok && antes.anio1.estado === 'no_iniciado' && antes.anio2.estado === 'no_iniciado');
+ok('sin fecha de inicio no parte el año',
+  A.aniosContrato([], { hato_inicial: 42, meta_anual: 113.4 }, '2026-10-21').motivo === 'sin_fecha_inicio');
+ok('sin hato inicial no parte el año',
+  A.aniosContrato([], { fecha_inicio: '2025-06-01', meta_anual: 113.4 }, '2026-10-21').motivo === 'sin_hato_inicial');
+
+var paola = { hato_inicial: 24, meta_anual: 64.8, fecha_inicio: '2025-08-31' };
+var cierra = A.aniosContrato([], paola, '2026-08-30');
+var abre = A.aniosContrato([], paola, '2026-08-31');
+ok('Paola cierra el año 1 el 30 ago 2026',
+  cierra.anio1.estado === 'cerrado' && cierra.anio1.fin === '2026-08-30', cierra.anio1.fin);
+ok('el 31 ago 2026 Paola entra al año 2 en el punto de partida',
+  abre.anio2.estado === 'en_curso' && abre.anio2.esperado === 64.8 && abre.anio2.diasTranscurridos === 0,
+  abre.anio2.estado + ' esperado ' + abre.anio2.esperado);
+ok('promesa año 2 de Paola = 64,8 × 2,7', abre.promesaAnio2 === 174.96, String(abre.promesaAnio2));
+
+var saleEseDia = n(1, { tipo: 'madre_lote_inicial', estado_salida: 'muerte', fecha_salida: '2026-05-31' });
+var saleDespues = n(1, { tipo: 'madre_lote_inicial', estado_salida: 'muerte', fecha_salida: '2026-06-01' });
+ok('quien sale el día del cierre ya no está',
+  A.hatoEnFecha(saleEseDia, '2026-05-31', '2025-06-01', 'historico') === 0);
+ok('quien sale el día del aniversario sí estaba al cierre',
+  A.hatoEnFecha(saleDespues, '2026-05-31', '2025-06-01', 'historico') === 1);
+
+var soloVivas = [].concat(
+  n(42, { tipo: 'madre_lote_inicial' }),
+  n(10, { tipo: 'cria', fecha_nacimiento: '2025-12-01' }),
+  n(4,  { tipo: 'madre_lote_inicial', origen: 'reposicion' })
+);
+var kVivas = A.kpis(soloVivas, apJulian);
+var anVivas = A.aniosContrato(soloVivas, apJulian, '2026-10-21');
+ok('el resultado de hoy coincide con el hato actual',
+  anVivas.anio2.resultado === kVivas.hatoActual,
+  anVivas.anio2.resultado + ' vs ' + kVivas.hatoActual);
+ok('la reposición sin fecha no se retrotrae al año 1',
+  anVivas.anio1.resultado === 52, String(anVivas.anio1.resultado));
+
 // ══ CAPA 2 ══════════════════════════════════════════════════════════════
 // Se activa solo con --fixture. El fixture lo genera el cargador a partir de
 // lo realmente insertado, así que los valores puntuales nunca se escriben a

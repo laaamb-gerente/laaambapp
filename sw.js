@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v64: aparcería — origen = criadero; cargas solo las ve el gerente.
-const CACHE_NAME = 'laaambapp-v64';
-const CACHE_SHELL = 'laaambapp-shell-v64';
+// v65: reporte de aportantes — año 1 y año 2, promesa ×2,7 vs resultado.
+const CACHE_NAME = 'laaambapp-v65';
+const CACHE_SHELL = 'laaambapp-shell-v65';
 
 const STATIC_ASSETS = [
   './manifest.json',

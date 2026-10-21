@@ -25,7 +25,7 @@
 <script src="js/roles.js"></script>
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/aparceria.js?v=11"></script>
+<script src="js/aparceria.js?v=12"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);
@@ -125,6 +125,15 @@ table.rt td.num,table.rt th.num{text-align:right}
 .esc-box{border:1.5px dashed #F58220;background:#FEF7F0;border-radius:10px;padding:16px 18px}
 .esc-tag{display:inline-block;background:#F58220;color:#fff;font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:99px;margin-bottom:10px}
 .esc-warn{font-size:11px;color:#8A5A20;margin-top:10px;line-height:1.5}
+.curva-box{border:1px solid #E0E6E6;border-radius:10px;padding:8px 10px 4px;margin-bottom:12px}
+.anios-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.anio-card{border:1px solid #E0E6E6;border-radius:10px;padding:12px 12px 10px}
+.anio-t{font-size:14px;font-weight:700;color:#15201F}
+.anio-t span{font-weight:600;font-size:11px;color:#1AA6A6;margin-left:6px}
+.anio-rango{font-size:11px;color:#8A9696;margin:2px 0 4px}
+.anio-pie{font-size:11.5px;color:#5F6B6C;line-height:1.45;margin-top:2px}
+.ley{display:flex;gap:14px;flex-wrap:wrap;font-size:11px;color:#5F6B6C;padding:0 4px 6px}
+.swatch{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle;font-style:normal}
 /* Notas al pie */
 .rep-foot{border-top:1px solid #E0E6E6;margin-top:26px;padding-top:16px;font-size:10.5px;color:#8A9696;line-height:1.65}
 .rep-foot b{color:#5F6B6C}
@@ -151,7 +160,8 @@ table.rt td.num,table.rt th.num{text-align:right}
   .main{overflow:visible!important;padding:0!important;background:#fff!important}
   #hoja{box-shadow:none!important;border-radius:0!important;max-width:none!important}
   .rep-head{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .rep-sec,.crec,.esc-box,.kc{break-inside:avoid;page-break-inside:avoid}
+  .rep-sec,.crec,.esc-box,.kc,.anio-card,.curva-box{break-inside:avoid;page-break-inside:avoid}
+  .curva-box svg,.anio-card svg{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .rep-sec-t{break-after:avoid;page-break-after:avoid}
 }
 </style>
@@ -247,6 +257,165 @@ table.rt td.num,table.rt th.num{text-align:right}
     if(n==null||isNaN(n)) return '—';
     return '$'+Math.round(n).toLocaleString('es-CO');
   }
+  function numDec(n){ return n==null?'—':String(n).replace('.', ','); }
+  function pctPlano(p){ return p==null?'—':String(p).replace('.', ',')+'%'; }
+  function fmtCorto(iso){
+    if(!iso) return '—';
+    var p=String(iso).split('-');
+    var M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    return Number(p[2])+' '+M[Number(p[1])-1]+' '+p[0];
+  }
+
+  // ── GRÁFICAS AÑO A AÑO ─────────────────────────────────────────
+  function svgBarras(serie, max){
+    var W=360, H=196, padL=8, padR=8, padT=22, padB=44;
+    var innerW=W-padL-padR, innerH=H-padT-padB;
+    var n=serie.length, gap=14;
+    var bw=Math.min(68, (innerW-gap*(n+1))/n);
+    var x0=padL+(innerW-(bw*n+gap*(n-1)))/2;
+    var base=padT+innerH;
+    var bars=serie.map(function(s, i){
+      var v=s.valor==null?0:Number(s.valor);
+      var bh=max?(v/max)*innerH:0;
+      var x=x0+i*(bw+gap);
+      var y=base-bh;
+      return '<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(bh,0).toFixed(1)+'" rx="4" fill="'+s.fill+'"'
+        + (s.stroke?' stroke="'+s.stroke+'" stroke-width="1.6"':'')
+        + (s.dash?' stroke-dasharray="4 3"':'')
+        + '/>'
+        + '<text x="'+(x+bw/2).toFixed(1)+'" y="'+(y-6).toFixed(1)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#15201F">'+numDec(s.valor)+'</text>'
+        + '<text x="'+(x+bw/2).toFixed(1)+'" y="'+(base+16)+'" text-anchor="middle" font-size="10" fill="#5F6B6C">'+esc(s.label1)+'</text>'
+        + '<text x="'+(x+bw/2).toFixed(1)+'" y="'+(base+30)+'" text-anchor="middle" font-size="10" fill="#8A9696">'+esc(s.label2)+'</text>';
+    }).join('');
+    var aria=serie.map(function(s){ return s.label1+' '+s.label2+' '+numDec(s.valor); }).join(', ');
+    return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="'+esc(aria)+'">'
+      + '<line x1="'+padL+'" y1="'+base+'" x2="'+(W-padR)+'" y2="'+base+'" stroke="#E0E6E6"/>'
+      + bars + '</svg>';
+  }
+
+  function svgCurva(m){
+    var W=640, H=168, padL=36, padR=18, padT=20, padB=32;
+    var vals=[m.hatoInicial, m.promesaAnio1, m.promesaAnio2];
+    if(m.anio1.resultado!=null) vals.push(m.anio1.resultado);
+    if(m.anio2.resultado!=null) vals.push(m.anio2.resultado);
+    var maxV=Math.max.apply(null, vals);
+    maxV=maxV>0?maxV*1.22:1;
+    var innerW=W-padL-padR, innerH=H-padT-padB, base=padT+innerH;
+    function X(mes){ return padL+(mes/24)*innerW; }
+    function Y(v){ return padT+(1-(v/maxV))*innerH; }
+    function mesDe(b, desde){
+      if(b.estado==='cerrado') return desde+12;
+      if(b.estado==='en_curso') return desde+(b.diasTotales?12*b.diasTranscurridos/b.diasTotales:0);
+      return null;
+    }
+    var pts=[[0, m.hatoInicial],[12, m.promesaAnio1],[24, m.promesaAnio2]];
+    var poly=pts.map(function(p){ return X(p[0]).toFixed(1)+','+Y(p[1]).toFixed(1); }).join(' ');
+    var etiquetas=pts.map(function(p){
+      var anchor=p[0]===0?'start':p[0]===24?'end':'middle';
+      return '<text x="'+X(p[0]).toFixed(1)+'" y="'+(Y(p[1])-8).toFixed(1)+'" text-anchor="'+anchor+'" font-size="10" font-weight="700" fill="#1AA6A6">'+numDec(p[1])+'</text>';
+    }).join('');
+    function punto(b, desde){
+      var mes=mesDe(b, desde);
+      if(mes==null||b.resultado==null) return '';
+      var x=X(mes), y=Y(b.resultado);
+      var anchor=mes>20?'end':'start';
+      var dx=mes>20?-8:8;
+      return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="5" fill="#F58220" stroke="#fff" stroke-width="1.5"/>'
+        + '<text x="'+(x+dx).toFixed(1)+'" y="'+(y+3).toFixed(1)+'" text-anchor="'+anchor+'" font-size="10" font-weight="700" fill="#C4661A">'+numDec(b.resultado)+'</text>';
+    }
+    var hoy=m.anio2.estado==='en_curso'?mesDe(m.anio2, 12)
+      : m.anio1.estado==='en_curso'?mesDe(m.anio1, 0)
+      : m.anio2.estado==='cerrado'?24
+      : m.anio1.estado==='cerrado'?12 : null;
+    var hoyLine=hoy==null?'':'<line x1="'+X(hoy).toFixed(1)+'" y1="'+padT+'" x2="'+X(hoy).toFixed(1)+'" y2="'+base+'" stroke="#D6E3E3" stroke-dasharray="3 3"/>';
+    return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Promesa de hato por año de contrato y resultado">'
+      + '<line x1="'+X(12).toFixed(1)+'" y1="'+padT+'" x2="'+X(12).toFixed(1)+'" y2="'+base+'" stroke="#EEF4F4"/>'
+      + hoyLine
+      + '<line x1="'+padL+'" y1="'+base+'" x2="'+(W-padR)+'" y2="'+base+'" stroke="#E0E6E6"/>'
+      + '<text x="'+X(0)+'" y="'+(base+16)+'" font-size="10" fill="#8A9696">Inicio</text>'
+      + '<text x="'+X(12).toFixed(1)+'" y="'+(base+16)+'" text-anchor="middle" font-size="10" fill="#8A9696">Cierre año 1</text>'
+      + '<text x="'+X(24).toFixed(1)+'" y="'+(base+16)+'" text-anchor="end" font-size="10" fill="#8A9696">Cierre año 2</text>'
+      + '<polyline points="'+poly+'" fill="none" stroke="#1AA6A6" stroke-width="2.5" stroke-linejoin="round"/>'
+      + etiquetas + punto(m.anio1, 0) + punto(m.anio2, 12)
+      + '</svg>';
+  }
+
+  function tarjetaAnio(b){
+    var rango=fmtCorto(b.inicio)+' – '+fmtCorto(b.fin);
+    var estadoTxt=b.estado==='cerrado'?'Cerrado'
+      : b.estado==='en_curso'?'En curso · mes '+b.mes+' de 12'
+      : 'Empieza el '+fmtCorto(b.inicio);
+    if(b.estado==='no_iniciado'){
+      return '<div class="anio-card"><div class="anio-t">Año '+b.numero+' <span>'+esc(estadoTxt)+'</span></div>'
+        + '<div class="anio-rango">'+esc(rango)+'</div>'
+        + '<div class="crec-nota">La promesa de cierre es <b>'+numDec(b.promesaCierre)+'</b> animales. '
+        + 'El resultado se mide desde el día en que el año empieza.</div></div>';
+    }
+    var serie=b.estado==='cerrado'
+      ? [{label1:'Esperado', label2:'al cierre', valor:b.esperado, fill:'#1AA6A6'},
+         {label1:'Resultado', label2:'al cierre', valor:b.resultado, fill:'#F58220'}]
+      : [{label1:'Esperado', label2:'a hoy', valor:b.esperado, fill:'#1AA6A6'},
+         {label1:'Resultado', label2:'a hoy', valor:b.resultado, fill:'#F58220'},
+         {label1:'Prometido', label2:'al cierre', valor:b.promesaCierre, fill:'#F1FAFA', stroke:'#1AA6A6', dash:true}];
+    var max=1;
+    serie.forEach(function(s){ if(s.valor!=null && Number(s.valor)>max) max=Number(s.valor); });
+    var pie='El resultado es el <b>'+pctPlano(b.cumplimientoPct)+'</b> de lo prometido '
+      + (b.estado==='en_curso'?'a esta fecha.':'al cierre del año.');
+    if(b.estado==='en_curso'){
+      pie+=' Si el año sigue la promesa, cierra en <b>'+numDec(b.promesaCierre)+'</b>.';
+    }
+    return '<div class="anio-card"><div class="anio-t">Año '+b.numero+' <span>'+esc(estadoTxt)+'</span></div>'
+      + '<div class="anio-rango">'+esc(rango)+'</div>'
+      + svgBarras(serie, max*1.18)
+      + '<div class="anio-pie">'+pie+'</div></div>';
+  }
+
+  function notaAnios(m){
+    var ad=m.advertencias||{};
+    var extra='';
+    if(ad.salidasSinFecha){
+      extra+=' '+ad.salidasSinFecha+(ad.salidasSinFecha===1
+        ? ' salida no tiene fecha y queda fuera de estos cortes.'
+        : ' salidas no tienen fecha y quedan fuera de estos cortes.');
+    }
+    if(ad.criasSinFecha){
+      extra+=' '+ad.criasSinFecha+(ad.criasSinFecha===1
+        ? ' cría no tiene fecha de nacimiento: entra al resultado de hoy si sigue activa, y no al cierre de un año ya pasado.'
+        : ' crías no tienen fecha de nacimiento: entran al resultado de hoy si siguen activas, y no al cierre de un año ya pasado.');
+    }
+    if(ad.reposicionSinEntrega){
+      extra+=' '+ad.reposicionSinEntrega+(ad.reposicionSinEntrega===1
+        ? ' reposición no tiene fecha de entrega y sigue la misma regla.'
+        : ' reposiciones no tienen fecha de entrega y siguen la misma regla.');
+    }
+    var avisoMeta = m.metaCoherente ? ''
+      : ' La meta guardada del contrato no coincide con hato inicial × 2,7; el año 1 usa la meta guardada.';
+    return '<div class="crec-nota">La promesa arranca en las '+numDec(m.hatoInicial)+' madres aportadas y se multiplica '
+      + 'por 2,7 al cierre de cada año de contrato (año 1: <b>'+numDec(m.promesaAnio1)+'</b>, año 2: <b>'+numDec(m.promesaAnio2)+'</b>). '
+      + 'En el año en curso, lo esperado a hoy es el tramo de esa promesa hasta la fecha de corte. '
+      + 'El resultado cuenta fundadoras desde el inicio, crías desde su nacimiento y cada salida desde su fecha. '
+      + 'Los animales simulados no entran.'+extra+avisoMeta+'</div>';
+  }
+
+  function seccionAnios(rows, aportante, corte){
+    var m = window.APARCERIA.aniosContrato(rows, aportante, corte);
+    if(ACTUAL) ACTUAL.anios = m;
+    if(!m.ok){
+      var porque = m.motivo==='sin_fecha_inicio'
+        ? 'Este aportante no tiene fecha de inicio de contrato. Sin esa fecha el reporte no puede partir los años.'
+        : m.motivo==='sin_hato_inicial'
+        ? 'Este aportante no tiene el hato inicial del contrato. Sin esa cifra no hay promesa contra la cual medir.'
+        : 'No se pudo armar la comparación por año.';
+      return sec('Año a año', '<div class="crec-nota">'+porque+'</div>', 'promesa del contrato');
+    }
+    var html = '<div class="curva-box">'
+      + svgCurva(m)
+      + '<div class="ley"><span><i class="swatch" style="background:#1AA6A6"></i>Promesa · ×2,7 cada año</span>'
+      + '<span><i class="swatch" style="background:#F58220"></i>Resultado en la fecha</span></div></div>'
+      + '<div class="anios-grid">'+tarjetaAnio(m.anio1)+tarjetaAnio(m.anio2)+'</div>'
+      + notaAnios(m);
+    return sec('Año a año', html, 'desde el '+fmtCorto(m.fechaInicio));
+  }
 
   // ── RENDER DE LA HOJA ──────────────────────────────────────────
   function render(){
@@ -302,8 +471,8 @@ table.rt td.num,table.rt th.num{text-align:right}
     // Cumplimiento de meta
     var meta = '<div class="kg">'
       + kc('teal', num(k.hatoActual), 'Hato actual', 'estado_salida = activo')
-      + kc('gray', k.meta==null?'—':String(k.meta).replace('.',','), 'Meta anual', 'pactada en contrato')
-      + kc('orange', k.cumplimientoPct==null?'—':String(k.cumplimientoPct).replace('.',',')+'%', 'Cumplimiento', 'hato actual ÷ meta')
+      + kc('gray', k.meta==null?'—':String(k.meta).replace('.',','), 'Promesa año 1', 'hato inicial × 2,7')
+      + kc('orange', k.cumplimientoPct==null?'—':String(k.cumplimientoPct).replace('.',',')+'%', 'Cumplimiento', 'hato de hoy ÷ promesa del año 1')
       + '</div>';
 
     // Composición del hato
@@ -493,7 +662,8 @@ table.rt td.num,table.rt th.num{text-align:right}
              (k.criasEnVerificacion ? 'PROVISIONAL · propiedad en verificación'
                                     : 'aportaron madres; lo nacido es del proyecto'))
       +   sec('Resumen ejecutivo', ejecutivo)
-      +   sec('Cumplimiento de meta', meta)
+      +   seccionAnios(ACTUAL.rows, ap, corte)
+      +   sec('Cumplimiento de meta', meta, 'promesa del año 1')
       +   sec('Composición y productividad', comp)
       +   sec('Desempeño por raza', razaHtml, 'dato real + GDP modelo de referencia')
       +   sec('Valor estimado del hato', valorHtml, 'precios de referencia del proyecto')
@@ -589,6 +759,30 @@ table.rt td.num,table.rt th.num{text-align:right}
     }
   }
 
+  function filasExcelAnios(m){
+    if(!m || !m.ok) return [['Año a año', (m && m.motivo) || 'sin datos']];
+    function bloque(b){
+      return [
+        ['Año '+b.numero+' · estado', b.estado],
+        ['Año '+b.numero+' · inicio', b.inicio],
+        ['Año '+b.numero+' · fin', b.fin],
+        ['Año '+b.numero+' · esperado', b.esperado],
+        ['Año '+b.numero+' · resultado', b.resultado],
+        ['Año '+b.numero+' · cumplimiento %', b.cumplimientoPct],
+        ['Año '+b.numero+' · promesa al cierre', b.promesaCierre]
+      ];
+    }
+    return [
+      ['Inicio de contrato', m.fechaInicio],
+      ['Promesa año 1', m.promesaAnio1],
+      ['Promesa año 2', m.promesaAnio2]
+    ].concat(bloque(m.anio1), bloque(m.anio2), [
+      ['Salidas sin fecha (fuera del corte por año)', m.advertencias.salidasSinFecha],
+      ['Crías sin fecha de nacimiento', m.advertencias.criasSinFecha],
+      ['Reposición sin fecha de entrega', m.advertencias.reposicionSinEntrega]
+    ]);
+  }
+
   // ── EXPORT EXCEL ───────────────────────────────────────────────
   function exportarExcel(){
     if(!ACTUAL){ toast('Genera el reporte primero', true); return; }
@@ -608,6 +802,9 @@ table.rt td.num,table.rt th.num{text-align:right}
         ['Crecimiento neto (animales)', k.crecimientoNeto],
         ['Meta anual', k.meta],
         ['Cumplimiento meta %', k.cumplimientoPct],
+        [],
+        ['AÑO A AÑO · promesa × 2,7 por año de contrato'],
+      ].concat(filasExcelAnios(ACTUAL.anios)).concat([
         [],
         ['COMPOSICIÓN'],
         ['Total registrados (reales)', k.totalRegistradas],
@@ -643,7 +840,7 @@ table.rt td.num,table.rt th.num{text-align:right}
         ['Sin peso', k.sinPeso],
         ['Pesos de balanza', k.pesosReales],
         ['Pesos estimados', k.pesosEstimados]
-      ];
+      ]);
       if(k.causasBaja.length){
         kpiRows.push([], ['CAUSAS DE BAJA'], ['Causa','Animales']);
         k.causasBaja.forEach(function(c){ kpiRows.push([c.clave, c.n]); });

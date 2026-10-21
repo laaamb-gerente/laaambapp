@@ -411,6 +411,185 @@
     return { kpis: k, identidades: out, fallan: out.filter(function (r) { return !r.ok; }) };
   }
 
+  // ── AÑO DE CONTRATO · promesa × 2,7 vs resultado ────────────────
+  // El reporte corrido compara el hato de hoy con la meta del año 1.
+  // Aquí el reloj es el de cada contrato: año 1 cierra en el aniversario,
+  // año 2 vuelve a multiplicar esa promesa por 2,7.
+  // En un año en curso, «esperado» es el tramo lineal de esa promesa
+  // hasta la fecha de corte. El resultado cuenta quién estaba en el hato
+  // ese día. No se inventan fechas que el animal no tiene.
+
+  function pad2(n) { return n < 10 ? '0' + n : String(n); }
+
+  function partesFecha(iso) {
+    if (!iso) return null;
+    var m = String(iso).slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    return { y: +m[1], m: +m[2], d: +m[3] };
+  }
+
+  function fechaISO(y, m, d) { return y + '-' + pad2(m) + '-' + pad2(d); }
+
+  function diasDelMes(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+
+  function sumarAnios(iso, n) {
+    var p = partesFecha(iso);
+    if (!p) return null;
+    var y = p.y + n;
+    return fechaISO(y, p.m, Math.min(p.d, diasDelMes(y, p.m)));
+  }
+
+  function sumarDias(iso, n) {
+    var p = partesFecha(iso);
+    if (!p) return null;
+    var d = new Date(Date.UTC(p.y, p.m - 1, p.d) + n * 86400000);
+    return fechaISO(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate());
+  }
+
+  function diasEntre(a, b) {
+    var pa = partesFecha(a), pb = partesFecha(b);
+    if (!pa || !pb) return null;
+    return Math.round((Date.UTC(pb.y, pb.m - 1, pb.d) - Date.UTC(pa.y, pa.m - 1, pa.d)) / 86400000);
+  }
+
+  function red1(n) { return Math.round(n * 10) / 10; }
+  function red2(n) { return Math.round(n * 100) / 100; }
+
+  // Entrada al proyecto. La fecha de nacimiento de una fundadora es anterior
+  // al contrato: entra el día de inicio, no el día en que nació.
+  function entradaAnimal(a, fechaInicio) {
+    if (!a || a.origen === 'proyectado') return { clase: 'fuera' };
+    if (a.origen === 'reposicion') {
+      var fr = a.fecha_nacimiento ? String(a.fecha_nacimiento).slice(0, 10) : null;
+      if (fr && fr >= fechaInicio) return { clase: 'fechada', entrada: fr };
+      return { clase: 'reposicion_sin_entrega' };
+    }
+    if (a.tipo === 'cria') {
+      if (!a.fecha_nacimiento) return { clase: 'cria_sin_fecha' };
+      var fn = String(a.fecha_nacimiento).slice(0, 10);
+      return { clase: 'fechada', entrada: fn < fechaInicio ? fechaInicio : fn };
+    }
+    return { clase: 'fechada', entrada: fechaInicio };
+  }
+
+  function sigueEnHato(a, D) {
+    var activo = a.estado_salida === 'activo' || a.estado_salida == null || a.estado_salida === '';
+    if (activo) return true;
+    if (a.fecha_salida) return String(a.fecha_salida).slice(0, 10) > D;
+    return false;
+  }
+
+  // modo 'historico': un cierre ya pasado. Sin fecha de entrada no se
+  // retrotrae. modo 'corte': la foto de hoy; la reposición y las crías
+  // sin fecha entran si siguen activas, porque el hato de hoy sí las tiene.
+  function hatoEnFecha(rows, D, fechaInicio, modo) {
+    var n = 0;
+    (rows || []).forEach(function (a) {
+      var e = entradaAnimal(a, fechaInicio);
+      if (e.clase === 'fuera') return;
+      var entrada = e.entrada;
+      if (e.clase !== 'fechada') {
+        if (modo !== 'corte') return;
+        entrada = fechaInicio;
+      }
+      if (!entrada || entrada > D) return;
+      if (sigueEnHato(a, D)) n++;
+    });
+    return n;
+  }
+
+  function advertenciasAnios(rows, fechaInicio) {
+    var salidasSinFecha = 0, criasSinFecha = 0, reposicionSinEntrega = 0;
+    (rows || []).forEach(function (a) {
+      if (!a || a.origen === 'proyectado') return;
+      if (a.estado_salida && a.estado_salida !== 'activo' && !a.fecha_salida) salidasSinFecha++;
+      if (a.tipo === 'cria' && a.origen !== 'reposicion' && !a.fecha_nacimiento) criasSinFecha++;
+      if (a.origen === 'reposicion') {
+        var fr = a.fecha_nacimiento ? String(a.fecha_nacimiento).slice(0, 10) : null;
+        if (!fr || fr < fechaInicio) reposicionSinEntrega++;
+      }
+    });
+    return {
+      salidasSinFecha: salidasSinFecha,
+      criasSinFecha: criasSinFecha,
+      reposicionSinEntrega: reposicionSinEntrega
+    };
+  }
+
+  function bloqueAnio(numero, inicioContrato, corte, rows, apertura, cierrePromesa) {
+    var ini = sumarAnios(inicioContrato, numero - 1);
+    var finExcl = sumarAnios(inicioContrato, numero);
+    var fin = sumarDias(finExcl, -1);
+    var total = diasEntre(ini, finExcl);
+    var estado, esperado, resultado, dias, modo;
+    if (corte < ini) {
+      estado = 'no_iniciado';
+      esperado = null;
+      resultado = null;
+      dias = 0;
+      modo = null;
+    } else if (corte >= fin) {
+      estado = 'cerrado';
+      esperado = red1(cierrePromesa);
+      resultado = hatoEnFecha(rows, fin, inicioContrato, 'historico');
+      dias = total;
+      modo = 'historico';
+    } else {
+      estado = 'en_curso';
+      dias = diasEntre(ini, corte);
+      var frac = total ? dias / total : 0;
+      esperado = red1(apertura + (cierrePromesa - apertura) * frac);
+      resultado = hatoEnFecha(rows, corte, inicioContrato, 'corte');
+      modo = 'corte';
+    }
+    var mes = estado === 'cerrado' ? 12
+      : estado === 'no_iniciado' ? 0
+      : Math.min(12, Math.floor(dias / (total / 12)) + 1);
+    return {
+      numero: numero,
+      inicio: ini,
+      fin: fin,
+      estado: estado,
+      modo: modo,
+      diasTranscurridos: dias,
+      diasTotales: total,
+      mes: mes,
+      apertura: red1(apertura),
+      promesaCierre: red2(cierrePromesa),
+      esperado: esperado,
+      resultado: resultado,
+      cumplimientoPct: (esperado == null || resultado == null) ? null : pct(resultado, esperado)
+    };
+  }
+
+  function aniosContrato(rows, aportante, corte) {
+    var inicio = aportante && aportante.fecha_inicio;
+    var hato = (aportante && aportante.hato_inicial != null)
+      ? Number(aportante.hato_inicial) : null;
+    var meta = (aportante && aportante.meta_anual != null)
+      ? Number(aportante.meta_anual) : null;
+    if (!partesFecha(inicio)) return { ok: false, motivo: 'sin_fecha_inicio' };
+    if (hato == null || !isFinite(hato)) return { ok: false, motivo: 'sin_hato_inicial' };
+    if (!partesFecha(corte)) return { ok: false, motivo: 'sin_corte' };
+    inicio = String(inicio).slice(0, 10);
+    corte = String(corte).slice(0, 10);
+    var esperada = red2(hato * META_MULT);
+    var promesa1 = (meta != null && isFinite(meta)) ? red2(meta) : esperada;
+    var promesa2 = red2(promesa1 * META_MULT);
+    return {
+      ok: true,
+      fechaInicio: inicio,
+      corte: corte,
+      hatoInicial: hato,
+      promesaAnio1: promesa1,
+      promesaAnio2: promesa2,
+      metaCoherente: meta == null || Math.abs(meta - esperada) < 0.01,
+      anio1: bloqueAnio(1, inicio, corte, rows, hato, promesa1),
+      anio2: bloqueAnio(2, inicio, corte, rows, promesa1, promesa2),
+      advertencias: advertenciasAnios(rows, inicio)
+    };
+  }
+
   window.APARCERIA = {
     FINCA_ID: FINCA_ID,
     META_MULT: META_MULT,
@@ -419,6 +598,8 @@
     getAnimales: getAnimales,
     getCargas: getCargas,
     kpis: kpis,
+    aniosContrato: aniosContrato,
+    hatoEnFecha: hatoEnFecha,
     verificarIdentidades: verificarIdentidades,
     pesoVigente: pesoVigente,
     esReal: esReal,
