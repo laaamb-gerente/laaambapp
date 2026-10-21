@@ -3,9 +3,9 @@
 // Iconos/CDN: CACHE-FIRST (offline).
 // NUNCA intercepta Supabase ni /api/.
 
-// v66: reporte de aportantes — vientres del flujo de 100 hembras, no ×2,7.
-const CACHE_NAME = 'laaambapp-v66';
-const CACHE_SHELL = 'laaambapp-shell-v66';
+// v67: reporte de aportantes — la promesa sale del excel de cada aportante.
+const CACHE_NAME = 'laaambapp-v67';
+const CACHE_SHELL = 'laaambapp-shell-v67';
 
 const STATIC_ASSETS = [
   './manifest.json',

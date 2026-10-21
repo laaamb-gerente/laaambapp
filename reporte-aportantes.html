@@ -25,7 +25,7 @@
 <script src="js/roles.js"></script>
 <script src="js/sidebar.js?v=1"></script>
 <script src="js/mobile-nav.js"></script>
-<script src="js/aparceria.js?v=13"></script>
+<script src="js/aparceria.js?v=14"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--teal:#00AFB6;--teal-d:#008a90;--teal-bg:rgba(0,175,182,.10);
@@ -184,15 +184,6 @@ table.rt td.num,table.rt th.num{text-align:right}
 </aside>
 
 <div class="main">
-  <div class="iso-banner">
-    <span style="font-size:17px;flex-shrink:0">⚖️</span>
-    <div>
-      <b>Datos de aparcería — no forman parte del inventario de La Marinilla.</b><br>
-      Los KPIs de este reporte se calculan solo sobre los animales del aportante.
-      No intervienen ni se mezclan con los indicadores del hato propio.
-    </div>
-  </div>
-
   <div class="ctrl">
     <div class="f-item">
       <label for="f-aportante">Aportante</label>
@@ -376,32 +367,8 @@ table.rt td.num,table.rt th.num{text-align:right}
   }
 
   function notaAnios(m){
-    var ad=m.advertencias||{};
-    var extra='';
-    if(ad.salidasSinFecha){
-      extra+=' '+ad.salidasSinFecha+(ad.salidasSinFecha===1
-        ? ' salida no tiene fecha y queda fuera de estos cortes.'
-        : ' salidas no tienen fecha y quedan fuera de estos cortes.');
-    }
-    if(ad.criasSinFecha){
-      extra+=' '+ad.criasSinFecha+(ad.criasSinFecha===1
-        ? ' cría no tiene fecha de nacimiento: entra al resultado de hoy si sigue activa, y no al cierre de un año ya pasado.'
-        : ' crías no tienen fecha de nacimiento: entran al resultado de hoy si siguen activas, y no al cierre de un año ya pasado.');
-    }
-    if(ad.reposicionSinEntrega){
-      extra+=' '+ad.reposicionSinEntrega+(ad.reposicionSinEntrega===1
-        ? ' reposición no tiene fecha de entrega y sigue la misma regla.'
-        : ' reposiciones no tienen fecha de entrega y siguen la misma regla.');
-    }
-    return '<div class="crec-nota">La promesa sale de <b>Flujo 100 hembras.xlsx</b> (8 ene 2026), '
-      + 'escalada por las '+numDec(m.hatoInicial)+' hembras puestas y anclada en la fecha de inicio. '
-      + 'Por cada 100 hembras el flujo retiene 25,5 hijas en el mes 6 (1,7 crías por parto × 15% de los nacimientos). '
-      + 'El año 1 cierra en <b>'+numDec(m.promesaAnio1)+'</b> vientres. '
-      + 'El año 2 suma los partos de los meses 15 y 24 y el primer parto de esas hijas en el mes 21, y cierra en <b>'+numDec(m.promesaAnio2)+'</b>. '
-      + 'Entre partos la promesa no sube. '
-      + 'El resultado cuenta hembras vivas: fundadoras desde el inicio, crías hembra desde su nacimiento y cada salida desde su fecha. '
-      + 'Los machos no entran, porque el flujo los vende. Los animales simulados tampoco.'
-      + extra+'</div>';
+    return '<div class="crec-nota">La promesa se deriva del excel llamado <b>'
+      + esc(m.esquema)+'</b>.</div>';
   }
 
   function seccionAnios(rows, aportante, corte){
@@ -417,8 +384,8 @@ table.rt td.num,table.rt th.num{text-align:right}
     }
     var html = '<div class="curva-box">'
       + svgCurva(m)
-      + '<div class="ley"><span><i class="swatch" style="background:#1AA6A6"></i>Vientres del flujo · sube en cada parto</span>'
-      + '<span><i class="swatch" style="background:#F58220"></i>Resultado en la fecha</span></div></div>'
+      + '<div class="ley"><span><i class="swatch" style="background:#1AA6A6"></i>Promesa</span>'
+      + '<span><i class="swatch" style="background:#F58220"></i>Resultado</span></div></div>'
       + '<div class="anios-grid">'+tarjetaAnio(m.anio1)+tarjetaAnio(m.anio2)+'</div>'
       + notaAnios(m);
     return sec('Año a año', html, 'desde el '+fmtCorto(m.fechaInicio));
@@ -481,7 +448,7 @@ table.rt td.num,table.rt th.num{text-align:right}
     var flujoCuando = (flujoOk && flujo.anio1.estado==='en_curso') ? 'a hoy' : 'al cierre';
     var meta = '<div class="kg">'
       + kc('teal', flujoOk ? numDec(flujo.anio1.resultado) : '—', 'Hembras '+flujoCuando, 'madres y crías hembra')
-      + kc('gray', flujoOk ? numDec(flujo.promesaAnio1) : '—', 'Promesa año 1', 'vientres del flujo de 100 hembras')
+      + kc('gray', flujoOk ? numDec(flujo.promesaAnio1) : '—', 'Promesa año 1', flujoOk ? flujo.esquema : '')
       + kc('orange', flujoOk ? pctPlano(flujo.anio1.cumplimientoPct) : '—', 'Cumplimiento año 1', 'hembras '+flujoCuando+' ÷ promesa')
       + '</div>';
 
@@ -564,25 +531,9 @@ table.rt td.num,table.rt th.num{text-align:right}
     // Distribución por grupo de manejo.
     var grupos = distribucion(k.porGrupo, k.hatoActual, 'Grupo de manejo');
 
-    // Escenario proyectado — SIEMPRE aparte y rotulado.
-    var esc_sec = k.proyectados
-      ? '<div class="esc-box">'
-        + '<span class="esc-tag">⚠ Escenario · no es el hato</span>'
-        + '<div class="kg">'
-        +   kc('orange', '+'+k.proyectados, 'Animales simulados', 'no incluidos en ningún KPI anterior')
-        +   kc('orange', num(k.hatoActual + k.proyectados), 'Hato con escenario', num(k.hatoActual)+' reales + '+k.proyectados+' simulados')
-        + '</div>'
-        + '<div class="esc-warn"><b>Estas cifras son una simulación</b> y no representan animales '
-        + 'existentes. El hato del aportante a la fecha de corte es <b>'+num(k.hatoActual)+'</b>. '
-        + 'La cifra con escenario no debe presentarse como el hato real.</div>'
-        + '</div>'
-      : '';
-
-    // Notas al pie simplificadas
   var foot = '<div class="rep-foot">'
     + '<div><b>Fecha de corte:</b> '+fmtLargo(corte)+'.</div>'
-    + '<div style="margin-top:10px;color:#A8B3B3">LAAAMB Corderos · Finca La Marinilla · '
-    +   'Aparcería — estos animales no forman parte del inventario de la finca.</div>'
+    + '<div style="margin-top:10px;color:#A8B3B3">LAAAMB Corderos · Finca La Marinilla</div>'
     + '</div>';
 
   
@@ -673,7 +624,7 @@ table.rt td.num,table.rt th.num{text-align:right}
                                     : 'aportaron madres; lo nacido es del proyecto'))
       +   sec('Resumen ejecutivo', ejecutivo)
       +   seccionAnios(ACTUAL.rows, ap, corte)
-      +   sec('Cumplimiento de meta', meta, 'vientres del flujo, año 1')
+      +   sec('Cumplimiento de meta', meta, flujoOk ? flujo.esquema : 'año 1')
       +   sec('Composición y productividad', comp)
       +   sec('Desempeño por raza', razaHtml, 'dato real + GDP modelo de referencia')
       +   sec('Valor estimado del hato', valorHtml, 'precios de referencia del proyecto')
@@ -682,7 +633,6 @@ table.rt td.num,table.rt th.num{text-align:right}
       +   sec('Estado reproductivo', repro, 'sobre el hato actual')
       +   sec('Salidas: mortalidad, sacrificios y no localizados', mort, 'sobre el total registrado')
       +   sec('Protocolo sanitario del proyecto', protoHtml, 'productos del botiquín')
-      +   (esc_sec ? sec('Escenario proyectado', esc_sec, 'fuera de los KPIs') : '')
       +   foot
       + '</div>';
   }
@@ -814,7 +764,7 @@ table.rt td.num,table.rt th.num{text-align:right}
         ['Meta guardada (hato × 2,7, no es la curva)', k.meta],
         ['Cumplimiento de esa meta guardada %', k.cumplimientoPct],
         [],
-        ['AÑO A AÑO · vientres de Flujo 100 hembras, escalado por las hembras puestas'],
+        ['AÑO A AÑO'],
       ].concat(filasExcelAnios(ACTUAL.anios)).concat([
         [],
         ['COMPOSICIÓN'],
@@ -840,10 +790,6 @@ table.rt td.num,table.rt th.num{text-align:right}
         ['% Sacrificios', k.sacrificiosPct],
         ['Ventas en pie', k.ventas],
         ['No localizados (NO son bajas)', k.noLocalizados],
-        [],
-        ['ESCENARIO PROYECTADO (fuera de los KPIs)'],
-        ['Animales simulados', k.proyectados],
-        ['Hato con escenario', k.hatoActual + k.proyectados],
         [],
         ['NOTAS'],
         ['Gap de conciliación (registrado − contratado)', k.gapConciliacion],

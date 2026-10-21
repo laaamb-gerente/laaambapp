@@ -25,16 +25,11 @@
   // La curva año a año NO usa ese número: usa el flujo de vientres.
   var META_MULT = 2.7;
 
-  // Flujo 100 hembras.xlsx (8 ene 2026), hoja «Sencillo flujo 100 hembras».
-  // Base 100 hembras puestas. Cada parto de esas fundadoras retiene
-  // 100 × 1,7 × 0,15 = 25,5 hijas. La cohorte del mes 6 vuelve a parir
-  // en el mes 21 y retiene 25,5 × 1,7 × 0,15 = 6,5025.
+  // Flujo 100 hembras.xlsx, hoja «Sencillo flujo 100 hembras».
+  // Base 100. Cada parto de las fundadoras retiene 100 × 1,7 × 0,15 = 25,5.
+  // La cohorte del mes 6 vuelve a parir en el mes 21 y retiene 6,5025.
+  // Julián y Paola usan este archivo, escalado por hato_inicial.
   // El mes es del proyecto: el mes 1 empieza en fecha_inicio.
-  // Flujo Mauricio Fajardo.xlsx (sep 2025) trae el mismo calendario
-  // (meses 6, 15, 21 y 24) y parte sus 70 hembras en 20 Lacaune,
-  // 35 Katahdin y 15 de Guasca, con retención 0,25 en vez de 0,15.
-  // El reporte usa el archivo de enero, que es el posterior, y lo escala
-  // por el hato_inicial de cada aportante.
   var FLUJO = {
     fuente: 'Flujo 100 hembras.xlsx',
     base: 100,
@@ -43,6 +38,30 @@
     entradasFundadoras: [6, 15, 24],
     entradaHijas: 21
   };
+
+  // Flujo Mauricio Fajardo.xlsx. «SENCILLO MARINILLA LECHE CARNE» suma
+  // el flujo Lacaune y el flujo Katahdin. Las hembras salen de cada hoja
+  // de flujo: 20 Lacaune y 35 Katahdin, retención 1,7 × 0,25.
+  // Años 1 y 2: meses 6, 15, 21 (hijas) y 24.
+  var FLUJO_MAURICIO = {
+    fuente: 'Flujo Mauricio Fajardo.xlsx',
+    id: '39353690-83f3-4b28-b4ca-99fe3b67fe5b',
+    inicio: 55,
+    saltos: [
+      { mes: 6, hembras: 23.375 },
+      { mes: 15, hembras: 23.375 },
+      { mes: 21, hembras: 9.934375 },
+      { mes: 24, hembras: 23.375 }
+    ]
+  };
+
+  function flujoDe(aportante) {
+    if (!aportante) return null;
+    if (aportante.id === FLUJO_MAURICIO.id) return FLUJO_MAURICIO;
+    var n = String(aportante.nombre || '').toUpperCase();
+    if (n.indexOf('MAURICIO') !== -1 && n.indexOf('FAJARDO') !== -1) return FLUJO_MAURICIO;
+    return null;
+  }
 
   // Referencias de valor y GDP (declaradas en el reporte como modelo)
   var PRECIO_VIENTRE = 1200000;          // COP Katahdin / otras
@@ -502,7 +521,14 @@
     return lista;
   }
 
-  function hembrasEnMes(hato, mes) {
+  function hembrasEnMes(hato, mes, propio) {
+    if (propio) {
+      var fijo = propio.inicio;
+      propio.saltos.forEach(function (s) {
+        if (s.mes <= mes) fijo += s.hembras;
+      });
+      return fijo;
+    }
     var acum = FLUJO.base;
     saltosFlujo().forEach(function (s) {
       if (s.mes <= mes) acum += s.hembras;
@@ -510,7 +536,17 @@
     return hato * acum / FLUJO.base;
   }
 
-  function pasosFlujo(hato) {
+  function pasosFlujo(hato, propio) {
+    if (propio) {
+      var ptsF = [{ mes: 0, hembras: red2(propio.inicio) }];
+      var fijo = propio.inicio;
+      propio.saltos.forEach(function (s) {
+        if (s.mes > 24) return;
+        fijo += s.hembras;
+        ptsF.push({ mes: s.mes, hembras: red2(fijo) });
+      });
+      return ptsF;
+    }
     var pts = [{ mes: 0, hembras: red2(hato) }];
     var acum = FLUJO.base;
     saltosFlujo().forEach(function (s) {
@@ -588,13 +624,13 @@
     };
   }
 
-  function bloqueAnio(numero, inicioContrato, corte, rows, hato) {
+  function bloqueAnio(numero, inicioContrato, corte, rows, hato, propio) {
     var ini = sumarAnios(inicioContrato, numero - 1);
     var finExcl = sumarAnios(inicioContrato, numero);
     var fin = sumarDias(finExcl, -1);
     var total = diasEntre(ini, finExcl);
-    var apertura = red2(hembrasEnMes(hato, (numero - 1) * 12));
-    var cierrePromesa = red2(hembrasEnMes(hato, numero * 12));
+    var apertura = red2(hembrasEnMes(hato, (numero - 1) * 12, propio));
+    var cierrePromesa = red2(hembrasEnMes(hato, numero * 12, propio));
     var estado, esperado, resultado, dias, modo;
     if (corte < ini) {
       estado = 'no_iniciado';
@@ -611,7 +647,7 @@
     } else {
       estado = 'en_curso';
       dias = diasEntre(ini, corte);
-      esperado = red2(hembrasEnMes(hato, mesProyecto(inicioContrato, corte)));
+      esperado = red2(hembrasEnMes(hato, mesProyecto(inicioContrato, corte), propio));
       resultado = hatoEnFecha(rows, corte, inicioContrato, 'corte', 'hembra');
       modo = 'corte';
     }
@@ -644,19 +680,20 @@
     if (!partesFecha(corte)) return { ok: false, motivo: 'sin_corte' };
     inicio = String(inicio).slice(0, 10);
     corte = String(corte).slice(0, 10);
-    var promesa1 = red2(hembrasEnMes(hato, 12));
-    var promesa2 = red2(hembrasEnMes(hato, 24));
+    var propio = flujoDe(aportante);
+    var promesa1 = red2(hembrasEnMes(hato, 12, propio));
+    var promesa2 = red2(hembrasEnMes(hato, 24, propio));
     return {
       ok: true,
       fechaInicio: inicio,
       corte: corte,
       hatoInicial: hato,
-      esquema: FLUJO.fuente,
+      esquema: propio ? propio.fuente : FLUJO.fuente,
       promesaAnio1: promesa1,
       promesaAnio2: promesa2,
-      pasos: pasosFlujo(hato),
-      anio1: bloqueAnio(1, inicio, corte, rows, hato),
-      anio2: bloqueAnio(2, inicio, corte, rows, hato),
+      pasos: pasosFlujo(hato, propio),
+      anio1: bloqueAnio(1, inicio, corte, rows, hato, propio),
+      anio2: bloqueAnio(2, inicio, corte, rows, hato, propio),
       advertencias: advertenciasAnios(rows, inicio)
     };
   }

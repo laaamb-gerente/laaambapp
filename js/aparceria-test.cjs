@@ -320,10 +320,13 @@ var mau = { nombre: 'MAURICIO FAJARDO', hato_inicial: 70, meta_anual: 189, fecha
 var am = A.aniosContrato([], mau, '2026-10-21');
 ok('Mauricio cierra el año 1 el 30 sep 2026',
   am.anio1.estado === 'cerrado' && am.anio1.fin === '2026-09-30', am.anio1.fin);
-ok('Mauricio promesa año 1 = 70 × 1,255', am.promesaAnio1 === 87.85, String(am.promesaAnio1));
-ok('Mauricio promesa año 2 = 70 × 1,830025', am.promesaAnio2 === 128.1, String(am.promesaAnio2));
-ok('al 21 oct 2026 Mauricio aún no llega al parto del mes 15',
-  am.anio2.estado === 'en_curso' && am.anio2.esperado === 87.85, String(am.anio2.esperado));
+ok('Mauricio usa su excel', am.esquema === 'Flujo Mauricio Fajardo.xlsx', am.esquema);
+// Leche 20 + carne 35. Mes 6 suma 23,375. Meses 6, 15, 21 y 24 cierran el año 2.
+ok('Mauricio promesa año 1 = 78,38', am.promesaAnio1 === 78.38, String(am.promesaAnio1));
+ok('Mauricio promesa año 2 = 135,06', am.promesaAnio2 === 135.06, String(am.promesaAnio2));
+ok('Mauricio arranca en 55 hembras del excel', am.pasos[0].hembras === 55, String(am.pasos[0].hembras));
+ok('al 21 oct 2026 Mauricio aún no llega al mes 15',
+  am.anio2.estado === 'en_curso' && am.anio2.esperado === 78.38, String(am.anio2.esperado));
 
 // ══ CAPA 2 ══════════════════════════════════════════════════════════════
 // Se activa solo con --fixture. El fixture lo genera el cargador a partir de
